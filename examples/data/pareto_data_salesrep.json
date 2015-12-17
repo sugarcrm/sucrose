@@ -1,0 +1,245 @@
+{
+  "properties": {
+    "name": " for Q3 2013",
+    "quota": 101540,
+    "quotaLabel": "Quota",
+    "groupData": [
+      {
+        "group": 0,
+        "l": "July 2013",
+        "t": 63619
+      },
+      {
+        "group": 1,
+        "l": "August 2013",
+        "t": 17061
+      },
+      {
+        "group": 2,
+        "l": "September 2013",
+        "t": 33936
+      }
+    ]
+  },
+  "data": [
+    {
+      "key": "Qualification",
+      "series": 0,
+      "type": "bar",
+      "values": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 17061,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 17061,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Id. Decision Makers",
+      "series": 1,
+      "type": "bar",
+      "values": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 10741,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 10741,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Negotiation/Review",
+      "series": 2,
+      "type": "bar",
+      "values": [
+        {
+          "series": 2,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 2,
+          "x": 2,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 2,
+          "x": 3,
+          "y": 33936,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 2,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 2,
+          "x": 2,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 2,
+          "x": 3,
+          "y": 33936,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Closed Lost",
+      "series": 3,
+      "type": "bar",
+      "values": [
+        {
+          "series": 3,
+          "x": 1,
+          "y": 52878,
+          "y0": 0
+        },
+        {
+          "series": 3,
+          "x": 2,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 3,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 3,
+          "x": 1,
+          "y": 52878,
+          "y0": 0
+        },
+        {
+          "series": 3,
+          "x": 2,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 3,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Likely",
+      "type": "line",
+      "series": 0,
+      "values": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 63619
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 80680
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 114616
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 63619
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 80680
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 114616
+        }
+      ]
+    }
+  ]
+}

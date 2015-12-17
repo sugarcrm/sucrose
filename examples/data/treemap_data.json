@@ -1,0 +1,201 @@
+{
+    "next_offset": -1,
+    "records": [
+      {
+        "assigned_user_name": "Sarah Smith",
+        "sales_stage": "Closed Won",
+        "name": "Royal Bank of Scotland - 100 Liceneses",
+        "amount_usdollar": "100000",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Will Westin",
+        "sales_stage": "Qualification",
+        "name": "Wal-Mart - On Site Training",
+        "amount_usdollar": "20000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Will Westin",
+        "sales_stage": "Closed Won",
+        "name": "Wal-Mart - 100 Licenses",
+        "amount_usdollar": "100000",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Chris Olliver",
+        "sales_stage": "Qualification",
+        "name": "Volkswagen - 100 Licenses",
+        "amount_usdollar": "100000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Chris Olliver",
+        "sales_stage": "Closed Won",
+        "name": "British Petroleum - 3000 Licenses",
+        "amount_usdollar": "300000",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Chris Olliver",
+        "sales_stage": "Closed Lost",
+        "name": "Royal Dutch Shell - 200 T-Shirts",
+        "amount_usdollar": "1000",
+        "color": "#d62728"
+      },
+      {
+        "assigned_user_name": "Chris Olliver",
+        "sales_stage": "Qualification",
+        "name": "British Petroleum - On Site Training",
+        "amount_usdollar": "20000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Sarah Smith",
+        "sales_stage": "Closed Won",
+        "name": "SugarCRM - 150 Liceneses",
+        "amount_usdollar": "150000",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Sarah Smith",
+        "sales_stage": "Closed Won",
+        "name": "Royal Bank of Scotland - Advanced Analytics Engine",
+        "amount_usdollar": "50000",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Sarah Smith",
+        "sales_stage": "Closed Won",
+        "name": "Royal Bank of Scotland - On Site Training",
+        "amount_usdollar": "20000",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Chris Olliver",
+        "sales_stage": "Closed Won",
+        "name": "Royal Dutch Shell - 700 Licensed Users",
+        "amount_usdollar": "700000",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Sarah Smith",
+        "sales_stage": "Closed Won",
+        "name": "Google - 5 Licensed User Trial",
+        "amount_usdollar": "5000",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Sarah Smith",
+        "sales_stage": "Qualification",
+        "name": "Google - 100 Licensed Users",
+        "amount_usdollar": "100000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Jim Brennan",
+        "sales_stage": "Closed Won",
+        "name": "Apple - 5 User Trial",
+        "amount_usdollar": "5000",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Qualification",
+        "name": "HP - Training",
+        "amount_usdollar": "5000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Qualification",
+        "name": "HP - 25 Liceneses",
+        "amount_usdollar": "2500",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Jim Brennan",
+        "sales_stage": "Closed Lost",
+        "name": "Apple - 50 User Licenses",
+        "amount_usdollar": "50000",
+        "color": "#d62728"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Qualification",
+        "name": "Dell - Jump Start",
+        "amount_usdollar": "5000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Qualification",
+        "name": "Dell - Training",
+        "amount_usdollar": "5000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Qualification",
+        "name": "Dell - 150 Liceneses",
+        "amount_usdollar": "15000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Sarah Smith",
+        "sales_stage": "Closed Lost",
+        "name": "SugarCRM - 50 Liceneses",
+        "amount_usdollar": "50000",
+        "color": "#d62728"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Closed Won",
+        "name": "JP Morgan Chase - 5 user Pilot",
+        "amount_usdollar": "500",
+        "color": "#2ca02c"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Qualification",
+        "name": "JP Morgan Chase - Training",
+        "amount_usdollar": "5000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Qualification",
+        "name": "JP Morgan Chase - 450 Liceneses",
+        "amount_usdollar": "45000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Chris Olliver",
+        "sales_stage": "Closed Lost",
+        "name": "Volkswagen - 50 Licenses",
+        "amount_usdollar": "50000",
+        "color": "#d62728"
+      },
+      {
+        "assigned_user_name": "Sarah Smith",
+        "sales_stage": "Qualification",
+        "name": "Google - Training",
+        "amount_usdollar": "5000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Qualification",
+        "name": "Barclays - On Site Training",
+        "amount_usdollar": "20000",
+        "color": "#ff7f0e"
+      },
+      {
+        "assigned_user_name": "Clint Oram SugarCRM",
+        "sales_stage": "Qualification",
+        "name": "Barclays - 800 Liceneses",
+        "amount_usdollar": "80000",
+        "color": "#ff7f0e"
+      }
+    ]
+}

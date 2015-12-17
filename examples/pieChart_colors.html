@@ -1,0 +1,195 @@
+<!--
+/*
+ * Your installation or use of this SugarCRM file is subject to the applicable
+ * terms available at
+ * http://support.sugarcrm.com/06_Customer_Center/10_Master_Subscription_Agreements/.
+ * If you do not agree to all of the applicable terms or do not have the
+ * authority to bind the entity as an authorized representative, then do not
+ * install or use this SugarCRM file.
+ *
+ * Copyright (C) SugarCRM Inc. All rights reserved.
+ */
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=320">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Pie Chart - Color Options</title>
+  <link rel="stylesheet" href="css/sucrose.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="sc-demo">
+    <section id="colors">
+
+      <div class="page-header">
+        <h2>Pie Chart - Color Options</h2>
+      </div>
+
+      <div class="row-fluid">
+        <div class="span4">
+          <h3>Default Colors</h3>
+          <div id="chart1" class="sc-chart sc-chart-pie">
+            <svg></svg>
+          </div>
+        </div>
+        <div class="span4">
+          <h3>Default Gradient Fill</h3>
+          <div id="chart2" class="sc-chart sc-chart-pie">
+            <svg></svg>
+          </div>
+        </div>
+        <div class="span4">
+          <h3>Default Class Names</h3>
+          <div id="chart3" class="sc-chart sc-chart-pie">
+            <svg></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="row-fluid">
+        <div class="span4">
+          <h3>Data-Defined Colors</h3>
+          <div id="chart4" class="sc-chart sc-chart-pie">
+            <svg></svg>
+          </div>
+        </div>
+        <div class="span4">
+          <h3>Data-Defined Gradient Fill</h3>
+          <div id="chart5" class="sc-chart sc-chart-pie">
+            <svg></svg>
+          </div>
+        </div>
+        <div class="span4">
+          <h3>Data-Defined Class Names</h3>
+          <div id="chart6" class="sc-chart sc-chart-pie">
+            <svg></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="row-fluid">
+        <div class="span4">
+          <h3>Graduated Palette Colors</h3>
+          <div id="chart7" class="sc-chart sc-chart-pie">
+            <svg></svg>
+          </div>
+        </div>
+        <div class="span4">
+          <h3>Graduated Palette Gradient Fill</h3>
+          <div id="chart8" class="sc-chart sc-chart-pie">
+            <svg></svg>
+          </div>
+        </div>
+        <div class="span4">
+          <h3>Data-Defined Classes</h3>
+          <!-- <div id="chart9" class="sc-chart sc-chart-pie">
+            <svg></svg>
+          </div> -->
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.10/d3.min.js"></script>
+<script src="js/sucrose.js"></script>
+
+<script>
+  d3.json('data/pie_data.json', function(chartData) {
+
+    // Default
+    var chart1 = sucrose.models.pieChart()
+          .tooltips(false)
+          .donut(true)
+          .donutRatio(0.4)
+          .donutLabelsOutside(true)
+          .hole(10)
+          .colorData('default');
+    d3.select('#chart1 svg')
+        .datum(chartData)
+      .call(chart1);
+
+    var chart2 = sucrose.models.pieChart()
+          .tooltips(false)
+          .colorData('default', {gradient: true});
+    d3.select('#chart2 svg')
+        .datum(chartData)
+      .call(chart2);
+
+    var chart3 = sucrose.models.pieChart()
+          .tooltips(false)
+          .donut(true)
+          .donutRatio(0.4)
+          .donutLabelsOutside(true)
+          .hole(10)
+          .colorData('class', {step: 2});
+    d3.select('#chart3 svg')
+        .datum(chartData)
+      .call(chart3);
+
+    // Graduated
+    var chart7 = sucrose.models.pieChart()
+          .tooltips(false)
+          .donut(true)
+          .donutRatio(0.4)
+          .donutLabelsOutside(true)
+          .hole(10)
+          .colorData('graduated', {c1: '#12448f', c2: '#deeeff', l: chartData.data.length});
+    d3.select('#chart7 svg')
+        .datum(chartData)
+      .call(chart7);
+
+    var chart8 = sucrose.models.pieChart()
+          .tooltips(false)
+          .colorData('graduated', {c1: '#12448f', c2: '#deeeff', l: chartData.data.length, gradient: true});
+    d3.select('#chart8 svg')
+        .datum(chartData)
+      .call(chart8);
+  });
+
+
+  d3.json('data/pie_data_color.json', function(chartData) {
+    chartData.data.map(function(d) {
+      delete d.classes;
+    });
+
+    // Data-Defined Color
+    var chart4 = sucrose.models.pieChart()
+          .tooltips(false)
+          .colorData('data');
+    d3.select('#chart4 svg')
+        .datum(chartData)
+      .call(chart4);
+
+    var chart5 = sucrose.models.pieChart()
+          .tooltips(false)
+          .donut(true)
+          .donutRatio(0.4)
+          .donutLabelsOutside(true)
+          .hole(10)
+          .colorData('data', {gradient: true});
+    d3.select('#chart5 svg')
+        .datum(chartData)
+      .call(chart5);
+  });
+
+  d3.json('data/pie_data_color.json', function(chartData) {
+    chartData.data.map(function(d) {
+      delete d.color;
+    });
+
+    // Data-Defined Classes
+    var chart6 = sucrose.models.pieChart()
+          .tooltips(false)
+          .colorData('data', {step: 2});
+    d3.select('#chart6 svg')
+        .datum(chartData)
+      .call(chart6);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!--
+/*
+ * Your installation or use of this SugarCRM file is subject to the applicable
+ * terms available at
+ * http://support.sugarcrm.com/06_Customer_Center/10_Master_Subscription_Agreements/.
+ * If you do not agree to all of the applicable terms or do not have the
+ * authority to bind the entity as an authorized representative, then do not
+ * install or use this SugarCRM file.
+ *
+ * Copyright (C) SugarCRM Inc. All rights reserved.
+ */
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=320">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Funnel Chart</title>
+  <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
+  <link rel="stylesheet/less" type="text/css" href="less/styles.less">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.3/less.min.js" type="text/javascript"></script>
+  <style>
+    .sc-chart-print {
+      visibility: visible;
+      position: relative;
+      left: 0;
+    }
+    .sc-image-canvas {
+       visibility: visible;
+       position: relative;
+       left: 0;
+    }
+  </style>
+</head>
+<body class="full-screen">
+  <div class="sc-demo">
+    <div id="chart1" class="sc-chart sc-chart-pie" style="width:400px;height:400px">
+      <svg></svg>
+    </div>
+    <div id="d3_test_print" class="sc-chart sc-chart-print sc-chart-pie" style="width: 720px; height: 480px;"></div>
+    <canvas id="canvas_test" width="1440" height="960" class="sc-image-canvas"></canvas>
+  </div>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.2.3/backbone-min.js"></script>
+
+<script src="js/rgbcolor.js"></script>
+<script src="js/StackBlur.js"></script>
+<script src="js/canvg.js"></script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.10/d3.min.js"></script>
+<script src="../sucrose.js"></script>
+<script src="../src/models/axis.js"></script>
+<script src="../src/models/legend.js"></script>
+<script src="../src/models/funnel.js"></script>
+<script src="../src/models/funnelChart.js"></script>
+
+<script>
+    var json = [];
+    var chart = sucrose.models.funnelChart()
+          .showTitle(true)
+          .tooltips(true)
+          .clipEdge(false)
+          .delay(1)
+          .fmtValueLabel(function(d) { return '$' + d.value + 'K'; })
+          //.colorData( 'graduated', {c1: '#12448f', c2: '#deeeff', l: funnel_data.data.length} )
+          .colorData('class', {step:2})
+          //.colorData('default')
+          .tooltipContent(function(key, x, y, e, graph) {
+             return '<p>Stage: <b>' + key + '</b></p>' +
+                    '<p>Amount: <b>$' + parseInt(y) + 'K</b></p>' +
+                    '<p>Percent: <b>' + x + '%</b></p>';
+           });
+
+    chart.legend
+        .showAll(true);
+
+    function saveImageFile(id, jsonfilename, imageExt, saveTo, complete) {
+        var self = this;
+        var d3ChartId = '#d3_' + id + '_print' || 'd3_c3090c86-2b12-a65e-967f-51b642ac6165_print';
+        var canvasChartId = 'canvas_' + id || 'canvas_c3090c86-2b12-a65e-967f-51b642ac6165';
+        var svgChartId = 'svg_' + id || 'canvas_c3090c86-2b12-a65e-967f-51b642ac6165';
+
+        var completeCallback = complete || function() {
+            //self.renderChart(id);
+        };
+
+        d3.select(d3ChartId + ' svg').remove();
+
+        d3.select(d3ChartId)
+            .append('svg')
+            .attr('id', svgChartId)
+            .datum(this.json)
+            .call(this.chart);
+
+        d3.select(d3ChartId).selectAll('.sc-axis line')
+          .style('stroke', '#000')
+          .style('stroke-width', 1)
+          .style('stroke-opacity', 1);
+
+        var parts = jsonfilename.split('/'),
+            filename = parts[parts.length - 1].replace('.js', '.' + imageExt),
+            oCanvas = document.getElementById(canvasChartId),
+            d3Container = document.getElementById(svgChartId),
+            serializer = new XMLSerializer(),
+            saveToUrl = saveTo || 'http://localhost/builds/sugar7/ent/sugarcrm/index.php?action=DynamicAction&DynamicAction=saveImage&module=Charts&to_pdf=1';
+
+        if (!oCanvas) {
+            return;
+        }
+
+        $.ajax({
+            url: 'css/sucrose.css',
+            dataType: 'text',
+            success: function(css) {
+                var svg = serializer.serializeToString(d3Container),
+                    svgAttr = ' xmlns:xlink="http://www.w3.org/1999/xlink" width="720" height="480" viewBox="0 0 1440 960">',
+                    cssCdata = '<style type="text/css"><![CDATA[' + css.trim() + ']]></style>',
+                    d3Chart = svg.replace(/><g class="sucrose/, (svgAttr + cssCdata + '<g class="sucrose')),
+                    canvgOptions = {
+                        ignoreMouse: true,
+                        ignoreAnimation: false,
+                        ignoreClear: true,
+                        ignoreDimensions: true,
+                        scaleWidth: 1440,
+                        scaleHeight: 960,
+                        renderCallback: function() {
+                            var uri = oCanvas.toDataURL((imageExt === 'jpg' ? 'image/jpeg' : 'image/png'));
+                            //$.post(saveToUrl, {imageStr: uri, filename: filename}, "json");
+                            //var ctx = oCanvas.getContext('2d');
+                            //ctx.clearRect(0, 0, 1440, 960);
+                        }
+                    };
+
+                setTimeout(function() {
+                  canvg(canvasChartId, d3Chart, canvgOptions);
+                }, 1000);
+
+            },
+            complete: completeCallback
+        });
+    }
+
+    d3.json("data/funnel_data.json", function(data) {
+
+        this.json = data;
+
+        d3.select('#chart1 svg')
+            .datum(data)
+            .call(chart);
+
+        sucrose.utils.windowResize(chart.update);
+
+        saveImageFile('test', 'test.js', 'png');
+    });
+</script>
+</body>
+</html>

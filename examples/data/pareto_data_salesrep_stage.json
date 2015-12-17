@@ -1,0 +1,525 @@
+{
+  "properties": {
+    "name": " for 2015 Q2",
+    "quota": 8237.777778,
+    "quotaLabel": "Quota",
+    "groupData": [
+      {
+        "group": 0,
+        "l": "April 2015",
+        "t": 849
+      },
+      {
+        "group": 1,
+        "l": "May 2015",
+        "t": 43541.666667
+      },
+      {
+        "group": 2,
+        "l": "June 2015",
+        "t": 10949.444445
+      }
+    ]
+  },
+  "data": [
+    {
+      "disabled": false,
+      "key": "Prospecting",
+      "series": 0,
+      "type": "bar",
+      "values": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 4871.555556,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 4871.555556,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Qualification",
+      "series": 1,
+      "type": "bar",
+      "values": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 1628.666667,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 4832.222222,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 1628.666667,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 4832.222222,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Needs Analysis",
+      "series": 2,
+      "type": "bar",
+      "values": [
+        {
+          "series": 2,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 2,
+          "x": 2,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 2,
+          "x": 3,
+          "y": 798,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 2,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 2,
+          "x": 2,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 2,
+          "x": 3,
+          "y": 798,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Value Proposition",
+      "series": 3,
+      "type": "bar",
+      "values": [
+        {
+          "series": 3,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 3,
+          "x": 2,
+          "y": 13642.555554999999,
+          "y0": 0
+        },
+        {
+          "series": 3,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 3,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 3,
+          "x": 2,
+          "y": 13642.555554999999,
+          "y0": 0
+        },
+        {
+          "series": 3,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Id. Decision Makers",
+      "series": 4,
+      "type": "bar",
+      "values": [
+        {
+          "series": 4,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 4,
+          "x": 2,
+          "y": 1628.888888,
+          "y0": 0
+        },
+        {
+          "series": 4,
+          "x": 3,
+          "y": 1570,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 4,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 4,
+          "x": 2,
+          "y": 1628.888888,
+          "y0": 0
+        },
+        {
+          "series": 4,
+          "x": 3,
+          "y": 1570,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Perception Analysis",
+      "series": 5,
+      "type": "bar",
+      "values": [
+        {
+          "series": 5,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 5,
+          "x": 2,
+          "y": 10133,
+          "y0": 0
+        },
+        {
+          "series": 5,
+          "x": 3,
+          "y": 2602.5555560000003,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 5,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 5,
+          "x": 2,
+          "y": 10133,
+          "y0": 0
+        },
+        {
+          "series": 5,
+          "x": 3,
+          "y": 2602.5555560000003,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Proposal/Price Quote",
+      "series": 6,
+      "type": "bar",
+      "values": [
+        {
+          "series": 6,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 6,
+          "x": 2,
+          "y": 685.555556,
+          "y0": 0
+        },
+        {
+          "series": 6,
+          "x": 3,
+          "y": 1146.666667,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 6,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 6,
+          "x": 2,
+          "y": 685.555556,
+          "y0": 0
+        },
+        {
+          "series": 6,
+          "x": 3,
+          "y": 1146.666667,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Negotiation/Review",
+      "series": 7,
+      "type": "bar",
+      "values": [
+        {
+          "series": 7,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 7,
+          "x": 2,
+          "y": 8237.777778,
+          "y0": 0
+        },
+        {
+          "series": 7,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 7,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 7,
+          "x": 2,
+          "y": 8237.777778,
+          "y0": 0
+        },
+        {
+          "series": 7,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Closed Won",
+      "series": 8,
+      "type": "bar",
+      "values": [
+        {
+          "series": 8,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 8,
+          "x": 2,
+          "y": 1393.666667,
+          "y0": 0
+        },
+        {
+          "series": 8,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 8,
+          "x": 1,
+          "y": 0,
+          "y0": 0
+        },
+        {
+          "series": 8,
+          "x": 2,
+          "y": 1393.666667,
+          "y0": 0
+        },
+        {
+          "series": 8,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Closed Lost",
+      "series": 9,
+      "type": "bar",
+      "values": [
+        {
+          "series": 9,
+          "x": 1,
+          "y": 849,
+          "y0": 0
+        },
+        {
+          "series": 9,
+          "x": 2,
+          "y": 1320,
+          "y0": 0
+        },
+        {
+          "series": 9,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 9,
+          "x": 1,
+          "y": 849,
+          "y0": 0
+        },
+        {
+          "series": 9,
+          "x": 2,
+          "y": 1320,
+          "y0": 0
+        },
+        {
+          "series": 9,
+          "x": 3,
+          "y": 0,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Likely",
+      "type": "line",
+      "series": 0,
+      "values": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 849
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 44390.666667
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 55340.111112
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 849
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 44390.666667
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 55340.111112
+        }
+      ]
+    }
+  ]
+}

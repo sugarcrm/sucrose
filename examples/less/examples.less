@@ -1,0 +1,394 @@
+// Examples.less
+// ------------------------------------------------------------------------
+
+/* TYPOGRAPHY
+  ----------------*/
+
+h1 {
+  font-size: @fontSizeHeader;
+  line-height: 22px;
+  font-weight: 500;
+}
+
+h4 i {
+  color: @grayLight;
+}
+
+img {
+  max-width: 100%; // Make images inherently responsive
+  vertical-align: inherit;
+  height: auto;
+  border: 0;
+  -ms-interpolation-mode: bicubic;
+}
+
+.ellipsis_inline {
+  display: block !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mono {
+  font-family: @monoFontFamily;
+}
+.serif {
+  font-family: @serifFontFamily;
+}
+
+/* DEMO CHARTS
+  ----------------*/
+.sc-demo {
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+  .box-sizing(border-box);
+  .page-header {
+    padding: 0;
+    margin: 0 0 12px;
+    h2 {
+      margin-top: 0;
+    }
+  }
+}
+
+body.full-screen {
+  height: 100%;
+  .sc-chart {
+    min-width: 100px;
+    min-height: 100px;
+    max-height: none;
+    border: 1px solid black;
+    .calcHeight(~"100% - 94px");
+    width: 100%;
+  }
+  .sc-options {
+    margin-bottom: 10px;
+    span {
+      color: @grayLight;
+      font-size: 10px;
+      padding: 4px;
+    }
+    label {
+      padding: 0 4px;
+      display: inline-block;
+      height: 19px;
+    }
+    > div {
+      padding: 4px;
+      &:last-child {
+        padding-right: 0;
+      }
+      &:first-child {
+        padding-left: 0;
+      }
+    }
+    select {
+      margin: 0 4px;
+      max-width: 100%;
+    }
+  }
+}
+
+/* org tree chart
+-------------------------------------------------- */
+@-webkit-keyframes animaopacity {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+@-moz-keyframes animaopacity {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+@-o-keyframes animaopacity {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes animaopacity {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+// for org chart demo renderer
+.sc-chart-org {
+  .sc-org-bkgd {
+    stroke: darken(@grayLighter, 15%);
+    stroke-width: 2px;
+  }
+  .sc-org-node {
+    text {
+      font-style: normal;
+      font-variant: normal;
+      font-weight: 300;
+      font-stretch: normal;
+      font-size: 10px;
+      line-height: normal;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      &.sc-org-name {
+        font-size: 10px;
+        fill: @linkColor;
+        &.hover {
+          text-decoration: underline;
+        }
+      }
+      &.sc-org-title {
+        font-size: 8px;
+      }
+    }
+  }
+}
+
+// org chart zoom control
+.btn-slider {
+  display: inline-block;
+  padding: 5px;
+  .noUiSlider {
+    width: 50px;
+    height: 4px;
+    display: inline-block;
+    margin: 0;
+    position: relative;
+    top: -1px;
+  }
+  .noUiSliderEnds {
+    width: 50px;
+    margin: 0 30px 0 0;
+    .zoom-control {
+      position: absolute;
+      top: 1px;
+      font-size: 18px;
+      cursor: pointer;
+      &.disabled {
+        color: lighten(@grayLight,10%) !important;
+      }
+    }
+    i[data-control="zoom-out"] {
+      left: -26px;
+    }
+    i[data-control="zoom-in"] {
+      right: -26px;
+    }
+    &:before,
+    &:after {
+      top: 6px;
+      height: 4px;
+    }
+    &:before {
+      .border-radius(2px 0 0 2px);
+      left: -6px;
+    }
+    &:after {
+      .border-radius(0 2px 2px 0);
+      right: -6px;
+    }
+  }
+}
+
+/* Popover docs
+-------------------------------------------------- */
+.popover-well {
+  min-height: 160px;
+}
+.popover-well .popover {
+  display: block;
+}
+.popover-well .popover-wrapper {
+  width: 50%;
+  height: 160px;
+  float: left;
+  margin-left: 55px;
+  position: relative;
+}
+.popover-well .popover-menu-wrapper {
+  height: 80px;
+}
+
+/* Color swatches on LESS docs page
+-------------------------------------------------- */
+/* Sets the width of the td */
+.swatch-col,
+.hex {
+  width: 30px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 30px;
+  height: 20px;
+  margin: -6px 0;
+  .border-radius(3px);
+  padding: 0;
+}
+
+.swatch-bordered {
+  width: 28px;
+  height: 18px;
+  border: 1px solid #ddd;
+}
+
+.cell-swatch {
+  display: block;
+  padding: 8px;
+  background-color: #c3deb7;
+  border-bottom: 1px solid @grayLighter;
+  span {
+    display: inline-block;
+    line-height: 18px;
+    width: 100%;
+    background-color: #a0c5e8;
+  }
+}
+
+
+/* Google Pretty Print
+-------------------------------------------------- */
+.com { color: #93a1a1; }
+.lit { color: #195f91; }
+.pun, .opn, .clo { color: #93a1a1; }
+.fun { color: #dc322f; }
+.str, .atv { color: #D14; }
+.kwd, .linenums .tag { color: #1e347b; }
+.typ, .atn, .dec, .var { color: teal; }
+.pln { color: #48484c; }
+
+.prettyprint {
+  padding: 8px;
+  background-color: #f7f7f9;
+  border: 1px solid #e1e1e8;
+}
+.prettyprint.linenums {
+  -webkit-box-shadow: inset 40px 0 0 #fbfbfc, inset 41px 0 0 #ececf0;
+     -moz-box-shadow: inset 40px 0 0 #fbfbfc, inset 41px 0 0 #ececf0;
+          box-shadow: inset 40px 0 0 #fbfbfc, inset 41px 0 0 #ececf0;
+}
+
+/* Specify class=linenums on a pre to get line numbering */
+ol.linenums {
+  margin: 0 0 0 33px; /* IE indents via margin-left */
+}
+ol.linenums li {
+  padding-left: 12px;
+  color: #bebec5;
+  line-height: 18px;
+  text-shadow: 0 1px 0 @white;
+}
+
+/* Chart icons
+-------------------------------------------------- */
+.sugar-cube svg {
+  width: 80px;
+  height: 80px;
+  display: inline-block;
+}
+.sugar-cube.sc-small svg {
+  width: 20px;
+  height: 20px;
+}
+.sugar-cube.sc-large svg {
+  width: 512px;
+  height: 512px;
+}
+.chart-icon svg {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  display: block;
+  padding: 3px;
+}
+
+/* Font Awesome icons
+-------------------------------------------------- */
+.chart-icon-container {
+  display: inline-block;
+  margin-right: 12px;
+  padding: 12px;
+}
+
+.sugar-cube .sc-left,
+.sugar-cube .sc-right,
+.sugar-cube .sc-top {
+  fill: #ccc;
+  stroke-width: 0;
+  /*stroke-linecap: butt;
+  stroke: @black;
+  stroke-linejoin: miter;
+  stroke-opacity: 1*/
+}
+.sugar-cube .sc-top {
+  fill: #E41E26;
+}
+.sugar-cube .sc-right {
+  fill: #CECCCB;
+}
+.sugar-cube .sc-left {
+  fill: #343433;
+}
+
+.sugar-cube.sc-white path  {
+  fill: #fff;
+}
+.sugar-cube.sc-white path.sc-top {
+  opacity: 1;
+}
+.sugar-cube.sc-white path.sc-right {
+  opacity: 0.8;
+}
+.sugar-cube.sc-white path.sc-left {
+  opacity: 0.6;
+}
+.PrimaryButton {
+  background-color: @PrimaryButton;
+}
+.NavigationBar {
+  background-color: @NavigationBar;
+}
+.BorderColor {
+  background-color: @BorderColor;
+}
+
+
+//Opportunities Treemap
+.stage_closedwon {
+  fill: #2ca02c;
+}
+.stage_prospecting {
+  fill: darken(#ff7f0e, 35%);
+}
+.stage_closedlost {
+  fill: #d62728;
+}
+.stage_qualification {
+  fill: #ff7f0e;
+}
+.stage_thisopp {
+  fill: #1f77b4;
+}
+.stage_negotiationreview {
+  fill: darken(#2ca02c, 40%);
+}
+.stage_perceptionanalysis {
+  fill: darken(#2ca02c, 30%);
+}
+.stage_proposalpricequote {
+  fill: darken(#2ca02c, 45%);
+}
+.stage_valueproposition {
+  fill: #ff7f0e;
+}
+.stage_iddecisionmakers{
+  fill: #9467bd;
+}
+.stage_needsanalysis{
+  fill: darken(@yellow, 10%);
+}
+
+
+/* Responsive
+-------------------------------------------------- */
+@media (max-width: 768px) {
+  .container,
+  .container-fluid {
+    width: auto;
+    padding: 20px;
+  }
+}

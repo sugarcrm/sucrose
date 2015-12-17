@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "key": "Won",
+      "value": 0,
+      "classes": "won"
+    },
+    {
+      "key": "Lost",
+      "value": 0,
+      "classes": "lost"
+    },
+    {
+      "key": "Active",
+      "value": 5,
+      "classes": "active"
+    }
+  ],
+  "properties": {
+    "title": "Opportunity Metrics",
+    "value": 3,
+    "label": 3
+  }
+}

@@ -1,0 +1,893 @@
+.clearfix {
+  *zoom: 1;
+}
+.clearfix:before,
+.clearfix:after {
+  display: table;
+  content: "";
+  line-height: 0;
+}
+.clearfix:after {
+  clear: both;
+}
+.hide-text {
+  font: 0/0 a;
+  color: transparent;
+  text-shadow: none;
+  background-color: transparent;
+  border: 0;
+}
+.input-block-level {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+/* MIXINS
+  ----------------*/
+.fontawesome {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  line-height: 14px;
+  font-size: 14px;
+  color: #555;
+  background: none;
+  font-family: FontAwesome;
+  font-weight: normal;
+  -webkit-font-smoothing: antialiased;
+}
+.fontawesome:before {
+  text-decoration: inherit;
+  display: inline-block;
+  speak: none;
+}
+/* Sucrose Global
+  ----------------*/
+/********************
+ * SVG CSS
+ */
+svg {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* Trying to get SVG to act like a greedy block in all browsers */
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 500px;
+}
+svg text {
+  font: normal 12px - 1px 'Helvetica Neue', Arial, sans-serif;
+  fill: #555;
+  stroke: none;
+  cursor: default;
+}
+svg .title {
+  font: bold 12px + 1px "Helvetica Neue", Arial, sans-serif;
+}
+/********************
+ * General CSS
+ */
+/* Chart colors defined in colors.less */
+.sc-background {
+  fill: #FFF;
+}
+.sc-image-canvas {
+  visibility: hidden;
+  position: absolute;
+  left: -10000px;
+}
+.sc-chart-print {
+  visibility: hidden;
+  position: absolute !important;
+  left: -10000px;
+  width: 720px;
+  height: 480px;
+}
+.sc-chart-print svg text {
+  font-size: 15px;
+}
+.sc-chart-print .sc-y.sc-axis text,
+.sc-chart-print .sc-x.sc-axis text {
+  font-size: 13px;
+}
+.sc-chart-print text.sc-title {
+  font-size: 15px;
+}
+.sc-chart-print .sc-legend text {
+  font-size: 13px;
+}
+.sc-chart-background {
+  fill: transparent;
+  stroke-width: 0.5px;
+  stroke: #717171;
+}
+.sc-noData {
+  font-size: 15px;
+  font-weight: bold;
+}
+.sc-title {
+  font-size: 13px;
+}
+.sc-labels text {
+  font-weight: bold;
+  fill: #666;
+}
+.sc-chart {
+  height: 400px;
+  min-width: 300px;
+  min-height: 100px;
+  overflow: hidden;
+  position: relative;
+  /*
+    Minimum height and width is a good idea to prevent negative SVG dimensions...
+    For example width should be =< margin.left + margin.right + 1,
+    of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
+  */
+}
+.sc-chart svg {
+  max-height: none;
+}
+.sc-label-value {
+  font-size: 13px;
+}
+.nvtooltip {
+  pointer-events: none;
+}
+.nvtooltip-pending-removal {
+  position: absolute;
+  pointer-events: none;
+}
+/**********
+*  Brush
+*/
+.sc-brush .extent {
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+.sc-brush .resize path {
+  fill: #eee;
+  stroke: #666;
+}
+.sc-brush .extent {
+  fill-opacity: 0 !important;
+}
+.sc-brushBackground rect {
+  stroke: #000;
+  stroke-width: .4;
+  fill: #fff;
+  fill-opacity: .7;
+}
+/**********
+*  Legend
+*/
+.sc-legend .sc-series {
+  cursor: pointer;
+  font-size: 11px;
+}
+.sc-legend .sc-series line {
+  fill: none;
+}
+.sc-legend .sc-series text {
+  cursor: pointer;
+}
+.sc-legend .disabled circle {
+  fill: #fff;
+}
+.sc-legend-background {
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: rgba(161, 160, 160, 0.75);
+  stroke-width: 1px;
+}
+.sc-legend-link {
+  cursor: pointer;
+  fill: #176de5;
+}
+.sc-legend-link:hover {
+  fill: #1257b7;
+  text-decoration: underline;
+}
+.sc-lineLegend .sc-series {
+  cursor: default;
+}
+.sc-lineLegend .sc-series text {
+  cursor: default;
+}
+/**********
+*  Axes
+*/
+.sc-axis path,
+.sc-axis line,
+.sc-axis polyline {
+  fill: none;
+  stroke: #717171;
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+  pointer-events: none;
+}
+.sc-axis line,
+.sc-axis polyline {
+  stroke-opacity: .3;
+}
+.sc-axis path,
+.sc-axis line.zero {
+  stroke-opacity: .75;
+}
+.sc-axis path.domain {
+  stroke-width: 2px;
+  stroke: #bbb;
+}
+.sc-axis .sc-axisMaxMin text {
+  font-weight: bold;
+}
+.sc-x.sc-axis text {
+  font-size: 11px;
+}
+.sc-axislabel {
+  font-weight: 900;
+  font-style: italic;
+}
+/**********
+*  Bars
+*/
+/**********
+*  MultiBars
+*/
+.sc-multibar .sc-groups rect {
+  stroke-opacity: 1;
+  stroke-width: 2px;
+  stroke: #fff;
+}
+.sc-multibar .sc-groups .sc-group rect:hover {
+  fill-opacity: .75;
+}
+.sc-texture {
+  fill-opacity: 0;
+  pointer-events: none;
+}
+.sc-texture:hover {
+  fill-opacity: 0;
+}
+.sc-active .sc-texture {
+  fill-opacity: 1;
+}
+.texture-line {
+  stroke-opacity: .5;
+  stroke-width: 1px;
+}
+.sc-inactive polygon,
+.sc-inactive rect {
+  fill-opacity: 1;
+}
+.sc-inactive polygon:hover,
+.sc-inactive rect:hover {
+  fill-opacity: .75;
+}
+.sc-inactive .sc-texture {
+  fill-opacity: .5;
+  mask: none !important;
+  fill: #fff !important;
+}
+.calc-text-strings,
+.sc-multibar .sc-groups text {
+  fill: #000000;
+  stroke: rgba(0, 0, 0, 0);
+  pointer-events: none;
+}
+/***********
+*  Pie Chart
+*/
+.sc-pie .hover path {
+  fill-opacity: .7;
+}
+.sc-pie .sc-inactive path {
+  fill-opacity: 0.5;
+}
+.sc-pie .sc-inactive:hover path {
+  fill-opacity: 0.75;
+}
+.sc-holeWrap text {
+  text-anchor: middle;
+}
+text.sc-pie-hole-value {
+  font-size: 32px;
+  font-weight: bold;
+}
+text.sc-pie-hole-label {
+  font-size: 11px;
+}
+/**********
+* Lines
+*/
+.sc-groups path.sc-line {
+  fill: none;
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
+}
+.sc-groups path.sc-area {
+  stroke: none;
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
+}
+.sc-line.hover path {
+  stroke-width: 6px;
+}
+.sc-line .sc-scatter .sc-groups .sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+  stroke: #fff;
+}
+.sc-scatter.sc-single-point .sc-groups .sc-point {
+  stroke-width: 2px;
+}
+.sc-scatter .sc-groups .sc-point.hover,
+.sc-groups .sc-point.hover {
+  stroke-width: 16px;
+  stroke-opacity: .5 !important;
+  stroke: inherit;
+}
+.sc-point-paths path {
+  stroke: transparent;
+  stroke-opacity: 0;
+  fill: transparent;
+  fill-opacity: 0;
+}
+.sc-indexLine {
+  cursor: ew-resize;
+}
+/**********
+* Distribution
+*/
+.sc-distribution {
+  pointer-events: none;
+}
+/**********
+*  Scatter
+*/
+.sc-groups .sc-point {
+  pointer-events: none;
+}
+.sc-groups .sc-point.hover {
+  stroke-width: 20px;
+  stroke-opacity: .5;
+}
+.sc-scatter .sc-point.hover {
+  fill-opacity: 1;
+}
+/**********
+*  Stacked Area
+*/
+.sc-stackedarea path.sc-area {
+  fill-opacity: .7;
+  stroke-opacity: 0;
+}
+.sc-stackedarea path.sc-area.hover {
+  fill-opacity: .9;
+}
+.sc-stackedarea .sc-groups .sc-point {
+  stroke-opacity: 0;
+  fill-opacity: 0;
+}
+.sc-stackedarea .sc-groups .sc-point.hover {
+  stroke-width: 20px;
+  stroke-opacity: .75;
+  fill-opacity: 1;
+}
+/**********
+*  Line Plus Bar
+*/
+.sc-linePlusBar .sc-bar rect {
+  fill-opacity: .75;
+}
+.sc-linePlusBar .sc-bar rect:hover {
+  fill-opacity: 1;
+}
+/**********
+* Sparkline plus
+*/
+.sc-sparklineplus .sc-hoverValue line {
+  stroke: #f44;
+  stroke-width: 1.5px;
+}
+.sc-sparklineplus,
+.sc-sparklineplus g {
+  pointer-events: all;
+}
+.sc-hoverArea {
+  fill-opacity: 0;
+  stroke-opacity: 0;
+}
+.sc-sparklineplus .sc-xValue,
+.sc-sparklineplus .sc-yValue {
+  stroke: #666;
+  font-size: .5em;
+  font-weight: normal;
+}
+.sc-sparklineplus .sc-yValue {
+  stroke: #f66;
+}
+/**********
+* Guage
+*/
+.sc-odomText {
+  font-weight: bold;
+  fill: #000;
+}
+.sc-arc-group {
+  fill: steelblue;
+}
+.sc-pointer {
+  fill: #888888;
+  stroke: #fff;
+}
+/**********
+* Funnel
+*/
+.sc-funnelChart .sc-y path {
+  stroke: none;
+}
+/**********
+* Bubble
+*/
+.sc-bubbleChart .sc-scatter.sc-single-point .sc-groups .sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+}
+/**********
+* Pareto
+*/
+.sc-multiBarWithLegend .sc-line .sc-scatter .sc-groups .sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+  stroke-width: 2px;
+}
+.sc-pareto .sc-quotaWrap line {
+  opacity: .8;
+  stroke: #444;
+  stroke-width: 4px;
+  fill: none;
+  /*stroke-dasharray: '20, 5'; dashed lines must be defined in JS*/
+}
+.sc-pareto .sc-quotaWrap line.sc-quotaLineTarget {
+  stroke: #777;
+}
+.sc-pareto .sc-quotaWrap line.sc-quotaLineBackground {
+  opacity: 0;
+  stroke-width: 12px;
+}
+.sc-pareto .sc-y.sc-axis .domain {
+  display: none;
+}
+.sc-pareto .sc-y.sc-axis text.sc-quotaValue,
+.sc-pareto .sc-y.sc-axis text.sc-targetQuotaValue {
+  font-weight: bold;
+}
+.sc-pareto .sc-multibar .sc-groups rect {
+  stroke-opacity: 1;
+  stroke-width: 2px;
+  stroke: #fff;
+  fill-opacity: 0.85;
+}
+.sc-pareto .sc-line .sc-groups path {
+  stroke-width: 4px;
+}
+.sc-pareto .sc-linesWrap1 .sc-line .sc-groups path {
+  stroke-width: 6px;
+}
+.sc-pareto .sc-linesWrap2 .sc-scatter .sc-groups circle {
+  stroke: #fff;
+}
+/**********
+* Treemap
+*/
+.sc-treemap svg {
+  background-color: #fff;
+}
+.sc-treemap svg text {
+  pointer-events: none;
+  fill: #fff;
+}
+.sc-treemap svg .sc-depth text {
+  fill: #fff;
+}
+.sc-treemap svg .sc-grandparent text {
+  font-weight: bold;
+  fill: #555;
+}
+.sc-treemap svg rect {
+  stroke: #fff;
+}
+.sc-treemap svg .sc-children.hover .sc-parent {
+  fill: #fff;
+  opacity: 0.3;
+}
+.sc-treemap svg .sc-parent,
+.sc-treemap svg .sc-grandparent rect {
+  stroke-width: 3px;
+}
+.sc-treemap svg .sc-child {
+  stroke-width: 1px;
+}
+.sc-treemap svg .sc-parent {
+  fill: none;
+  font-weight: normal;
+}
+.sc-treemap svg .sc-grandparent rect {
+  fill: #fff;
+}
+.sc-treemap svg .sc-children .sc-parent,
+.sc-treemap svg .sc-grandparent rect {
+  cursor: pointer;
+}
+.sc-treemap svg .sc-parent {
+  pointer-events: all;
+}
+.stage_closedwon {
+  fill: #2ca02c;
+}
+.stage_prospecting {
+  fill: #5b2a00;
+}
+.stage_closedlost {
+  fill: #d62728;
+}
+.stage_qualification {
+  fill: #ff7f0e;
+}
+.stage_thisopp {
+  fill: #1f77b4;
+}
+.stage_negotiationreview {
+  fill: #000000;
+}
+.stage_perceptionanalysis {
+  fill: #0b280b;
+}
+.stage_proposalpricequote {
+  fill: #000000;
+}
+.stage_valueproposition {
+  fill: #ff7f0e;
+}
+.stage_iddecisionmakers {
+  fill: #9467bd;
+}
+.stage_needsanalysis {
+  fill: #b78012;
+}
+/**********
+* Dendrogram
+*/
+.sc-card {
+  fill: #E9EFEF;
+  stroke: #AAA;
+  stroke-width: .5px;
+}
+.sc-card .sc-circ-front {
+  stroke-width: 0;
+}
+.sc-card line {
+  stroke-width: 2;
+}
+.sc-card .sc-expcoll {
+  cursor: pointer;
+}
+.sc-tree path.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+/**********
+* Globe
+*/
+/*.sc-chart-globe {
+  svg {
+    pointer-events: all;
+  }
+  .globe {
+    fill: #6699cc;
+    fill-opacity: .5;
+  }
+  .sphere {
+    fill: #dbe4f0;
+  }
+  .graticule {
+    fill: none;
+    stroke: #777;
+    stroke-width: .5px;
+    stroke-opacity: .5;
+  }
+  .countries path {
+    fill: #AAA;
+    stroke: @white;
+  }
+  .states path {
+    fill: #CCC;
+    stroke: @white;
+  }
+}*/
+/***********
+* Colors
+*/
+.sc-fill-green {
+  fill: #33800d;
+  background-color: #33800d;
+}
+.sc-fill-red {
+  fill: #e61718;
+  background-color: #e61718;
+}
+.sc-fill-blue {
+  fill: #176de5;
+  background-color: #176de5;
+}
+.sc-fill00 {
+  fill: #e61718;
+  background-color: #e61718;
+}
+.sc-fill01 {
+  fill: #cc3314;
+  background-color: #cc3314;
+}
+.sc-fill02 {
+  fill: #e5a117;
+  background-color: #e5a117;
+}
+.sc-fill03 {
+  fill: #6a800d;
+  background-color: #6a800d;
+}
+.sc-fill04 {
+  fill: #33800d;
+  background-color: #33800d;
+}
+.sc-fill05 {
+  fill: #0d8046;
+  background-color: #0d8046;
+}
+.sc-fill06 {
+  fill: #0d806c;
+  background-color: #0d806c;
+}
+.sc-fill07 {
+  fill: #0f7799;
+  background-color: #0f7799;
+}
+.sc-fill08 {
+  fill: #1378bf;
+  background-color: #1378bf;
+}
+.sc-fill09 {
+  fill: #176de5;
+  background-color: #176de5;
+}
+.sc-fill10 {
+  fill: #1f12b3;
+  background-color: #1f12b3;
+}
+.sc-fill11 {
+  fill: #6d17e5;
+  background-color: #6d17e5;
+}
+.sc-fill12 {
+  fill: #e5176d;
+  background-color: #e5176d;
+}
+.sc-fill13 {
+  fill: #ff6fcf;
+  background-color: #ff6fcf;
+}
+.sc-legend .sc-fill00 {
+  stroke: #e61718;
+}
+.sc-legend .sc-fill01 {
+  stroke: #cc3314;
+}
+.sc-legend .sc-fill02 {
+  stroke: #e5a117;
+}
+.sc-legend .sc-fill03 {
+  stroke: #6a800d;
+}
+.sc-legend .sc-fill04 {
+  stroke: #33800d;
+}
+.sc-legend .sc-fill05 {
+  stroke: #0d8046;
+}
+.sc-legend .sc-fill06 {
+  stroke: #0d806c;
+}
+.sc-legend .sc-fill07 {
+  stroke: #0f7799;
+}
+.sc-legend .sc-fill08 {
+  stroke: #1378bf;
+}
+.sc-legend .sc-fill09 {
+  stroke: #176de5;
+}
+.sc-legend .sc-fill10 {
+  stroke: #1f12b3;
+}
+.sc-legend .sc-fill11 {
+  stroke: #6d17e5;
+}
+.sc-legend .sc-fill12 {
+  stroke: #e5176d;
+}
+.sc-legend .sc-fill13 {
+  stroke: #ff6fcf;
+}
+.sc-stroke00 {
+  stroke: #e61718;
+  color: #e61718;
+}
+.sc-stroke01 {
+  stroke: #cc3314;
+  color: #cc3314;
+}
+.sc-stroke02 {
+  stroke: #e5a117;
+  color: #e5a117;
+}
+.sc-stroke03 {
+  stroke: #6a800d;
+  color: #6a800d;
+}
+.sc-stroke04 {
+  stroke: #33800d;
+  color: #33800d;
+}
+.sc-stroke05 {
+  stroke: #0d8046;
+  color: #0d8046;
+}
+.sc-stroke06 {
+  stroke: #0d806c;
+  color: #0d806c;
+}
+.sc-stroke07 {
+  stroke: #0f7799;
+  color: #0f7799;
+}
+.sc-stroke08 {
+  stroke: #1378bf;
+  color: #1378bf;
+}
+.sc-stroke09 {
+  stroke: #555;
+  color: #555;
+}
+.sc-stroke10 {
+  stroke: #1f12b3;
+  color: #1f12b3;
+}
+.sc-stroke11 {
+  stroke: #6d17e5;
+  color: #6d17e5;
+}
+.sc-stroke12 {
+  stroke: #e5176d;
+  color: #e5176d;
+}
+.sc-stroke13 {
+  stroke: #ff6fcf;
+  color: #ff6fcf;
+}
+.tooltip {
+  position: absolute;
+  z-index: 1070;
+  display: block;
+  visibility: visible;
+  padding: 5px;
+  font-size: 11px;
+  opacity: 0;
+  filter: alpha(opacity=0);
+}
+.tooltip.in {
+  opacity: 0.8;
+  filter: alpha(opacity=80);
+}
+.tooltip.top {
+  margin-top: -3px;
+}
+.tooltip.right {
+  margin-left: 3px;
+}
+.tooltip.bottom {
+  margin-top: 3px;
+}
+.tooltip.left {
+  margin-left: -3px;
+}
+.tooltip-inner {
+  max-width: 200px;
+  padding: 3px 8px;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  background-color: #000;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+}
+.tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+}
+.tooltip.top .tooltip-arrow {
+  bottom: 0;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px 5px 0;
+  border-top-color: #000;
+}
+.tooltip.right .tooltip-arrow {
+  top: 50%;
+  left: 0;
+  margin-top: -5px;
+  border-width: 5px 5px 5px 0;
+  border-right-color: #000;
+}
+.tooltip.left .tooltip-arrow {
+  top: 50%;
+  right: 0;
+  margin-top: -5px;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #000;
+}
+.tooltip.bottom .tooltip-arrow {
+  top: 0;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 0 5px 5px;
+  border-bottom-color: #000;
+}
+/* TOOLTIP
+  ----------------*/
+.tooltip {
+  z-index: 1070;
+  text-shadow: none;
+  font-weight: normal;
+  word-wrap: break-word;
+  pointer-events: none;
+}
+.tooltip.bottom {
+  margin-top: 8px;
+}
+.tooltip.in {
+  opacity: 1;
+  filter: alpha(opacity=100);
+}
+.tooltip div,
+.tooltip span,
+.tooltip a {
+  color: #fff;
+}
+.tooltip-inner {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.tooltip-inner > div {
+  text-align: left;
+}
+.tooltip-inner > p {
+  margin: 0;
+}
+.tooltip-inner h3 {
+  font-size: 13px;
+  color: #717171;
+  line-height: normal;
+  margin: 3px 0;
+}

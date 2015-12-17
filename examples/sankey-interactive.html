@@ -1,0 +1,519 @@
+<!--
+/*
+ * Your installation or use of this SugarCRM file is subject to the applicable
+ * terms available at
+ * http://support.sugarcrm.com/06_Customer_Center/10_Master_Subscription_Agreements/.
+ * If you do not agree to all of the applicable terms or do not have the
+ * authority to bind the entity as an authorized representative, then do not
+ * install or use this SugarCRM file.
+ *
+ * Copyright (C) SugarCRM Inc. All rights reserved.
+ */
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SugarCRM - Won/Lost Sales Flow - Sankey Diagram</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
+  <link rel="stylesheet/less" type="text/css" href="less/styles.less">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.3/less.min.js" type="text/javascript"></script>
+  <style>
+    body {
+      overflow-y: scroll;
+      padding: 20px;
+    }
+
+    text {
+      font: 12px sans-serif;
+    }
+
+    svg {
+      height: 480px;
+      margin-left: 100px;
+    }
+    .node rect {
+      cursor: move;
+      fill-opacity: .9;
+      shape-rendering: crispEdges;
+      pointer-events: all;
+    }
+
+    .node text {
+      pointer-events: none;
+      text-shadow: 0 1px 0 #fff;
+    }
+
+    .link {
+      fill: none;
+      stroke: #000;
+      stroke-opacity: .2;
+    }
+
+    .link:hover {
+      stroke-opacity: .5;
+    }
+
+    svg {
+      font: 10px sans-serif;
+    }
+
+    .axis path, .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+  </style>
+</head>
+<body>
+
+<h1>SugarCRM - Won/Lost Sales Flow - Sankey Diagram</h1>
+
+<p>
+  Sankey diagrams visualize the magnitude of flow between nodes in a network. The thickness of each link encodes the amount of flow from source to target. These examples are built with <a href="http://bost.ocks.org/mike/sankey/">D3’s Sankey plugin</a>. The fully automatic layout is convenient for rapid visualization. Additional work is needed on labeling, interactivity (click to enable/disable nodes), and styling.
+
+<div id="chartWonLost"></div>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.10/d3.min.js"></script>
+<script src="../sucrose.min.js"></script>
+<script src="../src/models/sankey.js"></script>
+
+<script>
+var formatNumber = d3.format(",.0f"),
+    format = function(d) { return formatNumber(d); },
+    color = d3.scale.category20(),
+    margin = {top: 1, right: 1, bottom: 1, left: 120},
+    width = 640,
+    height = 480,
+    tooltip = null,
+    filtered = false,
+    selected = false,
+    tooltipBar = function(key, value) {
+            return '<p><b>' + key + '</b></p>' +
+                '<p><b>' + value + '</b></p>';
+        };
+
+
+/* Register event handlers
+----------------------------------------------------------------- */
+
+var showTooltip = function(e, offsetElement) {
+        var left = e.pos[0],
+            top = e.pos[1],
+            content = tooltipBar(e.point.name, format(e.point.value));
+        tooltip = sucrose.tooltip.show([left, top], content, 's', null, offsetElement);
+    },
+    dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementClick', 'elementDoubleClick');
+
+dispatch.on('tooltipShow', function(e) {
+    showTooltip(e, svg);
+});
+
+dispatch.on('tooltipHide', sucrose.tooltip.cleanup);
+
+dispatch.on('tooltipMove', function(e) {
+    if (tooltip) {
+        sucrose.tooltip.position(tooltip, e.pos);
+    }
+});
+
+dispatch.on('elementDoubleClick', function(e) {
+  filtered = !filtered;
+  selected = false;
+  update(function(d){ return !filtered || d.type === e.point.name || d.assignee == e.point.name; });
+});
+
+
+/* Setup chart
+----------------------------------------------------------------- */
+
+var svg = d3.select("#chartWonLost").append("svg");
+
+var sankey = d3.sankey()
+      .nodeWidth(15)
+      .nodePadding(10)
+      .size([width - margin.left - margin.right, height - margin.top - margin.bottom]);
+
+var data = [];
+
+
+function draw(svg, sankey, data) {
+
+  svg.select('g.chartWrapper').remove();
+
+  var self = this,
+      chart = svg.append("g")
+        .attr('class', 'chartWrapper')
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
+      path = sankey.link();
+
+  function dragmove(d) {
+    d3.select(this).attr("transform", "translate(" + d.x + "," + (d.y = Math.max(0, Math.min(height - d.dy, d3.event.y))) + ")");
+    sankey.relayout();
+    link.attr("d", path);
+  }
+
+  function highlightLinks(node) {
+    link
+      .filter(function(d,i){
+        return (d.type === node.name || d.assignee === node.name) && d.position !== node.position;
+      })
+      .style("stroke", function(d){ return d[node.type].color; })
+      .style('display', 'inline');
+    group
+      .filter(function(d,i){
+        return d[node.type].name === node.name && d.position === node.position;
+      })
+      .style("stroke", function(d){ return d[node.type].color; })
+      .style("stroke-opacity", 0.5)
+      .style('display', 'inline');
+  }
+
+  function resetLinks() {
+    link
+      .style('display', 'none');
+    group
+      .style("stroke", '#000')
+      .style("stroke-opacity", 0.2);
+  }
+
+  /*Render Group Links
+  ----------------------------------------------------------------- */
+
+  sankey
+    .nodes(data.nodes)
+    .links(data.groups)
+    .layout(1);
+
+  var group = chart.append("g").selectAll(".link")
+        .data(data.groups)
+      .enter().append("path")
+        .attr("class", "link")
+        .attr("d", path)
+        .style("stroke-opacity", 0.2)
+        .style("stroke-width", function(d) { return Math.max(1, d.dy); })
+        .sort(function(a, b) { return b.dy - a.dy; });
+
+  group
+    .on('mouseover', function (d,i) { //TODO: figure out why j works above, but not here
+      d3.select(this).classed('hover', true);
+      dispatch.tooltipShow({
+        pos: [d3.event.pageX, d3.event.pageY],
+        point: d,
+        pointIndex: i,
+        e: d3.event
+      });
+    })
+    .on('mouseout', function (d,i) {
+      d3.select(this).classed('hover', false);
+      dispatch.tooltipHide({
+        point: d,
+        pointIndex: i,
+        e: d3.event
+      });
+    })
+    .on('mousemove', function (d,i){
+      dispatch.tooltipMove({
+        pos: [d3.event.pageX, d3.event.pageY],
+        point: d,
+        pointIndex: i
+      });
+    });
+
+
+  /*Render Links
+  ----------------------------------------------------------------- */
+  sankey
+    .nodes(data.nodes)
+    .links(data.links)
+    .layout(1);
+
+  var link = chart.append("g").selectAll(".link")
+        .data(data.links)
+      .enter().append("path")
+        .attr("class", function(d){ return "link " + (d.source.position === 'left' ? 'left' : 'right'); })
+        .attr("d", path)
+        .style("stroke-opacity", 0.8)
+        .style("display", "none")
+        .style("stroke-width", function(d) { return Math.max(1, d.dy); })
+        .sort(function(a, b) { return b.dy - a.dy; });
+
+  link
+    .on('mouseover', function (d,i) { //TODO: figure out why j works above, but not here
+      d3.select(this).classed('hover', true);
+      dispatch.tooltipShow({
+        pos: [d3.event.pageX, d3.event.pageY],
+        point: d,
+        pointIndex: i,
+        e: d3.event
+      });
+    })
+    .on('mouseout', function (d,i) {
+      d3.select(this).classed('hover', false);
+      dispatch.tooltipHide({
+        point: d,
+        pointIndex: i,
+        e: d3.event
+      });
+    })
+    .on('mousemove', function (d,i){
+      dispatch.tooltipMove({
+        pos: [d3.event.pageX, d3.event.pageY],
+        point: d,
+        pointIndex: i
+      });
+    });
+
+
+  /* Render nodes
+  ----------------------------------------------------------------- */
+
+  var node = chart.append("g").selectAll(".node")
+        .data(data.nodes)
+      .enter().append("g")
+        .attr("class", "node")
+        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+      // .call(d3.behavior.drag()
+      //   .origin(function(d) { return d; })
+      //   .on("dragstart", function() { this.parentNode.appendChild(this); })
+      //   .on("drag", dragmove));
+
+  node.append("rect")
+      .attr("height", function(d) { return d.dy; })
+      .attr("width", sankey.nodeWidth())
+      .style("fill", function(d) { return d.color; })
+      .style("stroke", function(d) { return d3.rgb(d.color).darker(2); });
+
+  node.append("text")
+      .attr("x", function(d) { return d.sourceLinks.length ? -6 : (6 + sankey.nodeWidth()); })
+      .attr("y", function(d) { return d.dy / 2; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", function(d) { return d.sourceLinks.length ? "end" : "start"; })
+      .attr("transform", null)
+      .text(function(d) { return d.name; });
+
+  node
+    .on('mouseover', function (d,i) { //TODO: figure out why j works above, but not here
+      d3.select(this).classed('hover', true);
+      dispatch.tooltipShow({
+        pos: [d3.event.pageX, d3.event.pageY],
+        point: d,
+        pointIndex: i,
+        e: d3.event
+      });
+    })
+    .on('mouseout', function (d,i) {
+      d3.select(this).classed('hover', false);
+      dispatch.tooltipHide({
+        point: d,
+        pointIndex: i,
+        e: d3.event
+      });
+    })
+    .on('mousemove', function (d,i){
+      dispatch.tooltipMove({
+        pos: [d3.event.pageX, d3.event.pageY],
+        point: d,
+        pointIndex: i
+      });
+    })
+    .on('click', function (d,i) {
+      dispatch.elementClick({
+        point: d,
+        pointIndex: i,
+        e: d3.event
+      });
+      //d3.event.stopPropagation();
+    })
+    .on('dblclick', function (d,i) {
+      dispatch.elementDoubleClick({
+        point: d,
+        pointIndex: i,
+        e: d3.event
+      });
+      //d3.event.stopPropagation();
+    });
+
+  dispatch.on('elementClick', function(e) {
+    if (filtered || e.point.position === 'middle') {
+      return;
+    }
+
+    resetLinks();
+
+    if (selected !== e.point.key) {
+      highlightLinks(e.point);
+      selected = e.point.key;
+    } else {
+      selected = false;
+    }
+  });
+
+}
+
+function processData(data, filter) {
+
+  var data = data.filter(filter),
+      sankeyData = {},
+      nodes = [],
+      groups = [],
+      links = [],
+      nest = [];
+
+  var quotas = d3.map({
+      "Max Jenson":110,
+      "Sally Bronsen":80,
+      "Chris Olliver":30,
+      "Sarah Smith":70,
+      "Will Westin":20,
+      "Jim Brennan":50
+    });
+
+  nodes = d3.merge([
+      d3.set(data.map(function(d,i){ return d.type;     })).values(),
+      d3.set(data.map(function(d,i){ return d.status;   })).values(),
+      d3.set(data.map(function(d,i){ return d.assignee; })).values()
+    ]);
+
+  //grouped links
+  nest = d3.nest()
+    .key(function(d) { return d.type; })
+    .key(function(d) { return d.status; })
+    .rollup(function(leaves) {
+      return {"value": d3.sum(leaves, function(d) {return d.value; })};
+    })
+    .entries(data);
+
+  nest.forEach(function(source){
+    source.values.forEach(function(target){
+      groups.push({
+        "source": nodes.indexOf(source.key),
+        "target": nodes.indexOf(target.key),
+        "value": target.values.value,
+        "name": source.key + ' - ' + target.key,
+        "level": "group",
+        "position": "left"
+      })
+    })
+  });
+
+  nest = d3.nest()
+    .key(function(d) { return d.status; })
+    .key(function(d) { return d.assignee; })
+    .rollup(function(leaves) {
+      return {"value": d3.sum(leaves, function(d) {return d.value; })};
+    })
+    .entries(data);
+
+  nest.forEach(function(source){
+    source.values.forEach(function(target){
+      groups.push({
+        "source": nodes.indexOf(source.key),
+        "target": nodes.indexOf(target.key),
+        "value": target.values.value,
+        "name": source.key + ' - ' + target.key,
+        "level": "group",
+        "position": "right"
+      })
+    })
+  });
+
+  //individual links
+  nest = d3.nest()
+    .key(function(d) { return d.type; })
+    .key(function(d) { return d.status; })
+    .entries(data);
+
+  nest.forEach(function(source){
+    source.values.forEach(function(target){
+      target.values.forEach(function(link){
+        links.push({
+          "source": nodes.indexOf(source.key),
+          "target": nodes.indexOf(target.key),
+          "value": link.value,
+          "name": source.key + ' - ' + target.key,
+          "assignee": link.assignee,
+          "type": link.type,
+          "level": "link",
+          "position": "left"
+        })
+      })
+    })
+  });
+
+  nest = d3.nest()
+    .key(function(d) { return d.status; })
+    .key(function(d) { return d.assignee; })
+    .entries(data);
+
+  nest.forEach(function(source){
+    source.values.forEach(function(target){
+      target.values.forEach(function(link){
+        links.push({
+          "source": nodes.indexOf(source.key),
+          "target": nodes.indexOf(target.key),
+          "value": link.value,
+          "name": source.key + ' - ' + target.key,
+          "assignee": link.assignee,
+          "type": link.type,
+          "level": "link",
+          "position": "right"
+        })
+      })
+    })
+  });
+
+
+
+  sankeyData = {
+    "nodes":nodes.map(function(d,i){
+      return {
+        "name": d,
+        "key": i,
+        "type":
+          quotas.has(d) ?
+            "target" :
+            ['Closed Won', 'Closed Lost', 'In Progress'].indexOf(d) > -1 ?
+              "both" :
+              "source",
+        "position":
+          quotas.has(d) ?
+            "right" :
+            ['Closed Won', 'Closed Lost', 'In Progress'].indexOf(d) > -1 ?
+              "middle" :
+              "left",
+        "color":
+          quotas.has(d) ?
+            d3.interpolateHsl(d3.rgb('#b42535'), d3.rgb('#1a8221'))(quotas.get(d) / 100) :
+            ['Closed Won', 'Closed Lost', 'In Progress'].indexOf(d) > -1 ?
+              ['#98df8a', '#df8192', '#92c6df'][['Closed Won', 'Closed Lost', 'In Progress'].indexOf(d)] :
+              color(d.replace(/ .*/, ""))
+      };
+    }),
+    "links":links,
+    "groups":groups
+  };
+
+  return sankeyData;
+}
+
+function update(filter) {
+  var self = this;
+
+  draw(self.svg, self.sankey, processData(self.data, filter || function(d){ return true; }));
+}
+
+function loadData(path) {
+  var self = this;
+
+  d3.json(path, function(data) {
+    self.data = data;
+    update();
+  });
+}
+
+loadData('data/sankey_root.json');
+</script>
+</body>
+</html>

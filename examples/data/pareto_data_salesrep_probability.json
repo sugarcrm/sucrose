@@ -1,0 +1,198 @@
+{
+  "properties": {
+    "name": " for 2014 Q4",
+    "quota": 50,
+    "quotaLabel": "Quota",
+    "groupData": [
+      {
+        "group": 0,
+        "l": "Jim Brennan",
+        "t": 70
+      },
+      {
+        "group": 1,
+        "l": "Will Westin",
+        "t": 50
+      },
+      {
+        "group": 2,
+        "l": "Sarah Smith",
+        "t": 30
+      }
+    ]
+  },
+  "data": [
+    {
+      "disabled": false,
+      "key": "Likely",
+      "series": 0,
+      "type": "bar",
+      "values": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 40,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 30,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 20,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 40,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 30,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 20,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Likely (Adjusted)",
+      "series": 1,
+      "type": "bar",
+      "values": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 30,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 20,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 10,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 30,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 20,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 10,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Likely",
+      "series": 0,
+      "type": "line",
+      "values": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 40
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 70
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 90
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 40
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 70
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 90
+        }
+      ]
+    },
+    {
+      "disabled": false,
+      "key": "Likely (Adjusted)",
+      "series": 1,
+      "type": "line",
+      "values": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 30
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 50
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 60
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 30
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 50
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 60
+        }
+      ]
+    }
+  ]
+}

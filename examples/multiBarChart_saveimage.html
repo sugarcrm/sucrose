@@ -1,0 +1,130 @@
+<!--
+/*
+ * Your installation or use of this SugarCRM file is subject to the applicable
+ * terms available at
+ * http://support.sugarcrm.com/06_Customer_Center/10_Master_Subscription_Agreements/.
+ * If you do not agree to all of the applicable terms or do not have the
+ * authority to bind the entity as an authorized representative, then do not
+ * install or use this SugarCRM file.
+ *
+ * Copyright (C) SugarCRM Inc. All rights reserved.
+ */
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=320">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Multibar Chart</title>
+  <link rel="stylesheet" href="css/sucrose.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.3/less.min.js" type="text/javascript"></script>
+</head>
+<body>
+
+  <div id="chart1" class="sc-chart sc-chart-multibar" width="640" height="400">
+    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    </svg>
+  </div>
+  <div>
+    <button id="image-downloader">Download Image</button>
+  </div>
+  <canvas id="sucrose-image-canvas" width="640" height="400" class="sucrose-image-canvas"></canvas>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.10/d3.min.js"></script>
+<script src="../sucrose.js"></script>
+<script src="../src/models/axis.js"></script>
+<script src="../src/models/legend.js"></script>
+<script src="../src/models/multiBar.js"></script>
+<script src="../src/models/multiBarChart.js"></script>
+
+<script>
+//https://developer.mozilla.org/en-US/docs/Web/API/Window.btoa
+//http://techslides.com/save-svg-as-an-image/
+//http://tutorials.jenkov.com/svg/svg-and-css.html
+//https://developer.mozilla.org/en-US/docs/Web/HTML/Canvas/Drawing_DOM_objects_into_a_canvas
+
+    var chart = sucrose.models.multiBarChart()
+          .showTitle(false)
+          .showControls(true)
+          .showValues(false)
+          .stacked(true)
+          //.colorData('graduated', {c1: '#e8e2ca', c2: '#3e6c0a', l: horizbar_data.data.length})
+          //.colorData( 'class' )
+          //.colorData( 'default' )
+          //.rotateTicks(30)
+          //.forceY([0,400]).forceX([0,6]);
+          .width(640)
+          .height(400)
+          .tooltips(false);
+
+    chart.xAxis
+      .axisLabel('This is x-Axis');
+
+    chart.yAxis
+      .axisLabel('This is y-Axis');
+
+    chart.legend
+        .showAll(true);
+
+    d3.json("data/multibar_data.json", function(data) {
+        chart
+          .colorData('graduated', {c1: '#e8e2ca', c2: '#336699', l: data.data.length});
+
+        d3.select('#chart1 svg')
+            .datum(data)
+            .call(chart);
+
+        d3.select('#chart1').on('click', chart.dispatch.chartClick);
+
+        sucrose.utils.windowResize(chart.update);
+
+        $('#image-downloader').on('click', generateImage);
+    });
+
+    function generateImage(e) {
+        e.preventDefault();
+
+        var canvas = document.getElementById('sucrose-image-canvas'),
+            ctx    = canvas.getContext('2d'),
+            DOMURL = window.URL || window.webkitURL || window,
+            img    = new Image();
+
+        $.ajax({
+            url: "css/sucrose.css",
+            dataType: "text",
+            success: function(css) {
+                var dom = $('#chart1 svg').html(),
+                    data = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">' +
+                            '<style rel="stylesheet/less" type="text/css"><![CDATA[' + css + ']]></style>' + dom + '</svg>',
+                    svg = new Blob([data], {type: 'image/svg+xml;charset=utf-8'}),
+                    url = DOMURL.createObjectURL(svg);
+
+                img.onload = function () {
+                    ctx.drawImage(img, 0, 0);
+
+                    var uri = canvas.toDataURL("image/png");
+
+                    window.open(uri, '_blank');
+
+                    ctx.clearRect(0, 0, 640, 400);
+                    // a = document.createElement("a");
+                    // a.download = "sample.png";
+                    // a.href = canvasdata;
+                    // a.click();
+                    //$('body').append(img);
+
+                    DOMURL.revokeObjectURL(url);
+                }
+
+                img.src = url;
+            }
+        });
+    };
+</script>
+</body>
+</html>

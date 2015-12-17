@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "title": "Test Single Point Line Chart",
+    "value": 1
+  },
+  "data": [
+    {
+      "key" : "Discretionary" ,
+      "values" : [ [ 1138683600000 , 50 ] ]
+    }
+  ]
+}

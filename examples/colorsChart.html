@@ -1,0 +1,209 @@
+<!--
+/*
+ * Your installation or use of this SugarCRM file is subject to the applicable
+ * terms available at
+ * http://support.sugarcrm.com/06_Customer_Center/10_Master_Subscription_Agreements/.
+ * If you do not agree to all of the applicable terms or do not have the
+ * authority to bind the entity as an authorized representative, then do not
+ * install or use this SugarCRM file.
+ *
+ * Copyright (C) SugarCRM Inc. All rights reserved.
+ */
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=320">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Funnel Chart</title>
+  <style type="text/less">
+    @grayDarker:            darken(@grayDark, 1%);
+    @grayDark:              #343433;
+    @gray:                  #58595B;
+    @grayLight:             #bbb;
+    @grayLighter:           #f5f5f5;
+
+    @fill00: darken(@gray,30%);
+    @fill01: lighten(@gray,30%);
+    @fill02: darken(@gray,15%);
+    @fill03: lighten(@gray,35%);
+    @fill04: darken(@gray,10%);
+    @fill05: lighten(@gray,40%);
+    @fill06: darken(@gray,05%);
+    @fill07: lighten(@gray,45%);
+    @fill08: darken(@gray,0%);
+    @fill09: lighten(@gray,48%);
+    @fill10: lighten(@gray,5%);
+    @fill11: lighten(@gray,51%);
+    @fill12: lighten(@gray,10%);
+    @fill13: lighten(@gray,54%);
+    @fill14: lighten(@gray,15%);
+    @fill15: lighten(@gray,57%);
+    @fill16: lighten(@gray,20%);
+    @fill17: lighten(@gray,60%);
+    @fill18: lighten(@gray,25%);
+    @fill19: lighten(@gray,63%);
+
+    .monochrome {
+        .fill00 { background-color: @fill00; }
+        .fill10 { background-color: @fill10; }
+        .fill01 { background-color: @fill01; }
+        .fill11 { background-color: @fill11; }
+        .fill02 { background-color: @fill02; }
+        .fill12 { background-color: @fill12; }
+        .fill03 { background-color: @fill03; }
+        .fill13 { background-color: @fill13; }
+        .fill04 { background-color: @fill04; }
+        .fill14 { background-color: @fill14; }
+        .fill05 { background-color: @fill05; }
+        .fill15 { background-color: @fill15; }
+        .fill06 { background-color: @fill06; }
+        .fill16 { background-color: @fill16; }
+        .fill07 { background-color: @fill07; }
+        .fill17 { background-color: @fill17; }
+        .fill08 { background-color: @fill08; }
+        .fill18 { background-color: @fill18; }
+        .fill09 { background-color: @fill09; }
+        .fill19 { background-color: @fill19; }
+    }
+    .swatch {
+      width: 50px;
+      height: 50px;
+      float: left;
+      text-align: center;
+      &.label {
+        height: 56px;
+        font-size: 10px;
+        font-weight: bold;
+      }
+    }
+  </style>
+  <link rel="stylesheet/less" type="text/css" href="less/styles.less">
+  <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.3/less.min.js" type="text/javascript"></script>
+</head>
+<body class="full-screen">
+<h2>Default</h2>
+
+<div class="swatch label"></div>
+<div class="swatch label">@red<br>#E61718;<br>@fill00</div>
+<div class="swatch label">@orange<br>#cc3314;<br>@fill01</div>
+<div class="swatch label">@yellow<br>#e5a117;<br>@fill02</div>
+<div class="swatch label">@army<br>#6a800d;<br>@fill03</div>
+<div class="swatch label">@green<br>#33800d;<br>@fill04</div>
+<div class="swatch label">@mint<br>#0d8046;<br>@fill05</div>
+<div class="swatch label">@teal<br>#0d806c;<br>@fill06</div>
+<div class="swatch label">@pacific<br>#0f7799;<br>@fill07</div>
+<div class="swatch label">@ocean<br>#1378bf;<br>@fill08</div>
+<div class="swatch label">@blue<br>#176de5;<br>@fill09</div>
+<div class="swatch label">@night<br>#1f12b3;<br>@fill10</div>
+<div class="swatch label">@purple<br>#6d17e5;<br>@fill11</div>
+<div class="swatch label">@pink<br>#e5176d;<br>@fill12</div>
+<div class="swatch label">@coral<br>#ff6fcf;<br>@fill13</div>
+<div style="clear:both"></div>
+
+<div class="swatch">Single Step</div>
+<div class="swatch sc-fill00"></div>
+<div class="swatch sc-fill01"></div>
+<div class="swatch sc-fill02"></div>
+<div class="swatch sc-fill03"></div>
+<div class="swatch sc-fill04"></div>
+<div class="swatch sc-fill05"></div>
+<div class="swatch sc-fill06"></div>
+<div class="swatch sc-fill07"></div>
+<div class="swatch sc-fill08"></div>
+<div class="swatch sc-fill09"></div>
+<div class="swatch sc-fill10"></div>
+<div class="swatch sc-fill11"></div>
+<div class="swatch sc-fill12"></div>
+<div class="swatch sc-fill13"></div>
+<div style="clear:both"></div>
+
+<div class="swatch label"></div>
+<div class="swatch label">@red<br>#E61718;<br>@fill00</div>
+<div class="swatch label">@yellow<br>#e5a117;<br>@fill02</div>
+<div class="swatch label">@green<br>#33800d;<br>@fill04</div>
+<div class="swatch label">@teal<br>#0d806c;<br>@fill06</div>
+<div class="swatch label">@ocean<br>#1378bf;<br>@fill08</div>
+<div class="swatch label">@night<br>#1f12b3;<br>@fill10</div>
+<div class="swatch label">@pink<br>#e5176d;<br>@fill12</div>
+<div class="swatch label">@orange<br>#cc3314;<br>@fill01</div>
+<div class="swatch label">@army<br>#6a800d;<br>@fill03</div>
+<div class="swatch label">@mint<br>#0d8046;<br>@fill05</div>
+<div class="swatch label">@pacific<br>#0f7799;<br>@fill07</div>
+<div class="swatch label">@blue<br>#176de5;<br>@fill09</div>
+<div class="swatch label">@purple<br>#6d17e5;<br>@fill11</div>
+<div class="swatch label">@coral<br>#ff6fcf;<br>@fill13</div>
+<div style="clear:both"></div>
+
+<div class="swatch">Double Step</div>
+<div class="swatch sc-fill00"></div>
+<div class="swatch sc-fill02"></div>
+<div class="swatch sc-fill04"></div>
+<div class="swatch sc-fill06"></div>
+<div class="swatch sc-fill08"></div>
+<div class="swatch sc-fill10"></div>
+<div class="swatch sc-fill12"></div>
+
+<div class="swatch sc-fill01"></div>
+<div class="swatch sc-fill03"></div>
+<div class="swatch sc-fill05"></div>
+<div class="swatch sc-fill07"></div>
+<div class="swatch sc-fill09"></div>
+<div class="swatch sc-fill11"></div>
+<div class="swatch sc-fill13"></div>
+
+<div style="clear:both"></div>
+
+<h2>Monochrome Test</h2>
+<div class="monochrome">
+<div class="swatch fill00"></div>
+<div class="swatch fill02"></div>
+<div class="swatch fill04"></div>
+<div class="swatch fill06"></div>
+<div class="swatch fill08"></div>
+<div class="swatch fill10"></div>
+<div class="swatch fill12"></div>
+<div class="swatch fill14"></div>
+<div class="swatch fill16"></div>
+<div class="swatch fill18"></div>
+
+<div class="swatch fill01"></div>
+<div class="swatch fill03"></div>
+<div class="swatch fill05"></div>
+<div class="swatch fill07"></div>
+<div class="swatch fill09"></div>
+<div class="swatch fill11"></div>
+<div class="swatch fill13"></div>
+<div class="swatch fill15"></div>
+<div class="swatch fill17"></div>
+<div class="swatch fill19"></div>
+
+<div style="clear:both"></div>
+
+<div class="swatch fill00"></div>
+<div class="swatch fill01"></div>
+<div class="swatch fill02"></div>
+<div class="swatch fill03"></div>
+<div class="swatch fill04"></div>
+<div class="swatch fill05"></div>
+<div class="swatch fill06"></div>
+<div class="swatch fill07"></div>
+<div class="swatch fill08"></div>
+<div class="swatch fill09"></div>
+
+<div class="swatch fill10"></div>
+<div class="swatch fill11"></div>
+<div class="swatch fill12"></div>
+<div class="swatch fill13"></div>
+<div class="swatch fill14"></div>
+<div class="swatch fill15"></div>
+<div class="swatch fill16"></div>
+<div class="swatch fill17"></div>
+<div class="swatch fill18"></div>
+<div class="swatch fill19"></div>
+</div>
+</body>
+</html>

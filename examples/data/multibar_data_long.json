@@ -1,0 +1,295 @@
+{
+  "properties": {
+    "title": "Total is 50.00",
+    "labels": [
+      {
+        "group": 1,
+        "l": "Customer"
+      }
+    ],
+    "values": [
+      {
+        "group": 1,
+        "t": 50
+      }
+    ]
+  },
+  "data": [
+    {
+      "key": "Undefined",
+      "type": "bar",
+      "values": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Apparel",
+      "type": "bar",
+      "values": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 2,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Banking",
+      "type": "bar",
+      "values": [
+        {
+          "series": 2,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Biotechnology",
+      "type": "bar",
+      "values": [
+        {
+          "series": 3,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Chemicals",
+      "type": "bar",
+      "values": [
+        {
+          "series": 4,
+          "x": 1,
+          "y": 4,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Communications",
+      "type": "bar",
+      "values": [
+        {
+          "series": 5,
+          "x": 1,
+          "y": 3,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Construction",
+      "type": "bar",
+      "values": [
+        {
+          "series": 6,
+          "x": 1,
+          "y": 2,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Education",
+      "type": "bar",
+      "values": [
+        {
+          "series": 7,
+          "x": 1,
+          "y": 3,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Electronics",
+      "type": "bar",
+      "values": [
+        {
+          "series": 8,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Entertainment",
+      "type": "bar",
+      "values": [
+        {
+          "series": 9,
+          "x": 1,
+          "y": 4,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Environmental",
+      "type": "bar",
+      "values": [
+        {
+          "series": 10,
+          "x": 1,
+          "y": 3,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Finance",
+      "type": "bar",
+      "values": [
+        {
+          "series": 11,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Insurance",
+      "type": "bar",
+      "values": [
+        {
+          "series": 12,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Machinery",
+      "type": "bar",
+      "values": [
+        {
+          "series": 13,
+          "x": 1,
+          "y": 2,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Not For Profit",
+      "type": "bar",
+      "values": [
+        {
+          "series": 14,
+          "x": 1,
+          "y": 4,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Recreation",
+      "type": "bar",
+      "values": [
+        {
+          "series": 15,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Retail",
+      "type": "bar",
+      "values": [
+        {
+          "series": 16,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Shipping",
+      "type": "bar",
+      "values": [
+        {
+          "series": 17,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Technology",
+      "type": "bar",
+      "values": [
+        {
+          "series": 18,
+          "x": 1,
+          "y": 1,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Telecommunications",
+      "type": "bar",
+      "values": [
+        {
+          "series": 19,
+          "x": 1,
+          "y": 4,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Transportation",
+      "type": "bar",
+      "values": [
+        {
+          "series": 20,
+          "x": 1,
+          "y": 2,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Utilities",
+      "type": "bar",
+      "values": [
+        {
+          "series": 21,
+          "x": 1,
+          "y": 5,
+          "y0": 0
+        }
+      ]
+    },
+    {
+      "key": "Other",
+      "type": "bar",
+      "values": [
+        {
+          "series": 22,
+          "x": 1,
+          "y": 2,
+          "y0": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,336 @@
+<!--
+/*
+ * Your installation or use of this SugarCRM file is subject to the applicable
+ * terms available at
+ * http://support.sugarcrm.com/06_Customer_Center/10_Master_Subscription_Agreements/.
+ * If you do not agree to all of the applicable terms or do not have the
+ * authority to bind the entity as an authorized representative, then do not
+ * install or use this SugarCRM file.
+ *
+ * Copyright (C) SugarCRM Inc. All rights reserved.
+ */
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=320">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Multibar Chart</title>
+  <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
+  <link rel="stylesheet/less" type="text/css" href="less/styles.less">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.3/less.min.js" type="text/javascript"></script>
+</head>
+<body class="full-screen">
+  <div class="sc-demo">
+    <div class="page-header">
+      <h2>Multibar Chart</h2>
+    </div>
+    <div class="row-fluid">
+      <div class="span3 sc-options">
+        <div class="option-row">
+          <span>Data File</span><br>
+          <select id="chartData">
+            <option value="multibar_data" selected="selected">Forecasting for Q1</option>
+            <option value="multibar_data_color">Forecasting for Q2 (color data)</option>
+            <option value="multibar_data_negative">Forecasting for Q1 (negative)</option>
+            <option value="multibar_data_wide">Opportunities by Industry (wide)</option>
+            <option value="multibar_data_baseline">Opportunities Won/Lost by Industry (baseline)</option>
+            <option value="multibar_data_opportunities">All Opportunities By Lead Source By Outcome</option>
+            <option value="multibar_data_long">Accounts by Type by Industry</option>
+            <option value="multibar_data_short">Apples or Oranges</option>
+            <option value="multibar_data_raw">Raw Report Data</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <span>Orientation</span><br>
+          <label><input type="radio" name="orientation" value="vertical" checked="checked"> Vertical</label>
+          <label><input type="radio" name="orientation" value="horizontal"> Horizontal</label>
+        </div>
+        <div class="option-row">
+          <span>Color Model</span><br>
+          <label><input type="radio" name="color" value="default" checked="checked"> Default</label>
+          <label><input type="radio" name="color" value="class"> Class</label>
+          <label><input type="radio" name="color" value="graduated"> Graduated</label>
+        </div>
+        <div class="option-row">
+          <span>Show Values</span><br>
+          <select name="show_values">
+            <option value="0">None</option>
+            <option value="1">Yes</option>
+            <option value="start">Start</option>
+            <option value="middle" selected="selected">Middle</option>
+            <option value="end">End</option>
+            <option value="top">Top</option>
+            <option value="total">Total</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <span>Enable Scroll</span><br>
+          <label><input type="radio" name="scrollable" value="no"> No</label>
+          <label><input type="radio" name="scrollable" value="yes" checked="checked"> Yes</label>
+        </div>
+        <div class="option-row">
+          <span>Direction</span><br>
+          <label><input type="radio" name="direction" value="ltr" checked="checked"> LTR</label>
+          <label><input type="radio" name="direction" value="rtl"> RTL</label>
+        </div>
+        <div class="option-row">
+          <span>Show Axes Labels</span><br>
+          <label><input type="radio" name="show_labels" value="yes" checked="checked"> Yes</label>
+          <label><input type="radio" name="show_labels" value="no"> No</label>
+        </div>
+        <div class="option-row">
+          <span>Tick Display Methods</span><br>
+          <label><input type="checkbox" name="tick_display" value="wrap" checked="checked"> Wrap</label>
+          <label><input type="checkbox" name="tick_display" value="stagger" checked="checked"> Stagger</label>
+          <label><input type="checkbox" name="tick_display" value="rotate" checked="checked"> Rotate</label>
+        </div>
+      </div>
+      <div class="span9">
+        <div id="chart1" class="sc-chart sc-chart-multibar" style="height:600px">
+          <svg></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="js/jquery-ui.min.js"></script>
+<script src="js/translate-data.js"></script>
+<script src="js/cookie-monster.min.js"></script>
+<script src="js/micro-query.js"></script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.10/d3.min.js"></script>
+<script src="../sucrose.js"></script>
+<script src="../src/utils.js"></script>
+<script src="../src/models/scroll.js"></script>
+<script src="../src/models/axis.js"></script>
+<script src="../src/models/legend.js"></script>
+<script src="../src/models/multiBar.js"></script>
+<script src="../src/models/multiBarChart.js"></script>
+
+<script>
+    var file = window.uQuery('file', /[a-z0-9_]+/i) || monster.get('file'),
+        $file = $('#chartData');
+    if (file) {
+      $file.val([file]);
+    }
+    file = $file.val();
+    monster.set('file', file);
+
+    var color = window.uQuery('color', /[a-z0-9_]+/i) || monster.get('color'),
+        $color = $('input[type="radio"][name="color"]'),
+        colorLength = 0;
+    if (color) {
+      $color.val([color]);
+    }
+    color = $color.filter(':checked').val() || 'default';
+    monster.set('color', color);
+
+    var direction = window.uQuery('direction', /rtl|ltr/i) || monster.get('direction'),
+        $direction = $('input[type="radio"][name="direction"]');
+    if (direction) {
+      $direction.val([direction]);
+    }
+    direction = $direction.filter(':checked').val() || 'ltr';
+    monster.set('direction', direction);
+    $('html').css('direction', direction);
+
+    var tickDisplay = window.uQuery('tick_display', /wrap|stagger|rotate/i) || monster.get('tick_display'),
+        $tickDisplay = $('input[type="checkbox"][name="tick_display"]'),
+        wrapTicks = true,
+        staggerTicks = true,
+        rotateTicks = true;
+    if (tickDisplay) {
+      $tickDisplay.prop('checked', function() {
+        return $.inArray($(this).attr('value'), tickDisplay) !== -1;
+      });
+    }
+    tickDisplay = $tickDisplay.filter(':checked').serializeArray().map(function(d) {
+      return d.value;
+    });
+    monster.set('tick_display', tickDisplay);
+    wrapTicks = $.inArray('wrap', tickDisplay) !== -1;
+    staggerTicks = $.inArray('stagger', tickDisplay) !== -1;
+    rotateTicks = $.inArray('rotate', tickDisplay) !== -1;
+
+    var showLabels = window.uQuery('show_labels', /true|false/i) || monster.get('show_labels'),
+        $showLabels = $('input[type="radio"][name="show_labels"]'),
+        yAxisLabel = 'Y-axis label',
+        xAxisLabel = 'X-axis label';
+    if (showLabels) {
+      $showLabels.val([showLabels]);
+    }
+    showLabels = $showLabels.filter(':checked').val() || 'yes';
+    monster.set('show_labels', showLabels);
+
+    var orientation = window.uQuery('orientation', /horizontal|vertical/i) || monster.get('orientation'),
+        $orientation = $('input[type="radio"][name="orientation"]');
+    if (orientation) {
+      $orientation.val([orientation]);
+    }
+    orientation = $orientation.filter(':checked').val() || 'vertical';
+    monster.set('orientation', orientation);
+
+    var showValues = window.uQuery('show_values', /true|false/i) || monster.get('show_values'),
+        $showValues = $('[name="show_values"]');
+    if (showValues) {
+      $showValues.val(showValues);
+    }
+    showValues = $showValues.val() || 0;
+    monster.set('show_values', showValues);
+
+    var allowScroll = window.uQuery('scrollable', /true|false/i) || monster.get('scrollable'),
+        $allowScroll = $('input[type="radio"][name="scrollable"]');
+    if (allowScroll) {
+      $allowScroll.val([allowScroll]);
+    }
+    allowScroll = $allowScroll.filter(':checked').val() || 'no';
+    monster.set('scrollable', allowScroll);
+
+
+    var chartData = [];
+
+    var chart = sucrose.models.multiBarChart()
+          .showTitle(true)
+          .showControls(true)
+          .showLegend(true)
+          .tooltips(true)
+          .stacked(true)
+          // .margin({top: 0, right: 0, bottom: 0, left: 0})
+          .direction(direction)
+          .wrapTicks(wrapTicks)
+          .staggerTicks(staggerTicks)
+          .rotateTicks(rotateTicks)
+          .showValues(showValues === '1' ? true : showValues === '0' ? false : showValues)
+          .vertical(orientation === 'vertical' ? true : false)
+          .allowScroll(allowScroll === 'no' ? false : true)
+          // .valueFormat(function(d) {
+          //   var si = d3.formatPrefix(d, 2);
+          //   return d3.round(si.scale(d), 2) + si.symbol;
+          // })
+          .tooltipContent(function(key, x, y, e, graph) {
+            return '<p>Outcome: <b>' + key + '</b></p>' +
+                   '<p>Percentage: <b>' + x + '%</b></p>' +
+                   '<p>Amount: <b>$' + parseInt(y) + 'K</b></p>';
+          })
+          .seriesClick(function(data, eo, chart) {
+            chart.dataSeriesActivate(eo);
+          })
+          .overflowHandler(function(data) {
+            var b = $('body');
+            b.scrollTop(b.scrollTop() + data);
+          });
+
+    chart.yAxis
+      .axisLabel(showLabels === 'yes' ? yAxisLabel : '');
+
+    chart.xAxis
+      .axisLabel(showLabels === 'yes' ? xAxisLabel : '');
+
+    d3.select('#chart1')
+        .on('click', chart.dispatch.chartClick);
+
+    $('#chart1').resizable({
+      maxHeight: 600,
+      minHeight: 200,
+      minWidth: 200
+    });
+
+    $('#chart1').resize(function(d) {
+      chart.update();
+    });
+
+    function loadData(file) {
+      d3.json('data/' + file + '.json', function(data) {
+        chartData = data.data ? data : translateDataToD3(data, 'barChart', 'basic');
+
+        colorLength = chartData.data.length;
+
+        chart
+          .colorData(color, {c1: '#e8e2ca', c2: '#3e6c0a', l: colorLength});
+
+        d3.select('#chart1 svg')
+            .datum(chartData)
+            .call(chart);
+
+        sucrose.utils.windowResize(chart.update);
+      });
+    }
+
+    loadData(file);
+
+    $file.on('change', function(d) {
+      file = $file.val();
+      monster.set('file', file);
+      loadData(file);
+    });
+    $color.on('click', function(d) {
+      color = $color.filter(':checked').val();
+      monster.set('color', color);
+      chart
+        .colorData(color, {c1: '#e8e2ca', c2: '#3e6c0a', l: colorLength});
+      chart.update();
+    });
+    $direction.on('change', function(d) {
+      direction = $direction.filter(':checked').val();
+      monster.set('direction', direction);
+      $('html').css('direction', direction);
+      chart
+        .direction(direction);
+      chart.update();
+    });
+    $showLabels.on('change', function(d) {
+      showLabels = $showLabels.filter(':checked').val();
+      monster.set('show_labels', showLabels);
+      chart.xAxis
+        .axisLabel(showLabels === 'yes' ? xAxisLabel : null);
+      chart.yAxis
+        .axisLabel(showLabels === 'yes' ? yAxisLabel : null);
+      chart.update();
+    });
+    $tickDisplay.on('change', function(d) {
+      tickDisplay = $tickDisplay.filter(':checked').serializeArray().map(function(d) {
+        return d.value;
+      });
+      wrapTicks = $.inArray('wrap', tickDisplay) !== -1;
+      staggerTicks = $.inArray('stagger', tickDisplay) !== -1;
+      rotateTicks = $.inArray('rotate', tickDisplay) !== -1;
+      monster.set('tick_display', tickDisplay);
+      chart
+        .wrapTicks(wrapTicks)
+        .staggerTicks(staggerTicks)
+        .rotateTicks(rotateTicks);
+      chart.update();
+    });
+    $orientation.on('click', function(d) {
+      orientation = $orientation.filter(':checked').val();
+      monster.set('orientation', orientation);
+      chart
+        .vertical(orientation === 'vertical' ? true : false);
+      chart.update();
+    });
+    $showValues.on('change', function(d) {
+      showValues = $showValues.val();
+      monster.set('show_values', showValues);
+      chart
+        .showValues(showValues === '1' ? true : showValues === '0' ? false : showValues);
+      chart.update();
+    });
+    $allowScroll.on('change', function(d) {
+      allowScroll = $allowScroll.filter(':checked').val();
+      monster.set('scrollable', allowScroll);
+      chart
+        .allowScroll(allowScroll === 'no' ? false : true);
+      d3.select('#chart1 svg')
+          .datum(null)
+          .call(chart);
+      d3.select('#chart1 svg')
+          .datum(chartData)
+          .call(chart);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+//
+// Grid system
+// --------------------------------------------------
+
+
+// Fixed (940px)
+.spanXCore (@index) when (@index > 0) {
+  .span@{index} {
+    width: (@gridColumnWidth * @index) + (@gridGutterWidth * (@index - 1));
+  }
+  .spanXCore(@index - 1);
+}
+.spanXCore (0) {}
+
+.offsetXCore (@index) when (@index > 0) {
+  .offset@{index} {
+    margin-left: (@gridColumnWidth * @index) + (@gridGutterWidth * (@index + 1));
+  }
+  .offsetXCore(@index - 1);
+}
+.offsetXCore (0) {}
+
+.row {
+  margin-left: @gridGutterWidth * -1;
+  .clearfix();
+}
+
+[class*="span"] {
+  float: left;
+  min-height: 1px; // prevent collapsing columns
+  margin-left: @gridGutterWidth;
+}
+
+// Set the container width, and override it for fixed navbars in media queries
+.container,
+.navbar-static-top .container,
+.navbar-fixed-top .container,
+.navbar-fixed-bottom .container {
+  width: (@gridColumnWidth * @gridColumns) + (@gridGutterWidth * (@gridColumns - 1));
+}
+
+// generate .spanX and .offsetX
+.spanXCore (@gridColumns);
+.offsetXCore (@gridColumns);
+
+// Fluid (940px)
+.spanXFluid (@index) when (@index > 0) {
+  .span@{index} {
+    width: (@fluidGridColumnWidth * @index) + (@fluidGridGutterWidth * (@index - 1));
+  }
+  .spanXFluid(@index - 1);
+}
+.spanXFluid (0) {}
+
+.offsetXFluid (@index) when (@index > 0) {
+  .offset@{index} {
+    margin-left: (@fluidGridColumnWidth * @index) + (@fluidGridGutterWidth * (@index - 1)) + (@fluidGridGutterWidth*2);
+  }
+  .offset@{index}:first-child {
+    margin-left: (@fluidGridColumnWidth * @index) + (@fluidGridGutterWidth * (@index - 1)) + (@fluidGridGutterWidth);
+  }
+  .offsetXFluid(@index - 1);
+}
+.offsetXFluid (0) {}
+
+.row-fluid {
+  width: 100%;
+  .clearfix();
+  [class*="span"] {
+    .input-block-level();
+    float: left;
+    margin-left: @fluidGridGutterWidth;
+  }
+  [class*="span"]:first-child {
+    margin-left: 0;
+  }
+
+  // Space grid-sized controls properly if multiple per line
+  .controls-row [class*="span"] + [class*="span"] {
+    margin-left: @fluidGridGutterWidth;
+  }
+
+  // generate .spanX and .offsetX
+  .spanXFluid (@gridColumns);
+  .offsetXFluid (@gridColumns);
+}
+
+
+// Reset utility classes due to specificity
+[class*="span"].hide,
+.row-fluid [class*="span"].hide {
+  display: none;
+}
+
+[class*="span"].pull-right,
+.row-fluid [class*="span"].pull-right {
+  float: right;
+}

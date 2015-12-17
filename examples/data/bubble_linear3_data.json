@@ -1,0 +1,47 @@
+{
+  "data": [
+    {
+      "id": "1afd1901-6ad3-16ad-f566-559c9fd08ec1",
+      "x": "2015-07-15",
+      "y": 6000,
+      "shape": "circle",
+      "account_name": "ChartsAcc",
+      "assigned_user_name": "cukes cukesLName",
+      "sales_stage": "Needs Analysis",
+      "sales_stage_short": "Needs Analysis",
+      "probability": 25,
+      "base_amount": 6000,
+      "currency_symbol": "$"
+    },
+    {
+      "id": "1f4a58b0-a5f2-91c9-35ce-559c9ff49b50",
+      "x": "2015-08-15",
+      "y": 4000,
+      "shape": "circle",
+      "account_name": "ChartsAcc",
+      "assigned_user_name": "cukes cukesLName",
+      "sales_stage": "Negotiation/Review",
+      "sales_stage_short": "Negotiation/Review",
+      "probability": 80,
+      "base_amount": 4000,
+      "currency_symbol": "$"
+    },
+    {
+      "id": "2a2bdd1d-93b2-de9c-876b-559c9fdec142",
+      "x": "2015-09-15",
+      "y": 2000,
+      "shape": "circle",
+      "account_name": "ChartsAcc",
+      "assigned_user_name": "cukes cukesLName",
+      "sales_stage": "Closed Lost",
+      "sales_stage_short": "Closed Lost",
+      "probability": 0,
+      "base_amount": 2000,
+      "currency_symbol": "$"
+    }
+  ],
+  "properties": {
+    "title": "Top 10 Sales",
+    "value": 3
+  }
+}

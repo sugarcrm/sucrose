@@ -1,0 +1,125 @@
+{
+  "properties": {
+    "title": "All Opportunities By Lead Source By Outcome",
+    "labels": [
+      {"group": 1, "l": "Unassigned"},
+      {"group": 2, "l": "Cold Call"},
+      {"group": 3, "l": "Existing Customer"},
+      {"group": 4, "l": "Self Generated"},
+      {"group": 5, "l": "Employee"},
+      {"group": 6, "l": "Partner"},
+      {"group": 7, "l": "Public Relations"},
+      {"group": 8, "l": "Direct Mail"},
+      {"group": 9, "l": "Conference"}
+    ],
+    "values": [
+      {"group": 1, "t": 150},
+      {"group": 2, "t": 145},
+      {"group": 3, "t": 25},
+      {"group": 4, "t": 25},
+      {"group": 5, "t": 160},
+      {"group": 6, "t": 50},
+      {"group": 7, "t": 50},
+      {"group": 8, "t": 75},
+      {"group": 9, "t": 50}
+    ]
+  },
+  "data": [
+    {
+      "key": "Prospecting",
+      "color": "#1f77b4",
+      "class": "sc-fill00",
+      "values": [
+        {"series": 0, "x": 1, "y": 0,  "y0": 0},
+        {"series": 0, "x": 2, "y": 0,  "y0": 0},
+        {"series": 0, "x": 3, "y": 0,  "y0": 0},
+        {"series": 0, "x": 4, "y": 0,  "y0": 0},
+        {"series": 0, "x": 5, "y": 50, "y0": 0},
+        {"series": 0, "x": 6, "y": 0,  "y0": 0},
+        {"series": 0, "x": 7, "y": 0,  "y0": 0},
+        {"series": 0, "x": 8, "y": 25, "y0": 0},
+        {"series": 0, "x": 9, "y": 0,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Qualification",
+      "color": "#ff7f0e",
+      "class": "sc-fill01",
+      "values": [
+        {"series": 1, "x": 1, "y": 0,  "y0": 0},
+        {"series": 1, "x": 2, "y": 10, "y0": 0},
+        {"series": 1, "x": 3, "y": 25, "y0": 0},
+        {"series": 1, "x": 4, "y": 25, "y0": 0},
+        {"series": 1, "x": 5, "y": 0,  "y0": 0},
+        {"series": 1, "x": 6, "y": 0,  "y0": 0},
+        {"series": 1, "x": 7, "y": 50, "y0": 0},
+        {"series": 1, "x": 8, "y": 0,  "y0": 0},
+        {"series": 1, "x": 9, "y": 0,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Needs Analysis",
+      "color": "#2ca02c",
+      "class": "sc-fill02",
+      "values": [
+        {"series": 2, "x": 1, "y": 0,  "y0": 0},
+        {"series": 2, "x": 2, "y": 0,  "y0": 0},
+        {"series": 2, "x": 3, "y": 0,  "y0": 0},
+        {"series": 2, "x": 4, "y": 0,  "y0": 0},
+        {"series": 2, "x": 5, "y": 0,  "y0": 0},
+        {"series": 2, "x": 6, "y": 50, "y0": 0},
+        {"series": 2, "x": 7, "y": 0,  "y0": 0},
+        {"series": 2, "x": 8, "y": 0,  "y0": 0},
+        {"series": 2, "x": 9, "y": 0,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Value Proposition",
+      "color": "#d62728",
+      "class": "sc-fill03",
+      "values": [
+        {"series": 3, "x": 1, "y": 0,  "y0": 0},
+        {"series": 3, "x": 2, "y": 75, "y0": 0},
+        {"series": 3, "x": 3, "y": 0,  "y0": 0},
+        {"series": 3, "x": 4, "y": 0,  "y0": 0},
+        {"series": 3, "x": 5, "y": 50, "y0": 0},
+        {"series": 3, "x": 6, "y": 0,  "y0": 0},
+        {"series": 3, "x": 7, "y": 0,  "y0": 0},
+        {"series": 3, "x": 8, "y": 50, "y0": 0},
+        {"series": 3, "x": 9, "y": 0,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Id. Decision Makers",
+      "color": "#9467bd",
+      "class": "sc-fill04",
+      "values": [
+        {"series": 4, "x": 1, "y": 0,  "y0": 0},
+        {"series": 4, "x": 2, "y": 60, "y0": 0},
+        {"series": 4, "x": 3, "y": 0,  "y0": 0},
+        {"series": 4, "x": 4, "y": 0,  "y0": 0},
+        {"series": 4, "x": 5, "y": 10, "y0": 0},
+        {"series": 4, "x": 6, "y": 0,  "y0": 0},
+        {"series": 4, "x": 7, "y": 0,  "y0": 0},
+        {"series": 4, "x": 8, "y": 0,  "y0": 0},
+        {"series": 4, "x": 9, "y": 0,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Perception Analysis",
+      "color": "#e377c2",
+      "class": "sc-fill05",
+      "values": [
+        {"series": 5, "x": 1, "y": 150,"y0": 0},
+        {"series": 5, "x": 2, "y": 0,  "y0": 0},
+        {"series": 5, "x": 3, "y": 0,  "y0": 0},
+        {"series": 5, "x": 4, "y": 0,  "y0": 0},
+        {"series": 5, "x": 5, "y": 50, "y0": 0},
+        {"series": 5, "x": 6, "y": 0,  "y0": 0},
+        {"series": 5, "x": 7, "y": 0,  "y0": 0},
+        {"series": 5, "x": 8, "y": 0,  "y0": 0},
+        {"series": 5, "x": 9, "y": 50, "y0": 0}
+      ]
+    }
+  ]
+}

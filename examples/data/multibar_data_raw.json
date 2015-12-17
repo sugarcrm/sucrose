@@ -1,0 +1,287 @@
+{
+  "properties": [
+    {
+      "title": "Total is 200",
+      "subtitle": "",
+      "type": "bar chart",
+      "legend": "on",
+      "labels": "value",
+      "print": "on",
+      "thousands": ""
+    }
+  ],
+  "label": [
+    "",
+    "Cold Call",
+    "Existing Customer",
+    "Self Generated",
+    "Employee",
+    "Partner",
+    "Public Relations",
+    "Direct Mail",
+    "Conference",
+    "Trade Show",
+    "Web Site",
+    "Word of mouth",
+    "Email",
+    "Campaign",
+    "Support Portal User Registration",
+    "Other"
+  ],
+  "color": [
+    "#8c2b2b",
+    "#468c2b",
+    "#2b5d8c",
+    "#cd5200",
+    "#e6bf00",
+    "#7f3acd",
+    "#00a9b8",
+    "#572323",
+    "#004d00",
+    "#000087",
+    "#e48d30",
+    "#9fba09",
+    "#560066",
+    "#009f92",
+    "#b36262",
+    "#38795c",
+    "#3D3D99",
+    "#99623d",
+    "#998a3d",
+    "#994e78",
+    "#3d6899",
+    "#CC0000",
+    "#00CC00",
+    "#0000CC",
+    "#cc5200",
+    "#ccaa00",
+    "#6600cc",
+    "#005fcc"
+  ],
+  "values": [
+    {
+      "label": [
+        ""
+      ],
+      "values": [
+        12
+      ],
+      "valuelabels": [
+        "12"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "ColdCallasdfasdfasdfasdfasdfsdfafsd"
+      ],
+      "values": [
+        9
+      ],
+      "valuelabels": [
+        "9"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Existing Customer"
+      ],
+      "values": [
+        11
+      ],
+      "valuelabels": [
+        "11"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Self Generated"
+      ],
+      "values": [
+        11
+      ],
+      "valuelabels": [
+        "11"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Employee"
+      ],
+      "values": [
+        12
+      ],
+      "valuelabels": [
+        "12"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Partner"
+      ],
+      "values": [
+        16
+      ],
+      "valuelabels": [
+        "16"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Public Relations"
+      ],
+      "values": [
+        11
+      ],
+      "valuelabels": [
+        "11"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Direct Mail"
+      ],
+      "values": [
+        18
+      ],
+      "valuelabels": [
+        "18"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Conference"
+      ],
+      "values": [
+        17
+      ],
+      "valuelabels": [
+        "17"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Trade Show"
+      ],
+      "values": [
+        10
+      ],
+      "valuelabels": [
+        "10"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Web Site"
+      ],
+      "values": [
+        14
+      ],
+      "valuelabels": [
+        "14"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Word of mouth"
+      ],
+      "values": [
+        15
+      ],
+      "valuelabels": [
+        "15"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Email"
+      ],
+      "values": [
+        10
+      ],
+      "valuelabels": [
+        "10"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Campaign"
+      ],
+      "values": [
+        10
+      ],
+      "valuelabels": [
+        "10"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Support Portal User Registration"
+      ],
+      "values": [
+        8
+      ],
+      "valuelabels": [
+        "8"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
+        "Other"
+      ],
+      "values": [
+        16
+      ],
+      "valuelabels": [
+        "16"
+      ],
+      "links": [
+        ""
+      ]
+    }
+  ]
+}

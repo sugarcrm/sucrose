@@ -1,0 +1,17 @@
+{
+  "properties": {
+    "title": "Pipeline total is $675k",
+    "total": 675,
+    "scale": 1000,
+    "units": "$"
+  },
+  "data": [
+    {
+      "key": "asdfasdfasdfasdfasdfasdfasdfasdf",
+      "count": 1,
+      "values": [
+        {"series": 0, "x": 0, "y": 100, "y0": 0}
+      ]
+    }
+  ]
+}

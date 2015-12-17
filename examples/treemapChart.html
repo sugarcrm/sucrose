@@ -1,0 +1,139 @@
+<!--
+/*
+ * Your installation or use of this SugarCRM file is subject to the applicable
+ * terms available at
+ * http://support.sugarcrm.com/06_Customer_Center/10_Master_Subscription_Agreements/.
+ * If you do not agree to all of the applicable terms or do not have the
+ * authority to bind the entity as an authorized representative, then do not
+ * install or use this SugarCRM file.
+ *
+ * Copyright (C) SugarCRM Inc. All rights reserved.
+ */
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=320">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Treemap Chart</title>
+  <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
+  <link rel="stylesheet/less" type="text/css" href="less/styles.less">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.3/less.min.js" type="text/javascript"></script>
+</head>
+<body class="full-screen">
+  <div class="sc-demo">
+    <div class="page-header">
+      <h2>Treemap Chart</h2>
+    </div>
+    <div class="sc-options row-fluid">
+      <div>
+        <span>Data File</span><br>
+        <select id="chartData">
+          <option value="flare" selected="selected">Flare</option>
+          <!-- <option value="treemap_data">Opportunities</option> -->
+        </select>
+      </div>
+      <div>
+        <span>Color Model</span><br>
+        <label><input type="radio" name="color" value="default" checked="checked"> Default</label>
+        <label><input type="radio" name="color" value="class"> Class</label>
+        <label><input type="radio" name="color" value="graduated"> Graduated</label>
+      </div>
+      <div>
+        <span>Direction</span><br>
+        <label><input type="radio" name="direction" value="ltr" checked="checked"> LTR</label>
+        <label><input type="radio" name="direction" value="rtl"> RTL</label>
+      </div>
+    </div>
+
+    <div id="chart1" class="sc-chart sc-treemap" style="height:600px">
+      <svg></svg>
+    </div>
+
+  </div>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.10/d3.min.js"></script>
+<script src="../sucrose.js"></script>
+<script src="../src/models/treemap.js"></script>
+<script src="../src/models/treemapChart.js"></script>
+
+<script>
+
+    var jsonFile = window.location.href.match(/(\?|&)file=([a-z_]*)(&|$)/),
+        selectedFile = $('#chartData');
+    if (jsonFile) {
+      selectedFile.val([jsonFile[2]]);
+    }
+    var color = window.location.href.match(/(\?|&)color=([a-z]+)(&|$)/),
+        selectedColor = $('input[type="radio"][name="color"]'),
+        colorLength = 0;
+    if (color) {
+      selectedColor.val([color[2]]);
+    }
+    var direction = window.location.href.match(/(\?|&)direction=([0-9a-z]+)(&|$)/),
+        selectedDirection = $('input[type="radio"][name="direction"]');
+    if (direction) {
+      selectedDirection.val([direction[2]]);
+    }
+
+    jsonFile = selectedFile.val();
+    color = selectedColor.filter(':checked').val() || 'default',
+    direction = selectedDirection.filter(':checked').val() || 'ltr';
+    $('html').css('direction', direction);
+
+    var chartData = [];
+
+    var chart = sucrose.models.treemapChart()
+          .leafClick(function(d) {
+              alert('leaf clicked');
+          })
+          .showTitle(false)
+          .tooltips(true)
+          .direction(direction)
+          .getSize(function(d) { return d.size; });
+
+    function loadData(file) {
+      d3.json('data/' + file + '.json', function(data) {
+        chartData = data;
+
+        chart
+          .colorData(color, {c1: '#e8e2ca', c2: '#3e6c0a'});
+
+        d3.select('#chart1 svg')
+            .datum(null)
+            .call(chart);
+        d3.select('#chart1 svg')
+            .datum(data)
+            .call(chart);
+
+        sucrose.utils.windowResize(chart.update);
+      });
+    }
+
+    loadData(jsonFile);
+
+    selectedFile.on('change', function(d) {
+      jsonFile = selectedFile.val();
+      loadData(jsonFile);
+    });
+    selectedColor.on('click', function(d) {
+      color = selectedColor.filter(':checked').val();
+      chart
+        .colorData(color, {c1: '#e8e2ca', c2: '#3e6c0a', l: colorLength});
+      loadData(jsonFile);
+
+    });
+    selectedDirection.on('change', function(d) {
+      direction = selectedDirection.filter(':checked').val();
+      $('html').css('direction', direction);
+      chart
+        .direction(direction);
+      loadData(jsonFile);
+    });
+</script>
+</body>
+</html>
