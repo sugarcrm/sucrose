@@ -1,0 +1,32 @@
+/* MIXINS
+  ----------------*/
+
+.grayscale(@val) {
+  -webkit-filter: grayscale(@val);
+  -moz-filter: grayscale(@val);
+  -ms-filter: grayscale(@val);
+  -o-filter: grayscale(@val);
+  filter: grayscale(@val);
+}
+
+.brightness(@val) {
+  -webkit-filter: brightness(@val);
+  -moz-filter: brightness(@val);
+  -ms-filter: brightness(@val);
+  -o-filter: brightness(@val);
+  filter: brightness(@val);
+}
+
+
+// Opacity
+.opacity(@opacity) {
+  opacity: @opacity / 100;
+  filter: ~"alpha(opacity=@{opacity})";
+}
+
+// Border Radius
+.border-radius(@radius) {
+  -webkit-border-radius: @radius;
+     -moz-border-radius: @radius;
+          border-radius: @radius;
+}

@@ -1,0 +1,60 @@
+/**********
+*  Line Plus Bar
+*/
+
+.sc-linePlusBar .sc-bar rect {
+  fill-opacity: .75;
+}
+
+.sc-linePlusBar .sc-bar rect:hover {
+  fill-opacity: 1;
+}
+
+/**********
+* Pareto
+*/
+
+.sc-multiBarWithLegend .sc-line .sc-scatter .sc-groups .sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+  stroke-width: 2px;
+}
+
+.sc-pareto {
+  .sc-quotaWrap line {
+    opacity: .8;
+    stroke: #444;
+    stroke-width: 4px;
+    fill: none;
+    /*stroke-dasharray: '20, 5'; dashed lines must be defined in JS*/
+  }
+  .sc-quotaWrap line.sc-quotaLineTarget {
+    stroke: #777;
+  }
+  .sc-quotaWrap line.sc-quotaLineBackground {
+    opacity: 0;
+    stroke-width: 12px;
+  }
+  .sc-y.sc-axis .domain {
+    display: none;
+  }
+  .sc-y.sc-axis text.sc-quotaValue,
+  .sc-y.sc-axis text.sc-targetQuotaValue {
+    font-weight: bold;
+  }
+  .sc-multibar .sc-groups rect {
+    stroke-opacity: 1;
+    stroke-width: 2px;
+    stroke: @white;
+    fill-opacity: 0.85;
+  }
+  .sc-line .sc-groups path {
+    stroke-width: 4px;
+  }
+  .sc-linesWrap1 .sc-line .sc-groups path {
+    stroke-width: 6px;
+  }
+  .sc-linesWrap2 .sc-scatter .sc-groups circle {
+    stroke: @white;
+  }
+}

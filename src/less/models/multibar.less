@@ -1,0 +1,52 @@
+/**********
+*  MultiBars
+*/
+
+.sc-multibar .sc-groups {
+  rect {
+    stroke-opacity: 1;
+    stroke-width: 2px;
+    stroke: @white;
+  }
+  .sc-group rect:hover {
+    fill-opacity: .75;
+  }
+}
+
+.sc-texture {
+  fill-opacity: 0;
+  pointer-events: none;
+}
+.sc-texture:hover {
+  fill-opacity: 0;
+}
+.sc-active .sc-texture {
+  fill-opacity: 1;
+}
+.texture-line {
+  stroke-opacity: .5;
+  stroke-width: 1px;
+}
+
+.sc-inactive {
+  polygon,
+  rect {
+    fill-opacity: 1;
+  }
+  polygon:hover,
+  rect:hover {
+    fill-opacity: .75;
+  }
+  .sc-texture {
+    fill-opacity: .5;
+    mask: none !important;
+    fill: #fff !important;
+  }
+}
+
+.calc-text-strings,
+.sc-multibar .sc-groups text {
+  fill: rgba(0,0,0,1);
+  stroke: rgba(0,0,0,0);
+  pointer-events: none;
+}
