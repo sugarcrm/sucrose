@@ -1,0 +1,35 @@
+{
+  "name": "sucrose",
+  "version": "0.0.1",
+  "description": "Interactive Charts for Business Applications",
+  "keywords": [
+    "charts",
+    "d3",
+    "visualization",
+    "svg",
+    "mobile",
+    "canvas"
+  ],
+  "homepage": "http://sucrose.io/",
+  "author": {
+    "name": "Henry Rogers",
+    "url": "https://github.com/hhrogersii"
+  },
+  "contributors": [
+    {
+      "name": "Travis Hubbard",
+      "url": "https://github.com/tshubbard"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sugarcrm/sucrose.git"
+  },
+  "devDependencies": {
+    "clean-css": "^3.4.8",
+    "less": "^2.5.3",
+    "uglify-js": "2.4.16",
+    "canvg": "git://github.com/gabelerner/canvg.git"
+  },
+  "license": "Apache-2.0"
+}
