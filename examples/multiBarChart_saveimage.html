@@ -19,8 +19,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Multibar Chart</title>
   <link rel="stylesheet" href="css/sucrose.css">
-  <link rel="stylesheet" href="css/styles.css">
-  <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.3/less.min.js" type="text/javascript"></script>
 </head>
 <body>
 
@@ -34,6 +32,7 @@
   <canvas id="sucrose-image-canvas" width="640" height="400" class="sucrose-image-canvas"></canvas>
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="js/saveSvgAsPng.js"></script>
 
 <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.10/d3.min.js"></script>
 <script src="../sucrose.js"></script>
@@ -43,10 +42,6 @@
 <script src="../src/models/multiBarChart.js"></script>
 
 <script>
-//https://developer.mozilla.org/en-US/docs/Web/API/Window.btoa
-//http://techslides.com/save-svg-as-an-image/
-//http://tutorials.jenkov.com/svg/svg-and-css.html
-//https://developer.mozilla.org/en-US/docs/Web/HTML/Canvas/Drawing_DOM_objects_into_a_canvas
 
     var chart = sucrose.models.multiBarChart()
           .showTitle(false)
@@ -83,8 +78,18 @@
 
         sucrose.utils.windowResize(chart.update);
 
-        $('#image-downloader').on('click', generateImage);
+        // $('#image-downloader').on('click', generateImage);
+        $('#image-downloader').on('click', function(){
+          var svg = $('#chart1 svg')[0];
+          saveSvgAsPng(svg, 'test.png');
+        });
     });
+
+    //https://developer.mozilla.org/en-US/docs/Web/API/Window.btoa
+    //http://techslides.com/save-svg-as-an-image/
+    //http://tutorials.jenkov.com/svg/svg-and-css.html
+    //https://developer.mozilla.org/en-US/docs/Web/HTML/Canvas/Drawing_DOM_objects_into_a_canvas
+    //http://spin.atomicobject.com/2014/01/21/convert-svg-to-png/
 
     function generateImage(e) {
         e.preventDefault();
