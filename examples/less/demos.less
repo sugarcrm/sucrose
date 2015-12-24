@@ -1,0 +1,370 @@
+
+/* DEMO CHARTS
+  ----------------*/
+
+.sc-demo {
+  width: 100%;
+  height: 100%;
+  padding: 60px 0 70px 12px;
+  .box-sizing(border-box);
+  h2 {
+    font-size: 24px;
+    float: left;
+    .sc-logo,
+    span {
+      vertical-align: top;
+    }
+    .sc-logo {
+      display: inline-block;
+      padding-top: 1px;
+    }
+    span {
+      text-shadow: #ddd 2px 2px 2px;
+    }
+  }
+  section {
+    clear: both;
+    height: calc(~"100% - 43px");
+    position: relative;
+    padding-right: 12px;
+    position: relative;
+  }
+}
+.sc-logo .cube path {
+  fill: #393939;
+  stroke: #fff;
+  stroke-width: 8px;
+}
+
+.sc-menu {
+  display: inline-block;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  line-height: 36px;
+  font-size: 11px;
+}
+
+.sc-chart-container,
+.sc-form-container {
+  height: 100%;
+  float: left;
+  box-sizing: border-box;
+  padding: 0 0 8px 0;
+}
+.sc-form-container {
+  width: 33%;
+  overflow: hidden;
+  padding-right: 12px;
+}
+
+.sc-chart-container {
+  width: 67%;
+  &.full-screen {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding-right: 12px;
+  }
+}
+.sc-container-header {
+  font-size: 0;
+  line-height: 0;
+  background-color: #eee;
+  border: 1px solid #ccc;
+  border-radius: 4px 4px 0 0;
+  span {
+    font-size: 14px;
+    line-height: 18px;
+  }
+  span,
+  button {
+    vertical-align: middle;
+  }
+  button {
+    float: right;
+    margin-right: 4px;
+  }
+}
+.sc-panel,
+.sc-tab {
+  padding: 4px 4px 4px 8px;
+  box-sizing: border-box;
+  color: #999;
+  button {
+    display: none;
+  }
+  &.active {
+    color: #333;
+    button {
+      display: inline-block;
+    }
+  }
+  &:not(.active):hover {
+    background: #ddd;
+    cursor: pointer;
+  }
+}
+.sc-tab {
+  width: 50%;
+  display: inline-block;
+  border-right: 1px solid #ccc;
+  &:last-child {
+    border: none;
+  }
+}
+.sc-options,
+.sc-chart {
+  height: calc(~"100% - 23px");
+  width: 100%;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  border-radius: 0 0 4px 4px;
+  box-shadow: #ddd 3px 3px 6px;
+  border-top: none;
+}
+.sc-options {
+  padding: 0px 8px 4px 0;
+  overflow: scroll;
+
+  .option-row {
+    padding: 4px;
+  }
+  span {
+    color: @grayLight;
+    font-size: 10px;
+    padding: 4px;
+  }
+  label {
+    display: inline-block;
+    margin-left: 4px;
+    height: 19px;
+    white-space: nowrap;
+  }
+  select {
+    margin-left: 4px;
+    max-width: 100%;
+  }
+  textarea {
+    width: 100%;
+    height: 150px;
+    padding: 8px;
+    margin-left: 4px;
+    border: 1px solid #aaa;
+    box-sizing: border-box;
+    color: #727272;
+  }
+}
+
+.sc-chart {
+  min-width: 100px;
+  min-height: 100px;
+  max-height: none;
+}
+.ui-resizable-e {
+  right: 0;
+}
+.ui-resizable-s {
+  bottom: 0;
+}
+.ui-icon-gripsmall-diagonal-se {
+  // background-image: url(../img/gripper.svg);
+  background: url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0" y="0" width="50px" height="50px" viewBox="0, 0, 50, 50"><g><path d="M24.5,48.5 L48.5,24.5" fill-opacity="0" stroke="#000000" stroke-width="3" style="shape-rendering: crispEdges;"/><path d="M0.5,48.5 L48.5,0.5" fill-opacity="0" stroke="#000000" stroke-width="3" style="shape-rendering: crispEdges;"/></g></svg>');
+  display: block;
+  text-indent: -9999px;
+  width: 8px;
+  height: 8px;
+  background-size: 8px;
+}
+
+/* Chart icons
+-------------------------------------------------- */
+.chart-icon-container {
+  display: inline-block;
+  float: right;
+  margin-right: 12px;
+}
+.chart-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  padding: 4px;
+  border: 1px solid transparent;
+  &:hover {
+    background-color: #efefef;
+  }
+  &.active {
+    border: 1px dotted #888;
+  }
+}
+.chart-icon svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+/* POPOVER DOCS
+-------------------------------------------------- */
+.popover-well {
+  min-height: 160px;
+}
+.popover-well .popover {
+  display: block;
+}
+.popover-well .popover-wrapper {
+  width: 50%;
+  height: 160px;
+  float: left;
+  margin-left: 55px;
+  position: relative;
+}
+.popover-well .popover-menu-wrapper {
+  height: 80px;
+}
+
+/* Color swatches on LESS docs page
+-------------------------------------------------- */
+/* Sets the width of the td */
+.swatch-col,
+.hex {
+  width: 30px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 30px;
+  height: 20px;
+  margin: -6px 0;
+  .border-radius(3px);
+  padding: 0;
+}
+
+.swatch-bordered {
+  width: 28px;
+  height: 18px;
+  border: 1px solid #ddd;
+}
+
+.cell-swatch {
+  display: block;
+  padding: 8px;
+  background-color: #c3deb7;
+  border-bottom: 1px solid @grayLighter;
+  span {
+    display: inline-block;
+    line-height: 18px;
+    width: 100%;
+    background-color: #a0c5e8;
+  }
+}
+
+
+/* Google Pretty Print
+-------------------------------------------------- */
+.com { color: #93a1a1; }
+.lit { color: #195f91; }
+.pun, .opn, .clo { color: #93a1a1; }
+.fun { color: #dc322f; }
+.str, .atv { color: #D14; }
+.kwd, .linenums .tag { color: #1e347b; }
+.typ, .atn, .dec, .var { color: teal; }
+.pln { color: #48484c; }
+
+.prettyprint {
+  padding: 8px;
+  background-color: #f7f7f9;
+  border: 1px solid #e1e1e8;
+}
+.prettyprint.linenums {
+  -webkit-box-shadow: inset 40px 0 0 #fbfbfc, inset 41px 0 0 #ececf0;
+     -moz-box-shadow: inset 40px 0 0 #fbfbfc, inset 41px 0 0 #ececf0;
+          box-shadow: inset 40px 0 0 #fbfbfc, inset 41px 0 0 #ececf0;
+}
+
+/* Specify class=linenums on a pre to get line numbering */
+ol.linenums {
+  margin: 0 0 0 33px; /* IE indents via margin-left */
+}
+ol.linenums li {
+  padding-left: 12px;
+  color: #bebec5;
+  line-height: 18px;
+  text-shadow: 0 1px 0 @white;
+}
+
+/* Subar cube
+-------------------------------------------------- */
+.sugar-cube svg {
+  width: 80px;
+  height: 80px;
+  display: inline-block;
+}
+.sugar-cube.sc-small svg {
+  width: 20px;
+  height: 20px;
+}
+.sugar-cube.sc-large svg {
+  width: 512px;
+  height: 512px;
+}
+
+.sugar-cube .sc-left,
+.sugar-cube .sc-right,
+.sugar-cube .sc-top {
+  fill: #ccc;
+  stroke-width: 0;
+  /*stroke-linecap: butt;
+  stroke: @black;
+  stroke-linejoin: miter;
+  stroke-opacity: 1*/
+}
+.sugar-cube .sc-top {
+  fill: #E41E26;
+}
+.sugar-cube .sc-right {
+  fill: #CECCCB;
+}
+.sugar-cube .sc-left {
+  fill: #343433;
+}
+
+.sugar-cube.sc-white path  {
+  fill: #fff;
+}
+.sugar-cube.sc-white path.sc-top {
+  opacity: 1;
+}
+.sugar-cube.sc-white path.sc-right {
+  opacity: 0.8;
+}
+.sugar-cube.sc-white path.sc-left {
+  opacity: 0.6;
+}
+
+/* Theme colors
+-------------------------------------------------- */
+.PrimaryButton {
+  background-color: @PrimaryButton;
+}
+.NavigationBar {
+  background-color: @NavigationBar;
+}
+.BorderColor {
+  background-color: @BorderColor;
+}
+
+/* RESPONSIVE
+-------------------------------------------------- */
+
+@media print, screen and (max-width:  720px) {
+  nav .chart-icon-container {
+    position: absolute;
+    top: 8px;
+    right: 0px;
+    z-index: 2;
+  }
+}

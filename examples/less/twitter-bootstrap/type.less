@@ -22,7 +22,6 @@ p {
 
 // Ex: 14px base font * 85% = about 12px
 small   { font-size: 85%; }
-
 strong  { font-weight: bold; }
 em      { font-style: italic; }
 cite    { font-style: normal; }
@@ -78,17 +77,6 @@ h3 small { font-size: @baseFontSize; }
 h4 small { font-size: @baseFontSize; }
 
 
-// Page header
-// -------------------------
-
-.page-header {
-  padding-bottom: (@baseLineHeight / 2) - 1;
-  margin: @baseLineHeight 0 (@baseLineHeight * 1.5);
-  border-bottom: 1px solid @grayLighter;
-}
-
-
-
 // Lists
 // --------------------------------------------------
 
@@ -140,20 +128,6 @@ dt {
 dd {
   margin-left: @baseLineHeight / 2;
 }
-// Horizontal layout (like forms)
-.dl-horizontal {
-  .clearfix(); // Ensure dl clears floats if empty dd elements present
-  dt {
-    float: left;
-    width: @horizontalComponentOffset - 20;
-    clear: left;
-    text-align: right;
-    .text-overflow();
-  }
-  dd {
-    margin-left: @horizontalComponentOffset;
-  }
-}
 
 // MISC
 // ----
@@ -166,70 +140,17 @@ hr {
   border-bottom: 1px solid @white;
 }
 
-// Abbreviations and acronyms
-abbr[title],
-// Added data-* attribute to help out our tooltip plugin, per https://github.com/twitter/bootstrap/issues/5257
-abbr[data-original-title] {
-  cursor: help;
-  border-bottom: 1px dotted @grayLight;
-}
-abbr.initialism {
-  font-size: 90%;
-  text-transform: uppercase;
+.ellipsis_inline {
+  display: block !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-// Blockquotes
-blockquote {
-  padding: 0 0 0 15px;
-  margin: 0 0 @baseLineHeight;
-  border-left: 5px solid @grayLighter;
-  p {
-    margin-bottom: 0;
-    #font > .shorthand(16px,300,@baseLineHeight * 1.25);
-  }
-  small {
-    display: block;
-    line-height: @baseLineHeight;
-    color: @grayLight;
-    &:before {
-      content: '\2014 \00A0';
-    }
-  }
-
-  // Float right with text-align: right
-  &.pull-right {
-    float: right;
-    padding-right: 15px;
-    padding-left: 0;
-    border-right: 5px solid @grayLighter;
-    border-left: 0;
-    p,
-    small {
-      text-align: right;
-    }
-    small {
-      &:before {
-        content: '';
-      }
-      &:after {
-        content: '\00A0 \2014';
-      }
-    }
-  }
+.mono {
+  font-family: @monoFontFamily;
+}
+.serif {
+  font-family: @serifFontFamily;
 }
 
-// Quotes
-q:before,
-q:after,
-blockquote:before,
-blockquote:after {
-  content: "";
-}
-
-// Addresses
-address {
-  display: block;
-  margin-bottom: @baseLineHeight;
-  font-style: normal;
-  line-height: @baseLineHeight;
-}

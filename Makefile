@@ -29,6 +29,14 @@ JS_FILES = \
 	src/models/tree.js \
 	src/outro.js
 
+LIB_FILES = \
+	./node_modules/canvg/canvg.js \
+	./node_modules/canvg/rgbcolor.js \
+	./node_modules/canvg/StackBlur.js \
+	./examples/js/lib/micro-query.js \
+	./examples/js/lib/jquery-ui.min.js \
+	./examples/js/lib/store2.min.js
+
 CSS_FILES = \
 	src/less/sucrose.less
 
@@ -63,25 +71,26 @@ d3.min.js: Makefile
 	rm -f ./lib/$@
 	cat $(filter %.js,$^) | $(JS_COMPILER) >> ./lib/$@
 
-sucrose.css:
+sucrose.css: Makefile
 	rm -f ./$@
 	node $(CSS_COMPILER) $(CSS_FILES) ./$@
 
-sucrose.min.css:
+sucrose.min.css: Makefile
 	rm -f ./$@
 	node $(CSS_MINIFIER) -o ./$@ sucrose.css
 
 clean:
-	rm -rf sucrose.js sucrose.min.js
+	rm -rf sucrose.js sucrose.min.js sucrose.css sucrose.min.css
 
 examples:
 	cp ./sucrose.js examples/js/sucrose.js
 	cp ./sucrose.min.js examples/js/sucrose.min.js
 	cp ./sucrose.css examples/css/sucrose.css
 	cp ./sucrose.min.css examples/css/sucrose.min.css
-	rm -f ./examples/css/styles.css
-	node $(CSS_COMPILER) examples/less/styles.less ./examples/css/styles.css
-	cp ./node_modules/canvg/canvg.js examples/js/canvg.js
-	cp ./node_modules/canvg/rgbcolor.js examples/js/rgbcolor.js
-	cp ./node_modules/canvg/StackBlur.js examples/js/StackBlur.js
+	rm -f ./examples/css/examples.css
+	node $(CSS_COMPILER) examples/less/examples.less ./examples/css/examples.css
+	rm -f ./examples/css/examples.min.css
+	node $(CSS_MINIFIER) -o ./examples/css/examples.min.css ./examples/css/examples.css
+	rm -f ./examples/js/lib.min.js
+	cat $(LIB_FILES) | $(JS_COMPILER) >> ./examples/js/lib.min.js
 

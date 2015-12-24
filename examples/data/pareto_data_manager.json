@@ -21,7 +21,8 @@
       }
     ],
     "targetQuota": 724390,
-    "targetQuotaLabel": "Quota"
+    "targetQuotaLabel": "Quota",
+    "stacked": false
   },
   "data": [
     {

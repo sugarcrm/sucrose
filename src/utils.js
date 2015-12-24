@@ -398,7 +398,8 @@ sucrose.utils.stringEllipsify = function(_string, _container, _length) {
   var txt = _container.select('.tmp-text-strings').select('text'),
       str = _string,
       len = 0,
-      ell = 0;
+      ell = 0,
+      strLen = 0;
   if (txt.empty()) {
     txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
   }

@@ -1,35 +1,3 @@
-/* Sucrose Global
-  ----------------*/
-
-/********************
- * SVG CSS
- */
-
-svg {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  /* Trying to get SVG to act like a greedy block in all browsers */
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-height: 500px;
-}
-
-svg text {
-  font: normal (@chartTextSize) 'Helvetica Neue', Arial, sans-serif;
-  fill: @textColor;
-  stroke: none;
-  cursor: default;
-}
-
-svg .title {
- font: bold @fontSizeMedium @sansFontFamily;
-}
-
 
 /********************
  * General CSS
@@ -68,9 +36,47 @@ svg .title {
     For example width should be =< margin.left + margin.right + 1,
     of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
   */
+
   svg {
-    max-height: none;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    /* Trying to get SVG to act like a greedy block in all browsers */
+    display: block;
+    width: 100%;
+    height: 100%;
+    // max-height: 500px;
   }
+
+  text {
+    font-style: normal;
+    font-size: (@chartTextSize);
+    font-family: @sansFontFamily;
+    fill: @textColor;
+    stroke: none;
+    cursor: default;
+  }
+}
+
+.sc-noData {
+  font-size: @fontSizeLarge;
+  font-weight: bold;
+}
+
+text.sc-title {
+  font-size: @fontSizeMedium;
+}
+
+.sc-labels text {
+  font-weight: bold;
+  fill: #666;
+}
+
+.sc-label-value text {
+  font-size: @fontSizeMedium;
 }
 
 .sc-chart-print {
@@ -93,24 +99,3 @@ svg .title {
     font-size: @fontSizeMedium;
   }
 }
-
-.sc-noData {
-  font-size: @fontSizeLarge;
-  font-weight: bold;
-}
-
-.sc-title {
-  font-size: @fontSizeMedium;
-}
-
-.sc-labels text {
-  font-weight: bold;
-  fill: #666;
-}
-
-.sc-label-value {
-  font-size: @fontSizeMedium;
-}
-
-
-

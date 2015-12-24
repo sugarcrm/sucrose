@@ -18,7 +18,7 @@ function translateDataToD3(json, chartType, barType) {
 
         switch (chartType) {
 
-            case 'barChart':
+            case 'bar':
                 data = barType === 'stacked' || barType === 'grouped' ?
                     json.label.map(function(d, i) {
                         return {
@@ -50,7 +50,7 @@ function translateDataToD3(json, chartType, barType) {
                     });
                 break;
 
-            case 'pieChart':
+            case 'pie':
                 data = json.values.map(function(d, i) {
                     var data = {
                         'key': pickLabel(d.label),
@@ -66,7 +66,7 @@ function translateDataToD3(json, chartType, barType) {
                 });
                 break;
 
-            case 'funnelChart':
+            case 'funnel':
                 data = json.values.reverse().map(function(d, i) {
                     return {
                         'key': pickLabel(d.label),
@@ -81,7 +81,7 @@ function translateDataToD3(json, chartType, barType) {
                 });
                 break;
 
-            case 'lineChart':
+            case 'line':
                 var discreteValues = d3.max(json.values, function(d) {
                           return d.values.length;
                         }) === 1;
@@ -99,7 +99,7 @@ function translateDataToD3(json, chartType, barType) {
                 });
                 break;
 
-            case 'gaugeChart':
+            case 'gauge':
                 value = json.values.shift().gvalue;
                 var y0 = 0;
 
@@ -112,6 +112,9 @@ function translateDataToD3(json, chartType, barType) {
                     return values;
                 });
                 break;
+
+            case 'bubble':
+                break;
         }
     }
 
@@ -119,7 +122,7 @@ function translateDataToD3(json, chartType, barType) {
         'properties': {
             'title': json.properties[0].title,
             // bar group data (x-axis)
-            'labels': chartType === 'lineChart' && json.label ?
+            'labels': chartType === 'line' && json.label ?
                 json.label.map(function(d, i) {
                     return {
                         'group': i + 1,
@@ -134,7 +137,7 @@ function translateDataToD3(json, chartType, barType) {
                         };
                     }) :
                     [],
-            'values': chartType === 'gaugeChart' ?
+            'values': chartType === 'gauge' ?
                 [{'group' : 1, 't': value}] :
                 json.values.filter(function(d) { return d.values.length; }).length ?
                     json.values.map(function(d, i) {
