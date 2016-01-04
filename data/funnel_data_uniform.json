@@ -1,0 +1,73 @@
+{
+  "properties": {
+    "title": "Pipeline total is $675k",
+    "total": 675,
+    "scale": 1000,
+    "units": "$"
+  },
+  "data": [
+    {
+      "key": "Series-0",
+      "count": 1,
+      "values": [
+        {"series": 0, "x": 0, "y": 10,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Series-1",
+      "count": 1,
+      "values": [
+        {"series": 1, "x": 0, "y": 10,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Series-2",
+      "count": 1,
+      "values": [
+        {"series": 2, "x": 0, "y": 10,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Series-3",
+      "count": 1,
+      "values": [
+        {"series": 3, "x": 0, "y": 10,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Series-4",
+      "count": 1,
+      "values": [
+        {"series": 4, "x": 0, "y": 10, "y0": 0}
+      ]
+    },
+    {
+      "key": "Series-5",
+      "count": 1,
+      "values": [
+        {"series": 5, "x": 0, "y": 10, "y0": 0}
+      ]
+    },
+    {
+      "key": "Series-6",
+      "count": 1,
+      "values": [
+        {"series": 6, "x": 0, "y": 10, "y0": 0}
+      ]
+    },
+    {
+      "key": "Series-7",
+      "count": 1,
+      "values": [
+        {"series": 7, "x": 0, "y": 10, "y0": 0}
+      ]
+    },
+    {
+      "key": "Series-8",
+      "count": 1,
+      "values": [
+        {"series": 8, "x": 0, "y": 10, "y0": 0}
+      ]
+    }
+  ]
+}

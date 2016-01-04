@@ -1,0 +1,73 @@
+{
+  "properties": {
+    "title": "Pipeline total is $675k",
+    "total": 675,
+    "scale": 1000,
+    "units": "$"
+  },
+  "data": [
+    {
+      "key": "תחזיות",
+      "count": 3,
+      "values": [
+        {"series": 0, "x": 0, "y": 7,  "y0": 0}
+      ]
+    },
+    {
+      "key": "מגבלות",
+      "count": 3,
+      "values": [
+        {"series": 0, "x": 0, "y": 75,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Negotiation",
+      "count": 5,
+      "values": [
+        {"series": 1, "x": 0, "y": 8,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Proposal/PriceQuote",
+      "count": 5,
+      "values": [
+        {"series": 1, "x": 0, "y": 28,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Perception Analysis",
+      "count": 1,
+      "values": [
+        {"series": 2, "x": 0, "y": 8, "y0": 0}
+      ]
+    },
+    {
+      "key": "זהות מקבל ההחלטות",
+      "count": 6,
+      "values": [
+        {"series": 3, "x": 0, "y": 85, "y0": 0}
+      ]
+    },
+    {
+      "key": "Value Proposition",
+      "count": 2,
+      "values": [
+        {"series": 4, "x": 0, "y": 0, "y0": 0}
+      ]
+    },
+    {
+      "key": "Qualification",
+      "count": 8,
+      "values": [
+        {"series": 5, "x": 0, "y": 110, "y0": 0}
+      ]
+    },
+    {
+      "key": "Prospecting",
+      "count": 10,
+      "values": [
+        {"series": 6, "x": 0, "y": 2, "y0": 0}
+      ]
+    }
+  ]
+}

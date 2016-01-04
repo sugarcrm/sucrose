@@ -1,0 +1,43 @@
+{
+  "properties": {
+    "title": "All Opportunities by Lead Source"
+  },
+  "data": [
+    {
+      "key": "Undefined"
+      , "value": 100
+    },
+    {
+      "key": "Cold Call"
+      , "value": 0
+    },
+    {
+      "key": "Existing Customer"
+      , "value": 75
+    },
+    {
+      "key": "Self Generated"
+      , "value": 140
+    },
+    {
+      "key": "Walk In"
+      , "value": 10
+    },
+    {
+      "key": "Employee"
+      , "value": 160
+    },
+    {
+      "key": "Partner"
+      , "value": 100
+    },
+    {
+      "key": "Public Relations"
+      , "value": 145
+    },
+    {
+      "key": "Other"
+      , "value": 9
+    }
+  ]
+}

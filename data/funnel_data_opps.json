@@ -1,0 +1,45 @@
+{
+  "properties": {
+    "title": "Pipeline total is $675k",
+    "total": 675,
+    "scale": 1000,
+    "units": "$"
+  },
+  "data": [
+    {
+      "key": "Review",
+      "count": 1,
+      "values": [
+        {"series": 0, "x": 0, "y": 2005, "y0": 0}
+      ]
+    },
+    {
+      "key": "Perception Analysis",
+      "count": 3,
+      "values": [
+        {"series": 1, "x": 0, "y": 13160, "y0": 0}
+      ]
+    },
+    {
+      "key": "Id. Decision Makers",
+      "count": 1,
+      "values": [
+        {"series": 2, "x": 0, "y": 1307,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Value Proposition",
+      "count": 2,
+      "values": [
+        {"series": 3, "x": 0, "y": 4092,  "y0": 0}
+      ]
+    },
+    {
+      "key": "Needs Analysis",
+      "count": 1,
+      "values": [
+        {"series": 4, "x": 0, "y": 2812,  "y0": 0}
+      ]
+    }
+  ]
+}

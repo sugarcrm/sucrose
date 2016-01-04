@@ -1,0 +1,44 @@
+{
+  "properties": {
+    "title": "Total is 50.00",
+    "labels": [
+      {
+        "group": 1,
+        "l": "Red"
+      },
+      {
+        "group": 2,
+        "l": "Yellow"
+      },
+      {
+        "group": 2,
+        "l": "Green"
+      }
+    ],
+    "values": [
+      {
+        "group": 1,
+        "t": 50
+      },
+      {
+        "group": 1,
+        "t": 30
+      },
+      {
+        "group": 1,
+        "t": 10
+      }
+    ]
+  },
+  "data": [
+    {
+      "key": "Apples",
+      "type": "bar",
+      "values": [
+        {"series": 0, "x": 1, "y": 50,  "y0": 0},
+        {"series": 0, "x": 2, "y": 30,  "y0": 0},
+        {"series": 0, "x": 3, "y": 10,  "y0": 0}
+      ]
+    }
+  ]
+}
