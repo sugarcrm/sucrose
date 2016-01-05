@@ -64,11 +64,11 @@ $(function () {
             $form.append(self.createOptionRow(k, v));
           });
 
-          $('button[data-action=full').on('click', function (e) {
+          $('button[data-action=full]').on('click', function (e) {
             $('.sc-chart-container').toggleClass('full-screen');
             self.chartResizer(self.Chart)(e);
           });
-          $('button[data-action=reset').on('click', function (e) {
+          $('button[data-action=reset]').on('click', function (e) {
             $('.sc-chart-container').removeClass('full-screen');
             self.resetChartSize();
             self.loadData(self.data.file.val);
@@ -653,8 +653,6 @@ $(function () {
         .removeClass('active')
         .filter('[data-type=' + type + ']')
         .addClass('active');
-
-      console.log('type: ', type);
     });
   }
 
