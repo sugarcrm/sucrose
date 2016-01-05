@@ -38,10 +38,6 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 0 10px;
 }
 
-p, ul, ol, table, pre, dl {
-  margin: 0 0 20px;
-}
-
 h1, h2, h3 {
   line-height: 1.1;
 }
@@ -198,6 +194,7 @@ nav ul {
   border-radius: 5px;
   border: 1px solid #e0e0e0;
   width: 270px;
+  background-color: #FcFcFc;
 }
 
 nav li {
@@ -288,6 +285,9 @@ footer p {
   padding: 0 0 0 40px;
   border: 1px solid #e5e5e5;
   border-width: 0 0 0 1px;
+}
+.sc-index .view {
+  clear: both;
 }
 
 @media print, screen and (max-width:  960px) {
