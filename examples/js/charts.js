@@ -171,13 +171,40 @@ function sucroseCharts(type) {
         .maxValue(9)
         .transitionMs(4000);
       break;
+    case 'area':
+      chart = sucrose.models.stackedAreaChart()
+        .x(function(d) { return d[0]; })
+        .y(function(d) { return d[1]; })
+        .showControls(true)
+        .useVoronoi(false)
+        //.clipEdge(true)
+        .tooltipContent(function(key, x, y, e, graph) {
+          return '<p>Category: <b>' + key + '</b></p>';
+        });
+
+      chart.yAxis
+        .axisLabel('Expenditures ($)')
+        .tickFormat(d3.format(',.2f'));
+
+      chart.xAxis
+        .tickFormat(function(d) { return d3.time.format('%x')(new Date(d)); });
+
+      tooltips = false;
+      break;
   }
 
-  chart
-    .showTitle(showTitle)
-    .showLegend(showLegend)
-    .tooltips(tooltips);
-
+  if (chart.showTitle) {
+    chart
+      .showTitle(showTitle);
+  }
+  if (chart.showLegend) {
+    chart
+      .showLegend(showLegend)
+  }
+  if (chart.tooltips) {
+    chart
+      .tooltips(tooltips);
+  }
   if (chart.seriesClick) {
     chart
       .seriesClick(function (data, eo, chart) {

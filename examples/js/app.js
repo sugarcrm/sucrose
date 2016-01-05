@@ -2,7 +2,6 @@
 
 $(function () {
 
-
   // Application scope jQuery references to main page elements
   var $title = $('#title'),
       $picker = $('#picker'),
