@@ -262,7 +262,7 @@ h2 {
   font-size: 27px;
 }
 h3 {
-  font-size: 21px;
+  font-size: 18px;
 }
 h4 {
   font-size: 15px;
@@ -288,7 +288,6 @@ h4 small {
 ul,
 ol {
   padding: 0;
-  margin: 0 0 9px 25px;
 }
 ul ul,
 ul ol,
@@ -424,6 +423,9 @@ pre code {
 .fa-refresh:before {
   content: "\f021";
 }
+.fa-pencil:before {
+  content: "\f040";
+}
 .fa-arrows-alt:before {
   content: "\f0b2";
 }
@@ -441,6 +443,14 @@ pre code {
 }
 .fa-code:before {
   content: "\f121";
+}
+.fa-toggle-right:before,
+.fa-caret-square-o-right:before {
+  content: "\f152";
+}
+.fa-toggle-left:before,
+.fa-caret-square-o-left:before {
+  content: "\f191";
 }
 .fa-git:before {
   content: "\f1d3";
@@ -466,6 +476,21 @@ pre code {
 }
 /* DEMO CHARTS
   ----------------*/
+h2 {
+  font-size: 24px;
+  float: left;
+}
+h2 .sc-logo,
+h2 span {
+  vertical-align: top;
+}
+h2 .sc-logo {
+  display: inline-block;
+  padding-top: 1px;
+}
+h2 span {
+  text-shadow: #ddd 2px 2px 2px;
+}
 .sc-demo {
   width: 100%;
   height: 100%;
@@ -474,26 +499,10 @@ pre code {
   -moz-box-sizing: border-box;
   box-sizing: border-box;
 }
-.sc-demo h2 {
-  font-size: 24px;
-  float: left;
-}
-.sc-demo h2 .sc-logo,
-.sc-demo h2 span {
-  vertical-align: top;
-}
-.sc-demo h2 .sc-logo {
-  display: inline-block;
-  padding-top: 1px;
-}
-.sc-demo h2 span {
-  text-shadow: #ddd 2px 2px 2px;
-}
 .sc-demo section {
   clear: both;
   height: calc(100% - 43px);
   padding-right: 12px;
-  position: relative;
 }
 .sc-logo .cube path {
   fill: #393939;
@@ -520,6 +529,9 @@ pre code {
   overflow: hidden;
   padding-right: 12px;
 }
+.sc-form-container.hidden {
+  display: none;
+}
 .sc-chart-container {
   width: 67%;
 }
@@ -530,7 +542,25 @@ pre code {
   bottom: 0;
   left: 0;
   width: 100%;
-  padding-right: 12px;
+  padding: 0;
+  z-index: 2;
+  border: none;
+}
+.sc-chart-container.full-screen .sc-container-header {
+  border-width: 0 0 1px 0;
+  border-radius: 0;
+}
+.sc-chart-container.full-screen #chart {
+  border: none;
+}
+.sc-chart-container.full-screen .ui-resizable-handle {
+  display: none;
+}
+.sc-chart-container.full-width {
+  width: 100%;
+}
+.sc-chart-container.full-width .sc-container-header button.btn:first-child {
+  display: inline-block;
 }
 .sc-container-header {
   font-size: 0;
@@ -544,12 +574,17 @@ pre code {
   line-height: 18px;
 }
 .sc-container-header span,
-.sc-container-header button {
+.sc-container-header button.btn {
   vertical-align: middle;
 }
-.sc-container-header button {
+.sc-container-header button.btn {
   float: right;
   margin-right: 4px;
+  display: inline-block;
+}
+.sc-container-header button.btn:first-child {
+  float: none;
+  display: none;
 }
 .sc-panel,
 .sc-tab {
@@ -557,22 +592,18 @@ pre code {
   box-sizing: border-box;
   color: #999;
 }
-.sc-panel button,
-.sc-tab button {
-  display: none;
-}
 .sc-panel.active,
 .sc-tab.active {
   color: #333;
-}
-.sc-panel.active button,
-.sc-tab.active button {
-  display: inline-block;
 }
 .sc-panel:not(.active):hover,
 .sc-tab:not(.active):hover {
   background: #ddd;
   cursor: pointer;
+}
+.sc-panel:not(.active) button.btn,
+.sc-tab:not(.active) button.btn {
+  display: none;
 }
 .sc-tab {
   width: 50%;
@@ -658,7 +689,7 @@ pre code {
   border: 1px solid transparent;
 }
 .chart-icon:hover {
-  background-color: #efefef;
+  background-color: #fff;
 }
 .chart-icon.active {
   border: 1px dotted #888;
@@ -1038,10 +1069,6 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 0 10px;
 }
 
-p, ul, ol, table, pre, dl {
-  margin: 0 0 20px;
-}
-
 h1, h2, h3 {
   line-height: 1.1;
 }
@@ -1149,7 +1176,7 @@ hr {
   margin: 0 0 20px;
 }
 
-button {
+button.btn {
   display: inline-block;
   width: 18px;
   height: 18px;
@@ -1198,6 +1225,7 @@ nav ul {
   border-radius: 5px;
   border: 1px solid #e0e0e0;
   width: 270px;
+  background-color: #FcFcFc;
 }
 
 nav li {
@@ -1288,6 +1316,9 @@ footer p {
   padding: 0 0 0 40px;
   border: 1px solid #e5e5e5;
   border-width: 0 0 0 1px;
+}
+.sc-index .view {
+  clear: both;
 }
 
 @media print, screen and (max-width:  960px) {
