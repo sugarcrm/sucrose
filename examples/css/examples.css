@@ -423,6 +423,9 @@ pre code {
 .fa-refresh:before {
   content: "\f021";
 }
+.fa-pencil:before {
+  content: "\f040";
+}
 .fa-arrows-alt:before {
   content: "\f0b2";
 }
@@ -440,6 +443,14 @@ pre code {
 }
 .fa-code:before {
   content: "\f121";
+}
+.fa-toggle-right:before,
+.fa-caret-square-o-right:before {
+  content: "\f152";
+}
+.fa-toggle-left:before,
+.fa-caret-square-o-left:before {
+  content: "\f191";
 }
 .fa-git:before {
   content: "\f1d3";
@@ -492,7 +503,6 @@ h2 span {
   clear: both;
   height: calc(100% - 43px);
   padding-right: 12px;
-  position: relative;
 }
 .sc-logo .cube path {
   fill: #393939;
@@ -519,6 +529,9 @@ h2 span {
   overflow: hidden;
   padding-right: 12px;
 }
+.sc-form-container.hidden {
+  display: none;
+}
 .sc-chart-container {
   width: 67%;
 }
@@ -529,7 +542,25 @@ h2 span {
   bottom: 0;
   left: 0;
   width: 100%;
-  padding-right: 12px;
+  padding: 0;
+  z-index: 2;
+  border: none;
+}
+.sc-chart-container.full-screen .sc-container-header {
+  border-width: 0 0 1px 0;
+  border-radius: 0;
+}
+.sc-chart-container.full-screen #chart {
+  border: none;
+}
+.sc-chart-container.full-screen .ui-resizable-handle {
+  display: none;
+}
+.sc-chart-container.full-width {
+  width: 100%;
+}
+.sc-chart-container.full-width .sc-container-header button.btn:first-child {
+  display: inline-block;
 }
 .sc-container-header {
   font-size: 0;
@@ -543,12 +574,17 @@ h2 span {
   line-height: 18px;
 }
 .sc-container-header span,
-.sc-container-header button {
+.sc-container-header button.btn {
   vertical-align: middle;
 }
-.sc-container-header button {
+.sc-container-header button.btn {
   float: right;
   margin-right: 4px;
+  display: inline-block;
+}
+.sc-container-header button.btn:first-child {
+  float: none;
+  display: none;
 }
 .sc-panel,
 .sc-tab {
@@ -556,22 +592,18 @@ h2 span {
   box-sizing: border-box;
   color: #999;
 }
-.sc-panel button,
-.sc-tab button {
-  display: none;
-}
 .sc-panel.active,
 .sc-tab.active {
   color: #333;
-}
-.sc-panel.active button,
-.sc-tab.active button {
-  display: inline-block;
 }
 .sc-panel:not(.active):hover,
 .sc-tab:not(.active):hover {
   background: #ddd;
   cursor: pointer;
+}
+.sc-panel:not(.active) button.btn,
+.sc-tab:not(.active) button.btn {
+  display: none;
 }
 .sc-tab {
   width: 50%;

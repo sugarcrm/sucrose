@@ -25,9 +25,7 @@ h2 {
   section {
     clear: both;
     height: calc(~"100% - 43px");
-    position: relative;
     padding-right: 12px;
-    position: relative;
   }
 }
 .sc-logo .cube path {
@@ -56,6 +54,9 @@ h2 {
   width: 33%;
   overflow: hidden;
   padding-right: 12px;
+  &.hidden {
+    display: none;
+  }
 }
 
 .sc-chart-container {
@@ -67,7 +68,25 @@ h2 {
     bottom: 0;
     left: 0;
     width: 100%;
-    padding-right: 12px;
+    padding: 0;
+    z-index: 2;
+    border: none;
+    .sc-container-header {
+      border-width: 0 0 1px 0;
+      border-radius: 0;
+    }
+    #chart {
+      border: none;
+    }
+    .ui-resizable-handle {
+      display: none;
+    }
+  }
+  &.full-width {
+    width: 100%;
+    .sc-container-header button.btn:first-child {
+      display: inline-block;
+    }
   }
 }
 .sc-container-header {
@@ -81,12 +100,17 @@ h2 {
     line-height: 18px;
   }
   span,
-  button {
+  button.btn {
     vertical-align: middle;
   }
-  button {
+  button.btn {
     float: right;
     margin-right: 4px;
+    display: inline-block;
+    &:first-child {
+      float: none;
+      display: none;
+    }
   }
 }
 .sc-panel,
@@ -94,18 +118,17 @@ h2 {
   padding: 4px 4px 4px 8px;
   box-sizing: border-box;
   color: #999;
-  button {
-    display: none;
-  }
   &.active {
     color: #333;
-    button {
-      display: inline-block;
-    }
   }
-  &:not(.active):hover {
-    background: #ddd;
-    cursor: pointer;
+  &:not(.active) {
+    &:hover {
+      background: #ddd;
+      cursor: pointer;
+    }
+    button.btn {
+      display: none;
+    }
   }
 }
 .sc-tab {

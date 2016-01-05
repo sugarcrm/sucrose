@@ -63,6 +63,7 @@
           <div class="sc-container-header">
             <div class="sc-panel active">
               <span>Options</span>
+              <button class="btn" data-action="toggle" aria-label="hide options"><i class="fa fa-toggle-left"></i></button>
               <button class="btn" data-action="reset" aria-label="reset form"><i class="fa fa-refresh"></i></button>
             </div>
           </div>
@@ -72,12 +73,16 @@
         <div class="sc-chart-container">
           <div class="sc-container-header">
             <div class="sc-tab active">
+              <button class="btn" data-action="toggle" aria-label="show options"><i class="fa fa-toggle-right"></i></button>
               <span>Chart</span>
-              <button class="btn" data-action="reset" aria-label="reset"><i class="fa fa-refresh"></i></button>
               <button class="btn" data-action="full" aria-label="full screen"><i class="fa fa-arrows-alt"></i></button>
+              <button class="btn" data-action="reset" aria-label="reset"><i class="fa fa-refresh"></i></button>
             </div>
             <div class="sc-tab">
               <span>Data</span>
+              <button class="btn" data-action="full" aria-label="full screen"><i class="fa fa-arrows-alt"></i></button>
+              <button class="btn" data-action="reset" aria-label="reset"><i class="fa fa-refresh"></i></button>
+              <button class="btn" data-action="edit" aria-label="edit"><i class="fa fa-pencil"></i></button>
             </div>
           </div>
           <div id="chart" class="sc-chart">

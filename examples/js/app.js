@@ -73,7 +73,11 @@ $(function () {
             self.resetChartSize();
             self.loadData(self.data.file.val);
           });
-
+          $('button[data-action=toggle]').on('click', function (e) {
+            $('.sc-form-container').toggleClass('hidden');
+            $('.sc-chart-container').toggleClass('full-width');
+            self.chartResizer(self.Chart)(e);
+          });
         },
         resetChartSize: function () {
           $chart.removeAttr('style');
