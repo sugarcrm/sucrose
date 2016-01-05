@@ -191,6 +191,65 @@ function sucroseCharts(type) {
 
       tooltips = false;
       break;
+    case 'tree':
+      chart = sucrose.models.tree()
+        .duration(500)
+        .nodeSize({'width': 124, 'height': 56})
+        .nodeRenderer(function (content, d, w, h) {
+          if (!d.image || d.image === '') {
+            d.image = 'user.svg';
+          }
+          var node = content.append('g').attr('class', 'sc-org-node');
+              node.append('rect').attr('class', 'sc-org-bkgd')
+                .attr('x', 0)
+                .attr('y', 0)
+                .attr('rx', 2)
+                .attr('ry', 2)
+                .attr('width', w)
+                .attr('height', h);
+              node.append('image').attr('class', 'sc-org-avatar')
+                .attr('xlink:href', 'img/' + d.image)
+                .attr('width', '32px')
+                .attr('height', '32px')
+                .attr('transform', 'translate(3, 3)');
+              node.append('text').attr('class', 'sc-org-name')
+                .attr('data-url', d.url)
+                .attr('transform', 'translate(38, 11)')
+                .text(d.name);
+              node.append('text').attr('class', 'sc-org-title')
+                .attr('data-url', d.url)
+                .attr('transform', 'translate(38, 21)')
+                .text(d.title);
+          return node;
+        })
+        .zoomExtents({'min': 0.25, 'max': 4})
+        .horizontal(false)
+        .nodeClick(function() {
+          console.log(d3.select(this).select('.sc-org-name').attr('data-url'));
+        })
+        .nodeCallback(function (d) {
+          var container = d3.select('#chart svg');
+          d.selectAll('text').text(function () {
+            var text = d3.select(this).text();
+            return sucrose.utils.stringEllipsify(text, container, 96);
+          });
+          d.selectAll('image')
+            .on('error', function (d) {
+              d3.select(this).attr('xlink:href', 'img/user.svg');
+            });
+          d.select('.sc-org-name')
+            .on('mouseover', function (d) {
+               d3.select(this).classed('hover', true);
+            })
+            .on('mouseout', function (d, i) {
+               d3.select(this).classed('hover', false);
+            });
+        });
+
+        showTitle = false;
+        showLegend = false;
+        tooltips = false;
+      break;
   }
 
   if (chart.showTitle) {

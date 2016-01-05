@@ -128,6 +128,9 @@ $(function () {
             case 'textarea':
               control = this.textareaControl(v, n);
               break;
+            case 'button':
+              control = this.buttonControl(v, n);
+              break;
             default:
               control = this.textControl(v, n);
               break;
@@ -152,19 +155,26 @@ $(function () {
           var select = '<select name="' + n + '">';
           v.each(function (r) {
             select += '<option value="' + r.value + '">' + r.label + '</option>';
-          })
+          });
           select += '</select>';
           return select;
         },
         textareaControl: function (v, n) {
-          var value = v.map(function (o) { return o.value }).join(' '),
+          var value = v.map(function (o) { return o.value; }).join(' '),
               textarea = '<textarea name="' + n + '">' + value + '</textarea>';
           return textarea;
         },
         textControl: function (v, n) {
-          var value = v.map(function (o) { return o.value }).join(' '),
+          var value = v.map(function (o) { return o.value; }).join(' '),
               text = '<input type="text" name="' + n + '" value="' + value + '">';
           return text;
+        },
+        buttonControl: function (v, n) {
+          var button = '';
+          v.each(function (b) {
+              button += '<button type="button" name="' + n + '" data-control="' + b.value + '">' + b.label + '</button>';
+          });
+          return button;
         },
         // Render chart without data update
         chartRenderer: function () {
@@ -234,7 +244,7 @@ $(function () {
                   }
 
                   // TODO: redo this data translation mess
-                  if (this.type === 'treemap') {
+                  if (this.type === 'treemap' || this.type === 'tree') {
                     chartData = json;
                     this.colorLength = 0;
                   } else {
@@ -442,6 +452,12 @@ $(function () {
 
       // Combine common and custom Manifest UIs
       Object.merge(Manifest, chartManifest, true);
+
+      Object.each(Manifest.ui, function (k, v, d) {
+        if (v.hidden) {
+          delete d[k];
+        }
+      });
 
       // Data containers persisted in localStorage
       store.set('examples-type', type);
