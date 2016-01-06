@@ -5,12 +5,16 @@ $(function () {
   // Application scope jQuery references to main page elements
   var $title = $('#title'),
       $picker = $('#picker'),
-      $container = $('.sc-form-container'),
+      $examples = $('#examples'),
+      $index = $('.sc-index'),
+      $demo = $('.sc-demo'),
+      $options = $('.sc-form-container'),
       $form = $('#form'),
+      $container = $('.sc-chart-container'),
       $chart = $('#chart');
 
   // Application scope variables
-  var chartType = 'multibar',
+  var chartType = window.uQuery('type'),
       chartStore = {},
       chartData = {};
 
@@ -64,18 +68,25 @@ $(function () {
             $form.append(self.createOptionRow(k, v));
           });
 
+          // Configure jQuery resizable plugin
+          $chart.resizable({
+            containment: 'parent',
+            minHeight: 200,
+            minWidth: 200
+          });
+
           $('button[data-action=full]').on('click', function (e) {
-            $('.sc-chart-container').toggleClass('full-screen');
+            $options.toggleClass('full-screen');
             self.chartResizer(self.Chart)(e);
           });
           $('button[data-action=reset]').on('click', function (e) {
-            $('.sc-chart-container').removeClass('full-screen');
+            $options.removeClass('full-screen');
             self.resetChartSize();
             self.loadData(self.data.file.val);
           });
           $('button[data-action=toggle]').on('click', function (e) {
-            $('.sc-form-container').toggleClass('hidden');
-            $('.sc-chart-container').toggleClass('full-width');
+            $container.toggleClass('hidden');
+            $options.toggleClass('full-width');
             self.chartResizer(self.Chart)(e);
           });
         },
@@ -237,7 +248,7 @@ $(function () {
 
           var promise = $.ajax({ // Load data, $.ajax is promise
                   url: 'data/' + file + '.json',
-                  cache: false,
+                  cache: true,
                   dataType: 'json',
                   context: this,
                   async: true
@@ -412,14 +423,14 @@ $(function () {
         }
       };
 
-  function loadChart(type) {
+  function loader(type) {
     if (!type) {
       return;
     }
-    // return promise;
+
     $.ajax({
       url: 'manifest/' + type + '.json',
-      cache: false,
+      cache: true,
       dataType: 'text',
       context: this,
       async: true
@@ -480,8 +491,8 @@ $(function () {
       // TODO: is there a way to reinit jQuery.my with new Data?
       // I get an bind error if I try to do it, so I have to
       // Delete and recreate the entire form
-      $container.find('.sc-options').remove();
-      $container.append('<div class="sc-options" id="form"/>');
+      $options.find('.sc-options').remove();
+      $options.append('<div class="sc-options" id="form"/>');
       // Reset application scope reference to form
       $form = $('#form');
 
@@ -495,20 +506,25 @@ $(function () {
     });
   }
 
-  // Configure jQuery resizable plugin
-  $chart.resizable({
-    containment: 'parent',
-    minHeight: 200,
-    minWidth: 200
-  });
+  if (chartType) {
+    loader(chartType);
+  }
 
-  chartType = window.uQuery('type') || store.get('examples-type') || 'multibar';
-  $picker.click(function (e) {
+  $picker.on('click', 'span', function (e) {
     var type = $(e.target).data('type');
     if (type !== chartType) {
-      loadChart(type);
+      loader(type);
     }
   });
 
-  loadChart(chartType);
+  $examples.on('click', 'a', function (e) {
+    var type = $(e.target).data('type');
+    e.preventDefault();
+    $index.addClass('hidden');
+    $demo.removeClass('hidden');
+    if (type !== chartType) {
+      loader(type);
+    }
+  });
+
 });

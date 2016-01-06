@@ -26,10 +26,11 @@
     "url": "https://github.com/sugarcrm/sucrose.git"
   },
   "devDependencies": {
+    "canvg": "git://github.com/gabelerner/canvg.git",
     "clean-css": "^3.4.8",
     "less": "^2.5.3",
-    "uglify-js": "2.4.16",
-    "canvg": "git://github.com/gabelerner/canvg.git"
+    "less-plugin-clean-css": "^1.5.1",
+    "uglify-js": "2.4.16"
   },
   "license": "Apache-2.0"
 }
