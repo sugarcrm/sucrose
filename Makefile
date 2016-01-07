@@ -37,6 +37,11 @@ LIB_FILES = \
 	./examples/js/lib/jquery-ui.min.js \
 	./examples/js/lib/store2.min.js
 
+APP_FILES = \
+	./examples/js/main.js \
+	./examples/js/charts.js \
+	./examples/js/translate.js
+
 CSS_FILES = \
 	src/less/sucrose.less
 
@@ -83,12 +88,15 @@ clean:
 	rm -rf sucrose.js sucrose.min.js sucrose.css sucrose.min.css
 
 examples:
+	rm -f ./examples/css/*.css
+	cp ./sucrose.min.js examples/js/sucrose.js
 	cp ./sucrose.min.js examples/js/sucrose.min.js
+	cp ./sucrose.css examples/css/sucrose.css
 	cp ./sucrose.min.css examples/css/sucrose.min.css
-	rm -f ./examples/css/examples.css
 	node $(CSS_COMPILER) examples/less/examples.less ./examples/css/examples.css
-	rm -f ./examples/css/examples.min.css
 	node $(CSS_MINIFIER) -o ./examples/css/examples.min.css ./examples/css/examples.css
 	#node node_modules/less/bin/lessc --clean-css examples/less/examples.less ./examples/css/examples.min.css
 	rm -f ./examples/js/lib.min.js
 	cat $(LIB_FILES) | $(JS_COMPILER) >> ./examples/js/lib.min.js
+	rm -f ./examples/js/app.min.js
+	cat $(APP_FILES) | $(JS_COMPILER) >> ./examples/js/app.min.js

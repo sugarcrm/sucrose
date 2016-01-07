@@ -1,89 +1,44 @@
 
-/* DEMO CHARTS
-  ----------------*/
-h2 {
-  font-size: 24px;
-  float: left;
-  .sc-logo,
-  span {
-    vertical-align: top;
-  }
-  .sc-logo {
-    display: inline-block;
-    padding-top: 1px;
-  }
-  span {
-    text-shadow: #ddd 2px 2px 2px;
-  }
-}
-
-.sc-index,
-.sc-demo {
-  background-color: #F5F5F5;
-  &.hidden {
-    display: none;
-  }
-}
-
-.sc-demo {
+/* Demo Charts
+----------------*/
+.demo {
   width: 100%;
   height: 100%;
   padding: 60px 0 70px 12px;
-  .box-sizing(border-box);
+  background-color: #F5F5F5;
+  box-sizing: border-box;
+  h2 {
+    float: left;
+  }
   section {
     clear: both;
     height: calc(~"100% - 43px");
     padding-right: 12px;
   }
 }
-.sc-logo .cube path {
-  fill: #393939;
-  stroke: #fff;
-  stroke-width: 8px;
+.hidden {
+  display: none !important;
 }
-
-.sc-menu {
-  display: inline-block;
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  line-height: 36px;
-  font-size: 11px;
-}
-
-.sc-chart-container,
-.sc-form-container {
+.container {
   height: 100%;
   float: left;
   box-sizing: border-box;
   padding: 0 0 8px 0;
-}
-.sc-form-container {
-  width: 33%;
-  overflow: hidden;
-  padding-right: 12px;
-  &.hidden {
-    display: none;
-  }
-}
-
-.sc-chart-container {
-  width: 67%;
   &.full-screen {
     position: absolute;
+    width: 100%;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    width: 100%;
     padding: 0;
     z-index: 2;
     border: none;
-    .sc-container-header {
+    .container-header {
       border-width: 0 0 1px 0;
       border-radius: 0;
     }
-    #chart {
+    .sc-chart {
       border: none;
     }
     .ui-resizable-handle {
@@ -92,12 +47,20 @@ h2 {
   }
   &.full-width {
     width: 100%;
-    .sc-container-header button.btn:first-child {
+    .container-header button.btn:first-child {
       display: inline-block;
     }
   }
 }
-.sc-container-header {
+.options {
+  width: 33%;
+  overflow: hidden;
+  padding-right: 12px;
+}
+.example {
+  width: 67%;
+}
+.container-header {
   font-size: 0;
   line-height: 0;
   background-color: #eee;
@@ -112,17 +75,17 @@ h2 {
     vertical-align: middle;
   }
   button.btn {
+    display: inline-block;
     float: right;
     margin-right: 4px;
-    display: inline-block;
     &:first-child {
       float: none;
       display: none;
     }
   }
 }
-.sc-panel,
-.sc-tab {
+.panel,
+.tab {
   padding: 4px 4px 4px 8px;
   box-sizing: border-box;
   color: #999;
@@ -139,41 +102,40 @@ h2 {
     }
   }
 }
-.sc-tab {
-  width: 50%;
+.tab {
   display: inline-block;
+  width: 50%;
   border-right: 1px solid #ccc;
   &:last-child {
     border: none;
   }
 }
-.sc-options,
+.sc-form,
 .sc-chart {
   height: calc(~"100% - 23px");
   width: 100%;
   background-color: #fff;
   border: 1px solid #ccc;
-  box-sizing: border-box;
-  border-radius: 0 0 4px 4px;
-  box-shadow: #ddd 3px 3px 6px;
   border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-sizing: border-box;
+  box-shadow: #ddd 3px 3px 6px;
 }
-.sc-options {
+.sc-form {
   padding: 0px 8px 4px 0;
   overflow: scroll;
-
   .option-row {
     padding: 4px;
   }
   span {
+    padding: 4px;
     color: @grayLight;
     font-size: 10px;
-    padding: 4px;
   }
   label {
     display: inline-block;
-    margin-left: 4px;
     height: 19px;
+    margin-left: 4px;
     white-space: nowrap;
   }
   select {
@@ -190,11 +152,9 @@ h2 {
     color: #727272;
   }
 }
-
 .sc-chart {
   min-width: 100px;
   min-height: 100px;
-  max-height: none;
 }
 .ui-resizable-e {
   right: 0;
@@ -203,42 +163,44 @@ h2 {
   bottom: 0;
 }
 .ui-icon-gripsmall-diagonal-se {
-  // background-image: url(../img/gripper.svg);
-  background: url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0" y="0" width="50px" height="50px" viewBox="0, 0, 50, 50"><g><path d="M24.5,48.5 L48.5,24.5" fill-opacity="0" stroke="#000000" stroke-width="3" style="shape-rendering: crispEdges;"/><path d="M0.5,48.5 L48.5,0.5" fill-opacity="0" stroke="#000000" stroke-width="3" style="shape-rendering: crispEdges;"/></g></svg>');
   display: block;
-  text-indent: -9999px;
   width: 8px;
   height: 8px;
+  background: url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0" y="0" width="50px" height="50px" viewBox="0, 0, 50, 50"><g><path d="M24.5,48.5 L48.5,24.5" fill-opacity="0" stroke="#000000" stroke-width="3" style="shape-rendering: crispEdges;"/><path d="M0.5,48.5 L48.5,0.5" fill-opacity="0" stroke="#000000" stroke-width="3" style="shape-rendering: crispEdges;"/></g></svg>');
+  // background-image: url(../img/gripper.svg);
+  text-indent: -9999px;
   background-size: 8px;
 }
 
 /* Chart icons
 -------------------------------------------------- */
-.chart-icon-container {
+.demo .chart-selector {
   display: inline-block;
   float: right;
   margin-right: 12px;
-}
-.chart-icon {
-  width: 20px;
-  height: 20px;
-  display: inline-block;
-  padding: 4px;
-  border: 1px solid transparent;
-  &:hover {
-    background-color: #fff;
+  font-size: 0;
+  a {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    padding: 4px;
+    border: 1px solid transparent;
+    &:hover {
+      background-color: #fff;
+      text-decoration: none;
+    }
+    &.active {
+      border: 1px dotted #888;
+    }
   }
-  &.active {
-    border: 1px dotted #888;
+  svg {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
   }
-}
-.chart-icon svg {
-  width: 20px;
-  height: 20px;
-  pointer-events: none;
 }
 
-/* POPOVER DOCS
+/* Popovers
 -------------------------------------------------- */
 .popover-well {
   min-height: 160px;
@@ -264,7 +226,6 @@ h2 {
 .hex {
   width: 30px;
 }
-
 .swatch {
   display: inline-block;
   width: 30px;
@@ -273,13 +234,11 @@ h2 {
   .border-radius(3px);
   padding: 0;
 }
-
 .swatch-bordered {
   width: 28px;
   height: 18px;
   border: 1px solid #ddd;
 }
-
 .cell-swatch {
   display: block;
   padding: 8px;
@@ -296,9 +255,9 @@ h2 {
 /* Subar cube
 -------------------------------------------------- */
 .sugar-cube svg {
+  display: inline-block;
   width: 80px;
   height: 80px;
-  display: inline-block;
 }
 .sugar-cube.sc-small svg {
   width: 20px;
@@ -354,10 +313,9 @@ h2 {
   background-color: @BorderColor;
 }
 
-/* RESPONSIVE
+/* Responsive
 -------------------------------------------------- */
-
-@media print, screen and (max-width:  720px) {
+@media print, screen and (max-width: 720px) {
   nav .chart-icon-container {
     position: absolute;
     top: 8px;

@@ -5,12 +5,12 @@ $(function () {
   // Application scope jQuery references to main page elements
   var $title = $('#title'),
       $picker = $('#picker'),
-      $examples = $('#examples'),
-      $index = $('.sc-index'),
-      $demo = $('.sc-demo'),
-      $options = $('.sc-form-container'),
+      $select = $('.chart-selector'),
+      $index = $('.index'),
+      $demo = $('.demo'),
+      $options = $('#options'),
       $form = $('#form'),
-      $container = $('.sc-chart-container'),
+      $example = $('#example'),
       $chart = $('#chart');
 
   // Application scope variables
@@ -25,7 +25,7 @@ $(function () {
   var Manifest = {
 
         // For jQuery.my cache (will be reset my chart type manifest)
-        id: 'examples',
+        id: 'sucrose-demo',
 
         // (will also be reset by chart type manifest)
         type: 'multibar',
@@ -55,8 +55,9 @@ $(function () {
 
           $title.text('Sucrose ' + this.title);
 
-          $(window).off('resize.examples');
-          $chart.off('resize.examples');
+          $(window).off('resize.example');
+          $chart.off('resize.example');
+          $('button').off('click.example');
 
           Object.each(options, function (k, v) {
             if (v.val && v.val !== v.def) {
@@ -75,18 +76,18 @@ $(function () {
             minWidth: 200
           });
 
-          $('button[data-action=full]').on('click', function (e) {
-            $options.toggleClass('full-screen');
+          $('button[data-action=full]').on('click.example', function (e) {
+            $example.toggleClass('full-screen');
             self.chartResizer(self.Chart)(e);
           });
-          $('button[data-action=reset]').on('click', function (e) {
-            $options.removeClass('full-screen');
+          $('button[data-action=reset]').on('click.example', function (e) {
+            $example.removeClass('full-screen');
             self.resetChartSize();
             self.loadData(self.data.file.val);
           });
-          $('button[data-action=toggle]').on('click', function (e) {
-            $container.toggleClass('hidden');
-            $options.toggleClass('full-width');
+          $('button[data-action=toggle]').on('click.example', function (e) {
+            $options.toggleClass('hidden');
+            $example.toggleClass('full-width');
             self.chartResizer(self.Chart)(e);
           });
         },
@@ -231,7 +232,7 @@ $(function () {
           // in case it overrides a form preset value
           this.selectedOptions[k] = v;
           chartStore.chartOptions = Object.clone(this.selectedOptions);
-          store.set('examples-' + this.type, chartStore);
+          store.set('example-' + this.type, chartStore);
           // Now, if the options is the default, lets remove it from display
           if (this.selectedOptions[k] === d[k].def) {
             delete this.selectedOptions[k];
@@ -350,8 +351,8 @@ $(function () {
                   // Dismiss tooltips
                   d3.select('#chart').on('click', this.Chart.dispatch.chartClick);
 
-                  $(window).on('resize.examples', this.windowResizer(this.Chart, this.resetChartSize));
-                  $chart.on('resize.examples', this.chartResizer(this.Chart));
+                  $(window).on('resize.example', this.windowResizer(this.Chart, this.resetChartSize));
+                  $chart.on('resize.example', this.chartResizer(this.Chart));
 
                 });
 
@@ -444,6 +445,9 @@ $(function () {
       // Load manifest for chart type
       var chartManifest = $.my.fromjson(json);
 
+      $index.addClass('hidden');
+      $demo.removeClass('hidden');
+
       // Append settings textarea to end of chart options ui
       Object.merge(
         chartManifest.ui,
@@ -475,10 +479,10 @@ $(function () {
       });
 
       // Data containers persisted in localStorage
-      store.set('examples-type', type);
+      store.set('example-type', type);
       // Set Application scope variables
       chartType = type;
-      chartStore = store.get('examples-' + type) || {};
+      chartStore = store.get('example-' + type) || {};
       chartData = chartStore.chartData || {};
       // Build Data from stored selected values with chart type overrides
       options = chartStore.chartOptions || chartManifest.optionPresets;
@@ -491,15 +495,15 @@ $(function () {
       // TODO: is there a way to reinit jQuery.my with new Data?
       // I get an bind error if I try to do it, so I have to
       // Delete and recreate the entire form
-      $options.find('.sc-options').remove();
-      $options.append('<div class="sc-options" id="form"/>');
+      $form.remove();
+      $options.append('<div class="sc-form" id="form"/>');
       // Reset application scope reference to form
       $form = $('#form');
 
       // Instantiate jQuery.my
       $form.my(Manifest, Data);
 
-      $picker.find('.chart-icon')
+      $picker.find('a')
         .removeClass('active')
         .filter('[data-type=' + type + ']')
         .addClass('active');
@@ -510,18 +514,9 @@ $(function () {
     loader(chartType);
   }
 
-  $picker.on('click', 'span', function (e) {
-    var type = $(e.target).data('type');
-    if (type !== chartType) {
-      loader(type);
-    }
-  });
-
-  $examples.on('click', 'a', function (e) {
+  $select.on('click', 'a', function (e) {
     var type = $(e.target).data('type');
     e.preventDefault();
-    $index.addClass('hidden');
-    $demo.removeClass('hidden');
     if (type !== chartType) {
       loader(type);
     }
