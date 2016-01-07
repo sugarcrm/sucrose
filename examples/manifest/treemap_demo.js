@@ -20,7 +20,7 @@
         ]
       },
       '[name=color]': {
-        chartInit: function (v, self) {
+        setChartOption: function (v, self) {
           if (v === 'graduated') {
             self.Chart.colorData(v, {c1: self.gradientStart, c2: self.gradientStop, l: self.colorLength});
           } else {

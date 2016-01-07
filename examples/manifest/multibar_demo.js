@@ -38,12 +38,12 @@
       },
       '[name=vertical]': {
         init: function ($o) {
-          this.initControl($o.attr('name'));
+          this.initControl($o);
         },
         bind: function (d, v, $o) {
-          return this.bindControl(d, $o.attr('name'), v, this.chartRenderer());
+          return this.bindControl(d, v, $o, this.chartRenderer());
         },
-        chartInit: function (v, self) {
+        setChartOption: function (v, self) {
           var value = !!parseInt(v, 10);
           self.Chart.vertical(value);
         },
@@ -58,12 +58,12 @@
       },
       '[name=show_values]': {
         init: function ($o) {
-          this.initControl($o.attr('name'));
+          this.initControl($o);
         },
         bind: function (d, v, $o) {
-          return this.bindControl(d, $o.attr('name'), v, this.chartRenderer());
+          return this.bindControl(d, v, $o, this.chartRenderer());
         },
-        chartInit: function (v, self) {
+        setChartOption: function (v, self) {
           var value = isNaN(v) ? v : !!parseInt(v, 10);
           self.Chart.showValues(value);
         },
@@ -83,12 +83,12 @@
       },
       '[name=allow_scroll]': {
         init: function ($o) {
-          this.initControl($o.attr('name'));
+          this.initControl($o);
         },
         bind: function (d, v, $o) {
-          return this.bindControl(d, $o.attr('name'), v, this.chartUpdater());
+          return this.bindControl(d, v, $o, this.chartUpdater());
         },
-        chartInit: function (v, self) {
+        setChartOption: function (v, self) {
           var value = !!parseInt(v, 10);
           self.Chart.allowScroll(value);
           // d3.select('#chart svg')
@@ -109,12 +109,12 @@
       },
       '[name=show_labels]': {
         init: function ($o) {
-          this.initControl($o.attr('name'));
+          this.initControl($o);
         },
         bind: function (d, v, $o) {
-          return this.bindControl(d, $o.attr('name'), v, this.chartRenderer());
+          return this.bindControl(d, v, $o, this.chartRenderer());
         },
-        chartInit: function (v, self) {
+        setChartOption: function (v, self) {
           var value = !!parseInt(v, 10);
           self.Chart.xAxis.axisLabel(value ? self.xAxisLabel : null);
           self.Chart.yAxis.axisLabel(value ? self.yAxisLabel : null);
@@ -130,12 +130,12 @@
       },
       '[name=tick_display]': {
         init: function ($o) {
-          this.initControl($o.attr('name'));
+          this.initControl($o);
         },
         bind: function (d, v, $o) {
-          return this.bindControl(d, $o.attr('name'), v, this.chartRenderer());
+          return this.bindControl(d, v, $o, this.chartRenderer());
         },
-        chartInit: function (v, self) {
+        setChartOption: function (v, self) {
           var wrapTicks = $.inArray('wrap', v) !== -1,
               staggerTicks = $.inArray('stagger', v) !== -1,
               rotateTicks = $.inArray('rotate', v) !== -1;

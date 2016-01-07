@@ -44,7 +44,7 @@ $(function () {
         optionDefaults: {
           file: '',
           color: 'default',
-          gradient: '1',
+          gradient: ['0', 'vertical', 'middle'],
           direction: 'ltr'
         },
 
@@ -88,6 +88,7 @@ $(function () {
           // Rebind UI
           $('button[data-action=full]').on('click.example', function (e) {
             $example.toggleClass('full-screen');
+            self.toggleTitle($(this));
             self.chartResizer(self.Chart)(e);
           });
           $('button[data-action=reset]').on('click.example', function (e) {
@@ -100,6 +101,12 @@ $(function () {
             $example.toggleClass('full-width');
             self.chartResizer(self.Chart)(e);
           });
+        },
+        toggleTitle: function($o) {
+          var t1 = $o.data('title'),
+              t2 = $o.data('title-toggle');
+          $o.attr('data-title', t2)
+            .attr('data-title-toggle', t1);
         },
         resetChartSize: function () {
           $chart.removeAttr('style');
@@ -127,6 +134,16 @@ $(function () {
               resetter();
               chart.update();
             };
+        },
+        // Render chart without data update
+        chartRenderer: function () {
+          return this.Chart.render ?
+            this.Chart.render :
+            this.Chart.update;
+        },
+        // Render chart with data update
+        chartUpdater: function () {
+          return this.Chart.update;
         },
         createOptionRow: function (k, v) {
           var row = $('<div class="option-row"/>'),
@@ -202,16 +219,6 @@ $(function () {
           });
           return button;
         },
-        // Render chart without data update
-        chartRenderer: function () {
-          return this.Chart.render ?
-            this.Chart.render :
-            this.Chart.update;
-        },
-        // Render chart with data update
-        chartUpdater: function () {
-          return this.Chart.update;
-        },
         // Get data from this or my scope
         getData: function (d, k) {
           return d[k].val || d[k].def;
@@ -221,12 +228,14 @@ $(function () {
           d[k].val = v;
         },
         // jQuery.my common method for initializing control
-        initControl: function (k) {
-          var v = this.getData(this.data, k);
+        initControl: function ($o) {
+          var k = $o.attr('name'),
+              v = this.getData(this.data, k);
           this.setOptions(this.data, k, v);
         },
         // jQuery.my common method for binding control
-        bindControl: function (d, k, v, callback) {
+        bindControl: function (d, v, $o, callback) {
+          var k = $o.attr('name');
           if (v == null) {
             return this.getData(d, k);
           }
@@ -248,10 +257,39 @@ $(function () {
             delete this.selectedOptions[k];
           }
           // Update the settings display textarea
-          this.ui['[name=' + k + ']'].chartInit(v, this);
+          this.ui['[name=' + k + ']'].setChartOption(v, this);
           this.my.recalc('[name=settings]');
         },
+        updateColorModel: function (v) {
+          var options = {},
+              color = this.data.color.val,
+              gradient = this.data.gradient.val;
+          if (color && color === 'graduated') {
+            options = {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength};
+          }
+          if (gradient && gradient.filter('1').length && color !== 'class') {
+            options.gradient = true;
+            options.orientation = gradient.filter('horizontal').length ? 'horizontal' : 'vertical';
+            options.position = gradient.filter('base').length ? 'base' : 'middle';
+          }
+          this.Chart.colorData(color, options);
+        },
+        loadChart: function () {
+          $chart.attr('class', 'sc-chart sc-chart-' + this.type);
+          $chart.find('svg').remove();
+          $chart.append('<svg/>');
 
+          this.updateColorModel();
+
+          // Bind D3 chart to SVG element
+          d3.select('#chart svg').datum(chartData).call(this.Chart);
+
+          // Dismiss tooltips
+          d3.select('#chart').on('click', this.Chart.dispatch.chartClick);
+
+          $(window).on('resize.example', this.windowResizer(this.Chart, this.resetChartSize));
+          $chart.on('resize.example', this.chartResizer(this.Chart));
+        },
         loadData: function (file) {
           if (!file) {
             return;
@@ -279,10 +317,10 @@ $(function () {
 
                     this.colorLength = chartData.data.length;
 
-                    if (Data.color.val === 'graduated') {
-                      this.Chart
-                        .colorData('graduated', {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength});
-                    }
+                    // if (Data.color.val === 'graduated') {
+                    //   this.Chart
+                    //     .colorData('graduated', {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength});
+                    // }
 
                     if (this.type === 'line') {
                       var xTickLabels = chartData.properties.labels ?
@@ -351,19 +389,7 @@ $(function () {
                     }
                   }
 
-                  $chart.attr('class', 'sc-chart sc-chart-' + this.type);
-                  $chart.find('svg').remove();
-                  $chart.append('<svg/>');
-
-                  // Bind D3 chart to SVG element
-                  d3.select('#chart svg').datum(chartData).call(this.Chart);
-
-                  // Dismiss tooltips
-                  d3.select('#chart').on('click', this.Chart.dispatch.chartClick);
-
-                  $(window).on('resize.example', this.windowResizer(this.Chart, this.resetChartSize));
-                  $chart.on('resize.example', this.chartResizer(this.Chart));
-
+                  this.loadChart();
                 });
 
           return promise;
@@ -373,12 +399,12 @@ $(function () {
   var baseUI = {
         '[name=file]': {
           init: function ($o) {
-            this.initControl($o.attr('name'));
+            this.initControl($o);
           },
           bind: function (d, v, $o) {
-            return this.bindControl(d, $o.attr('name'), v, this.loadData);
+            return this.bindControl(d, v, $o, this.loadData);
           },
-          chartInit: $.noop,
+          setChartOption: $.noop,
           check: /[a-z0-9_]+/i,
           // fire on initial load
           // events: 'change.my'
@@ -387,36 +413,53 @@ $(function () {
         },
         '[name=color]': {
           init: function ($o) {
-            this.initControl($o.attr('name'));
+            this.initControl($o);
           },
           bind: function (d, v, $o) {
-            return this.bindControl(d, $o.attr('name'), v, this.chartRenderer());
+            return this.bindControl(d, v, $o, this.loadChart);
           },
-          chartInit: function (v, self) {
-            if (v === 'graduated') {
-              self.Chart.colorData(v, {c1: self.gradientStart, c2: self.gradientStop, l: self.colorLength});
-            } else {
-              self.Chart.colorData(v);
-            }
-          },
+          setChartOption: $.noop,
           check: /default|class|graduated/i,
-          events: 'change.my',
+          events: 'click.my',
           title: 'Color Model',
           type: 'radio',
+          watch: '[name=gradient]',
           values: [
             {value: 'default', label: 'Default'},
             {value: 'class', label: 'Class'},
             {value: 'graduated', label: 'Graduated'}
            ]
         },
-        '[name=direction]': {
+        '[name=gradient]': {
           init: function ($o) {
-            this.initControl($o.attr('name'));
+            this.initControl($o);
           },
           bind: function (d, v, $o) {
-            return this.bindControl(d, $o.attr('name'), v, this.chartRenderer());
+            // if (v == null || !v.filter('1').length) {
+            //   v = null;
+            // }
+            return this.bindControl(d, v, $o, this.loadChart);
           },
-          chartInit: function (v, self) {
+          setChartOption: $.noop,
+          recalc: '[name=color]',
+          check: /0|1|vertical|horizontal|middle|base/i,
+          events: 'click.my',
+          title: 'Gradient',
+          type: 'checkbox',
+          values: [
+            {value: '1', label: 'Use gradient'}, // 0 | 1
+            {value: 'horizontal', label: 'Align horizontally'}, // vertical | horizontal
+            {value: 'base', label: 'Align base'} // middle | base
+           ]
+        },
+        '[name=direction]': {
+          init: function ($o) {
+            this.initControl($o);
+          },
+          bind: function (d, v, $o) {
+            return this.bindControl(d, v, $o, this.chartRenderer());
+          },
+          setChartOption: function (v, self) {
             $('html').css('direction', v);
             self.Chart.direction(v);
           },
@@ -521,6 +564,7 @@ $(function () {
     loader(chartType);
   }
 
+  // For both index list and example picker
   $select.on('click', 'a', function (e) {
     var type = $(e.target).data('type');
     e.preventDefault();
@@ -529,6 +573,7 @@ $(function () {
     }
   });
 
+  // Bind tooltips to buttons
   var tootip = null;
   d3.selectAll('[rel=tooltip]')
     .on('mouseover', $.proxy(function () {

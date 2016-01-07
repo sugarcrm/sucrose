@@ -22,7 +22,7 @@ chartManifest = {
     },
     '[name=controls]': {
       init: function ($o) {
-        this.initControl($o.attr('name'));
+        this.initControl($o);
 
         $('[name=controls]').on('click', $.proxy(function(e) {
           //if icon clicked get parent button
@@ -42,7 +42,7 @@ chartManifest = {
         }, this));
       },
       bind: $.noop,
-      chartInit: $.noop,
+      setChartOption: $.noop,
       check: /[a-zA-Z\s]/i,
       title: 'Tree controls',
       type: 'button',

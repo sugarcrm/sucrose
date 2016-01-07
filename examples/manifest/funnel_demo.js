@@ -28,12 +28,12 @@
       },
       '[name=wrap_labels]': {
         init: function ($o) {
-          this.initControl($o.attr('name'));
+          this.initControl($o);
         },
         bind: function (d, v, $o) {
-          return this.bindControl(d, $o.attr('name'), v, this.chartRenderer());
+          return this.bindControl(d, v, $o, this.chartRenderer());
         },
-        chartInit: function (v, self) {
+        setChartOption: function (v, self) {
           var value = !!parseInt(v, 10);
           self.Chart.wrapLabels(value);
         },
