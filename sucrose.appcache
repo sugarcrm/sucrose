@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# Version 0.0.3
+# Version 0.0.7
 
 CACHE:
 
@@ -95,15 +95,13 @@ img/favicons/favicon-192x192.png
 img/favicons/mstile-144x144.png
 
 #js
-js/app.js
-js/charts.js
+js/app.min.js
 js/d3.min.js
 js/jquery-2.1.4.min.js
 js/jquerymy.min.js
 js/lib.min.js
 js/sucrose.min.js
 js/sugar.min.js
-js/translate.js
 
 #manifest
 manifest/area.json
