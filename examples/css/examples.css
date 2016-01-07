@@ -480,7 +480,6 @@ hr {
 }
 .options {
   width: 33%;
-  overflow: hidden;
   padding-right: 12px;
 }
 .example {
@@ -1072,6 +1071,7 @@ button.btn {
 button .fa {
   font-size: 13px;
   color: #777;
+  pointer-events: none;
 }
 
 header {

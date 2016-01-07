@@ -522,4 +522,26 @@ $(function () {
     }
   });
 
+  var tootip = null;
+  d3.selectAll('[rel=tooltip]')
+    .on('mouseover', $.proxy(function () {
+      var title = d3.event.srcElement.dataset.title;
+      this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
+    }, this))
+    .on('mousemove', $.proxy(function () {
+      if (this.tooltip) {
+        sucrose.tooltip.position(d3.select('.demo').node(), this.tooltip, d3.event);
+      }
+    }, this))
+    .on('mouseout', $.proxy(function () {
+      if (this.tooltip) {
+        sucrose.tooltip.cleanup();
+      }
+    }, this))
+    .on('click', $.proxy(function () {
+      if (this.tooltip) {
+        sucrose.tooltip.cleanup();
+      }
+    }, this));
+
 });

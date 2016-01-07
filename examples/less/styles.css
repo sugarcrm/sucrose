@@ -169,6 +169,7 @@ button.btn {
 button .fa {
   font-size: 13px;
   color: #777;
+  pointer-events: none;
 }
 
 header {
