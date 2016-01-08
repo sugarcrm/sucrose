@@ -15,9 +15,6 @@
     // Set them to the default value as expected by sucrose
     // If the option remains the default value, the chart option will not be set
     optionDefaults: {
-      file: '',
-      color: 'default',
-      direction: 'ltr',
       show_labels: '0',
       mirror_axis: 'lab',
       tick_display: ['wrap', 'stagger', 'rotate']

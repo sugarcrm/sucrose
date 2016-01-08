@@ -41,7 +41,15 @@ $(function () {
         gradientStart: '#e8e2ca',
         gradientStop: '#3e6c0a',
 
-        // TODO: add default values for base UI
+        optionDefaults: {
+          file: '',
+          color: 'default',
+          gradient: '1',
+          direction: 'ltr'
+        },
+
+        // UI elements
+        ui: {},
 
         // Init function
         init: function ($node, runtime) {
@@ -55,6 +63,7 @@ $(function () {
 
           $title.text('Sucrose ' + this.title);
 
+          // Unbind UI
           $(window).off('resize.example');
           $chart.off('resize.example');
           $('button').off('click.example');
@@ -69,13 +78,14 @@ $(function () {
             $form.append(self.createOptionRow(k, v));
           });
 
-          // Configure jQuery resizable plugin
+          // Rebind jQuery resizable plugin
           $chart.resizable({
             containment: 'parent',
             minHeight: 200,
             minWidth: 200
           });
 
+          // Rebind UI
           $('button[data-action=full]').on('click.example', function (e) {
             $example.toggleClass('full-screen');
             self.chartResizer(self.Chart)(e);
@@ -357,10 +367,7 @@ $(function () {
                 });
 
           return promise;
-        },
-
-        // Bindings
-        ui: {}
+        }
       };
 
   var baseUI = {
@@ -487,7 +494,7 @@ $(function () {
       // Build Data from stored selected values with chart type overrides
       options = chartStore.chartOptions || chartManifest.optionPresets;
       // Data will contain default value an
-      $.each(chartManifest.optionDefaults, function (k) {
+      $.each(Manifest.optionDefaults, function (k) {
         Data[k] = {};
         Data[k].def = this;
         Data[k].val = window.uQuery(k) || options[k];

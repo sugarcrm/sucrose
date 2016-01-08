@@ -12,9 +12,6 @@
     // Set them to the default value as expected by sucrose
     // If the option remains the default value, the chart option will not be set
     optionDefaults: {
-      file: '',
-      color: 'default',
-      direction: 'ltr',
       show_values: '1',
       show_pointer: '1'
     },

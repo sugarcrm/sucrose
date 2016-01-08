@@ -11,7 +11,6 @@ chartManifest = {
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {
-    file: 'tree_data',
     controls: ''
   },
   ui: {
@@ -54,15 +53,9 @@ chartManifest = {
       ]
     },
     '[name=color]': {
-      init: $.noop,
-      bind: $.noop,
-      events: null,
       hidden: true
     },
     '[name=direction]': {
-      init: $.noop,
-      bind: $.noop,
-      events: null,
       hidden: true
     }
   }
