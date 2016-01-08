@@ -40,10 +40,7 @@ sucrose.models.lineChart = function() {
       yAxis = sucrose.models.axis()
         .orient('left')
         .tickPadding(4)
-        .tickFormat(function(d) {
-          var si = d3.formatPrefix(d, 1);
-          return d3.round(si.scale(d), 1) + si.symbol;
-        }),
+        .tickFormat(sucrose.utils.numberFormatSI),
       legend = sucrose.models.legend()
         .align('right'),
       controls = sucrose.models.legend()
@@ -58,7 +55,7 @@ sucrose.models.lineChart = function() {
   var showTooltip = function(eo, offsetElement) {
     var key = eo.series.key,
         x = xAxis.tickFormat()(lines.x()(eo.point, eo.pointIndex)),
-        y = yAxis.tickFormat()(lines.y()(eo.point, eo.pointIndex)),
+        y = lines.y()(eo.point, eo.pointIndex),
         content = tooltipContent(key, x, y, eo, chart);
 
     tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);

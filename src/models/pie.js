@@ -12,7 +12,7 @@ sucrose.models.pie = function() {
       getY = function(d) { return d.value; },
       getDescription = function(d) { return d.description; },
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      valueFormat = d3.format(',.2f'),
+      valueFormat = sucrose.utils.numberFormatSI,
       showLabels = true,
       showLeaders = true,
       pieLabelsOutside = true,
@@ -51,7 +51,7 @@ sucrose.models.pie = function() {
       direction = 'ltr',
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
-      textureFill = false,
+      textureFill = true,
       classes = function(d, i) { return 'sc-slice sc-series-' + d.series; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
@@ -105,7 +105,7 @@ sucrose.models.pie = function() {
       pieWrap.attr('transform', 'translate(' + (availableWidth / 2) + ',' + (availableHeight / 2) + ')');
 
       //------------------------------------------------------------
-
+console.log(textureFill)
       if (textureFill) {
         var mask = sucrose.utils.createTexture(defsEnter, id, -availableWidth / 2, -availableHeight / 2);
       }

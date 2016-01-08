@@ -14,7 +14,7 @@ sucrose.models.treemapChart = function() {
       tooltip = null,
       tooltips = true,
       tooltipContent = function(point) {
-        var tt = '<p>Value: <b>' + d3.format(',.2s')(point.value) + '</b></p>' +
+        var tt = '<p>Value: <b>' + sucrose.utils.numberFormatSI(point.value) + '</b></p>' +
           '<p>Name: <b>' + point.name + '</b></p>';
         return tt;
       },

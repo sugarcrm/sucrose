@@ -25,14 +25,8 @@ sucrose.models.paretoChart = function() {
         tooltipQuota = function(key, x, y, e, graph) {
             return '<p>' + e.key + ': <b>' + y + '</b></p>';
         },
-        yAxisTickFormat = function(d) {
-            var si = d3.formatPrefix(d, 2);
-            return d3.round(si.scale(d), 2) + si.symbol;
-        },
-        quotaTickFormat = function(d) {
-            var si = d3.formatPrefix(d, 2);
-            return d3.round(si.scale(d), 2) + si.symbol;
-        },
+        yAxisTickFormat = sucrose.utils.numberFormatSI,
+        quotaTickFormat = sucrose.utils.numberFormatSI,
         x,
         y,
         strings = {

@@ -50,7 +50,7 @@ sucrose.models.tree = function() {
         return sucrose.utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
     },
     useClass = false,
-    valueFormat = d3.format(',.2f'),
+    valueFormat = sucrose.utils.numberFormatSI,
     showLabels = true,
     dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 

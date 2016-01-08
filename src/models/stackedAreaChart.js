@@ -18,7 +18,7 @@ sucrose.models.stackedAreaChart = function() {
       },
       x,
       y,
-      yAxisTickFormat = d3.format(',.2f'),
+      yAxisTickFormat = sucrose.utils.numberFormatSI,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},

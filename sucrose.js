@@ -1000,6 +1000,18 @@ sucrose.utils.createTexture = function(defs, id, x, y) {
 
   return mask;
 };
+
+sucrose.utils.numberFormatSI = function(d, p) {
+  if (p === 0) {
+    return d;
+  }
+  p = p || 2;
+  if (d < 1 && d > -1) {
+      return d3.round(d, p);
+  }
+  var si = d3.formatPrefix(d, p);
+  return d3.round(si.scale(d), p) + si.symbol;
+};
 sucrose.models.axis = function() {
 
   //============================================================
@@ -1432,6 +1444,7 @@ sucrose.models.axis = function() {
         tickDimensions.forEach(function(d, i) {
           var isMin = dMin === null || d.left <= dMin,
               isMax = dMax === null || d.right >= dMax,
+              textWidth = 0,
               tickPosition = 0,
               availableSpace = 0;
 
@@ -7216,10 +7229,7 @@ sucrose.models.lineChart = function() {
       yAxis = sucrose.models.axis()
         .orient('left')
         .tickPadding(4)
-        .tickFormat(function(d) {
-          var si = d3.formatPrefix(d, 1);
-          return d3.round(si.scale(d), 1) + si.symbol;
-        }),
+        .tickFormat(sucrose.utils.numberFormatSI),
       legend = sucrose.models.legend()
         .align('right'),
       controls = sucrose.models.legend()
@@ -7234,7 +7244,7 @@ sucrose.models.lineChart = function() {
   var showTooltip = function(eo, offsetElement) {
     var key = eo.series.key,
         x = xAxis.tickFormat()(lines.x()(eo.point, eo.pointIndex)),
-        y = yAxis.tickFormat()(lines.y()(eo.point, eo.pointIndex)),
+        y = lines.y()(eo.point, eo.pointIndex),
         content = tooltipContent(key, x, y, eo, chart);
 
     tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
@@ -8592,7 +8602,7 @@ sucrose.models.multiBar = function() {
       disabled, // used in conjunction with barColor to communicate to multiBarChart what series are disabled
       clipEdge = true,
       showValues = false,
-      valueFormat = d3.format(',.2s'),
+      valueFormat = sucrose.utils.numberFormatSI,
       withLine = false,
       vertical = true,
       baseDimension = 60,
@@ -9540,10 +9550,7 @@ sucrose.models.multiBarChart = function() {
         .tickFormat(function(d) { return d; }),
       yAxis = sucrose.models.axis()
         .tickPadding(4)
-        .tickFormat(function(d) {
-          var si = d3.formatPrefix(d, 1);
-          return d3.round(si.scale(d), 1) + si.symbol;
-        }),
+        .tickFormat(multibar.valueFormat()),
       legend = sucrose.models.legend(),
       controls = sucrose.models.legend()
         .color(['#444']),
@@ -9559,7 +9566,7 @@ sucrose.models.multiBarChart = function() {
         x = (groupTotals) ?
               (eo.point.y * 100 / groupTotals[eo.pointIndex].t).toFixed(1) :
               xAxis.tickFormat()(multibar.x()(eo.point, eo.pointIndex)),
-        y = yAxis.tickFormat()(multibar.y()(eo.point, eo.pointIndex)),
+        y = multibar.y()(eo.point, eo.pointIndex),
         content = tooltipContent(key, x, y, eo, chart),
         gravity = eo.value < 0 ?
           vertical ? 'n' : 'e' :
@@ -10529,14 +10536,8 @@ sucrose.models.paretoChart = function() {
         tooltipQuota = function(key, x, y, e, graph) {
             return '<p>' + e.key + ': <b>' + y + '</b></p>';
         },
-        yAxisTickFormat = function(d) {
-            var si = d3.formatPrefix(d, 2);
-            return d3.round(si.scale(d), 2) + si.symbol;
-        },
-        quotaTickFormat = function(d) {
-            var si = d3.formatPrefix(d, 2);
-            return d3.round(si.scale(d), 2) + si.symbol;
-        },
+        yAxisTickFormat = sucrose.utils.numberFormatSI,
+        quotaTickFormat = sucrose.utils.numberFormatSI,
         x,
         y,
         strings = {
@@ -11561,7 +11562,7 @@ sucrose.models.pie = function() {
       getY = function(d) { return d.value; },
       getDescription = function(d) { return d.description; },
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      valueFormat = d3.format(',.2f'),
+      valueFormat = sucrose.utils.numberFormatSI,
       showLabels = true,
       showLeaders = true,
       pieLabelsOutside = true,
@@ -11600,7 +11601,7 @@ sucrose.models.pie = function() {
       direction = 'ltr',
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
-      textureFill = false,
+      textureFill = true,
       classes = function(d, i) { return 'sc-slice sc-series-' + d.series; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
@@ -11654,7 +11655,7 @@ sucrose.models.pie = function() {
       pieWrap.attr('transform', 'translate(' + (availableWidth / 2) + ',' + (availableHeight / 2) + ')');
 
       //------------------------------------------------------------
-
+console.log(textureFill)
       if (textureFill) {
         var mask = sucrose.utils.createTexture(defsEnter, id, -availableWidth / 2, -availableHeight / 2);
       }
@@ -13767,7 +13768,7 @@ sucrose.models.stackedAreaChart = function() {
       },
       x,
       y,
-      yAxisTickFormat = d3.format(',.2f'),
+      yAxisTickFormat = sucrose.utils.numberFormatSI,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
@@ -14834,7 +14835,7 @@ sucrose.models.treemapChart = function() {
       tooltip = null,
       tooltips = true,
       tooltipContent = function(point) {
-        var tt = '<p>Value: <b>' + d3.format(',.2s')(point.value) + '</b></p>' +
+        var tt = '<p>Value: <b>' + sucrose.utils.numberFormatSI(point.value) + '</b></p>' +
           '<p>Name: <b>' + point.name + '</b></p>';
         return tt;
       },
@@ -15280,7 +15281,7 @@ sucrose.models.tree = function() {
         return sucrose.utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
     },
     useClass = false,
-    valueFormat = d3.format(',.2f'),
+    valueFormat = sucrose.utils.numberFormatSI,
     showLabels = true,
     dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 
