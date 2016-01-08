@@ -105,7 +105,7 @@ sucrose.models.pie = function() {
       pieWrap.attr('transform', 'translate(' + (availableWidth / 2) + ',' + (availableHeight / 2) + ')');
 
       //------------------------------------------------------------
-console.log(textureFill)
+
       if (textureFill) {
         var mask = sucrose.utils.createTexture(defsEnter, id, -availableWidth / 2, -availableHeight / 2);
       }

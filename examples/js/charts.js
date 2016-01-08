@@ -27,7 +27,7 @@ function sucroseCharts(type) {
         // });
 
       chart.pie
-        .textureFill(false);
+        .textureFill(true);
       break;
     case 'funnel':
       chart = sucrose.models.funnelChart()

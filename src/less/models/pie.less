@@ -2,15 +2,14 @@
 *  Pie Chart
 */
 
-.sc-pie .hover path {
-  fill-opacity: .7;
-}
-
 .sc-pie {
-  .sc-inactive path {
+  .sc-slice.hover path.sc-base {
+    fill-opacity: .7;
+  }
+  .sc-inactive path.sc-base {
     fill-opacity: 0.5;
   }
-  .sc-inactive:hover path {
+  .sc-inactive:hover path.sc-base {
     fill-opacity: 0.75;
   }
 }

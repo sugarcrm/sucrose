@@ -486,13 +486,13 @@ text.sc-legend-link:hover {
 /***********
 *  Pie Chart
 */
-.sc-pie .hover path {
+.sc-pie .sc-slice.hover path.sc-base {
   fill-opacity: .7;
 }
-.sc-pie .sc-inactive path {
+.sc-pie .sc-inactive path.sc-base {
   fill-opacity: 0.5;
 }
-.sc-pie .sc-inactive:hover path {
+.sc-pie .sc-inactive:hover path.sc-base {
   fill-opacity: 0.75;
 }
 .sc-holeWrap text {
