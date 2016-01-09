@@ -89,7 +89,7 @@ clean:
 
 examples:
 	rm -f ./examples/css/*.css
-	cp ./sucrose.min.js examples/js/sucrose.js
+	cp ./sucrose.js examples/js/sucrose.js
 	cp ./sucrose.min.js examples/js/sucrose.min.js
 	cp ./sucrose.css examples/css/sucrose.css
 	cp ./sucrose.min.css examples/css/sucrose.min.css
