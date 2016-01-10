@@ -1,8 +1,4 @@
 # Sucrose
-Sucrose Charts based on D3.js
-
-========================
-Copyright 2016 SugarCRM
 
 SugarCRM's Chart Library: based on [D3](http://d3js.org) and derived from [NVD3](http://nvd3.org/).
 
@@ -38,3 +34,6 @@ Everyone is welcome to contribute to this project!  If you make a contribution, 
 If you also have guidelines for submissions, you should add the additional sentence:
 
 Please check out our contribution guidelines for helpful hints and tips that will make it easier to accept your pull request.
+
+========================
+Copyright 2016 SugarCRM
