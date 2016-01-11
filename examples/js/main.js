@@ -279,7 +279,9 @@ $(function () {
           $chart.find('svg').remove();
           $chart.append('<svg/>');
 
-          this.updateColorModel();
+          if (this.Chart.colorData) {
+            this.updateColorModel();
+          }
 
           // Bind D3 chart to SVG element
           d3.select('#chart svg').datum(chartData).call(this.Chart);
@@ -398,9 +400,6 @@ $(function () {
 
   var baseUI = {
         '[name=file]': {
-          init: function ($o) {
-            this.initControl($o);
-          },
           bind: function (d, v, $o) {
             return this.bindControl(d, v, $o, this.loadData);
           },
@@ -412,9 +411,6 @@ $(function () {
           type: 'select'
         },
         '[name=color]': {
-          init: function ($o) {
-            this.initControl($o);
-          },
           bind: function (d, v, $o) {
             return this.bindControl(d, v, $o, this.loadChart);
           },
@@ -431,9 +427,6 @@ $(function () {
            ]
         },
         '[name=gradient]': {
-          init: function ($o) {
-            this.initControl($o);
-          },
           bind: function (d, v, $o) {
             // if (v == null || !v.filter('1').length) {
             //   v = null;
@@ -453,12 +446,6 @@ $(function () {
            ]
         },
         '[name=direction]': {
-          init: function ($o) {
-            this.initControl($o);
-          },
-          bind: function (d, v, $o) {
-            return this.bindControl(d, v, $o, this.chartRenderer());
-          },
           setChartOption: function (v, self) {
             $('html').css('direction', v);
             self.Chart.direction(v);
@@ -502,6 +489,7 @@ $(function () {
       Object.merge(
         chartManifest.ui,
         {'[name=settings]': {
+            init: $.noop,
             bind: function (d, v, $o) {
               $o.html(JSON.stringify(this.selectedOptions, null, '  '));
               if (!v) return $o.html();
@@ -525,6 +513,24 @@ $(function () {
       Object.each(Manifest.ui, function (k, v, d) {
         if (v.hidden) {
           delete d[k];
+        } else {
+          Object.merge(
+            d[k],
+            {
+              init: function ($o) {
+                this.initControl($o);
+              },
+              bind: function (d, v, $o) {
+                return this.bindControl(d, v, $o, this.loadChart);
+              },
+              values: [
+                {value: '0', label: 'No'},
+                {value: '1', label: 'Yes'}
+              ]
+            },
+            false, // shallow copy
+            false  // do not overwrite
+          );
         }
       });
 

@@ -1,3 +1,4 @@
+
 chartManifest = {
   id: 'sucrose-tree',
   type: 'tree',
@@ -53,6 +54,9 @@ chartManifest = {
       ]
     },
     '[name=color]': {
+      hidden: true
+    },
+    '[name=gradient]': {
       hidden: true
     },
     '[name=direction]': {
