@@ -436,11 +436,14 @@ hr {
 }
 .demo h2 {
   float: left;
+  padding-right: 12px;
 }
 .demo section {
   clear: both;
   height: calc(100% - 43px);
-  padding-right: 12px;
+}
+.rtl .demo h2 {
+  float: right;
 }
 .hidden {
   display: none !important;
@@ -449,7 +452,7 @@ hr {
   height: 100%;
   float: left;
   box-sizing: border-box;
-  padding: 0 0 8px 0;
+  padding: 0 12px 8px 0;
 }
 .container.full-screen {
   position: absolute;
@@ -480,10 +483,12 @@ hr {
 }
 .options {
   width: 33%;
-  padding-right: 12px;
 }
 .example {
   width: 67%;
+}
+.rtl .options {
+  float: right;
 }
 .container-header {
   font-size: 0;
@@ -509,6 +514,13 @@ hr {
   float: none;
   display: none;
 }
+.rtl .container-header button.btn {
+  float: left;
+}
+.rtl .container-header button.btn:first-child {
+  float: none;
+  margin: 0 0 0 4px;
+}
 .panel,
 .tab {
   padding: 4px 4px 4px 8px;
@@ -531,10 +543,14 @@ hr {
 .tab {
   display: inline-block;
   width: 50%;
-  border-right: 1px solid #ccc;
+  border: 1px solid #ccc;
+  border-width: 0 1px 0;
 }
 .tab:last-child {
   border: none;
+}
+.rtl .tab {
+  border-width: 0 0 0 1px;
 }
 .sc-form,
 .sc-chart {
@@ -581,6 +597,7 @@ hr {
 .sc-chart {
   min-width: 100px;
   min-height: 100px;
+  float: left;
 }
 .ui-resizable-e {
   right: 0;
@@ -601,7 +618,7 @@ hr {
 .demo .chart-selector {
   display: inline-block;
   float: right;
-  margin-right: 12px;
+  padding-right: 12px;
   font-size: 0;
 }
 .demo .chart-selector a {
@@ -622,6 +639,9 @@ hr {
   width: 20px;
   height: 20px;
   pointer-events: none;
+}
+.rtl .demo .chart-selector {
+  float: left;
 }
 /* Popovers
 -------------------------------------------------- */

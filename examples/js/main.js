@@ -113,7 +113,7 @@ $(function () {
         },
         // Define resizable handler
         chartResizer: function (chart) {
-          //TODO: add debounce to resizer
+          // TODO: why can't I debounce?
           return chart.render ?
             function (e) {
               e.stopPropagation();
@@ -126,14 +126,14 @@ $(function () {
         },
         windowResizer: function (chart, resetter) {
           return chart.render ?
-            function (e) {
+            (function (e) {
               resetter();
               chart.render();
-            } :
-            function (e) {
+            }).debounce(50) :
+            (function (e) {
               resetter();
               chart.update();
-            };
+            }).debounce(50);
         },
         // Render chart without data update
         chartRenderer: function () {
@@ -447,7 +447,7 @@ $(function () {
         },
         '[name=direction]': {
           setChartOption: function (v, self) {
-            $('html').css('direction', v);
+            $('html').css('direction', v).attr('class', v);
             self.Chart.direction(v);
           },
           check: /ltr|rtl/i,
