@@ -623,21 +623,21 @@ hr {
 }
 .demo .chart-selector a {
   display: inline-block;
-  width: 20px;
-  height: 20px;
-  padding: 4px;
-  border: 1px solid transparent;
+  margin: 0 2px;
 }
-.demo .chart-selector a:hover {
+.demo .chart-selector a:hover svg {
   background-color: #fff;
   text-decoration: none;
 }
-.demo .chart-selector a.active {
+.demo .chart-selector a.active svg {
   border: 1px dotted #888;
 }
 .demo .chart-selector svg {
+  display: inline-block;
   width: 20px;
   height: 20px;
+  padding: 2px;
+  border: 1px solid transparent;
   pointer-events: none;
 }
 .rtl .demo .chart-selector {

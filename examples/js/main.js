@@ -2,6 +2,10 @@
 
 $(function () {
 
+  window.addEventListener('load', function() {
+      new FastClick(document.body);
+  }, false);
+
   // Application scope jQuery references to main page elements
   var $title = $('#title'),
       $picker = $('#picker'),
@@ -573,12 +577,12 @@ $(function () {
 
   // For both index list and example picker
   $select.on('click', 'a', function (e) {
-    var type = $(e.target).data('type');
-    e.preventDefault();
-    if (type !== chartType) {
-      loader(type);
-    }
-  });
+      var type = $(e.target).data('type');
+      e.preventDefault();
+      if (type !== chartType) {
+        loader(type);
+      }
+    });
 
   // Bind tooltips to buttons
   var tootip = null;
@@ -596,6 +600,10 @@ $(function () {
       if (this.tooltip) {
         sucrose.tooltip.cleanup();
       }
+    }, this))
+    .on('touchstart', $.proxy(function () {
+      d3.event.preventDefault();
+      this.tooltip = false;
     }, this))
     .on('click', $.proxy(function () {
       if (this.tooltip) {

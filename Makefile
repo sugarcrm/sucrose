@@ -35,6 +35,7 @@ LIB_FILES = \
 	./node_modules/canvg/StackBlur.js \
 	./examples/js/lib/micro-query.js \
 	./examples/js/lib/jquery-ui.min.js \
+	./examples/js/lib/fastclick.js \
 	./examples/js/lib/store2.min.js
 
 APP_FILES = \

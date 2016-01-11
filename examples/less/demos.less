@@ -199,21 +199,21 @@
   font-size: 0;
   a {
     display: inline-block;
-    width: 20px;
-    height: 20px;
-    padding: 4px;
-    border: 1px solid transparent;
-    &:hover {
+    margin: 0 2px;
+    &:hover svg {
       background-color: #fff;
       text-decoration: none;
     }
-    &.active {
+    &.active svg {
       border: 1px dotted #888;
     }
   }
   svg {
+    display: inline-block;
     width: 20px;
     height: 20px;
+    padding: 2px;
+    border: 1px solid transparent;
     pointer-events: none;
   }
 }
