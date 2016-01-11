@@ -243,33 +243,64 @@
 /* Color swatches on LESS docs page
 -------------------------------------------------- */
 /* Sets the width of the td */
-.swatch-col,
-.hex {
-  width: 30px;
+
+@gray00: darken(@gray,30%);
+@gray01: lighten(@gray,30%);
+@gray02: darken(@gray,15%);
+@gray03: lighten(@gray,35%);
+@gray04: darken(@gray,10%);
+@gray05: lighten(@gray,40%);
+@gray06: darken(@gray,05%);
+@gray07: lighten(@gray,45%);
+@gray08: darken(@gray,0%);
+@gray09: lighten(@gray,48%);
+@gray10: lighten(@gray,5%);
+@gray11: lighten(@gray,51%);
+@gray12: lighten(@gray,10%);
+@gray13: lighten(@gray,54%);
+@gray14: lighten(@gray,15%);
+@gray15: lighten(@gray,57%);
+@gray16: lighten(@gray,20%);
+@gray17: lighten(@gray,60%);
+@gray18: lighten(@gray,25%);
+@gray19: lighten(@gray,63%);
+
+.monochrome {
+  .gray00 { background-color: @gray00; }
+  .gray10 { background-color: @gray10; }
+  .gray01 { background-color: @gray01; }
+  .gray11 { background-color: @gray11; }
+  .gray02 { background-color: @gray02; }
+  .gray12 { background-color: @gray12; }
+  .gray03 { background-color: @gray03; }
+  .gray13 { background-color: @gray13; }
+  .gray04 { background-color: @gray04; }
+  .gray14 { background-color: @gray14; }
+  .gray05 { background-color: @gray05; }
+  .gray15 { background-color: @gray15; }
+  .gray06 { background-color: @gray06; }
+  .gray16 { background-color: @gray16; }
+  .gray07 { background-color: @gray07; }
+  .gray17 { background-color: @gray17; }
+  .gray08 { background-color: @gray08; }
+  .gray18 { background-color: @gray18; }
+  .gray09 { background-color: @gray09; }
+  .gray19 { background-color: @gray19; }
 }
+
 .swatch {
   display: inline-block;
-  width: 30px;
-  height: 20px;
-  margin: -6px 0;
+  width: 50px;
+  height: 50px;
+  float: left;
+  text-align: center;
+  margin: 0 3px 3px 0;
   .border-radius(3px);
-  padding: 0;
-}
-.swatch-bordered {
-  width: 28px;
-  height: 18px;
-  border: 1px solid #ddd;
-}
-.cell-swatch {
-  display: block;
-  padding: 8px;
-  background-color: #c3deb7;
-  border-bottom: 1px solid @grayLighter;
-  span {
-    display: inline-block;
-    line-height: 18px;
-    width: 100%;
-    background-color: #a0c5e8;
+  &.label {
+    padding-top: 6px;
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 15px;
   }
 }
 

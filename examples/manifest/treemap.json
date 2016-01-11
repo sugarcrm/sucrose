@@ -1,1 +1,1 @@
-{"id": "sucrose-treemap","type": "treemap","title": "Treemap Chart","optionPresets": {"file": "flare"},"optionDefaults": {},"ui": {"[name=file]": {"values": [{"value": "flare","label": "Flare Code Lines"}]}}}
+{"id": "sucrose-treemap","type": "treemap","title": "Treemap Chart","optionPresets": {"file": "flare"},"optionDefaults": {},"ui": {"[name=file]": {"values": [{"value": "flare","label": "Flare Code Lines"},{"value": "treemap_data", "label": "Treemap Data"}]}}}

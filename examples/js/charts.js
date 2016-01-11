@@ -3,7 +3,8 @@ function sucroseCharts(type) {
   var chart,
       showTitle = true,
       showLegend = true,
-      tooltips = true;
+      tooltips = true,
+      showControls = true;
 
   switch (type) {
     case 'pie':
@@ -42,7 +43,6 @@ function sucroseCharts(type) {
       break;
     case 'multibar':
       chart = sucrose.models.multiBarChart()
-        .showControls(true)
         .stacked(true)
         // .margin({top: 0, right: 0, bottom: 0, left: 0})
         // TODO: replace when PAT-2448 is merged
@@ -71,7 +71,6 @@ function sucroseCharts(type) {
       break;
     case 'line':
       chart = sucrose.models.lineChart()
-        .showControls(true)
         .useVoronoi(true)
         .clipEdge(false)
         .tooltipContent(function (key, x, y, e, graph) {
@@ -88,17 +87,19 @@ function sucroseCharts(type) {
       chart = sucrose.models.bubbleChart()
         .x(function (d) { return d3.time.format('%Y-%m-%d').parse(d.x); })
         .y(function (d) { return d.y; })
+        .groupBy(function (d) {
+            return d.assigned_user_name;
+        })
+        .filterBy(function (d) {
+          return d.probability;
+        })
         .tooltipContent(function (key, x, y, e, graph) {
           return '<p>Assigned: <b>' + e.point.assigned_user_name + '</b></p>' +
                  '<p>Amount: <b>$' + d3.format(',.2d')(e.point.opportunity) + '</b></p>' +
                  '<p>Close Date: <b>' + d3.time.format('%x')(d3.time.format('%Y-%m-%d').parse(e.point.x)) + '</b></p>' +
                  '<p>Probability: <b>' + e.point.probability + '%</b></p>' +
                  '<p>Account: <b>' + e.point.account_name + '</b></p>';
-        })
-        .groupBy(function (d) {
-            return d.assigned_user_name;
-        })
-        .filterBy(function (d) { return d.probability; });
+        });
       break;
     case 'treemap':
       chart = sucrose.models.treemapChart()
@@ -106,6 +107,23 @@ function sucroseCharts(type) {
           alert('leaf clicked');
         })
         .getSize(function (d) { return d.size; });
+        // .getSize(function(d) { return d.value; })
+        // .tooltipContent(function(point) {
+        //   var rep = (point.assigned_user_name) ? point.assigned_user_name : (point.className) ? point.parent.name : point.name,
+        //       stage = (point.sales_stage) ? point.sales_stage : (point.className) ? point.name : null,
+        //       account = (point.account_name) ? point.account_name : null;
+        //   var tt = '<p>Amount: <b>$' + d3.format(',.2s')(point.value) + '</b></p>' +
+        //            '<p>Sales Rep: <b>' + rep + '</b></p>';
+        //   if (stage) {
+        //     tt += '<p>Stage: <b>' + stage + '</b></p>';
+        //   }
+        //   if (account) {
+        //     tt += '<p>Account: <b>' + account + '</b></p>';
+        //   }
+        //   return tt;
+        // })
+
+
       showTitle = false;
       showLegend = false;
       break;
@@ -175,9 +193,9 @@ function sucroseCharts(type) {
       chart = sucrose.models.stackedAreaChart()
         .x(function(d) { return d[0]; })
         .y(function(d) { return d[1]; })
-        .showControls(true)
         .useVoronoi(false)
         //.clipEdge(true)
+        //.style('expand', 'stream', 'stacked')
         .tooltipContent(function(key, x, y, e, graph) {
           return '<p>Category: <b>' + key + '</b></p>';
         });
@@ -260,6 +278,10 @@ function sucroseCharts(type) {
     chart
       .showLegend(showLegend)
   }
+  if (chart.showControls) {
+    chart
+      .showControls(showControls)
+  }
   if (chart.tooltips) {
     chart
       .tooltips(tooltips);
@@ -270,6 +292,9 @@ function sucroseCharts(type) {
         chart.dataSeriesActivate(eo);
       });
   }
+
+  // chart.transition().duration(500)
+  // chart.legend.showAll(true);
 
   return chart;
 }

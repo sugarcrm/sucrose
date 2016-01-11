@@ -664,36 +664,82 @@ hr {
 /* Color swatches on LESS docs page
 -------------------------------------------------- */
 /* Sets the width of the td */
-.swatch-col,
-.hex {
-  width: 30px;
+.monochrome .gray00 {
+  background-color: #080808;
+}
+.monochrome .gray10 {
+  background-color: #626262;
+}
+.monochrome .gray01 {
+  background-color: #a2a2a2;
+}
+.monochrome .gray11 {
+  background-color: #d7d7d7;
+}
+.monochrome .gray02 {
+  background-color: #2f2f2f;
+}
+.monochrome .gray12 {
+  background-color: #6f6f6f;
+}
+.monochrome .gray03 {
+  background-color: #aeaeae;
+}
+.monochrome .gray13 {
+  background-color: #dfdfdf;
+}
+.monochrome .gray04 {
+  background-color: #3b3b3b;
+}
+.monochrome .gray14 {
+  background-color: #7b7b7b;
+}
+.monochrome .gray05 {
+  background-color: #bbbbbb;
+}
+.monochrome .gray15 {
+  background-color: #e6e6e6;
+}
+.monochrome .gray06 {
+  background-color: #484848;
+}
+.monochrome .gray16 {
+  background-color: #888888;
+}
+.monochrome .gray07 {
+  background-color: #c8c8c8;
+}
+.monochrome .gray17 {
+  background-color: #eeeeee;
+}
+.monochrome .gray08 {
+  background-color: #555555;
+}
+.monochrome .gray18 {
+  background-color: #959595;
+}
+.monochrome .gray09 {
+  background-color: #cfcfcf;
+}
+.monochrome .gray19 {
+  background-color: #f6f6f6;
 }
 .swatch {
   display: inline-block;
-  width: 30px;
-  height: 20px;
-  margin: -6px 0;
+  width: 50px;
+  height: 50px;
+  float: left;
+  text-align: center;
+  margin: 0 3px 3px 0;
   -webkit-border-radius: 3px;
   -moz-border-radius: 3px;
   border-radius: 3px;
-  padding: 0;
 }
-.swatch-bordered {
-  width: 28px;
-  height: 18px;
-  border: 1px solid #ddd;
-}
-.cell-swatch {
-  display: block;
-  padding: 8px;
-  background-color: #c3deb7;
-  border-bottom: 1px solid #f6f6f6;
-}
-.cell-swatch span {
-  display: inline-block;
-  line-height: 18px;
-  width: 100%;
-  background-color: #a0c5e8;
+.swatch.label {
+  padding-top: 6px;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 15px;
 }
 /* Subar cube
 -------------------------------------------------- */

@@ -152,3 +152,105 @@ function translateDataToD3(json, chartType, barType) {
         'data': data
     };
 }
+
+
+function parseTreemapData(data) {
+    var root = {
+          name: 'Opportunities',
+          children: [],
+          x: 0,
+          y: 0,
+          dx: parseInt(document.getElementById('chart').offsetWidth, 10),
+          dy: parseInt(document.getElementById('chart').offsetHeight, 10),
+          depth: 0,
+          colorIndex: '0root_Opportunities'
+        },
+        colorIndices = ['0root_Opportunities'],
+        colors = d3.scale.category20().range();
+
+    var today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+    var day_ms = 1000 * 60 * 60 * 24,
+        d1 = new Date(today.getTime() + 31 * day_ms);
+
+    var data = data.filter(function(model) {
+      // Filter for 30 days from now.
+      var d2 = new Date(model.date_closed || '1970-01-01');
+      return (d2 - d1) / day_ms <= 30;
+    }).map(function(d) {
+      // Include properties to be included in leaves
+      return {
+        assigned_user_name: d.assigned_user_name,
+        sales_stage: d.sales_stage,
+        name: d.name,
+        amount_usdollar: d.amount_usdollar,
+        color: d.color
+      };
+    });
+
+    data = _.groupBy(data, function(m) {
+      return m.assigned_user_name;
+    });
+
+    _.each(data, function(value, key, list) {
+      list[key] = _.groupBy(value, function(m) {
+        return m.sales_stage;
+      });
+    });
+
+    _.each(data, function(value1, key1) {
+      var child = [];
+      _.each(value1, function(value2, key2) {
+        if (colorIndices.indexOf('2oppgroup_' + key2) === -1) {
+          colorIndices.push('2oppgroup_' + key2);
+        }
+        _.each(value2, function(record) {
+          record.className = 'stage_' + record.sales_stage.toLowerCase().replace(' ', '');
+          record.value = parseInt(record.amount_usdollar, 10);
+          record.colorIndex = '2oppgroup_' + key2;
+        });
+        child.push({
+          name: key2,
+          className: 'stage_' + key2.toLowerCase().replace(' ', ''),
+          children: value2,
+          colorIndex: '2oppgroup_' + key2
+        });
+      });
+      if (colorIndices.indexOf('1rep_' + key1) === -1) {
+        colorIndices.push('1rep_' + key1);
+      }
+      root.children.push({
+        name: key1,
+        children: child,
+        colorIndex: '1rep_' + key1
+      });
+    });
+
+    function accumulate(d) {
+      if (d.children) {
+        return d.value = d.children.reduce(function(p, v) { return p + accumulate(v); }, 0);
+      }
+      return d.value;
+    }
+
+    accumulate(root);
+
+    colorIndices.sort(d3.ascending());
+
+    //build color indexes
+    function setColorIndex(d) {
+      var i, l;
+      d.colorIndex = colorIndices.indexOf(d.colorIndex);
+      if (d.children) {
+        l = d.children.length;
+        for (i = 0; i < l; i += 1) {
+          setColorIndex(d.children[i]);
+        }
+      }
+    }
+
+    setColorIndex(root);
+
+    return root;
+}

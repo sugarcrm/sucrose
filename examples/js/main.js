@@ -313,16 +313,12 @@ $(function () {
                   if (this.type === 'treemap' || this.type === 'tree') {
                     chartData = json;
                     this.colorLength = 0;
+                    // chartData = parseTreemapData(json.data.records);
                   } else {
 
                     chartData = json.data ? json : translateDataToD3(json, this.type);
 
                     this.colorLength = chartData.data.length;
-
-                    // if (Data.color.val === 'graduated') {
-                    //   this.Chart
-                    //     .colorData('graduated', {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength});
-                    // }
 
                     if (this.type === 'line') {
                       var xTickLabels = chartData.properties.labels ?
@@ -359,33 +355,38 @@ $(function () {
                           }
                         }
                       }
-                    } else if (this.type === 'bubble' && !json.data) {
-                      var salesStageMap = {
-                              'Negotiation/Review': 'Negotiat./Review',
-                              'Perception Analysis': 'Percept. Analysis',
-                              'Proposal/Price Quote': 'Proposal/Quote',
-                              'Id. Decision Makers': 'Id. Deciders'
+                    } else if (this.type === 'bubble') {
+                      if (!json.data) {
+                        var salesStageMap = {
+                                'Negotiation/Review': 'Negotiat./Review',
+                                'Perception Analysis': 'Percept. Analysis',
+                                'Proposal/Price Quote': 'Proposal/Quote',
+                                'Id. Decision Makers': 'Id. Deciders'
+                              };
+                        // var seriesLength = d3.nest()
+                        //       .key(function(d){return d.probability;})
+                        //       .entries(chartData.data).length;
+                        chartData = {
+                          data: data.records.map(function (d) {
+                            return {
+                              id: d.id,
+                              x: d.date_closed,
+                              y: Math.round(parseInt(d.likely_case, 10) / parseFloat(d.base_rate)),
+                              shape: 'circle',
+                              account_name: d.account_name,
+                              assigned_user_name: d.assigned_user_name,
+                              sales_stage: d.sales_stage,
+                              sales_stage_short: salesStageMap[d.sales_stage] || d.sales_stage,
+                              probability: parseInt(d.probability, 10),
+                              base_amount: parseInt(d.likely_case, 10),
+                              currency_symbol: '$'
                             };
-                      chartData = {
-                        data: data.records.map(function (d) {
-                          return {
-                            id: d.id,
-                            x: d.date_closed,
-                            y: Math.round(parseInt(d.likely_case, 10) / parseFloat(d.base_rate)),
-                            shape: 'circle',
-                            account_name: d.account_name,
-                            assigned_user_name: d.assigned_user_name,
-                            sales_stage: d.sales_stage,
-                            sales_stage_short: salesStageMap[d.sales_stage] || d.sales_stage,
-                            probability: parseInt(d.probability, 10),
-                            base_amount: parseInt(d.likely_case, 10),
-                            currency_symbol: '$'
-                          };
-                        }),
-                        properties: {
-                          title: 'Bubble Chart Data'
-                        }
-                      };
+                          }),
+                          properties: {
+                            title: 'Bubble Chart Data'
+                          }
+                        };
+                      }
                     } else if (this.type === 'pareto') {
                       this.Chart.stacked(chartData.properties.stacked || false);
                     }

@@ -16,7 +16,8 @@ chartManifest = {
     '[name=file]': {
       // Set data file options in Manifest control
       values: [
-        {value: 'flare', label: 'Flare Code Lines'}
+        {value: 'flare', label: 'Flare Code Lines'},
+        {value: 'treemap_data', label: 'Treemap Data'}
       ]
     }
   }
