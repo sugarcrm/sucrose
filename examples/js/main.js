@@ -92,7 +92,7 @@ $(function () {
           // Rebind UI
           $('button[data-action=full]').on('click.example', function (e) {
             $example.toggleClass('full-screen');
-            self.toggleTitle($(this));
+            self.toggleTooltip($(this));
             self.chartResizer(self.Chart)(e);
           });
           $('button[data-action=reset]').on('click.example', function (e) {
@@ -106,9 +106,11 @@ $(function () {
             self.chartResizer(self.Chart)(e);
           });
         },
-        toggleTitle: function($o) {
+        toggleTooltip: function($o) {
           var t1 = $o.data('title'),
               t2 = $o.data('title-toggle');
+          $o.data('title', t2)
+            .data('title-toggle', t1);
           $o.attr('data-title', t2)
             .attr('data-title-toggle', t1);
         },
