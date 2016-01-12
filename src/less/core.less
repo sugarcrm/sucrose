@@ -8,23 +8,14 @@
 .sc-background {
   fill: #FFF;
 }
-
-.sc-image-canvas {
-  visibility: hidden;
-  position: absolute;
-  left: -10000px;
-}
-
 .sc-chart-background {
   fill: transparent;
   stroke-width: 0.5px;
   stroke: @grayLight;
 }
-
-.sc-chart-texture {
-  // background: url(@textureTertiary);
-}
-
+// .sc-chart-texture {
+//   background: url(@textureTertiary);
+// }
 .sc-chart {
   height: 400px;
   min-width: 300px;
@@ -36,7 +27,6 @@
     For example width should be =< margin.left + margin.right + 1,
     of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
   */
-
   svg {
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -50,52 +40,51 @@
     height: 100%;
     // max-height: 500px;
   }
-
-  text {
-    font-style: normal;
-    font-size: (@chartTextSize);
-    font-family: @sansFontFamily;
-    fill: @textColor;
-    stroke: none;
-    cursor: default;
-  }
 }
 
+.sucrose text {
+  font-style: normal;
+  font-size: @chartTextSize;
+  font-family: @sansFontFamily;
+  fill: @textColor;
+  stroke: none;
+  cursor: default;
+}
 .sc-noData {
   font-size: @fontSizeLarge;
   font-weight: bold;
 }
-
 text.sc-title {
   font-size: @fontSizeMedium;
 }
-
 .sc-labels text {
   font-weight: bold;
   fill: #666;
 }
-
 .sc-label-value text {
   font-size: @fontSizeMedium;
 }
 
-.sc-chart-print {
+.sc-print {
   visibility: hidden;
   position: absolute !important;
   left: -10000px;
   width: 720px;
   height: 480px;
-  svg text {
-    font-size: 15px;
-  }
-  .sc-y.sc-axis text,
-  .sc-x.sc-axis text {
-    font-size: @fontSizeMedium;
-  }
-  text.sc-title  {
-    font-size: @fontSizeLarge;
-  }
-  .sc-legend text {
-    font-size: @fontSizeMedium;
-  }
 }
+// svg.sc-chart-print {
+//   text {
+//     font-size: 15px;
+//     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+//   }
+//   .sc-y.sc-axis text,
+//   .sc-x.sc-axis text {
+//     font-size: @fontSizeMedium;
+//   }
+//   text.sc-title  {
+//     font-size: @fontSizeLarge;
+//   }
+//   .sc-legend text {
+//     font-size: @fontSizeMedium;
+//   }
+// }

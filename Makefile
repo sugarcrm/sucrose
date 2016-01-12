@@ -30,18 +30,22 @@ JS_FILES = \
 	src/outro.js
 
 LIB_FILES = \
-	./node_modules/canvg/canvg.js \
 	./node_modules/canvg/rgbcolor.js \
 	./node_modules/canvg/StackBlur.js \
+	./node_modules/canvg/canvg.js \
 	./examples/js/lib/micro-query.js \
 	./examples/js/lib/jquery-ui.min.js \
 	./examples/js/lib/fastclick.js \
 	./examples/js/lib/store2.min.js
 
 APP_FILES = \
-	./examples/js/main.js \
-	./examples/js/charts.js \
-	./examples/js/translate.js
+	./examples/js/app/intro.js \
+	./examples/js/app/main.js \
+	./examples/js/app/charts.js \
+	./examples/js/app/translate.js \
+	./examples/js/app/loader.js \
+	./examples/js/app/saveimage.js \
+	./examples/js/app/outro.js
 
 CSS_FILES = \
 	src/less/sucrose.less
@@ -100,4 +104,5 @@ examples:
 	rm -f ./examples/js/lib.min.js
 	cat $(LIB_FILES) | $(JS_COMPILER) >> ./examples/js/lib.min.js
 	rm -f ./examples/js/app.min.js
+	cat $(APP_FILES) >> ./examples/js/app.js
 	cat $(APP_FILES) | $(JS_COMPILER) >> ./examples/js/app.min.js
