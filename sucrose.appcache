@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# Version 0.1.1
+# Version 0.1.2
 
 CACHE:
 
@@ -11,6 +11,7 @@ index.html
 #css
 css/examples.min.css
 css/sucrose.min.css
+css/sucrose.css
 
 #data
 data/bubble_data.json
