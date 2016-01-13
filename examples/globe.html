@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=320" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Globe Chart</title>
+    <link rel="stylesheet" href="css/sucrose.min.css">
+    <link rel="stylesheet" href="css/examples.min.css">
+    <style>
+      #globe {
+        max-width: 700px;
+        height: 500px;
+      }
+      svg {
+        pointer-events: all;
+      }
+      circle {
+        fill: #dbe4f0;
+      }
+      path {
+        fill: #aaa;
+        stroke: #fff;
+      }
+      .globe {
+        fill: #6699cc;
+        fill-opacity: .5;
+      }
+    </style>
+  </head>
+  <body class="full-screen">
+    <div class="sc-demo">
+      <div id="globe" class="sc-chart sc-chart-globe">
+        <svg></svg>
+      </div>
+    </div>
+
+<script src="js/jquery-2.1.4.min.js"></script>
+<script src="js/lib.min.js"></script>
+<script src="js/sugar.min.js"></script>
+<script src="js/jquerymy.min.js"></script>
+
+<script src="js/d3.min.js"></script>
+<script src="js/topojson.min.js"></script>
+<script src="js/sucrose.min.js"></script>
+<script src="../src/models/globe.js"></script>
+
+<script>
+
+  var chartData = {};
+
+  var chart = sucrose.models.globeChart()
+        .id('globe');
+
+  function loadData(file) {
+    d3.json('data/' + file + '.json', function(data) {
+      chartData = data;
+
+      // colorLength = data.data.length;
+
+      // chart
+      //   .colorData(color, {c1: '#e8e2ca', c2: '#3e6c0a', l: colorLength});
+
+      // d3.select('#chart1 svg')
+      //     .datum(null)
+      //     .call(chart);
+      d3.select('#globe svg')
+          .datum(data)
+          .call(chart);
+
+      sucrose.utils.windowResize(chart.update);
+    });
+  }
+
+  loadData('globe_data');
+
+  // Must select window, in case the user lets go of the mouse outside the
+  // dashlet's pane.
+  // d3.select(window)
+  //     .on('mousemove', mousemove)
+  //     .on('mouseup', mouseup);
+
+  sucrose.utils.windowResize(chart.resize);
+  sucrose.utils.resizeOnPrint(chart.resize);
+</script>
+</body>
+</html>
+
+

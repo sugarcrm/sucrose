@@ -3,8 +3,8 @@ function sucroseCharts(type) {
   var chart,
       showTitle = true,
       showLegend = true,
-      tooltips = true,
-      showControls = true;
+      showControls = true,
+      tooltips = true;
 
   switch (type) {
     case 'pie':
@@ -188,6 +188,12 @@ function sucroseCharts(type) {
         .ringWidth(50)
         .maxValue(9)
         .transitionMs(4000);
+      break;
+    case 'globe':
+      chart = sucrose.models.globeChart()
+        .id('chart');
+      showTitle = false;
+      showLegend = false;
       break;
     case 'area':
       chart = sucrose.models.stackedAreaChart()

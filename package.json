@@ -30,6 +30,7 @@
     "clean-css": "^3.4.8",
     "less": "^2.5.3",
     "less-plugin-clean-css": "^1.5.1",
+    "queue-async": "^1.0.7",
     "uglify-js": "2.6.1"
   },
   "license": "Apache-2.0"

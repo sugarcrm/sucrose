@@ -1,0 +1,16 @@
+{
+  "properties": {
+    "title": "International sales"
+  },
+  "data": [{
+    "USA": {
+      "_total": 152916.55555556,
+      "US-NY": {
+        "_total": 54831.333333333
+      },
+      "US-CA": {
+        "_total": 98085.222222222
+      }
+    }
+  }]
+}

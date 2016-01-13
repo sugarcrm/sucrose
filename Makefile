@@ -12,6 +12,7 @@ JS_FILES = \
 	src/models/funnelChart.js \
 	src/models/gauge.js \
 	src/models/gaugeChart.js \
+	src/models/globe.js \
 	src/models/line.js \
 	src/models/lineChart.js \
 	src/models/lineWithFocusChart.js \
@@ -20,19 +21,21 @@ JS_FILES = \
 	src/models/paretoChart.js \
 	src/models/pie.js \
 	src/models/pieChart.js \
-	src/models/sparkline.js \
-	src/models/sparklinePlus.js \
+	src/models/sankey.js \
 	src/models/stackedArea.js \
 	src/models/stackedAreaChart.js \
+	src/models/tree.js \
 	src/models/treemap.js \
 	src/models/treemapChart.js \
-	src/models/tree.js \
 	src/outro.js
+	# src/models/sparkline.js \
+	# src/models/sparklinePlus.js \
 
 LIB_FILES = \
 	./node_modules/canvg/rgbcolor.js \
 	./node_modules/canvg/StackBlur.js \
 	./node_modules/canvg/canvg.js \
+	./node_modules/queue-async/queue.js \
 	./examples/js/lib/micro-query.js \
 	./examples/js/lib/jquery-ui.min.js \
 	./examples/js/lib/fastclick.js \
@@ -109,7 +112,7 @@ examples:
 	node $(CSS_COMPILER) examples/less/examples.less ./examples/css/examples.css
 	node $(CSS_MINIFIER) -o ./examples/css/examples.min.css ./examples/css/examples.css
 	#node node_modules/less/bin/lessc --clean-css examples/less/examples.less ./examples/css/examples.min.css
-	rm -f ./examples/js/lib.min.js
+	cat $(LIB_FILES) >> ./examples/js/lib.js
 	cat $(LIB_FILES) | $(JS_COMPILER) >> ./examples/js/lib.min.js
 	rm -f ./examples/js/app.min.js
 	cat header $(APP_FILES) >> ./examples/js/app.js

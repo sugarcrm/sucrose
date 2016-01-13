@@ -1,0 +1,1 @@
+{"id": "sucrose-globe","type": "globe","title": "Globe Chart","optionPresets": {"file": "globe_data"},"optionDefaults": {},"ui": {"[name=file]": {"values": [{"value": "globe_data","label": "Globe Data"}]},"[name=color]": {"hidden": true},"[name=gradient]": {"hidden": true},"[name=direction]": {"hidden": true}}}
