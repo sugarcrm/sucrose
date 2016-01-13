@@ -27,7 +27,7 @@ See [CONTRIBUTING](CONTRIBUTING.md) for how you can contribute changes back into
 ## Features
 *
 
-Contributing
+## Contributing
 
 Everyone is welcome to contribute to this project!  If you make a contribution, then the [Contributor Terms](CONTRIBUTING_TERMS.md) apply to your submission.
 
@@ -36,4 +36,4 @@ If you also have guidelines for submissions, you should add the additional sente
 Please check out our contribution guidelines for helpful hints and tips that will make it easier to accept your pull request.
 
 ========================
-Copyright 2016 SugarCRM
+Copyright 2016 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.
