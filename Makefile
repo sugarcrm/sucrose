@@ -71,11 +71,12 @@ sucrose.min.css: sucrose.css
 
 sucrose.js: Makefile
 	rm -f $@
-	cat $(filter %.js,$^) >> $@
+	cat header $(filter %.js,$^) >> $@
 
 sucrose.min.js: Makefile
 	rm -f ./$@
 	cat $(filter %.js,$^) | $(JS_COMPILER) >> ./$@
+	cat header ./$@ | tee ./$@ > /dev/null
 
 d3.min.js: Makefile
 	rm -f ./lib/$@
@@ -84,16 +85,20 @@ d3.min.js: Makefile
 sucrose.css: Makefile
 	rm -f ./$@
 	node $(CSS_COMPILER) $(CSS_FILES) ./$@
+	cat header ./$@ | tee ./$@ > /dev/null
 
 sucrose.min.css: Makefile
 	rm -f ./$@
 	node $(CSS_MINIFIER) -o ./$@ sucrose.css
+	cat header ./$@ | tee ./$@ > /dev/null
 
 clean:
 	rm -rf sucrose.js sucrose.min.js sucrose.css sucrose.min.css
 
 examples:
 	rm -f ./examples/css/*.css
+	rm -f ./examples/js/app.js
+	rm -f ./examples/js/app.min.js
 	cp ./sucrose.js examples/js/sucrose.js
 	cp ./sucrose.min.js examples/js/sucrose.min.js
 	cp ./sucrose.css examples/css/sucrose.css
@@ -104,5 +109,6 @@ examples:
 	rm -f ./examples/js/lib.min.js
 	cat $(LIB_FILES) | $(JS_COMPILER) >> ./examples/js/lib.min.js
 	rm -f ./examples/js/app.min.js
-	cat $(APP_FILES) >> ./examples/js/app.js
+	cat header $(APP_FILES) >> ./examples/js/app.js
 	cat $(APP_FILES) | $(JS_COMPILER) >> ./examples/js/app.min.js
+	cat header ./examples/js/app.min.js | tee ./examples/js/app.min.js > /dev/null
