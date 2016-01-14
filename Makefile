@@ -31,25 +31,6 @@ JS_FILES = \
 	# src/models/sparkline.js \
 	# src/models/sparklinePlus.js \
 
-LIB_FILES = \
-	./node_modules/canvg/rgbcolor.js \
-	./node_modules/canvg/StackBlur.js \
-	./node_modules/canvg/canvg.js \
-	./node_modules/queue-async/queue.js \
-	./examples/js/lib/micro-query.js \
-	./examples/js/lib/jquery-ui.min.js \
-	./examples/js/lib/fastclick.js \
-	./examples/js/lib/store2.min.js
-
-APP_FILES = \
-	./examples/js/app/intro.js \
-	./examples/js/app/main.js \
-	./examples/js/app/charts.js \
-	./examples/js/app/translate.js \
-	./examples/js/app/loader.js \
-	./examples/js/app/saveimage.js \
-	./examples/js/app/outro.js
-
 CSS_FILES = \
 	src/less/sucrose.less
 
@@ -65,12 +46,19 @@ CSS_COMPILER = \
 CSS_MINIFIER = \
 	node_modules/clean-css/bin/cleancss
 
+.PHONY: examples
+
 all: sucrose.js sucrose.min.js sucrose.css sucrose.min.css
-examples: all
 sucrose.js: $(JS_FILES)
 sucrose.min.js: $(JS_FILES)
 d3.min.js: $(D3_FILES)
+sucrose.css: $(CSS_FILES)
 sucrose.min.css: sucrose.css
+
+examples:
+	npm i --production
+	cd examples && npm i --production
+	cd examples && make all
 
 sucrose.js: Makefile
 	rm -f $@
@@ -100,22 +88,3 @@ sucrose.min.css: Makefile
 
 clean:
 	rm -rf sucrose.js sucrose.min.js sucrose.css sucrose.min.css
-
-examples:
-	rm -f ./examples/css/*.css
-	rm -f ./examples/js/app.js
-	rm -f ./examples/js/app.min.js
-	cp ./sucrose.js examples/js/sucrose.js
-	cp ./sucrose.min.js examples/js/sucrose.min.js
-	cp ./sucrose.css examples/css/sucrose.css
-	cp ./sucrose.min.css examples/css/sucrose.min.css
-	node $(CSS_COMPILER) examples/less/examples.less ./examples/css/examples.css
-	node $(CSS_MINIFIER) -o ./examples/css/examples.min.css ./examples/css/examples.css
-	#node node_modules/less/bin/lessc --clean-css examples/less/examples.less ./examples/css/examples.min.css
-	cat $(LIB_FILES) >> ./examples/js/lib.js
-	cat $(LIB_FILES) | $(JS_COMPILER) >> ./examples/js/lib.min.js
-	rm -f ./examples/js/app.min.js
-	cat header $(APP_FILES) >> ./examples/js/app.js
-	cat $(APP_FILES) | $(JS_COMPILER) >> ./examples/js/app.min.js
-	cat header ./examples/js/app.min.js > temp
-	mv temp ./examples/js/app.min.js
