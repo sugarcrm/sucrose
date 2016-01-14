@@ -1,5 +1,10 @@
 <!doctype html>
+<!-- DEV::
 <html>
+::DEV -->
+<!-- PROD: -->
+<html manifest="sucrose.appcache">
+<!-- :PROD -->
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
@@ -13,11 +18,15 @@
     <link rel="icon" sizes="192x192" href="img/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" href="img/favicons/apple-touch-icon-152x152.png">
     <!-- <script>less = {env: 'production'};</script> -->
-    <!-- <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
+    <!-- DEV::
+    <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
     <link rel="stylesheet/less" type="text/css" href="less/examples.less">
-    <script src="js/less.min.js"></script> -->
+    <script src="js/less.min.js"></script>
+    ::DEV -->
+    <!-- PROD: -->
     <link rel="stylesheet" href="css/sucrose.min.css">
     <link rel="stylesheet" href="css/examples.min.css">
+    <!-- :PROD -->
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -153,13 +162,15 @@ Built as offline app with <a href="http://jquerymy.com/">jquerymy.js</a>
 <script src="js/topojson.min.js"></script>
 <script src="js/sucrose.min.js"></script>
 
-
-<!-- <script src="js/app/translate.js"></script>
+<!-- DEV::
+<script src="js/app/translate.js"></script>
 <script src="js/app/charts.js"></script>
 <script src="js/app/loader.js"></script>
 <script src="js/app/saveimage.js"></script>
 <script src="js/app/main.js"></script>
- --><script src="js/app.min.js"></script>
-
+::DEV -->
+<!-- PROD: -->
+<script src="js/app.min.js"></script>
+<!-- :PROD -->
   </body>
 </html>

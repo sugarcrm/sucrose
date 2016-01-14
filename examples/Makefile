@@ -1,9 +1,9 @@
 LIB_FILES = \
-	node_modules/canvg/canvg.js \
 	js/lib/fastclick.js \
 	js/lib/jquery-ui.min.js \
 	js/lib/micro-query.js \
 	../node_modules/queue-async/queue.min.js \
+	node_modules/canvg/canvg.js \
 	node_modules/canvg/rgbcolor.js \
 	node_modules/canvg/StackBlur.js \
 	node_modules/sugar/release/sugar-full.development.js \
@@ -19,13 +19,21 @@ APP_FILES = \
 	js/app/outro.js
 
 JS_COMPILER = \
-	uglifyjs
+	../node_modules/uglify-js/bin/uglifyjs
 
 CSS_COMPILER = \
-	node_modules/less/bin/lessc
+	../node_modules/less/bin/lessc
 
 CSS_MINIFIER = \
-	node_modules/clean-css/bin/cleancss
+	../node_modules/clean-css/bin/cleancss
+
+
+#PRODUCTION
+
+install-prod: npm-prod all index-prod
+
+npm-prod:
+	npm i --production
 
 all: sucrose examples
 
@@ -40,26 +48,40 @@ sucrose: clean-sucrose
 	cp ../node_modules/topojson/topojson.min.js js/topojson.min.js
 
 clean-sucrose:
-	rm -rf js/sucrose.js js/sucrose.min.js css/sucrose.css css/sucrose.min.css
+	rm -rf js/sucrose.js js/sucrose.min.js \
+		css/sucrose.css css/sucrose.min.css \
+		 js/d3.min.js js/topojson.min.js
 
-examples:
+examples: clean-examples
 	# copy node module files
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
 	cp node_modules/jquerymy/jquerymy.min.js js/jquerymy.min.js
 
-rebuild: build-js build-css
+clean-examples:
+	rm -rf js/jquery.min.js
+	rm -rf js/jquerymy.min.js
 
-clean: clean-js clean-css
+index-prod:
+	rm -rf index2.html
+	sed 's/<!-- PROD::/<!-- PROD: -->/g' index.html \
+		| sed 's/::PROD -->/<!-- :PROD -->/g' \
+		| sed 's/<!-- DEV: -->/<!-- DEV::/g' \
+		| sed 's/<!-- :DEV -->/::DEV -->/g' \
+		>> index2.html
+	rm -rf index.html
+	mv index2.html index.html
 
-build-css: less/examples.less clean-css
-	node $(CSS_COMPILER) less/examples.less css/examples.css
-	node $(CSS_MINIFIER) -o css/examples.min.css css/examples.css
-	# node node_modules/less/bin/lessc --clean-css less/examples.less css/examples.min.css
+clean: clean-sucrose clean-examples
 
-clean-css:
-	rm -rf css/examples.css css/examples.min.css
 
-build-js: $(APP_FILES) $(LIB_FILES) clean-js
+#DEVELOPMENT
+
+install-dev: npm-dev all js css index-dev
+
+npm-dev:
+	npm i
+
+js: $(APP_FILES) $(LIB_FILES) clean-js
 	# build lib js files
 	cat $(LIB_FILES) >> js/lib.js
 	cat $(LIB_FILES) | $(JS_COMPILER) >> js/lib.min.js
@@ -72,7 +94,27 @@ build-js: $(APP_FILES) $(LIB_FILES) clean-js
 	mv temp js/app.min.js
 
 	# copy node module files
-	cp node_modules/less/dist/less.min.js js/less.min.js
+	cp ../node_modules/less/dist/less.min.js js/less.min.js
 
 clean-js:
-	rm -rf js/app.js js/app.min.js js/lib.js js/lib.min.js
+	rm -rf js/app.js js/app.min.js js/lib.js js/lib.min.js js/less.min.js
+
+css: less/examples.less clean-css
+	node $(CSS_COMPILER) less/examples.less css/examples.css
+	node $(CSS_MINIFIER) -o css/examples.min.css css/examples.css
+	# node node_modules/less/bin/lessc --clean-css less/examples.less css/examples.min.css
+
+clean-css:
+	rm -rf css/examples.css css/examples.min.css
+
+index-dev:
+	rm -rf index2.html
+	sed 's/<!-- DEV::/<!-- DEV: -->/g' index.html \
+		| sed 's/::DEV -->/<!-- :DEV -->/g' \
+		| sed 's/<!-- PROD: -->/<!-- PROD::/g' \
+		| sed 's/<!-- :PROD -->/::PROD -->/g' \
+		>> index2.html
+	rm -rf index.html
+	mv index2.html index.html
+
+clean-dev: clean-js clean-css
