@@ -2,7 +2,7 @@
 
 SugarCRM's Chart Library: based on [D3](http://d3js.org) and derived from [NVD3](http://nvd3.org/).
 
-## Installing
+## Building
 
 1. Clone this repo
 1. Go to the cloned repo directory (./sucrose)
@@ -25,15 +25,13 @@ This library is dependent on the [D3](http://d3js.org) library so you will need 
 See [CONTRIBUTING](CONTRIBUTING.md) for how you can contribute changes back into this project.
 
 ## Features
-*
+* Check out the live [Examples](http://sucrose.io/) at sucrose.io
 
 ## Contributing
 
-Everyone is welcome to contribute to this project!  If you make a contribution, then the [Contributor Terms](CONTRIBUTING_TERMS.md) apply to your submission.
+Everyone is welcome to contribute to Sucrose!  If you make a contribution, then the [Contributor Terms](CONTRIBUTOR_TERMS.pdf) apply to your submission.
 
-If you also have guidelines for submissions, you should add the additional sentence:
+Please check out our [Contribution Guidelines](CONTRIBUTING.md) for requirements that will allow us to accept your pull request.
 
-Please check out our contribution guidelines for helpful hints and tips that will make it easier to accept your pull request.
-
-========================
+-----
 Copyright 2016 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.

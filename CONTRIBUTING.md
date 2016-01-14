@@ -21,7 +21,7 @@ Pull requests are accepted under the discretion of the Sucrose maintainer(s). Im
 merged by following the requirements and guidelines below. For any questions, please e-mail developers@sugarcrm.com.
 
 **REQUIREMENTS**
-- By creating a pull request, you are agreeing to [SugarCRM Open Source Contributor terms](CONTRIBUTOR_TERMS.md).
+- By creating a pull request, you are agreeing to [SugarCRM Open Source Contributor terms](CONTRIBUTOR_TERMS.pdf).
 
 **GUIDELINES**
 - Make sure your pull contains quality code. We will certainly provide constructive feedback on works in progress but
