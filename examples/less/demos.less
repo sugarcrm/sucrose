@@ -1,6 +1,36 @@
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('@{font-path}/NotoSans-Regular-webfont.eot');
+  src: url('@{font-path}/NotoSans-Regular-webfont.eot?#iefix') format('embedded-opentype'),
+       url('@{font-path}/NotoSans-Regular-webfont.woff') format('woff'),
+       url('@{font-path}/NotoSans-Regular-webfont.ttf') format('truetype'),
+       url('@{font-path}/NotoSans-Regular-webfont.svg#noto_sansregular') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Montserrat Bold';
+  src: url('@{font-path}/montserrat-bold-webfont.eot');
+  src: url('@{font-path}/montserrat-bold-webfont.eot?#iefix') format('embedded-opentype'),
+       url('@{font-path}/montserrat-bold-webfont.woff') format('woff'),
+       url('@{font-path}/montserrat-bold-webfont.ttf') format('truetype'),
+       url('@{font-path}/montserrat-bold-webfont.svg#montserratbold') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
 
 /* Demo Charts
 ----------------*/
+body {
+  font-family: @sansFontFamily;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: @serifFontFamily;
+  color: @headingsColor;
+}
+
 .demo {
   width: 100%;
   height: 100%;
@@ -240,10 +270,32 @@
   height: 80px;
 }
 
+/* Typography Utility classes
+-------------------------------------------------- */
+.muted          { color: @grayLight; }
+a.muted:hover   { color: darken(@grayLight, 10%); }
+
+.warning        { color: @warningText; }
+a.warning:hover { color: darken(@warningText, 10%); }
+
+.error          { color: @errorText; }
+a.error:hover   { color: darken(@errorText, 10%); }
+
+.info           { color: @infoText; }
+a.info:hover    { color: darken(@infoText, 10%); }
+
+.success        { color: @successText; }
+a.success:hover { color: darken(@successText, 10%); }
+
+.ellipsis_inline {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Color swatches on LESS docs page
 -------------------------------------------------- */
-/* Sets the width of the td */
-
 @gray00: darken(@gray,30%);
 @gray01: lighten(@gray,30%);
 @gray02: darken(@gray,15%);
@@ -295,7 +347,7 @@
   float: left;
   text-align: center;
   margin: 0 3px 3px 0;
-  .border-radius(3px);
+  border-radius: 3px;
   &.label {
     padding-top: 6px;
     font-size: 10px;
@@ -351,18 +403,6 @@
 }
 .sugar-cube.sc-white path.sc-left {
   opacity: 0.6;
-}
-
-/* Theme colors
--------------------------------------------------- */
-.PrimaryButton {
-  background-color: @PrimaryButton;
-}
-.NavigationBar {
-  background-color: @NavigationBar;
-}
-.BorderColor {
-  background-color: @BorderColor;
 }
 
 /* Responsive
