@@ -161,7 +161,7 @@ var Manifest = {
       },
       createControlFromType: function (t, v, n) {
         var control;
-        switch(t) {
+        switch (t) {
           case 'radio':
             control = this.radioControl(v, n);
             break;
@@ -270,6 +270,9 @@ var Manifest = {
         if (color && color === 'graduated') {
           options = {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength};
         }
+        if (color && color === 'data') {
+          options = {c1: this.gradientStart, c2: this.gradientStop};
+        }
         if (gradient && gradient.filter('1').length && color !== 'class') {
           options.gradient = true;
           options.orientation = gradient.filter('horizontal').length ? 'horizontal' : 'vertical';
@@ -284,6 +287,9 @@ var Manifest = {
 
         if (this.Chart.colorData) {
           this.updateColorModel();
+        }
+        if (this.Chart.stacked) {
+          this.Chart.stacked(chartData.properties.stacked || false);
         }
 
         // Bind D3 chart to SVG element
@@ -311,90 +317,17 @@ var Manifest = {
                 if (!json) {
                   return;
                 }
-
-                // TODO: redo this data translation mess
-                if (this.type === 'treemap' || this.type === 'tree') {
+                if (this.type === 'treemap' || this.type === 'tree' || this.type === 'globe') {
                   chartData = json;
                   this.colorLength = 0;
-                  // chartData = parseTreemapData(json.data.records);
                 } else {
-
-                  chartData = json.data ? json : translateDataToD3(json, this.type);
-
-                  this.colorLength = chartData.data.length;
-
-                  if (this.type === 'line') {
-                    var xTickLabels = chartData.properties.labels ?
-                          chartData.properties.labels.map(function (d) { return d.l || d; }) :
-                          [];
-
-                    if (chartData.data.length) {
-                      if (chartData.data[0].values.length && chartData.data[0].values[0] instanceof Array) {
-                        this.Chart
-                          .x(function (d) { return d[0]; })
-                          .y(function (d) { return d[1]; });
-
-                        if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
-                          this.Chart.xAxis
-                            .tickFormat(function (d) {
-                              return d3.time.format('%x')(new Date(d));
-                            });
-                        } else if (xTickLabels.length > 0) {
-                          this.Chart.xAxis
-                            .tickFormat(function (d) {
-                              return xTickLabels[d] || ' ';
-                            });
-                        }
-                      } else {
-                        this.Chart
-                          .x(function (d) { return d.x; })
-                          .y(function (d) { return d.y; });
-
-                        if (xTickLabels.length > 0) {
-                          this.Chart.xAxis
-                            .tickFormat(function (d) {
-                              return xTickLabels[d - 1] || ' ';
-                            });
-                        }
-                      }
-                    }
-                  } else if (this.type === 'bubble') {
-                    if (!json.data) {
-                      var salesStageMap = {
-                              'Negotiation/Review': 'Negotiat./Review',
-                              'Perception Analysis': 'Percept. Analysis',
-                              'Proposal/Price Quote': 'Proposal/Quote',
-                              'Id. Decision Makers': 'Id. Deciders'
-                            };
-                      // var seriesLength = d3.nest()
-                      //       .key(function(d){return d.probability;})
-                      //       .entries(chartData.data).length;
-                      chartData = {
-                        data: data.records.map(function (d) {
-                          return {
-                            id: d.id,
-                            x: d.date_closed,
-                            y: Math.round(parseInt(d.likely_case, 10) / parseFloat(d.base_rate)),
-                            shape: 'circle',
-                            account_name: d.account_name,
-                            assigned_user_name: d.assigned_user_name,
-                            sales_stage: d.sales_stage,
-                            sales_stage_short: salesStageMap[d.sales_stage] || d.sales_stage,
-                            probability: parseInt(d.probability, 10),
-                            base_amount: parseInt(d.likely_case, 10),
-                            currency_symbol: '$'
-                          };
-                        }),
-                        properties: {
-                          title: 'Bubble Chart Data'
-                        }
-                      };
-                    }
-                  } else if (this.type === 'pareto') {
-                    this.Chart.stacked(chartData.properties.stacked || false);
+                  if (json.data) {
+                    chartData = json;
+                  } else {
+                    chartData = translateDataToD3(json, this.type);
                   }
+                  this.colorLength = chartData.properties.colorLength || chartData.data.length;
                 }
-
                 this.loadChart();
               });
 

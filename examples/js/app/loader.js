@@ -77,7 +77,7 @@ function loader(type) {
     // Set Application scope variables
     chartType = type;
     chartStore = store.get('example-' + type) || {};
-    chartData = chartStore.chartData || {};
+    // chartData = chartStore.chartData || {};
     // Build Data from stored selected values with chart type overrides
     options = chartStore.chartOptions || chartManifest.optionPresets;
     // Data will contain default value an

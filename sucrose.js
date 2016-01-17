@@ -6889,6 +6889,10 @@ sucrose.models.globeChart = function() {
   // https://github.com/mbostock/world-atlas
   // https://github.com/papandreou/node-cldr
   // https://github.com/melalj/topojson-map-generator
+  // http://bl.ocks.org/mbostock/248bac3b8e354a9103c4#cubicInOut
+  // https://www.jasondavies.com/maps/rotate/
+  // https://www.jasondavies.com/maps/zoom/
+  // http://www.kirupa.com/html5/animating_with_easing_functions_in_javascript.htm
 
   //============================================================
   // Public Variables with Default Settings
@@ -6914,7 +6918,11 @@ sucrose.models.globeChart = function() {
       },
       showLabels = true,
       autoSpin = false,
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState', 'elementDblClick', 'elementMouseover', 'elementMouseout');
+      showGraticule = true,
+      color = function(d, i) { return sucrose.utils.defaultColor()(d, i); },
+      classes = function(d, i) { return 'sc-country-' + i; },
+      fill = color,
+      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 
 
   //============================================================
@@ -6929,6 +6937,7 @@ sucrose.models.globeChart = function() {
 
   var graticule = d3.geo.graticule();
 
+  var colorLimit = 0;
 
   function tooltipContent(d) {
     return '<p><b>' + d.name + '</b></p>' +
@@ -7011,7 +7020,6 @@ sucrose.models.globeChart = function() {
       // Process data
       var results = data[0];
 
-
       //------------------------------------------------------------
       // Main chart draw
 
@@ -7033,21 +7041,8 @@ sucrose.models.globeChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var colorRange = function (r) {
-              var max = d3.max(d3.values(r));
-              return d3.scale.linear().domain([0, max]).range(['#99CCFF', '#336699']);
-            },
-            color = colorRange([0]),
-            fill = function (d) {
-              var r = amount(d);
-              return r ? color(r) : '';
-            };
-
         // Globe variables
-        var m0,
-            o0,
-            t0,
-            countries,
+        var countries,
             active_country = false,
             world_map = [],
             country_map = {},
@@ -7085,8 +7080,7 @@ sucrose.models.globeChart = function() {
           .attr('class', 'sc-chartBackground')
           .attr('width', availableSize.width)
           .attr('height', availableSize.height)
-          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-          .style('fill', 'transparent');
+          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
         var backg = wrap.select('.sc-chartBackground');
 
         var gEnter = wrapEnter.append('g')
@@ -7102,6 +7096,14 @@ sucrose.models.globeChart = function() {
           .attr('class', 'sphere')
           .attr('d', path);
         var sphere = d3.select('.sphere');
+
+        if (showGraticule) {
+          globeEnter.append('path')
+              .datum(graticule)
+              .attr('class', 'graticule')
+              .attr('d', path);
+          var grid = d3.select('.graticule');
+        }
 
         // zoom and pan
         var zoom = d3.behavior.zoom()
@@ -7138,7 +7140,7 @@ sucrose.models.globeChart = function() {
 
             loadChart(world_map, 'countries');
             if (autoSpin) {
-                iRotation = setInterval(spin, 10);
+              iRotation = setInterval(spin, 10);
             }
           });
 
@@ -7146,15 +7148,20 @@ sucrose.models.globeChart = function() {
         //------------------------------------------------------------
         // Internal functions
 
-        function loadChart(data, classes) {
+        function loadChart(data, type) {
+          colorLimit = results._total;
 
           countries = globeEnter.append('g')
-              .attr('class', classes)
+              .attr('class', type)
             .selectAll('path')
               .data(data)
             .enter().append('path')
               .attr('d', clip)
-              .style('fill', fill);
+              .attr('class', classes)
+              .style('fill', function (d, i) {
+                d.amount = amount(d);
+                return fill(d, d.properties.mapcolor13 || i);
+              });
 
           countries.on('click', function (d) {
               if (active_country == d3.select(this)) {
@@ -7205,7 +7212,7 @@ sucrose.models.globeChart = function() {
               obj.parent = results;
               results = obj;
 
-              color = colorRange(results);
+              colorLimit = results._total;
 
               active_country = d3.select(this);
 
@@ -7242,8 +7249,8 @@ sucrose.models.globeChart = function() {
             return;
           }
           results = results.parent;
+          colorLimit = results._total;
           active_country.style('display', 'inline');
-          color = colorRange(results);
           d3.select('.states').remove();
           active_country = false;
           country_view = {rotate: [null, null], scale: null, zoom: null};
@@ -7254,19 +7261,15 @@ sucrose.models.globeChart = function() {
         }
 
         function region_results(d) {
-          if (results[d.id]) {
-            return results[d.id];
-          } else if (results[d.properties.name]) {
-            return results[d.properties.name];
-          }
+          return (
+            results._values[d.id] ||
+            results._values[d.properties.name] ||
+            {"_total": 0}
+          );
         }
 
         function amount(d) {
-          var result = region_results(d);
-          if (result) {
-            return result._total;
-          }
-          return 0;
+          return region_results(d)._total || 0;
         }
 
         function refresh(duration) {
@@ -7312,13 +7315,25 @@ sucrose.models.globeChart = function() {
         refresh();
       }
 
-      function mousedown() {
-        m0 = [d3.event.pageX, d3.event.pageY];
-        o0 = projection.rotate();
-        d3.event.preventDefault();
 
+      var tooltips0 = tooltips,
+          m0,
+          n0,
+          o0,
+          v0 = 0;
+
+      function mousedown() {
+        // m0 = null;
+        t0 = [0];
+        v0 = 0;
+
+        d3.event.preventDefault();
+        m0 = [d3.event.pageX, d3.event.pageY];
+        n0 = projection.invert(m0);
+        o0 = projection.rotate();
         if (tooltips) {
           sucrose.tooltip.cleanup();
+          tooltips = false;
         }
         if (autoSpin) {
           clearInterval(iRotation);
@@ -7326,20 +7341,33 @@ sucrose.models.globeChart = function() {
       }
 
       function mousemove() {
+
         if (!m0) {
           return;
         }
-        var m1 = [d3.event.pageX, d3.event.pageY],
-            //o1 = [o0[0] + (m0[0] - m1[0]) / 4, o0[1] - (m0[1] - m1[1]) / 4];
-            o1 = [o0[0] - (m0[0] - m1[0]) / 4, (country_view.rotate[1] || world_view.rotate[1])];
+
+        var m1, n1, o1;
+        var v1, a1;
+        var decay0 = 0.999;
+
+        m1 = [d3.event.pageX, d3.event.pageY];
+        n1 = projection.invert(m1);
+        if (!n1[0]) {
+          return;
+        }
+
+        v1 = n1[0] - n0[0];
+        v0 = v1;
+
+        o1 = [o0[0] + v1, (country_view.rotate[1] || world_view.rotate[1])];
         rotate(o1);
+        o0 = [o1[0], o1[1]];
       }
 
       function mouseup() {
-        if (m0) {
-          // mousemove();
-          m0 = null;
-        }
+        m0 = null;
+
+        tooltips = tooltips0;
       }
 
       dispatch.on('tooltipShow', function(eo) {
@@ -7377,14 +7405,14 @@ sucrose.models.globeChart = function() {
           container.transition().call(chart);
         });
 
-      dispatch.on('chartClick', function() {
-          if (controls.enabled()) {
-            controls.dispatch.closeMenu();
-          }
-          if (legend.enabled()) {
-            legend.dispatch.closeMenu();
-          }
-        });
+      // dispatch.on('chartClick', function() {
+      //     if (controls.enabled()) {
+      //       controls.dispatch.closeMenu();
+      //     }
+      //     if (legend.enabled()) {
+      //       legend.dispatch.closeMenu();
+      //     }
+      //   });
 
     });
 
@@ -7405,50 +7433,64 @@ sucrose.models.globeChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.series);
+          return sucrose.utils.defaultColor()(d, i);
         };
     var classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series;
+          return 'sc-country-' + i + (d.classes ? ' ' : '') + d.classes;
         };
 
     switch (type) {
       case 'graduated':
         color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.series / params.l);
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(i / params.l);
         };
         break;
       case 'class':
         color = function() {
-          return 'inherit';
+          return '';
         };
         classes = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
-          iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          var iClass = (i * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass; //TODO: use d3.formatNumber
+          return 'sc-country-' + i + ' sc-fill' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
-        };
-        classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          var r = d.amount || 0;
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(r / colorLimit);
         };
         break;
     }
-
     var fill = (!params.gradient) ? color : function(d, i) {
-      var p = {orientation: params.orientation || (vertical ? 'vertical' : 'horizontal'), position: params.position || 'middle'};
-      return multibar.gradient(d, d.series, p);
-    };
+        return chart.gradient(d, i);
+      };
 
-    // multibar.color(color);
-    // multibar.fill(fill);
-    // multibar.classes(classes);
+    chart.color(color);
+    chart.classes(classes);
+    chart.fill(fill);
 
-    // legend.color(color);
-    // legend.classes(classes);
+    return chart;
+  };
 
+  chart.color = function(_) {
+    if (!arguments.length) return color;
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) return fill;
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) return classes;
+    classes = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) return gradient;
+    gradient = _;
     return chart;
   };
 

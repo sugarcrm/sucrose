@@ -15,16 +15,10 @@
       svg {
         pointer-events: all;
       }
-      circle {
-        fill: #dbe4f0;
-      }
-      path {
-        fill: #aaa;
-        stroke: #fff;
-      }
-      .globe {
-        fill: #6699cc;
-        fill-opacity: .5;
+      .graticule.outline {
+        stroke: #333;
+        stroke-opacity: 1;
+        stroke-width: 1.5px;
       }
     </style>
   </head>
@@ -35,13 +29,13 @@
       </div>
     </div>
 
-<script src="js/jquery-2.1.4.min.js"></script>
+<script src="js/jquery.min.js"></script>
 <script src="js/lib.min.js"></script>
-<script src="js/sugar.min.js"></script>
 <script src="js/jquerymy.min.js"></script>
 
 <script src="js/d3.min.js"></script>
 <script src="js/topojson.min.js"></script>
+<script src="../node_modules/d3-ease/build/d3-ease.min.js"></script>
 <script src="js/sucrose.min.js"></script>
 <script src="../src/models/globe.js"></script>
 
@@ -56,14 +50,13 @@
     d3.json('data/' + file + '.json', function(data) {
       chartData = data;
 
-      // colorLength = data.data.length;
-
       // chart
-      //   .colorData(color, {c1: '#e8e2ca', c2: '#3e6c0a', l: colorLength});
+      //   .colorData('graduated', {c1: '#e8e2ca', c2: '#3e6c0a', l: 13});
+      // chart
+      //   .colorData('class');
+      chart
+        .colorData('data', {c1: '#AAA', c2: '#369'});
 
-      // d3.select('#chart1 svg')
-      //     .datum(null)
-      //     .call(chart);
       d3.select('#globe svg')
           .datum(data)
           .call(chart);
