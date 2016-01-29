@@ -7,6 +7,9 @@ chartManifest = {
   optionPresets: {
     file: 'globe_data'
   },
+  optionDefaults: {
+    auto_spin: 0
+  },
   // These options should match the names of all form input names
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
@@ -58,6 +61,26 @@ chartManifest = {
       bind: $.noop,
       setChartOption: $.noop,
       hidden: true
+    },
+    '[name=auto_spin]': {
+      init: function ($o) {
+        this.initControl($o);
+      },
+      bind: function (d, v, $o) {
+        return this.bindControl(d, v, $o, this.loadChart);
+      },
+      setChartOption: function (v, self) {
+        var autoSpin = $.inArray('1', v) !== -1;
+        self.Chart
+          .autoSpin(autoSpin);
+      },
+      check: /1/i,
+      events: 'change.my',
+      title: 'Auto Spin',
+      type: 'checkbox',
+      values: [
+        {value: '1', label: 'Enable'}
+      ]
     },
     '[name=direction]': {
       hidden: true

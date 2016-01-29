@@ -8,21 +8,16 @@
     <link rel="stylesheet" href="css/sucrose.min.css">
     <link rel="stylesheet" href="css/examples.min.css">
     <style>
+      body,
       #globe {
-        max-width: 700px;
-        height: 500px;
-      }
-      svg {
-        pointer-events: all;
-      }
-      .graticule.outline {
-        stroke: #333;
-        stroke-opacity: 1;
-        stroke-width: 1.5px;
+        /*width: 360px;*/
+        width: 100%;
+        height: 360px;
+        /*margin: 0 auto;*/
       }
     </style>
   </head>
-  <body class="full-screen">
+  <body>
     <div class="sc-demo">
       <div id="globe" class="sc-chart sc-chart-globe">
         <svg></svg>
@@ -50,10 +45,6 @@
     d3.json('data/' + file + '.json', function(data) {
       chartData = data;
 
-      // chart
-      //   .colorData('graduated', {c1: '#e8e2ca', c2: '#3e6c0a', l: 13});
-      // chart
-      //   .colorData('class');
       chart
         .colorData('data', {c1: '#AAA', c2: '#369'});
 
@@ -61,20 +52,12 @@
           .datum(data)
           .call(chart);
 
-      sucrose.utils.windowResize(chart.update);
+      sucrose.utils.windowResize(chart.resize);
     });
   }
 
   loadData('globe_data');
 
-  // Must select window, in case the user lets go of the mouse outside the
-  // dashlet's pane.
-  // d3.select(window)
-  //     .on('mousemove', mousemove)
-  //     .on('mouseup', mouseup);
-
-  sucrose.utils.windowResize(chart.resize);
-  sucrose.utils.resizeOnPrint(chart.resize);
 </script>
 </body>
 </html>
