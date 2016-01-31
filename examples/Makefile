@@ -35,7 +35,7 @@ install-prod: npm-prod all index-prod
 npm-prod:
 	npm i --production
 
-all: sucrose examples
+all: sucrose libraries examples
 
 sucrose: clean-sucrose
 	cp ../sucrose.js js/sucrose.js
@@ -43,23 +43,24 @@ sucrose: clean-sucrose
 	cp ../sucrose.css css/sucrose.css
 	cp ../sucrose.min.css css/sucrose.min.css
 
+clean-sucrose:
+	rm -rf js/sucrose.js js/sucrose.min.js \
+		css/sucrose.css css/sucrose.min.css
+
+libraries: $(LIB_FILES) clean-libraries
 	# copy node module files
 	cp ../node_modules/d3/d3.min.js js/d3.min.js
 	cp ../node_modules/topojson/topojson.min.js js/topojson.min.js
-
-clean-sucrose:
-	rm -rf js/sucrose.js js/sucrose.min.js \
-		css/sucrose.css css/sucrose.min.css \
-		 js/d3.min.js js/topojson.min.js
-
-examples: clean-examples
-	# copy node module files
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
 	cp node_modules/jquerymy/jquerymy.min.js js/jquerymy.min.js
+	# build lib js files
+	cat $(LIB_FILES) >> js/lib.js
+	cat $(LIB_FILES) | $(JS_COMPILER) >> js/lib.min.js
 
-clean-examples:
-	rm -rf js/jquery.min.js
-	rm -rf js/jquerymy.min.js
+clean-libraries:
+	rm -rf js/d3.min.js js/topojson.min.js
+	rm -rf js/jquery.min.js js/jquerymy.min.js
+	rm -rf js/lib.js js/lib.min.js
 
 index-prod:
 	rm -rf index2.html
@@ -71,21 +72,21 @@ index-prod:
 	rm -rf index.html
 	mv index2.html index.html
 
-clean: clean-sucrose clean-examples
+clean: clean-sucrose clean-libraries
 
 
 #DEVELOPMENT
 
-install-dev: npm-dev all js css index-dev
+install-dev: npm-prod npm-dev all libraries-dev index-dev
 
 npm-dev:
 	npm i
 
-js: $(APP_FILES) $(LIB_FILES) clean-js
-	# build lib js files
-	cat $(LIB_FILES) >> js/lib.js
-	cat $(LIB_FILES) | $(JS_COMPILER) >> js/lib.min.js
+examples: js css
 
+clean-examples: clean-js clean-css
+
+js: $(APP_FILES) clean-js
 	# build app js files
 	cat ../header $(APP_FILES) >> js/app.js
 	cat $(APP_FILES) | $(JS_COMPILER) >> js/app.min.js
@@ -93,11 +94,8 @@ js: $(APP_FILES) $(LIB_FILES) clean-js
 	rm -f js/app.min.js
 	mv temp js/app.min.js
 
-	# copy node module files
-	cp ../node_modules/less/dist/less.min.js js/less.min.js
-
 clean-js:
-	rm -rf js/app.js js/app.min.js js/lib.js js/lib.min.js js/less.min.js
+	rm -rf js/app.js js/app.min.js
 
 css: less/examples.less clean-css
 	node $(CSS_COMPILER) less/examples.less css/examples.css
@@ -106,6 +104,13 @@ css: less/examples.less clean-css
 
 clean-css:
 	rm -rf css/examples.css css/examples.min.css
+
+libraries-dev: clean-libraries-dev
+	# copy node module files
+	cp ../node_modules/less/dist/less.min.js js/less.min.js
+
+clean-libraries-dev:
+	rm -rf js/less.min.js
 
 index-dev:
 	rm -rf index2.html
