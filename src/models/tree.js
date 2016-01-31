@@ -316,7 +316,7 @@ sucrose.models.tree = function() {
                   .attr('id', 'myshape-' + getId(d))
                   .attr('version', '1.1')
                   .attr('xmlns', 'http://www.w3.org/2000/svg')
-                  .attr('xmlns:xmlns:xlink', 'http://www.w3.org/1999/xlink')
+                  .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
                   .attr('x', nodeOffsetX)
                   .attr('y', nodeOffsetY)
                   .attr('width', nodeSize.width + 'px')
