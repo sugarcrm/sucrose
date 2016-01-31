@@ -42,7 +42,7 @@ function loader(type) {
       }
     );
 
-    // Reset manifest UI Object as
+    // Reset manifest UI Object from Base UI
     Manifest.ui = Object.clone(baseUI, true);
 
     // Combine common and custom Manifest UIs

@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# Version 0.1.4
+# Version 0.1.11
 
 CACHE:
 
@@ -60,6 +60,9 @@ data/sugar_data_grouped.json
 data/top10_opportunities.json
 data/tree_data.json
 data/treemap_data.json
+data/geo/cldr_en.json
+data/geo/usa-states-topo-110.json
+data/geo/world-countries-topo-110.json
 
 #fonts
 fonts/fontawesome-webfont.eot

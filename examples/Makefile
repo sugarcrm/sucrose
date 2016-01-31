@@ -11,11 +11,14 @@ LIB_FILES = \
 
 APP_FILES = \
 	js/app/intro.js \
-	js/app/main.js \
+	js/app/variables.js \
 	js/app/charts.js \
 	js/app/translate.js \
-	js/app/loader.js \
 	js/app/saveimage.js \
+	js/app/loader.js \
+	js/app/manifest.js \
+	js/app/baseui.js \
+	js/app/main.js \
 	js/app/outro.js
 
 JS_COMPILER = \

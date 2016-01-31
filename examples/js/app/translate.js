@@ -1,42 +1,4 @@
 
-// if (this.type === 'line') {
-//   var xTickLabels = chartData.properties.labels ?
-//         chartData.properties.labels.map(function (d) { return d.l || d; }) :
-//         [];
-
-//   if (chartData.data.length) {
-//     if (chartData.data[0].values.length && chartData.data[0].values[0] instanceof Array) {
-//       this.Chart
-//         .x(function (d) { return d[0]; })
-//         .y(function (d) { return d[1]; });
-
-//       if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
-//         this.Chart.xAxis
-//           .tickFormat(function (d) {
-//             return d3.time.format('%x')(new Date(d));
-//           });
-//       } else if (xTickLabels.length > 0) {
-//         this.Chart.xAxis
-//           .tickFormat(function (d) {
-//             return xTickLabels[d] || ' ';
-//           });
-//       }
-//     } else {
-//       this.Chart
-//         .x(function (d) { return d.x; })
-//         .y(function (d) { return d.y; });
-
-//       if (xTickLabels.length > 0) {
-//         this.Chart.xAxis
-//           .tickFormat(function (d) {
-//             return xTickLabels[d - 1] || ' ';
-//           });
-//       }
-//     }
-//   }
-// }
-
-
 function translateDataToD3(json, chartType, barType) {
   var data = [],
       properties = {},
@@ -241,6 +203,58 @@ function translateDataToD3(json, chartType, barType) {
 
 }
 
+var xTickLabels;
+
+function postProcessData(chartData, chartType, Chart) {
+
+    switch (chartType) {
+
+      case 'line':
+        xTickLabels = chartData.properties.labels ?
+          chartData.properties.labels.map(function (d) { return d.l || d; }) :
+          [];
+
+        if (chartData.data.length) {
+          if (chartData.data[0].values.length && chartData.data[0].values[0] instanceof Array) {
+            Chart
+              .x(function (d) { return d[0]; })
+              .y(function (d) { return d[1]; });
+
+            if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
+              Chart.xAxis
+                .tickFormat(function (d) {
+                  return d3.time.format('%x')(new Date(d));
+                });
+            } else if (xTickLabels.length > 0) {
+              Chart.xAxis
+                .tickFormat(function (d) {
+                  return xTickLabels[d] || ' ';
+                });
+            }
+          } else {
+            Chart
+              .x(function (d) { return d.x; })
+              .y(function (d) { return d.y; });
+
+            if (xTickLabels.length > 0) {
+              Chart.xAxis
+                .tickFormat(function (d) {
+                  return xTickLabels[d - 1] || ' ';
+                });
+            }
+          }
+        }
+        break;
+
+      case 'multibar':
+        Chart.stacked(chartData.properties.stacked || false);
+        break;
+
+      case 'pareto':
+        Chart.stacked(chartData.properties.stacked);
+        break;
+    }
+}
 
 function parseTreemapData(data) {
     var root = {
