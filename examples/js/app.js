@@ -15,7 +15,8 @@ var $title,
     $options,
     $form,
     $example,
-    $chart;
+    $chart,
+    $menu;
 
 // Application scope variables
 var chartType,
@@ -903,12 +904,12 @@ var Manifest =
     // Set default direction
     $('html').css('direction', this.selectedOptions.direction);
 
-    $title.text('Sucrose ' + this.title);
+    $title.text(($demo.width < 480 ? '' : 'Sucrose ') + this.title);
 
     // Unbind UI
     $(window).off('resize.example');
     $chart.off('resize.example');
-    $('button').off('click.example');
+    $('button').off('click.example touch.example');
 
     Object.each(options, function (k, v) {
       if (v.val && v.val !== v.def) {
@@ -928,22 +929,27 @@ var Manifest =
     });
 
     // Rebind UI
-    $('button[data-action=full]').on('click.example', function (e) {
+    $('button[data-action=full]').on('click.example touch.example', function (e) {
       $example.toggleClass('full-screen');
       self.toggleTooltip($(this));
       self.chartResizer(self.Chart)(e);
     });
-    $('button[data-action=reset]').on('click.example', function (e) {
+    $('button[data-action=reset]').on('click.example touch.example', function (e) {
       $example.removeClass('full-screen');
       self.resetChartSize();
       self.loadData(self.data.file.val);
     });
-    $('button[data-action=toggle]').on('click.example', function (e) {
-      $options.toggleClass('hidden');
-      $example.toggleClass('full-width');
+    // Toggle option panel display
+    $('button[data-action=toggle]').on('click.example touch.example', function (e) {
+      if ($demo.width > 480) {
+        $options.toggleClass('hidden');
+        $example.toggleClass('full-width');
+      } else {
+        $options.toggleClass('open');
+      }
       self.chartResizer(self.Chart)(e);
     });
-    $('button[data-action=download]').on('click.example', function (e) {
+    $('button[data-action=download]').on('click.example touch.example', function (e) {
       generateImage(e);
     });
 
@@ -1253,7 +1259,8 @@ $demo = $('.demo');
 $options = $('#options');
 $form = $('#form');
 $example = $('#example');
-$chart = $('#chart');
+$chart = $('#chart')
+$menu = $('#menu');
 
 // Application scope D3 reference to button tooltip
 tootip = null;
@@ -1266,8 +1273,12 @@ chartData = {};
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
     .on('mouseover', $.proxy(function () {
-      var title = d3.event.srcElement.dataset.title;
-      this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
+      var $a = $(d3.event.currentTarget);
+      var title = $a.data('title');
+      var open = $a.closest('.chart-selector').hasClass('open');
+      if (!open) {
+        this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
+      }
     }, this))
     .on('mousemove', $.proxy(function () {
       if (this.tooltip) {
@@ -1291,11 +1302,17 @@ d3.selectAll('[rel=tooltip]')
 
 // For both index list and example picker
 $select.on('click', 'a', function (e) {
-    var type = $(e.target).data('type');
+    var type = $(e.currentTarget).data('type');
     e.preventDefault();
     if (type !== chartType) {
       loader(type);
     }
+  });
+
+// Open menu when button clicked
+$menu.on('click touch', function (e) {
+    e.preventDefault();
+    $(this).parent().toggleClass('open');
   });
 
 if (chartType) {

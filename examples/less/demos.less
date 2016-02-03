@@ -34,16 +34,50 @@ h1, h2, h3, h4, h5, h6 {
 .demo {
   width: 100%;
   height: 100%;
-  padding: 60px 0 70px 12px;
-  background-color: #F5F5F5;
+  padding: 48px 3px 62px 12px;
+  background-color: #ccc;
   box-sizing: border-box;
+  nav {
+    padding: 10px 12px 10px 0;
+    height: 26px;
+  }
   h2 {
     float: left;
-    padding-right: 12px;
+    max-width: 100%;
+    padding-left: 24px;
+    margin-bottom: 0;
+    box-sizing: border-box;
+    position: relative;
+    a,
+    span,
+    svg {
+      display: inline-block;
+    }
+    a,
+    svg {
+      line-height: 0;
+    }
+    a {
+      position: absolute;
+      left: 0;
+      top: 3px;
+      vertical-align: top;
+    }
+    span {
+      max-width: 100%;
+      padding-right: 4px;
+      line-height: 26px;
+      vertical-align: top;
+      box-sizing: border-box;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
   section {
+    position: relative;
     clear: both;
-    height: calc(~"100% - 43px");
+    height: calc(~"100% - 46px");
   }
 }
 .rtl .demo {
@@ -58,7 +92,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
   float: left;
   box-sizing: border-box;
-  padding: 0 12px 8px 0;
+  padding: 0 9px 16px 0;
   &.full-screen {
     position: absolute;
     width: 100%;
@@ -96,15 +130,16 @@ h1, h2, h3, h4, h5, h6 {
 .rtl .options {
   float: right;
 }
+.rtl .sc-form .option-row {
+  text-align: right;
+}
+
 .container-header {
   font-size: 0;
   line-height: 0;
-  background-color: #eee;
-  border: 1px solid #ccc;
-  border-radius: 4px 4px 0 0;
   span {
     font-size: 14px;
-    line-height: 18px;
+    line-height: 22px;
   }
   span,
   button.btn {
@@ -113,7 +148,7 @@ h1, h2, h3, h4, h5, h6 {
   button.btn {
     display: inline-block;
     float: right;
-    margin-right: 4px;
+    margin-right: 6px;
     &:first-child {
       float: none;
       display: none;
@@ -124,14 +159,18 @@ h1, h2, h3, h4, h5, h6 {
   float: left;
   &:first-child {
     float: none;
-    margin: 0 0 0 4px;
+    margin: 0 0 0 8px;
   }
 }
 .panel,
 .tab {
-  padding: 4px 4px 4px 8px;
+  padding: 4px 0 4px 8px;
   box-sizing: border-box;
   color: #999;
+  background-color: #eee;
+  border-radius: 4px 4px 0 0;
+  border: 1px solid #ccc;
+  border-bottom: none;
   &.active {
     color: #333;
   }
@@ -145,28 +184,42 @@ h1, h2, h3, h4, h5, h6 {
     }
   }
 }
+.rtl {
+  .panel,
+  .tab {
+    padding: 4px 8px 4px 4px;
+  }
+}
 .tab {
   display: inline-block;
-  width: 50%;
-  border: 1px solid #ccc;
-  border-width: 0 1px 0;
-  &:last-child {
-    border: none;
+  width: calc(~"50% - 2px");
+  &:first-child {
+    margin-right: 4px;
+  }
+  &.active {
+    background-color: #fff;
+    span {
+      text-decoration: underline;
+    }
   }
 }
 .rtl .tab {
-  border-width: 0 0 0 1px;
+  &:first-child {
+    margin-right: 0;
+  }
+  &:last-child {
+    margin-right: 4px;
+  }
 }
 .sc-form,
 .sc-chart {
-  height: calc(~"100% - 23px");
+  height: calc(~"100% - 29px");
   width: 100%;
   background-color: #fff;
-  border: 1px solid #ccc;
-  border-top: none;
   border-radius: 0 0 4px 4px;
   box-sizing: border-box;
-  box-shadow: #ddd 3px 3px 6px;
+  border: 1px solid #ccc;
+  border-top: none;
 }
 .sc-form {
   padding: 0px 8px 4px 0;
@@ -194,7 +247,6 @@ h1, h2, h3, h4, h5, h6 {
     height: 150px;
     padding: 8px;
     margin-left: 4px;
-    border: 1px solid #aaa;
     box-sizing: border-box;
     color: #727272;
   }
@@ -224,18 +276,49 @@ h1, h2, h3, h4, h5, h6 {
 -------------------------------------------------- */
 .demo .chart-selector {
   display: inline-block;
+  position: relative;
   float: right;
-  padding-right: 12px;
+  overflow: hidden;
+  max-height: 44px;
+  margin-right: 1px;
   font-size: 0;
+  line-height: 0;
+  background: #eee;
+  button {
+    display: none;
+    width: 26px;
+    height: 26px;
+    position: absolute;
+    right: 4px;
+    top: 9px;
+  }
+  .spacer {
+    display: none;
+    width: 12px;
+    height: 44px;
+    vertical-align: top;
+  }
+  .wrapper {
+    display: inline-block;
+    white-space: nowrap;
+    position: relative;
+    vertical-align: top;
+    padding: 0;
+  }
+  menuitem {
+    display: inline-block;
+  }
   a {
     display: inline-block;
     margin: 0 2px;
+    font-size: 0;
+    line-height: 0;
     &:hover svg {
       background-color: #fff;
       text-decoration: none;
     }
     &.active svg {
-      border: 1px dotted #888;
+      background-color: #fff;
     }
   }
   svg {
@@ -244,7 +327,6 @@ h1, h2, h3, h4, h5, h6 {
     height: 20px;
     padding: 2px;
     border: 1px solid transparent;
-    pointer-events: none;
   }
 }
 .rtl .demo .chart-selector {
@@ -408,10 +490,90 @@ a.success:hover { color: darken(@successText, 10%); }
 /* Responsive
 -------------------------------------------------- */
 @media print, screen and (max-width: 720px) {
-  nav .chart-selector {
+  .demo .chart-selector {
     position: absolute;
-    top: 8px;
-    right: 0px;
+    top: 0;
+    right: 4px;
     z-index: 2;
+    max-width: 60%;
+    background: none;
+    button {
+      display: block;
+      .fa {
+        color: #ccc;
+      }
+    }
+    .wrapper {
+      padding: 9px 0;
+      .verticalLinearGradient(#545454, #222222);
+    }
+    .spacer {
+      display: inline-block;
+    }
+    &.open {
+      overflow: visible;
+      .wrapper {
+        position: absolute;
+        top: 40px;
+        right: 7px;
+        background: #fff;
+        padding: 4px;
+        border: 1px solid #ccc;
+        box-shadow: 2px 2px 3px #999;
+        menuitem,
+        a {
+          display: block;
+        }
+        svg {
+          vertical-align: middle;
+        }
+        span {
+          display: inline-block;
+          font-size: 11px;
+          line-height: 18px;
+          vertical-align: middle;
+          margin-left: 8px;
+        }
+      }
+    }
+  }
+}
+@media print, screen and (max-width: 480px) {
+  h2 {
+    font-size: 18px;
+  }
+  h3 {
+    font-size: 16px;
+  }
+  .options {
+    display: none;
+    &.open {
+      position: absolute;
+      width: calc(~"50% - 3px");
+      height: calc(~"100% - 15px");
+      padding: 0;
+      z-index: 2;
+      display: block;
+      border: 1px solid #ccc;
+      box-shadow: 2px 2px 3px #999;
+      .panel {
+        border-bottom: none;
+      }
+      .sc-form {
+        border-top: none;
+        background: rgba(255, 255, 255, 0.9);
+      }
+    }
+  }
+  .example {
+    width: 100%;
+  }
+  .container .container-header {
+    .tab:first-child {
+      padding-left: 4px;
+    }
+    button.btn:first-child {
+      display: inline-block;
+    }
   }
 }

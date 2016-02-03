@@ -43,13 +43,12 @@ h2 {
   color: #393939;
   font-size: 24px;
 }
-h2 svg,
+h2 a,
 h2 span {
-  vertical-align: top;
+  vertical-align: middle;
 }
 h2 svg {
   display: inline-block;
-  padding-top: 2px;
 }
 h2 span {
   text-shadow: #ddd 2px 2px 2px;
@@ -154,12 +153,12 @@ hr {
 
 button.btn {
   display: inline-block;
-  width: 18px;
-  height: 18px;
-  background: #eee;
+  width: 22px;
+  height: 22px;
+  background: transparent;
   border: none;
   border-radius: 3px;
-  padding: 2px;
+  padding: 4px;
 }
 button .fa {
   font-size: 13px;
@@ -271,6 +270,14 @@ nav ul a strong {
   font-size: 14px;
   display: block;
   color: #222;
+}
+
+menu {
+  list-style: disc;
+  padding-left: 16px;
+}
+menuitem {
+  display: list-item;
 }
 
 footer {
@@ -584,6 +591,9 @@ textarea {
 .fa-arrows-alt:before {
   content: "\f0b2";
 }
+.fa-bars:before {
+  content: "\f0c9";
+}
 .fa-desktop:before {
   content: "\f108";
 }
@@ -843,17 +853,51 @@ h6 {
 .demo {
   width: 100%;
   height: 100%;
-  padding: 60px 0 70px 12px;
-  background-color: #F5F5F5;
+  padding: 48px 0 62px 12px;
+  background-color: #ccc;
   box-sizing: border-box;
+}
+.demo nav {
+  padding: 10px 12px 10px 0;
+  height: 26px;
 }
 .demo h2 {
   float: left;
-  padding-right: 12px;
+  max-width: 100%;
+  padding-left: 24px;
+  margin-bottom: 0;
+  box-sizing: border-box;
+  position: relative;
+}
+.demo h2 a,
+.demo h2 span,
+.demo h2 svg {
+  display: inline-block;
+}
+.demo h2 a,
+.demo h2 svg {
+  line-height: 0;
+}
+.demo h2 a {
+  position: absolute;
+  left: 0;
+  top: 3px;
+  vertical-align: top;
+}
+.demo h2 span {
+  max-width: 100%;
+  padding-right: 4px;
+  line-height: 26px;
+  vertical-align: top;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .demo section {
+  position: relative;
   clear: both;
-  height: calc(100% - 43px);
+  height: calc(100% - 46px);
 }
 .rtl .demo h2 {
   float: right;
@@ -865,7 +909,7 @@ h6 {
   height: 100%;
   float: left;
   box-sizing: border-box;
-  padding: 0 12px 8px 0;
+  padding: 0 12px 16px 0;
 }
 .container.full-screen {
   position: absolute;
@@ -903,16 +947,16 @@ h6 {
 .rtl .options {
   float: right;
 }
+.rtl .sc-form .option-row {
+  text-align: right;
+}
 .container-header {
   font-size: 0;
   line-height: 0;
-  background-color: #eee;
-  border: 1px solid #ccc;
-  border-radius: 4px 4px 0 0;
 }
 .container-header span {
   font-size: 14px;
-  line-height: 18px;
+  line-height: 22px;
 }
 .container-header span,
 .container-header button.btn {
@@ -921,7 +965,7 @@ h6 {
 .container-header button.btn {
   display: inline-block;
   float: right;
-  margin-right: 4px;
+  margin-right: 6px;
 }
 .container-header button.btn:first-child {
   float: none;
@@ -939,6 +983,10 @@ h6 {
   padding: 4px 4px 4px 8px;
   box-sizing: border-box;
   color: #999;
+  background-color: #eee;
+  border-radius: 4px 4px 0 0;
+  border: 1px solid #ccc;
+  border-bottom: none;
 }
 .panel.active,
 .tab.active {
@@ -955,26 +1003,24 @@ h6 {
 }
 .tab {
   display: inline-block;
-  width: 50%;
-  border: 1px solid #ccc;
-  border-width: 0 1px 0;
+  width: calc(50% - 2px);
 }
-.tab:last-child {
-  border: none;
+.tab:first-child {
+  margin-right: 4px;
 }
-.rtl .tab {
-  border-width: 0 0 0 1px;
+.tab.active {
+  background-color: #fff;
 }
 .sc-form,
-.sc-chart {
-  height: calc(100% - 23px);
+.sc-chart,
+.sc-table {
+  height: calc(100% - 29px);
   width: 100%;
   background-color: #fff;
-  border: 1px solid #ccc;
-  border-top: none;
   border-radius: 0 0 4px 4px;
   box-sizing: border-box;
-  box-shadow: #ddd 3px 3px 6px;
+  border: 1px solid #ccc;
+  border-top: none;
 }
 .sc-form {
   padding: 0px 8px 4px 0;
@@ -1003,7 +1049,6 @@ h6 {
   height: 150px;
   padding: 8px;
   margin-left: 4px;
-  border: 1px solid #aaa;
   box-sizing: border-box;
   color: #727272;
 }
@@ -1030,20 +1075,51 @@ h6 {
 -------------------------------------------------- */
 .demo .chart-selector {
   display: inline-block;
+  position: relative;
   float: right;
-  padding-right: 12px;
+  overflow: hidden;
+  max-height: 44px;
+  margin-right: 1px;
   font-size: 0;
+  line-height: 0;
+  background: #eee;
+}
+.demo .chart-selector button {
+  display: none;
+  width: 26px;
+  height: 26px;
+  position: absolute;
+  right: 0;
+  top: 9px;
+}
+.demo .chart-selector .spacer {
+  display: none;
+  width: 12px;
+  height: 44px;
+  vertical-align: top;
+}
+.demo .chart-selector .wrapper {
+  display: inline-block;
+  white-space: nowrap;
+  position: relative;
+  vertical-align: top;
+  padding: 0;
+}
+.demo .chart-selector menuitem {
+  display: inline-block;
 }
 .demo .chart-selector a {
   display: inline-block;
   margin: 0 2px;
+  font-size: 0;
+  line-height: 0;
 }
 .demo .chart-selector a:hover svg {
   background-color: #fff;
   text-decoration: none;
 }
 .demo .chart-selector a.active svg {
-  border: 1px dotted #888;
+  background-color: #fff;
 }
 .demo .chart-selector svg {
   display: inline-block;
@@ -1051,7 +1127,6 @@ h6 {
   height: 20px;
   padding: 2px;
   border: 1px solid transparent;
-  pointer-events: none;
 }
 .rtl .demo .chart-selector {
   float: left;
@@ -1238,10 +1313,86 @@ a.success:hover {
 /* Responsive
 -------------------------------------------------- */
 @media print, screen and (max-width: 720px) {
-  nav .chart-selector {
+  .demo .chart-selector {
     position: absolute;
-    top: 8px;
-    right: 0px;
+    top: 0;
+    right: 7px;
     z-index: 2;
+    max-width: 60%;
+    background: none;
+  }
+  .demo .chart-selector button {
+    display: block;
+  }
+  .demo .chart-selector .wrapper {
+    padding: 9px 0;
+    background-color: #404040;
+    background-image: -moz-linear-gradient(top, #545454, #222222);
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#545454), to(#222222));
+    background-image: -webkit-linear-gradient(top, #545454, #222222);
+    background-image: -o-linear-gradient(top, #545454, #222222);
+    background-image: linear-gradient(to bottom, #545454, #222222);
+    background-repeat: repeat-x;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff545454', endColorstr='#ff222222', GradientType=0);
+  }
+  .demo .chart-selector .spacer {
+    display: inline-block;
+  }
+  .demo .chart-selector.open {
+    overflow: visible;
+  }
+  .demo .chart-selector.open .wrapper {
+    position: absolute;
+    right: -1px;
+    top: 40px;
+    background: #fff;
+    padding: 4px;
+    border: 1px solid #555;
+  }
+  .demo .chart-selector.open .wrapper menuitem,
+  .demo .chart-selector.open .wrapper a {
+    display: block;
+  }
+  .demo .chart-selector.open .wrapper svg {
+    vertical-align: middle;
+  }
+  .demo .chart-selector.open .wrapper span {
+    display: inline-block;
+    font-size: 11px;
+    line-height: 18px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+}
+@media print, screen and (max-width: 480px) {
+  h2 {
+    font-size: 18px;
+  }
+  h3 {
+    font-size: 16px;
+  }
+  .options {
+    display: none;
+  }
+  .options.open {
+    position: absolute;
+    width: calc(50% + 3px);
+    z-index: 2;
+    display: block;
+  }
+  .options.open .panel {
+    border: 1px solid #555;
+    border-bottom: none;
+  }
+  .options.open .sc-form {
+    border: 1px solid #555;
+    border-top: none;
+    background: rgba(255, 255, 255, 0.9);
+  }
+  .example {
+    width: 100%;
+  }
+  .container .container-header button.btn:first-child {
+    display: inline-block;
   }
 }

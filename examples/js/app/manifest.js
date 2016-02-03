@@ -39,12 +39,12 @@ var Manifest =
     // Set default direction
     $('html').css('direction', this.selectedOptions.direction);
 
-    $title.text('Sucrose ' + this.title);
+    $title.text(($demo.width < 480 ? '' : 'Sucrose ') + this.title);
 
     // Unbind UI
     $(window).off('resize.example');
     $chart.off('resize.example');
-    $('button').off('click.example');
+    $('button').off('click.example touch.example');
 
     Object.each(options, function (k, v) {
       if (v.val && v.val !== v.def) {
@@ -64,22 +64,27 @@ var Manifest =
     });
 
     // Rebind UI
-    $('button[data-action=full]').on('click.example', function (e) {
+    $('button[data-action=full]').on('click.example touch.example', function (e) {
       $example.toggleClass('full-screen');
       self.toggleTooltip($(this));
       self.chartResizer(self.Chart)(e);
     });
-    $('button[data-action=reset]').on('click.example', function (e) {
+    $('button[data-action=reset]').on('click.example touch.example', function (e) {
       $example.removeClass('full-screen');
       self.resetChartSize();
       self.loadData(self.data.file.val);
     });
-    $('button[data-action=toggle]').on('click.example', function (e) {
-      $options.toggleClass('hidden');
-      $example.toggleClass('full-width');
+    // Toggle option panel display
+    $('button[data-action=toggle]').on('click.example touch.example', function (e) {
+      if ($demo.width > 480) {
+        $options.toggleClass('hidden');
+        $example.toggleClass('full-width');
+      } else {
+        $options.toggleClass('open');
+      }
       self.chartResizer(self.Chart)(e);
     });
-    $('button[data-action=download]').on('click.example', function (e) {
+    $('button[data-action=download]').on('click.example touch.example', function (e) {
       generateImage(e);
     });
 

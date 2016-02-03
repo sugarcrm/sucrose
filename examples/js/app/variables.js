@@ -10,7 +10,8 @@ var $title,
     $options,
     $form,
     $example,
-    $chart;
+    $chart,
+    $menu;
 
 // Application scope variables
 var chartType,

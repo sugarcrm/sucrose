@@ -36,13 +36,12 @@ h2 {
   color: #393939;
   font-size: 24px;
 }
-h2 svg,
+h2 a,
 h2 span {
-  vertical-align: top;
+  vertical-align: middle;
 }
 h2 svg {
   display: inline-block;
-  padding-top: 2px;
 }
 h2 span {
   text-shadow: #ddd 2px 2px 2px;
@@ -147,12 +146,12 @@ hr {
 
 button.btn {
   display: inline-block;
-  width: 18px;
-  height: 18px;
-  background: #eee;
+  width: 22px;
+  height: 22px;
+  background: transparent;
   border: none;
   border-radius: 3px;
-  padding: 2px;
+  padding: 4px;
 }
 button .fa {
   font-size: 13px;
@@ -264,6 +263,14 @@ nav ul a strong {
   font-size: 14px;
   display: block;
   color: #222;
+}
+
+menu {
+  list-style: disc;
+  padding-left: 16px;
+}
+menuitem {
+  display: list-item;
 }
 
 footer {

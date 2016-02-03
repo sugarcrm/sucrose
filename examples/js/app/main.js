@@ -10,7 +10,8 @@ $demo = $('.demo');
 $options = $('#options');
 $form = $('#form');
 $example = $('#example');
-$chart = $('#chart');
+$chart = $('#chart')
+$menu = $('#menu');
 
 // Application scope D3 reference to button tooltip
 tootip = null;
@@ -23,8 +24,12 @@ chartData = {};
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
     .on('mouseover', $.proxy(function () {
-      var title = d3.event.srcElement.dataset.title;
-      this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
+      var $a = $(d3.event.currentTarget);
+      var title = $a.data('title');
+      var open = $a.closest('.chart-selector').hasClass('open');
+      if (!open) {
+        this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
+      }
     }, this))
     .on('mousemove', $.proxy(function () {
       if (this.tooltip) {
@@ -48,11 +53,17 @@ d3.selectAll('[rel=tooltip]')
 
 // For both index list and example picker
 $select.on('click', 'a', function (e) {
-    var type = $(e.target).data('type');
+    var type = $(e.currentTarget).data('type');
     e.preventDefault();
     if (type !== chartType) {
       loader(type);
     }
+  });
+
+// Open menu when button clicked
+$menu.on('click touch', function (e) {
+    e.preventDefault();
+    $(this).parent().toggleClass('open');
   });
 
 if (chartType) {
