@@ -10,7 +10,8 @@ $demo = $('.demo');
 $options = $('#options');
 $form = $('#form');
 $example = $('#example');
-$chart = $('#chart')
+$chart = $('#chart');
+$table = $('#table');
 $menu = $('#menu');
 
 // Application scope D3 reference to button tooltip
@@ -20,13 +21,14 @@ tootip = null;
 chartType = window.uQuery('type');
 chartStore = {};
 chartData = {};
+tableData = {};
 
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
     .on('mouseover', $.proxy(function () {
-      var $a = $(d3.event.currentTarget);
-      var title = $a.data('title');
-      var open = $a.closest('.chart-selector').hasClass('open');
+      var $a = $(d3.event.currentTarget),
+          title = $a.data('title'),
+          open = $a.closest('.chart-selector').hasClass('open');
       if (!open) {
         this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
       }

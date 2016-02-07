@@ -124,18 +124,23 @@ table {
 th, td {
   text-align: left;
   padding: 5px 10px;
-  border-bottom: 1px solid #e5e5e5;
 }
 
 dt {
   color: #444;
   font-weight: 700;
 }
-
+td {
+  border-bottom: 1px solid #e5e5e5;
+}
 th {
   color: #444;
+  border-bottom: 2px solid #ccc;
 }
-
+tfoot td {
+  border-top: 2px solid #ccc;
+  font-style: italic;
+}
 img {
   max-width: 100%; /*Make images inherently responsive*/
   vertical-align: inherit;
@@ -1052,10 +1057,38 @@ h6 {
   box-sizing: border-box;
   color: #727272;
 }
-.sc-chart {
+.sc-chart,
+.sc-table {
   min-width: 100px;
   min-height: 100px;
   float: left;
+}
+.sc-table {
+  padding: 8px;
+  overflow: scroll;
+}
+.sc-table table {
+  border: 1px solid #ccc;
+}
+.sc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.sc-table th,
+.sc-table td {
+  line-height: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+.sc-table th:first-child,
+.sc-table td:first-child {
+  text-align: left;
+  white-space: nowrap;
+}
+.sc-table td:last-child {
+  color: #444;
+}
+.sc-td.sc-sum-total {
+  color: #000;
 }
 .ui-resizable-e {
   right: 0;

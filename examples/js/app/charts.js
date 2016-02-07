@@ -32,6 +32,7 @@ function sucroseCharts(type) {
       break;
     case 'funnel':
       chart = sucrose.models.funnelChart()
+        .fmtValueLabel(function(d) { return '$' + (d.label || d.value || d) + 'K'; })
         .tooltipContent(function (key, x, y, e, graph) {
           return '<p>Stage: <b>' + key + '</b></p>' +
                  '<p>Amount: <b>$' + parseInt(y) + 'K</b></p>' +
@@ -131,11 +132,11 @@ function sucroseCharts(type) {
       chart = sucrose.models.paretoChart()
         .stacked(true)
         .clipEdge(false)
-        .yAxisTickFormat(function(d) {
+        .yAxisTickFormat(function (d) {
           var si = d3.formatPrefix(d, 2);
           return '$' + d3.round(si.scale(d), 2) + si.symbol;
         })
-        .quotaTickFormat(function(d) {
+        .quotaTickFormat(function (d) {
           var si = d3.formatPrefix(d, 2);
           return '$' + d3.round(si.scale(d), 2) + si.symbol;
         })
@@ -273,6 +274,9 @@ function sucroseCharts(type) {
         showTitle = false;
         showLegend = false;
         tooltips = false;
+      break;
+    case 'table':
+      chart = sucrose.models.table();
       break;
   }
 

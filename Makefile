@@ -24,6 +24,7 @@ JS_FILES = \
 	src/models/sankey.js \
 	src/models/stackedArea.js \
 	src/models/stackedAreaChart.js \
+	src/models/table.js \
 	src/models/tree.js \
 	src/models/treemap.js \
 	src/models/treemapChart.js \

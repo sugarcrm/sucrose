@@ -212,7 +212,8 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 .sc-form,
-.sc-chart {
+.sc-chart,
+.sc-table {
   height: calc(~"100% - 29px");
   width: 100%;
   background-color: #fff;
@@ -251,10 +252,44 @@ h1, h2, h3, h4, h5, h6 {
     color: #727272;
   }
 }
-.sc-chart {
+.rtl .sc-form {
+  padding: 0px 4px 4px 4px;
+}
+.sc-chart,
+.sc-table {
   min-width: 100px;
   min-height: 100px;
   float: left;
+  &.hide {
+    display: none;
+  }
+}
+.sc-table {
+  padding: 8px;
+  overflow: scroll;
+  table {
+    border: 1px solid #ccc;
+  }
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  th,
+  td {
+    line-height: 16px;
+    text-align: center;
+    font-size: 14px;
+    &:first-child {
+      text-align: left;
+      white-space: nowrap;
+    }
+  }
+  td:last-child {
+    color: #444;
+  }
+}
+.sc-td.sc-sum-total {
+  color: #000;
+  background-color: #e5e5e5;
 }
 .ui-resizable-e {
   right: 0;

@@ -13,7 +13,7 @@ APP_FILES = \
 	js/app/intro.js \
 	js/app/variables.js \
 	js/app/charts.js \
-	js/app/translate.js \
+	js/app/transform.js \
 	js/app/saveimage.js \
 	js/app/loader.js \
 	js/app/manifest.js \

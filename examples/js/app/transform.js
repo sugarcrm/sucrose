@@ -1,5 +1,5 @@
 
-function translateDataToD3(json, chartType, barType) {
+function transformDataToD3(json, chartType, barType) {
   var data = [],
       properties = {},
       value = 0,
@@ -205,55 +205,115 @@ function translateDataToD3(json, chartType, barType) {
 
 var xTickLabels;
 
+function transformTableData(chartData, chartType, Chart) {
+  var data = [],
+      properties = chartData.properties || {};
+
+  switch (chartType) {
+    case 'funnel':
+      data = chartData.data.map(function(d) {
+        return {
+          'key': d.key || 'undefined',
+          'count': d.count || null,
+          'values': d.values.map(function(k) {
+              return {'x': k.x, 'y': (isNaN(k.value) ? k.y : k.value)};
+            })
+        };
+      });
+      break;
+    case 'pie':
+      data = chartData.data.map(function(d, i) {
+        return {
+          'key': d.key || 'undefined',
+          'count': d.count || null,
+          'values': [{'x': i + 1, 'y': Chart.y()(d)}]
+        };
+      });
+      break;
+    case 'line':
+      data = chartData.data.map(function(d, i) {
+        return {
+          'key': d.key || 'undefined',
+          'values': d.values.map(function(j, k) {
+              return {'x': k + 1, 'y': j[1]};
+            })
+        };
+      });
+      properties.labels = properties.labels || d3.merge(chartData.data.map(function(d) {
+          return d.values.map(function(d, i) {
+            return Chart.lines.x()(d, i);
+          });
+        }))
+        .reduce(function(p, c) {
+          if (p.indexOf(c) < 0) p.push(c);
+          return p;
+        }, [])
+        .sort(function(a, b) {
+          return a - b;
+        })
+        .map(function(d, i) {
+          return {'group': i + 1, 'l': Chart.xAxis.tickFormat()(d)};
+        });
+      break;
+    default:
+      data = chartData.data;
+  }
+
+  return {
+    'properties': properties,
+    'data': data
+  };
+}
+
 function postProcessData(chartData, chartType, Chart) {
 
-    switch (chartType) {
+  switch (chartType) {
 
-      case 'line':
-        xTickLabels = chartData.properties.labels ?
-          chartData.properties.labels.map(function (d) { return d.l || d; }) :
-          [];
+    case 'line':
+      xTickLabels = chartData.properties.labels ?
+        chartData.properties.labels.map(function (d) { return d.l || d; }) :
+        [];
 
-        if (chartData.data.length) {
-          if (chartData.data[0].values.length && chartData.data[0].values[0] instanceof Array) {
-            Chart
-              .x(function (d) { return d[0]; })
-              .y(function (d) { return d[1]; });
+      if (chartData.data.length) {
+        if (chartData.data[0].values.length && chartData.data[0].values[0] instanceof Array) {
+          Chart
+            .x(function (d) { return d[0]; })
+            .y(function (d) { return d[1]; });
 
-            if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
-              Chart.xAxis
-                .tickFormat(function (d) {
-                  return d3.time.format('%x')(new Date(d));
-                });
-            } else if (xTickLabels.length > 0) {
-              Chart.xAxis
-                .tickFormat(function (d) {
-                  return xTickLabels[d] || ' ';
-                });
-            }
-          } else {
-            Chart
-              .x(function (d) { return d.x; })
-              .y(function (d) { return d.y; });
+          if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
+            Chart.xAxis
+              .tickFormat(function (d) {
+                return d3.time.format('%x')(new Date(d));
+              });
+          } else if (xTickLabels.length > 0) {
+            Chart.xAxis
+              .tickFormat(function (d) {
+                return xTickLabels[d] || ' ';
+              });
+          }
+        } else {
+          Chart
+            .x(function (d) { return d.x; })
+            .y(function (d) { return d.y; });
 
-            if (xTickLabels.length > 0) {
-              Chart.xAxis
-                .tickFormat(function (d) {
-                  return xTickLabels[d - 1] || ' ';
-                });
-            }
+          if (xTickLabels.length > 0) {
+            Chart.xAxis
+              .tickFormat(function (d) {
+                return xTickLabels[d - 1] || ' ';
+              });
           }
         }
-        break;
+      }
+      break;
 
-      case 'multibar':
-        Chart.stacked(chartData.properties.stacked || false);
-        break;
+    case 'multibar':
+      Chart.stacked(chartData.properties.stacked === false ? false : true);
+      break;
 
-      case 'pareto':
-        Chart.stacked(chartData.properties.stacked);
-        break;
-    }
+    case 'pareto':
+      Chart.stacked(chartData.properties.stacked);
+      break;
+  }
 }
 
 function parseTreemapData(data) {

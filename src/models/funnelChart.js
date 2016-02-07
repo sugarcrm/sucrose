@@ -457,15 +457,13 @@ sucrose.models.funnelChart = function() {
   };
 
   chart.x = function(_) {
-    if (!arguments.length) { return getX; }
-    getX = _;
-    funnelWrap.x(_);
+    if (!arguments.length) { return funnel.x(); }
+    funnel.x(_);
     return chart;
   };
 
   chart.y = function(_) {
-    if (!arguments.length) { return getY; }
-    getY = _;
+    if (!arguments.length) { return funnel.y(); }
     funnel.y(_);
     return chart;
   };

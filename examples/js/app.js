@@ -16,12 +16,14 @@ var $title,
     $form,
     $example,
     $chart,
+    $table,
     $menu;
 
 // Application scope variables
 var chartType,
     chartStore,
     chartData,
+    tableData,
     tootip;
 
 function sucroseCharts(type) {
@@ -57,6 +59,7 @@ function sucroseCharts(type) {
       break;
     case 'funnel':
       chart = sucrose.models.funnelChart()
+        .fmtValueLabel(function(d) { return '$' + (d.label || d.value || d) + 'K'; })
         .tooltipContent(function (key, x, y, e, graph) {
           return '<p>Stage: <b>' + key + '</b></p>' +
                  '<p>Amount: <b>$' + parseInt(y) + 'K</b></p>' +
@@ -156,11 +159,11 @@ function sucroseCharts(type) {
       chart = sucrose.models.paretoChart()
         .stacked(true)
         .clipEdge(false)
-        .yAxisTickFormat(function(d) {
+        .yAxisTickFormat(function (d) {
           var si = d3.formatPrefix(d, 2);
           return '$' + d3.round(si.scale(d), 2) + si.symbol;
         })
-        .quotaTickFormat(function(d) {
+        .quotaTickFormat(function (d) {
           var si = d3.formatPrefix(d, 2);
           return '$' + d3.round(si.scale(d), 2) + si.symbol;
         })
@@ -299,6 +302,9 @@ function sucroseCharts(type) {
         showLegend = false;
         tooltips = false;
       break;
+    case 'table':
+      chart = sucrose.models.table();
+      break;
   }
 
   if (chart.showTitle) {
@@ -330,7 +336,7 @@ function sucroseCharts(type) {
   return chart;
 }
 
-function translateDataToD3(json, chartType, barType) {
+function transformDataToD3(json, chartType, barType) {
   var data = [],
       properties = {},
       value = 0,
@@ -536,55 +542,115 @@ function translateDataToD3(json, chartType, barType) {
 
 var xTickLabels;
 
+function transformTableData(chartData, chartType, Chart) {
+  var data = [],
+      properties = chartData.properties || {};
+
+  switch (chartType) {
+    case 'funnel':
+      data = chartData.data.map(function(d) {
+        return {
+          'key': d.key || 'undefined',
+          'count': d.count || null,
+          'values': d.values.map(function(k) {
+              return {'x': k.x, 'y': (isNaN(k.value) ? k.y : k.value)};
+            })
+        };
+      });
+      break;
+    case 'pie':
+      data = chartData.data.map(function(d, i) {
+        return {
+          'key': d.key || 'undefined',
+          'count': d.count || null,
+          'values': [{'x': i + 1, 'y': Chart.y()(d)}]
+        };
+      });
+      break;
+    case 'line':
+      data = chartData.data.map(function(d, i) {
+        return {
+          'key': d.key || 'undefined',
+          'values': d.values.map(function(j, k) {
+              return {'x': k + 1, 'y': j[1]};
+            })
+        };
+      });
+      properties.labels = properties.labels || d3.merge(chartData.data.map(function(d) {
+          return d.values.map(function(d, i) {
+            return Chart.lines.x()(d, i);
+          });
+        }))
+        .reduce(function(p, c) {
+          if (p.indexOf(c) < 0) p.push(c);
+          return p;
+        }, [])
+        .sort(function(a, b) {
+          return a - b;
+        })
+        .map(function(d, i) {
+          return {'group': i + 1, 'l': Chart.xAxis.tickFormat()(d)};
+        });
+      break;
+    default:
+      data = chartData.data;
+  }
+
+  return {
+    'properties': properties,
+    'data': data
+  };
+}
+
 function postProcessData(chartData, chartType, Chart) {
 
-    switch (chartType) {
+  switch (chartType) {
 
-      case 'line':
-        xTickLabels = chartData.properties.labels ?
-          chartData.properties.labels.map(function (d) { return d.l || d; }) :
-          [];
+    case 'line':
+      xTickLabels = chartData.properties.labels ?
+        chartData.properties.labels.map(function (d) { return d.l || d; }) :
+        [];
 
-        if (chartData.data.length) {
-          if (chartData.data[0].values.length && chartData.data[0].values[0] instanceof Array) {
-            Chart
-              .x(function (d) { return d[0]; })
-              .y(function (d) { return d[1]; });
+      if (chartData.data.length) {
+        if (chartData.data[0].values.length && chartData.data[0].values[0] instanceof Array) {
+          Chart
+            .x(function (d) { return d[0]; })
+            .y(function (d) { return d[1]; });
 
-            if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
-              Chart.xAxis
-                .tickFormat(function (d) {
-                  return d3.time.format('%x')(new Date(d));
-                });
-            } else if (xTickLabels.length > 0) {
-              Chart.xAxis
-                .tickFormat(function (d) {
-                  return xTickLabels[d] || ' ';
-                });
-            }
-          } else {
-            Chart
-              .x(function (d) { return d.x; })
-              .y(function (d) { return d.y; });
+          if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
+            Chart.xAxis
+              .tickFormat(function (d) {
+                return d3.time.format('%x')(new Date(d));
+              });
+          } else if (xTickLabels.length > 0) {
+            Chart.xAxis
+              .tickFormat(function (d) {
+                return xTickLabels[d] || ' ';
+              });
+          }
+        } else {
+          Chart
+            .x(function (d) { return d.x; })
+            .y(function (d) { return d.y; });
 
-            if (xTickLabels.length > 0) {
-              Chart.xAxis
-                .tickFormat(function (d) {
-                  return xTickLabels[d - 1] || ' ';
-                });
-            }
+          if (xTickLabels.length > 0) {
+            Chart.xAxis
+              .tickFormat(function (d) {
+                return xTickLabels[d - 1] || ' ';
+              });
           }
         }
-        break;
+      }
+      break;
 
-      case 'multibar':
-        Chart.stacked(chartData.properties.stacked || false);
-        break;
+    case 'multibar':
+      Chart.stacked(chartData.properties.stacked === false ? false : true);
+      break;
 
-      case 'pareto':
-        Chart.stacked(chartData.properties.stacked);
-        break;
-    }
+    case 'pareto':
+      Chart.stacked(chartData.properties.stacked);
+      break;
+  }
 }
 
 function parseTreemapData(data) {
@@ -875,6 +941,8 @@ var Manifest =
 
   // D3 chart
   Chart: null,
+  // D3 table
+  Table: null,
 
   // Default data
   selectedOptions: {},
@@ -900,16 +968,17 @@ var Manifest =
         options = Object.clone(this.data);
 
     this.Chart = sucroseCharts(this.type);
+    this.Table = sucroseCharts('table');
 
     // Set default direction
     $('html').css('direction', this.selectedOptions.direction);
 
     $title.text(($demo.width < 480 ? '' : 'Sucrose ') + this.title);
 
-    // Unbind UI
-    $(window).off('resize.example');
-    $chart.off('resize.example');
-    $('button').off('click.example touch.example');
+    // Unbind Chart
+    // this.unloadChart();
+
+    this.toggleTab(true);
 
     Object.each(options, function (k, v) {
       if (v.val && v.val !== v.def) {
@@ -921,40 +990,50 @@ var Manifest =
       $form.append(self.createOptionRow(k, v));
     });
 
-    // Rebind jQuery resizable plugin
-    $chart.resizable({
-      containment: 'parent',
-      minHeight: 200,
-      minWidth: 200
-    });
-
+    // Unbind UI
+    $('button').off('click.example touch.example');
     // Rebind UI
-    $('button[data-action=full]').on('click.example touch.example', function (e) {
+    $('button[data-action=full]').on('click.example touch.example', $.proxy(function (e) {
       $example.toggleClass('full-screen');
-      self.toggleTooltip($(this));
-      self.chartResizer(self.Chart)(e);
-    });
-    $('button[data-action=reset]').on('click.example touch.example', function (e) {
+      this.toggleTooltip($(this));
+      this.chartResizer(this.Chart)(e);
+    }, this));
+    $('button[data-action=reset]').on('click.example touch.example', $.proxy(function (e) {
       $example.removeClass('full-screen');
-      self.resetChartSize();
-      self.loadData(self.data.file.val);
-    });
+      this.resetChartSize();
+      this.loadData(this.data.file.val);
+    }, this));
     // Toggle option panel display
-    $('button[data-action=toggle]').on('click.example touch.example', function (e) {
-      if ($demo.width > 480) {
+    $('button[data-action=toggle]').on('click.example touch.example', $.proxy(function (e) {
+      if ($demo.width() > 480) {
         $options.toggleClass('hidden');
         $example.toggleClass('full-width');
       } else {
         $options.toggleClass('open');
       }
-      self.chartResizer(self.Chart)(e);
-    });
-    $('button[data-action=download]').on('click.example touch.example', function (e) {
+      this.chartResizer(this.Chart)(e);
+    }, this));
+    $('button[data-action=download]').on('click.example touch.example', $.proxy(function (e) {
       generateImage(e);
-    });
+    }, this));
 
+    $('.tab').off('click.example touch.example');
+    $('.tab').on('click.example touch.example', function (e) {
+      e.stopPropagation();
+      var isChartTab = $(this).data('toggle') === 'chart';
+      self.toggleTab(isChartTab);
+      if (isChartTab) {
+        self.loadChart();
+      }
+    });
   },
-  toggleTooltip: function($o) {
+  toggleTab: function (isChartTab) {
+    $chart.toggleClass('hide', !isChartTab);
+    $table.toggleClass('hide', isChartTab);
+    $('[data-toggle=chart]').toggleClass('active', isChartTab);
+    $('[data-toggle=table]').toggleClass('active', !isChartTab);
+  },
+  toggleTooltip: function ($o) {
     var t1 = $o.data('title'),
         t2 = $o.data('title-toggle');
     $o.data('title', t2)
@@ -971,10 +1050,16 @@ var Manifest =
     return chart.render ?
       function (e) {
         e.stopPropagation();
+        if ($chart.hasClass('hide')) {
+          return;
+        }
         chart.render();
       } :
       function (e) {
         e.stopPropagation();
+        if ($chart.hasClass('hide')) {
+          return;
+        }
         chart.update();
       };
   },
@@ -982,10 +1067,16 @@ var Manifest =
     return chart.render ?
       (function (e) {
         resetter();
+        if ($chart.hasClass('hide')) {
+          return;
+        }
         chart.render();
       }).debounce(50) :
       (function (e) {
         resetter();
+        if ($chart.hasClass('hide')) {
+          return;
+        }
         chart.update();
       }).debounce(50);
   },
@@ -1037,39 +1128,45 @@ var Manifest =
   radioControl: function (v, n) {
     var radio = '';
     v.each(function (r) {
-      radio += '<label><input type="radio" name="' + n + '" value="' + r.value + '"> ' + r.label + ' </label> ';
+      radio += '<label><input type="radio" name="' + n + '" value="' + r.value + '"> ' +
+        r.label + ' </label> ';
     })
     return radio;
   },
   checkboxControl: function (v, n) {
     var checkbox = '';
     v.each(function (r) {
-      checkbox += '<label><input type="checkbox" name="' + n + '" value="' + r.value + '"> ' + r.label + ' </label> ';
+      checkbox += '<label><input type="checkbox" name="' + n + '" value="' + r.value + '"> ' +
+        r.label + ' </label> ';
     })
     return checkbox;
   },
   selectControl: function (v, n) {
     var select = '<select name="' + n + '">';
     v.each(function (r) {
-      select += '<option value="' + r.value + '">' + r.label + '</option>';
+      select += '<option value="' + r.value + '">' +
+        r.label + '</option>';
     });
     select += '</select>';
     return select;
   },
   textareaControl: function (v, n) {
     var value = v.map(function (o) { return o.value; }).join(' '),
-        textarea = '<textarea name="' + n + '">' + value + '</textarea>';
+        textarea = '<textarea name="' + n + '">' +
+          value + '</textarea>';
     return textarea;
   },
   textControl: function (v, n) {
     var value = v.map(function (o) { return o.value; }).join(' '),
-        text = '<input type="text" name="' + n + '" value="' + value + '">';
+        text = '<input type="text" name="' + n + '" value="' +
+          value + '">';
     return text;
   },
   buttonControl: function (v, n) {
     var button = '';
     v.each(function (b) {
-        button += '<button type="button" name="' + n + '" data-control="' + b.value + '">' + b.label + '</button>';
+        button += '<button type="button" name="' + n + '" data-control="' + b.value + '">' +
+          b.label + '</button>';
     });
     return button;
   },
@@ -1106,10 +1203,12 @@ var Manifest =
     this.selectedOptions[k] = v;
     chartStore.chartOptions = Object.clone(this.selectedOptions);
     store.set('example-' + this.type, chartStore);
+
     // Now, if the options is the default, lets remove it from display
     if (this.selectedOptions[k] === d[k].def) {
       delete this.selectedOptions[k];
     }
+
     // Update the settings display textarea
     this.ui['[name=' + k + ']'].setChartOption(v, this);
     this.my.recalc('[name=settings]');
@@ -1118,27 +1217,36 @@ var Manifest =
     var options = {},
         color = this.data.color.val,
         gradient = this.data.gradient.val;
+
     if (color && color === 'graduated') {
       options = {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength};
     }
+
     if (color && color === 'data') {
       options = {c1: this.gradientStart, c2: this.gradientStop};
     }
+
     if (gradient && gradient.filter('1').length && color !== 'class') {
       options.gradient = true;
       options.orientation = gradient.filter('horizontal').length ? 'horizontal' : 'vertical';
       options.position = gradient.filter('base').length ? 'base' : 'middle';
     }
+
     this.Chart.colorData(color, options);
   },
   loadChart: function () {
-    $chart.attr('class', 'sc-chart sc-chart-' + this.type);
-    $chart.find('svg').remove();
-    $chart.append('<svg/>');
+    this.unloadChart();
+    if ($chart.hasClass('hide')) {
+      return;
+    }
 
     if (this.Chart.colorData) {
       this.updateColorModel();
     }
+
+    // this.toggleTab(true);
+    $chart.attr('class', 'sc-chart sc-chart-' + this.type + ($chart.hasClass('hide') ? ' hide' : ''));
+    $chart.append('<svg/>');
 
     // Bind D3 chart to SVG element
     d3.select('#chart svg').datum(chartData).call(this.Chart);
@@ -1146,8 +1254,33 @@ var Manifest =
     // Dismiss tooltips
     d3.select('#chart').on('click', this.Chart.dispatch.chartClick);
 
+    // Rebind jQuery resizable plugin
+    $chart.resizable({
+      containment: 'parent',
+      minHeight: 200,
+      minWidth: 200
+    });
+
     $(window).on('resize.example', this.windowResizer(this.Chart, this.resetChartSize));
     $chart.on('resize.example', this.chartResizer(this.Chart));
+  },
+  unloadChart: function () {
+    $(window).off('resize.example');
+    $chart.off('resize.example');
+
+    $chart.find('svg').remove();
+  },
+  loadTable: function () {
+    $table.attr('class', 'sc-table sc-table-' + this.type + ($table.hasClass('hide') ? ' hide' : ''));
+    $table.find('table').remove();
+
+    tableData = transformTableData(chartData, this.type, this.Chart);
+
+    // Bind D3 table to TABLE element
+    d3.select('#table').datum(tableData).call(this.Table);
+
+    // Dismiss editor
+    d3.select('#table').on('click', this.Chart.dispatch.tableClick);
   },
   loadData: function (file) {
     if (!file) {
@@ -1165,6 +1298,7 @@ var Manifest =
             if (!json) {
               return;
             }
+
             if (this.type === 'treemap' || this.type === 'tree' || this.type === 'globe') {
               chartData = json;
               this.colorLength = 0;
@@ -1172,12 +1306,14 @@ var Manifest =
               if (json.data) {
                 chartData = json;
               } else {
-                chartData = translateDataToD3(json, this.type);
+                chartData = transformDataToD3(json, this.type);
               }
               this.colorLength = chartData.properties.colorLength || chartData.data.length;
               postProcessData(chartData, this.type, this.Chart);
             }
+
             this.loadChart();
+            this.loadTable();
           });
 
     return promise;
@@ -1259,7 +1395,8 @@ $demo = $('.demo');
 $options = $('#options');
 $form = $('#form');
 $example = $('#example');
-$chart = $('#chart')
+$chart = $('#chart');
+$table = $('#table');
 $menu = $('#menu');
 
 // Application scope D3 reference to button tooltip
@@ -1269,13 +1406,14 @@ tootip = null;
 chartType = window.uQuery('type');
 chartStore = {};
 chartData = {};
+tableData = {};
 
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
     .on('mouseover', $.proxy(function () {
-      var $a = $(d3.event.currentTarget);
-      var title = $a.data('title');
-      var open = $a.closest('.chart-selector').hasClass('open');
+      var $a = $(d3.event.currentTarget),
+          title = $a.data('title'),
+          open = $a.closest('.chart-selector').hasClass('open');
       if (!open) {
         this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
       }

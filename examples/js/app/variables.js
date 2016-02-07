@@ -11,10 +11,12 @@ var $title,
     $form,
     $example,
     $chart,
+    $table,
     $menu;
 
 // Application scope variables
 var chartType,
     chartStore,
     chartData,
+    tableData,
     tootip;

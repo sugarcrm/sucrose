@@ -117,18 +117,24 @@ table {
 th, td {
   text-align: left;
   padding: 5px 10px;
-  border-bottom: 1px solid #e5e5e5;
 }
 
 dt {
   color: #444;
   font-weight: 700;
 }
-
+td {
+  border-bottom: 1px solid #e5e5e5;
+}
 th {
   color: #444;
+  border-bottom: 2px solid #ccc;
+  background-color: #e5e5e5;
 }
-
+tfoot td {
+  border-top: 2px solid #ccc;
+  font-style: italic;
+}
 img {
   max-width: 100%; /*Make images inherently responsive*/
   vertical-align: inherit;
