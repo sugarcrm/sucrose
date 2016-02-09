@@ -32,6 +32,7 @@ sucrose.models.table = function() {
             return {
               'key': d.key || 'Undefined',
               'type': d.type || null,
+              'disabled': d.disabled || false,
               'values': d._values || d.values
             };
           }) : null;
@@ -86,10 +87,13 @@ sucrose.models.table = function() {
       var theadEnter = tableEnter
             .append('thead').attr('class', 'sc-thead')
               .append('tr').attr('class', 'sc-groups');
+      var thead = wrap.select('.sc-groups');
+          theadEnter
+            .append('th').attr('class', 'sc-th sc-series-state')
+            .text('Enabled');
           theadEnter
             .append('th').attr('class', 'sc-th sc-series-keys')
             .text(properties.key || 'Series Key');
-      var thead = wrap.select('.sc-groups');
 
       var cols = thead.selectAll('.sc-group')
             .data(labels);
@@ -99,11 +103,67 @@ sucrose.models.table = function() {
           thead.selectAll('.sc-group')
             .text(function(d) { return d.l; });
 
-      if (!singleSeries) {
-        theadEnter
-          .append('th').attr('class', 'sc-th sc-series-totals')
-          .text('Series Total');
-      }
+        if (!singleSeries) {
+          theadEnter
+            .append('th').attr('class', 'sc-th sc-series-totals')
+            .text('Series Total');
+        }
+
+      //------------------------------------------------------------
+
+      var tfootEnter = tableEnter
+            .append('tfoot').attr('class', 'sc-tfoot')
+              .append('tr').attr('class', 'sc-sums');
+      var tfoot = wrap.select('.sc-sums');
+          tfootEnter
+            .append('th').attr('class', 'sc-th sc-group-sums')
+              .text('');
+          tfootEnter
+            .append('th').attr('class', 'sc-th sc-group-sums')
+              .text('Group Sums');
+
+      var sums = tfoot.selectAll('.sc-sum')
+            .data(function (d) {
+              return d
+                .filter(function (f) {
+                  return !f.disabled;
+                })
+                .map(function (a) {
+                  return a.values.map(function (b) { return b.y; });
+                })
+                .reduce(function (p, c) {
+                  return p.map(function (d, i) {
+                    return d + c[i];
+                  });
+                });
+              });
+          sums.exit().remove();
+          sums.enter()
+            .append('th').attr('class', 'sc-sum');
+          tfoot.selectAll('.sc-sum')
+            .text(function (d) { return d; });
+
+        if (!singleSeries) {
+          tfootEnter
+            .append('th').attr('class', 'sc-th sc-sum-total');
+          tfoot.select('.sc-sum-total')
+            .text(function (d) {
+              return d
+                .filter(function (f) {
+                  return !f.disabled;
+                })
+                .map(function (a) {
+                  return a.values
+                    .map(function (b) { return b.y; })
+                    .reduce(function (p, c) {
+                      return p + c;
+                    });
+                })
+                .reduce(function (p, c) {
+                  return p + c;
+                });
+            });
+        }
 
       //------------------------------------------------------------
 
@@ -117,9 +177,20 @@ sucrose.models.table = function() {
       var seriesEnter = rows.enter()
             .append('tr').attr('class', 'sc-series');
           seriesEnter
+            .append('td').attr('class', 'sc-td sc-state')
+            .attr('tabindex', -1)
+            .attr('data-editable', false)
+            .append('input')
+              .attr('type', 'checkbox');
+          rows.select('.sc-state input')
+            .property('checked', function(d) {return d.disabled ? false : true; });
+          seriesEnter
             .append('td').attr('class', 'sc-td sc-key');
           rows.select('.sc-key')
             .text(function(d) { return d.key; });
+          rows
+            .style('color', function(d) {return d.disabled ? '#ddd' : '#000'; })
+            .style('text-decoration', function(d) {return d.disabled ? 'line-through' : 'normal'; });
 
       var cells = rows.selectAll('.sc-val')
             .data(function(d) { return d.values; });
@@ -129,65 +200,23 @@ sucrose.models.table = function() {
           tbody.selectAll('.sc-val')
             .text(function(d) { return d.y; });
 
-      if (!singleSeries) {
-        seriesEnter
-          .append('td').attr('class', 'sc-td sc-total');
-        rows.select('.sc-total')
-          .text(function(d) {
-            return d.values
-              .map(function(d) { return d.y; })
-              .reduce(function(p, c) {
-                return p + c;
-              });
-          });
-      }
+          rows.selectAll('.sc-val')
 
-      //------------------------------------------------------------
-
-      var tfootEnter = tableEnter
-            .append('tfoot').attr('class', 'sc-tfoot')
-              .append('tr').attr('class', 'sc-sums');
-          tfootEnter
-            .append('td').attr('class', 'sc-td sc-group-sums')
-              .text('Group Sums');
-      var tfoot = wrap.select('.sc-sums');
-
-      var sums = tfoot.selectAll('.sc-sum')
-            .data(function(d) {
-              return d
-                .map(function(a) {
-                  return a.values.map(function(b) { return b.y; });
-                })
+        if (!singleSeries) {
+          seriesEnter
+            .append('td').attr('class', 'sc-td sc-total')
+              .attr('tabindex', -1)
+              .attr('data-editable', false);
+          rows.select('.sc-total')
+            .text(function(d) {
+              return d.values
+                .map(function(d) { return d.y; })
                 .reduce(function(p, c) {
-                  return p.map(function(d, i) {
-                    return d + c[i];
-                  });
+                  return p + c;
                 });
-              });
-          sums.exit().remove();
-          sums.enter()
-            .append('td').attr('class', 'sc-sum');
-          tfoot.selectAll('.sc-sum')
-            .text(function(d) { return d; });
+            });
+        }
 
-      if (!singleSeries) {
-        tfootEnter
-          .append('td').attr('class', 'sc-td sc-sum-total');
-        tfoot.select('.sc-sum-total')
-          .text(function(d) {
-            return d
-              .map(function(a) {
-                return a.values
-                  .map(function(b) { return b.y; })
-                  .reduce(function(p, c) {
-                    return p + c;
-                  });
-              })
-              .reduce(function(p, c) {
-                return p + c;
-              });
-          });
-      }
     });
 
     return chart;

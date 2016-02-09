@@ -2,6 +2,7 @@ LIB_FILES = \
 	js/lib/fastclick.js \
 	js/lib/jquery-ui.min.js \
 	js/lib/micro-query.js \
+	js/lib/mindmup-editabletable.js \
 	../node_modules/queue-async/queue.min.js \
 	node_modules/canvg/canvg.js \
 	node_modules/canvg/rgbcolor.js \

@@ -131,8 +131,9 @@ th {
   border-bottom: 2px solid #ccc;
   background-color: #e5e5e5;
 }
-tfoot td {
+tfoot th {
   border-top: 2px solid #ccc;
+  border-bottom: none;
   font-style: italic;
 }
 img {
@@ -304,7 +305,8 @@ footer {
   filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#2e2e2e',endColorstr='#262626',GradientType=0);
 }
 footer p {
-  margin-bottom: 10px;
+  margin: 0;
+  line-height: 14px;
 }
 
 .index {

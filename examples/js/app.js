@@ -367,6 +367,7 @@ function transformDataToD3(json, chartType, barType) {
               return {
                 'key': pickLabel(d),
                 'type': 'bar',
+                'disabled': d.disabled || false,
                 'values': json.values.map(function(e, j) {
                     return {
                       'series': i,
@@ -381,6 +382,7 @@ function transformDataToD3(json, chartType, barType) {
               return {
                 'key': d.values.length > 1 ? d.label : pickLabel(d.label),
                 'type': 'bar',
+                'disabled': d.disabled || false,
                 'values': json.values.map(function(e, j) {
                     return {
                       'series': i,
@@ -397,6 +399,7 @@ function transformDataToD3(json, chartType, barType) {
           data = json.values.map(function(d, i) {
               var data = {
                   'key': pickLabel(d.label),
+                  'disabled': d.disabled || false,
                   'value': sumValues(d.values)
               };
               if (d.color !== undefined) {
@@ -413,6 +416,7 @@ function transformDataToD3(json, chartType, barType) {
           data = json.values.reverse().map(function(d, i) {
               return {
                   'key': pickLabel(d.label),
+                  'disabled': d.disabled || false,
                   'values': [{
                     'series': i,
                     'label': d.valuelabels[0] ? d.valuelabels[0] : d.values[0],
@@ -552,6 +556,7 @@ function transformTableData(chartData, chartType, Chart) {
         return {
           'key': d.key || 'undefined',
           'count': d.count || null,
+          'disabled': d.disabled || false,
           'values': d.values.map(function(k) {
               return {'x': k.x, 'y': (isNaN(k.value) ? k.y : k.value)};
             })
@@ -563,6 +568,7 @@ function transformTableData(chartData, chartType, Chart) {
         return {
           'key': d.key || 'undefined',
           'count': d.count || null,
+          'disabled': d.disabled || false,
           'values': [{'x': i + 1, 'y': Chart.y()(d)}]
         };
       });
@@ -571,6 +577,7 @@ function transformTableData(chartData, chartType, Chart) {
       data = chartData.data.map(function(d, i) {
         return {
           'key': d.key || 'undefined',
+          'disabled': d.disabled || false,
           'values': d.values.map(function(j, k) {
               return {'x': k + 1, 'y': j[1]};
             })
@@ -975,9 +982,6 @@ var Manifest =
 
     $title.text(($demo.width < 480 ? '' : 'Sucrose ') + this.title);
 
-    // Unbind Chart
-    // this.unloadChart();
-
     this.toggleTab(true);
 
     Object.each(options, function (k, v) {
@@ -1024,6 +1028,8 @@ var Manifest =
       self.toggleTab(isChartTab);
       if (isChartTab) {
         self.loadChart();
+      } else {
+        self.loadTable();
       }
     });
   },
@@ -1270,17 +1276,60 @@ var Manifest =
 
     $chart.find('svg').remove();
   },
+  updateChartDataCell: function (d, k, v) {
+    var series = chartData.data[d.series],
+        i = d.x - 1;
+    series.values[i][k] = v;
+    if (series._values) {
+      series._values[i][k] = v;
+    }
+    this.loadChart();
+    this.loadTable();
+  },
+  updateChartDataSeries: function (d, k, v) {
+    var series = chartData.data.find({key: d.key});
+    series[k] = v;
+    this.loadChart();
+    this.loadTable();
+  },
   loadTable: function () {
+    this.unloadTable();
+
     $table.attr('class', 'sc-table sc-table-' + this.type + ($table.hasClass('hide') ? ' hide' : ''));
-    $table.find('table').remove();
 
     tableData = transformTableData(chartData, this.type, this.Chart);
+    // Object.watch(tableData, 'data', function() {
+    //   console.log('property changed!');
+    // });
 
     // Bind D3 table to TABLE element
     d3.select('#table').datum(tableData).call(this.Table);
 
     // Dismiss editor
     d3.select('#table').on('click', this.Chart.dispatch.tableClick);
+
+    // Enable editing of data table
+    $table.find('table').editableTableWidget();
+
+    // Listen for changes to data table cell values
+    $table.find('td.sc-val').on('change.editable', $.proxy(function(evt, v) {
+      var data = evt.currentTarget.__data__;
+      this.updateChartDataCell(data, 'y', (isNaN(v) ? v : parseFloat(v)));
+    }, this));
+    // Listen for changes to data table series keys
+    $table.find('td.sc-key').on('change.editable', $.proxy(function(evt, v) {
+      var data = evt.currentTarget.__data__;
+      this.updateChartDataSeries(data, 'key', v);
+    }, this));
+    // Listen for changes to data table series disabled state
+    $table.find('td.sc-state').on('change.editable', $.proxy(function(evt, v) {
+      var data = evt.currentTarget.__data__;
+      this.updateChartDataSeries(data, 'disabled', !evt.target.checked);
+    }, this));
+  },
+  unloadTable: function () {
+    $table.find('td').off('change.editable');
+    $table.find('table').remove();
   },
   loadData: function (file) {
     if (!file) {
@@ -1411,9 +1460,9 @@ tableData = {};
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
     .on('mouseover', $.proxy(function () {
-      var $a = $(d3.event.currentTarget),
-          title = $a.data('title'),
-          open = $a.closest('.chart-selector').hasClass('open');
+      var $target = $(d3.event.currentTarget),
+          title = $target.data('title'),
+          open = $target.closest('.chart-selector').hasClass('open');
       if (!open) {
         this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
       }
@@ -1442,6 +1491,7 @@ d3.selectAll('[rel=tooltip]')
 $select.on('click', 'a', function (e) {
     var type = $(e.currentTarget).data('type');
     e.preventDefault();
+    e.stopPropagation();
     if (type !== chartType) {
       loader(type);
     }
@@ -1450,9 +1500,16 @@ $select.on('click', 'a', function (e) {
 // Open menu when button clicked
 $menu.on('click touch', function (e) {
     e.preventDefault();
-    $(this).parent().toggleClass('open');
+    e.stopPropagation();
+    $select.toggleClass('open');
   });
 
+// Close menu when clicking outside
+$('body').on('click', function() {
+    $select.removeClass('open');
+  });
+
+// If chartType was passed in url, open it
 if (chartType) {
   loader(chartType);
 }

@@ -30,6 +30,7 @@ function transformDataToD3(json, chartType, barType) {
               return {
                 'key': pickLabel(d),
                 'type': 'bar',
+                'disabled': d.disabled || false,
                 'values': json.values.map(function(e, j) {
                     return {
                       'series': i,
@@ -44,6 +45,7 @@ function transformDataToD3(json, chartType, barType) {
               return {
                 'key': d.values.length > 1 ? d.label : pickLabel(d.label),
                 'type': 'bar',
+                'disabled': d.disabled || false,
                 'values': json.values.map(function(e, j) {
                     return {
                       'series': i,
@@ -60,6 +62,7 @@ function transformDataToD3(json, chartType, barType) {
           data = json.values.map(function(d, i) {
               var data = {
                   'key': pickLabel(d.label),
+                  'disabled': d.disabled || false,
                   'value': sumValues(d.values)
               };
               if (d.color !== undefined) {
@@ -76,6 +79,7 @@ function transformDataToD3(json, chartType, barType) {
           data = json.values.reverse().map(function(d, i) {
               return {
                   'key': pickLabel(d.label),
+                  'disabled': d.disabled || false,
                   'values': [{
                     'series': i,
                     'label': d.valuelabels[0] ? d.valuelabels[0] : d.values[0],
@@ -215,6 +219,7 @@ function transformTableData(chartData, chartType, Chart) {
         return {
           'key': d.key || 'undefined',
           'count': d.count || null,
+          'disabled': d.disabled || false,
           'values': d.values.map(function(k) {
               return {'x': k.x, 'y': (isNaN(k.value) ? k.y : k.value)};
             })
@@ -226,6 +231,7 @@ function transformTableData(chartData, chartType, Chart) {
         return {
           'key': d.key || 'undefined',
           'count': d.count || null,
+          'disabled': d.disabled || false,
           'values': [{'x': i + 1, 'y': Chart.y()(d)}]
         };
       });
@@ -234,6 +240,7 @@ function transformTableData(chartData, chartType, Chart) {
       data = chartData.data.map(function(d, i) {
         return {
           'key': d.key || 'undefined',
+          'disabled': d.disabled || false,
           'values': d.values.map(function(j, k) {
               return {'x': k + 1, 'y': j[1]};
             })

@@ -44,9 +44,6 @@ var Manifest =
 
     $title.text(($demo.width < 480 ? '' : 'Sucrose ') + this.title);
 
-    // Unbind Chart
-    // this.unloadChart();
-
     this.toggleTab(true);
 
     Object.each(options, function (k, v) {
@@ -93,6 +90,8 @@ var Manifest =
       self.toggleTab(isChartTab);
       if (isChartTab) {
         self.loadChart();
+      } else {
+        self.loadTable();
       }
     });
   },
@@ -339,17 +338,60 @@ var Manifest =
 
     $chart.find('svg').remove();
   },
+  updateChartDataCell: function (d, k, v) {
+    var series = chartData.data[d.series],
+        i = d.x - 1;
+    series.values[i][k] = v;
+    if (series._values) {
+      series._values[i][k] = v;
+    }
+    this.loadChart();
+    this.loadTable();
+  },
+  updateChartDataSeries: function (d, k, v) {
+    var series = chartData.data.find({key: d.key});
+    series[k] = v;
+    this.loadChart();
+    this.loadTable();
+  },
   loadTable: function () {
+    this.unloadTable();
+
     $table.attr('class', 'sc-table sc-table-' + this.type + ($table.hasClass('hide') ? ' hide' : ''));
-    $table.find('table').remove();
 
     tableData = transformTableData(chartData, this.type, this.Chart);
+    // Object.watch(tableData, 'data', function() {
+    //   console.log('property changed!');
+    // });
 
     // Bind D3 table to TABLE element
     d3.select('#table').datum(tableData).call(this.Table);
 
     // Dismiss editor
     d3.select('#table').on('click', this.Chart.dispatch.tableClick);
+
+    // Enable editing of data table
+    $table.find('table').editableTableWidget();
+
+    // Listen for changes to data table cell values
+    $table.find('td.sc-val').on('change.editable', $.proxy(function(evt, v) {
+      var data = evt.currentTarget.__data__;
+      this.updateChartDataCell(data, 'y', (isNaN(v) ? v : parseFloat(v)));
+    }, this));
+    // Listen for changes to data table series keys
+    $table.find('td.sc-key').on('change.editable', $.proxy(function(evt, v) {
+      var data = evt.currentTarget.__data__;
+      this.updateChartDataSeries(data, 'key', v);
+    }, this));
+    // Listen for changes to data table series disabled state
+    $table.find('td.sc-state').on('change.editable', $.proxy(function(evt, v) {
+      var data = evt.currentTarget.__data__;
+      this.updateChartDataSeries(data, 'disabled', !evt.target.checked);
+    }, this));
+  },
+  unloadTable: function () {
+    $table.find('td').off('change.editable');
+    $table.find('table').remove();
   },
   loadData: function (file) {
     if (!file) {

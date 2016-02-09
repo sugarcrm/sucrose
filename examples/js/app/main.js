@@ -26,9 +26,9 @@ tableData = {};
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
     .on('mouseover', $.proxy(function () {
-      var $a = $(d3.event.currentTarget),
-          title = $a.data('title'),
-          open = $a.closest('.chart-selector').hasClass('open');
+      var $target = $(d3.event.currentTarget),
+          title = $target.data('title'),
+          open = $target.closest('.chart-selector').hasClass('open');
       if (!open) {
         this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
       }
@@ -57,6 +57,7 @@ d3.selectAll('[rel=tooltip]')
 $select.on('click', 'a', function (e) {
     var type = $(e.currentTarget).data('type');
     e.preventDefault();
+    e.stopPropagation();
     if (type !== chartType) {
       loader(type);
     }
@@ -65,9 +66,16 @@ $select.on('click', 'a', function (e) {
 // Open menu when button clicked
 $menu.on('click touch', function (e) {
     e.preventDefault();
-    $(this).parent().toggleClass('open');
+    e.stopPropagation();
+    $select.toggleClass('open');
   });
 
+// Close menu when clicking outside
+$('body').on('click', function() {
+    $select.removeClass('open');
+  });
+
+// If chartType was passed in url, open it
 if (chartType) {
   loader(chartType);
 }
