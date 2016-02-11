@@ -1,0 +1,5 @@
+--exclude_directories=node_modules
+--exclude_files=*.min.js
+--max_line_length=120
+--disable=1
+--custom_jsdoc_tags=namespace,version

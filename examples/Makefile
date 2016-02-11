@@ -39,7 +39,7 @@ install-prod: npm-prod all index-prod
 npm-prod:
 	npm i --production
 
-all: sucrose libraries examples
+all: sucrose lib examples
 
 sucrose: clean-sucrose
 	cp ../sucrose.js js/sucrose.js
@@ -51,7 +51,7 @@ clean-sucrose:
 	rm -rf js/sucrose.js js/sucrose.min.js \
 		css/sucrose.css css/sucrose.min.css
 
-libraries: $(LIB_FILES) clean-libraries
+lib: $(LIB_FILES) clean-lib
 	# copy node module files
 	cp ../node_modules/d3/d3.min.js js/d3.min.js
 	cp ../node_modules/topojson/topojson.min.js js/topojson.min.js
@@ -61,7 +61,7 @@ libraries: $(LIB_FILES) clean-libraries
 	cat $(LIB_FILES) >> js/lib.js
 	cat $(LIB_FILES) | $(JS_COMPILER) >> js/lib.min.js
 
-clean-libraries:
+clean-lib:
 	rm -rf js/d3.min.js js/topojson.min.js
 	rm -rf js/jquery.min.js js/jquerymy.min.js
 	rm -rf js/lib.js js/lib.min.js
@@ -81,7 +81,7 @@ clean: clean-sucrose clean-libraries
 
 #DEVELOPMENT
 
-install-dev: npm-prod npm-dev all libraries-dev index-dev
+install-dev: npm-prod npm-dev all lib-dev index-dev
 
 npm-dev:
 	npm i
@@ -109,11 +109,11 @@ css: less/examples.less clean-css
 clean-css:
 	rm -rf css/examples.css css/examples.min.css
 
-libraries-dev: clean-libraries-dev
+lib-dev: clean-lib-dev
 	# copy node module files
 	cp ../node_modules/less/dist/less.min.js js/less.min.js
 
-clean-libraries-dev:
+clean-lib-dev:
 	rm -rf js/less.min.js
 
 index-dev:

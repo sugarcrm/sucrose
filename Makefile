@@ -75,6 +75,8 @@ npm-dev:
 
 all: sucrose.js sucrose.min.js sucrose.css sucrose.min.css
 
+clean: clean-js clean-css
+
 # Javascript
 js: clean-js sucrose.js sucrose.min.js
 sucrose.js: $(JS_FILES)
