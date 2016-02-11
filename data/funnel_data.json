@@ -3,70 +3,77 @@
     "title": "Pipeline total is $675k",
     "total": 675,
     "scale": 1000,
-    "units": "$"
+    "units": "$",
+    "labels": [
+      {"group": 1, "l": "Opportunities"}
+    ],
+    "values": [
+      {"group": 1, "t": 323}
+    ],
+    "key": "Sales Stage"
   },
   "data": [
     {
       "key": "תחזיות",
       "count": 3,
       "values": [
-        {"series": 0, "x": 0, "y": 7,  "y0": 0}
+        {"x": 1, "y": 5}
       ]
     },
     {
       "key": "מגבלות",
       "count": 3,
       "values": [
-        {"series": 0, "x": 0, "y": 75,  "y0": 0}
+        {"x": 1, "y": 10}
       ]
     },
     {
       "key": "Negotiation",
       "count": 5,
       "values": [
-        {"series": 1, "x": 0, "y": 8,  "y0": 0}
+        {"x": 1, "y": 15}
       ]
     },
     {
       "key": "Proposal/PriceQuote",
       "count": 5,
       "values": [
-        {"series": 1, "x": 0, "y": 28,  "y0": 0}
+        {"x": 1, "y": 20}
       ]
     },
     {
       "key": "Perception Analysis",
       "count": 1,
       "values": [
-        {"series": 2, "x": 0, "y": 8, "y0": 0}
+        {"x": 1, "y": 25}
       ]
     },
     {
       "key": "זהות מקבל ההחלטות",
       "count": 6,
       "values": [
-        {"series": 3, "x": 0, "y": 85, "y0": 0}
+        {"x": 1, "y": 30}
       ]
     },
     {
       "key": "Value Proposition",
       "count": 2,
       "values": [
-        {"series": 4, "x": 0, "y": 0, "y0": 0}
+        {"x": 1, "y": 35}
       ]
     },
     {
       "key": "Qualification",
       "count": 8,
       "values": [
-        {"series": 5, "x": 0, "y": 110, "y0": 0}
+        {"x": 1, "y": 40}
       ]
     },
     {
       "key": "Prospecting",
       "count": 10,
       "values": [
-        {"series": 6, "x": 0, "y": 2, "y0": 0}
+        {"x": 1, "y": 45}
       ]
     }
   ]

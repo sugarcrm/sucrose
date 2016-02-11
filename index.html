@@ -51,27 +51,27 @@
 <h3>Building Charts for Business Applications</h3>
 <p>There were many factors that influenced our decision to create our own charting library:</p>
 <ul>
-  <li>flexible integration within the SugarCRM development environment</li>
-  <li>single library for both desktop and mobile applications</li>
-  <li>responsive content and formatting controls</li>
-  <li>internationalization and locallization support</li>
-  <li>clean styling for legibility and clarity</li>
+  <menuitem>flexible integration within the SugarCRM development environment</menuitem>
+  <menuitem>single library for both desktop and mobile applications</menuitem>
+  <menuitem>responsive content and formatting controls</menuitem>
+  <menuitem>internationalization and locallization support</menuitem>
+  <menuitem>clean styling for legibility and clarity</menuitem>
 </ul>
 <h3>Chart Examples</h3>
 <p>Test chart types and build configuration:</p>
-<ul id="list" class="chart-selector">
-  <li><a href="index.html?type=multibar" data-type="multibar">Multibar Chart</a></li>
-  <li><a href="index.html?type=line" data-type="line">Line Chart</a></li>
-  <li><a href="index.html?type=pie" data-type="pie">Pie Chart</a></li>
-  <li><a href="index.html?type=funnel" data-type="funnel">Funnel Chart</a></li>
-  <li><a href="index.html?type=bubble" data-type="bubble">Bubble Chart</a></li>
-  <li><a href="index.html?type=treemap" data-type="treemap">Treemap Chart</a></li>
-  <li><a href="index.html?type=pareto" data-type="pareto">Pareto Chart</a></li>
-  <li><a href="index.html?type=gauge" data-type="gauge">Gauge Chart</a></li>
-  <li><a href="index.html?type=area" data-type="area">Stacked Area Chart</a></li>
-  <li><a href="index.html?type=tree" data-type="tree">Tree Chart</a></li>
-  <li><a href="index.html?type=globe" data-type="globe">Globe Chart</a></li>
-</ul>
+<menu id="list" class="chart-selector">
+  <menuitem><a href="index.html?type=multibar" data-type="multibar"><span>Multibar Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=line" data-type="line"><span>Line Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=pie" data-type="pie"><span>Pie Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=funnel" data-type="funnel"><span>Funnel Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=bubble" data-type="bubble"><span>Bubble Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=treemap" data-type="treemap"><span>Treemap Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=pareto" data-type="pareto"><span>Pareto Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=gauge" data-type="gauge"><span>Gauge Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=area" data-type="area"><span>Stacked Area Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=tree" data-type="tree"><span>Tree Chart</span></a></menuitem>
+  <menuitem><a href="index.html?type=globe" data-type="globe"><span>Globe Chart</span></a></menuitem>
+</menu>
       </section>
     </div>
 
@@ -82,18 +82,22 @@
           <span id="title">Sucrose Chart</span>
         </h2>
         <div id="picker" class="chart-selector">
-<a href="index.html?type=multibar" data-type="multibar" data-title="Multibar Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#vertical"></use></svg></a>
-<a href="index.html?type=line" data-type="line" data-title="Line Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#line"></use></svg></a>
-<a href="index.html?type=pie" data-type="pie" data-title="Pie Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#pie"></use></svg></a>
-<a href="index.html?type=funnel" data-type="funnel" data-title="Funnel Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#funnel"></use></svg></a>
-<a href="index.html?type=bubble" data-type="bubble" data-title="Bubble Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#bubble"></use></svg></a>
-<a href="index.html?type=treemap" data-type="treemap" data-title="Treemap Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#treemap"></use></svg></a>
-<a href="index.html?type=pareto" data-type="pareto" data-title="Pareto Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#pareto"></use></svg></a>
-<a href="index.html?type=gauge" data-type="gauge" data-title="Gauge Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#gauge"></use></svg></a>
-<a href="index.html?type=area" data-type="area" data-title="Area Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#area"></use></svg></a>
-<a href="index.html?type=tree" data-type="tree" data-title="Tree Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#tree"></use></svg></a>
-<a href="index.html?type=globe" data-type="globe" data-title="Globe Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#globe"></use></svg></a>
+          <button id="menu" class="btn" type="button"><i class="fa fa-bars"></i></button>
+          <span class="spacer"> </span>
+          <menu class="wrapper">
+<menuitem><a href="index.html?type=multibar" data-type="multibar" data-title="Multibar Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#vertical"></use></svg><span>Multibar Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=line" data-type="line" data-title="Line Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#line"></use></svg><span>Line Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=pie" data-type="pie" data-title="Pie Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#pie"></use></svg><span>Pie Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=funnel" data-type="funnel" data-title="Funnel Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#funnel"></use></svg><span>Funnel Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=bubble" data-type="bubble" data-title="Bubble Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#bubble"></use></svg><span>Bubble Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=treemap" data-type="treemap" data-title="Treemap Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#treemap"></use></svg><span>Treemap Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=pareto" data-type="pareto" data-title="Pareto Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#pareto"></use></svg><span>Pareto Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=gauge" data-type="gauge" data-title="Gauge Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#gauge"></use></svg><span>Gauge Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=area" data-type="area" data-title="Area Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#area"></use></svg><span>Stacked Area Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=tree" data-type="tree" data-title="Tree Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#tree"></use></svg><span>Tree Chart</span></a></menuitem>
+<menuitem><a href="index.html?type=globe" data-type="globe" data-title="Globe Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#globe"></use></svg><span>Globe Chart</span></a></menuitem>
 <!-- <a data-type="sankey" href="index.html?type=sankey"><svg><use xlink:href="img/charticons.svg#sankey"></use></svg></a> -->
+          </menu>
         </div>
       </nav>
 
@@ -111,14 +115,14 @@
         </div>
         <div class="container example" id="example">
           <div class="container-header">
-            <div class="tab active">
+            <div class="tab active" data-toggle="chart">
               <button class="btn" data-action="toggle" aria-label="show options" data-title="Show Options Panel" rel="tooltip"><i class="fa fa-toggle-right"></i></button>
               <span>Chart</span>
               <button class="btn" data-action="download" aria-label="download image" data-title="Download Image" rel="tooltip"><i class="fa fa-download"></i></button>
               <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="fa fa-arrows-alt"></i></button>
               <button class="btn" data-action="reset" aria-label="reset" data-title="Reload Chart Data" rel="tooltip"><i class="fa fa-refresh"></i></button>
             </div>
-            <div class="tab">
+            <div class="tab" data-toggle="table">
               <span>Data</span>
               <button class="btn" data-action="full" aria-label="full screen" data-title="Display Full Screen" rel="tooltip"><i class="fa fa-arrows-alt"></i></button>
               <button class="btn" data-action="reset" aria-label="reset" data-title="Reload Chart Data" rel="tooltip"><i class="fa fa-refresh"></i></button>
@@ -128,16 +132,20 @@
           <div class="sc-chart" id="chart">
             <svg></svg>
           </div>
+          <div class="sc-table hide" id="table">
+          </div>
         </div>
       </section>
     </div>
 
     <footer>
 <p><small>
-This project is maintained by <a href="https://github.com/sugarcrm">sugarcrm</a> &mdash;
-Hosted on GitHub Pages &mdash;
-Theme derived from <a href="https://github.com/orderedlist">orderedlist</a> &mdash;
-Built as offline app with <a href="http://jquerymy.com/">jquerymy.js</a>
+Maintained by <a href="https://github.com/sugarcrm">sugarcrm</a> &mdash;
+Hosted on <a href="https://pages.github.com/">GitHub Pages</a> &mdash;
+Theme derived from <a href="https://github.com/orderedlist">orderedlist</a> |
+Built as offline app with: <a href="http://jquerymy.com/">jQuery.my</a>,
+<a href="http://sugarjs.com/">Sugar</a>,
+and <a href="http://d3js.org">D3</a>
 </small></p>
     </footer>
 
@@ -147,8 +155,8 @@ Built as offline app with <a href="http://jquerymy.com/">jquerymy.js</a>
 
 <script src="js/d3.min.js"></script>
 <script src="js/topojson.min.js"></script>
-<script src="js/sucrose.min.js"></script>
 
+<script src="js/sucrose.min.js"></script>
 <script src="js/app.min.js"></script>
   </body>
 </html>
