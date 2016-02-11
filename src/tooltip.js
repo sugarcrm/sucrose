@@ -2,6 +2,8 @@
 /*****
  * A no frills tooltip implementation.
  *****/
+// REFERENCES:
+// http://www.jacklmoore.com/notes/mouse-position/
 
 
 (function() {
@@ -66,10 +68,12 @@
     gravity = gravity || 's';
     dist = dist || 5;
 
+    var rect = container.getBoundingClientRect();
+
     var pos = [
-      typeof evt.layerX === 'undefined' ? evt.offsetX : evt.layerX,
-      typeof evt.layerY === 'undefined' ? evt.offsetY : evt.layerY
-      ];
+          container.offsetLeft > 0 ? (evt.clientX - rect.left) : evt.clientX,
+          container.offsetTop > 0 ? (evt.clientY - rect.top) : evt.clientY
+        ];
 
     var tooltipWidth = parseInt(tooltip.offsetWidth, 10),
         tooltipHeight = parseInt(tooltip.offsetHeight, 10),
