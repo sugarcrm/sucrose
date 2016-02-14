@@ -2,6 +2,9 @@
 // jQuery.my manifest
 var Manifest =
 {
+  // Expose this self to all functions
+  self: null,
+
   // For jQuery.my cache (will be reset my chart type manifest)
   id: 'sucrose-demo',
 
@@ -12,6 +15,10 @@ var Manifest =
   Chart: null,
   // D3 table
   Table: null,
+  // CodeMirror
+  Editor: null,
+
+  lintErrors: [],
 
   // Default data
   selectedOptions: {},
@@ -21,6 +28,7 @@ var Manifest =
   gradientStart: '#e8e2ca',
   gradientStop: '#3e6c0a',
 
+  // The default values for the BaseUI manifest
   optionDefaults: {
     file: '',
     color: 'default',
@@ -31,71 +39,115 @@ var Manifest =
   // UI elements
   ui: {},
 
-  // Init function
+
+  /* ------------------------
+   * INIT functions --------- */
+
   init: function ($node, runtime) {
-    var self = this,
-        options = Object.clone(this.data);
+    var options = Object.clone(this.data);
+    self = this;
 
+    // Set manifest D3 visualization objects
     this.Chart = sucroseCharts(this.type);
-    this.Table = sucroseCharts('table');
+    this.Table = sucroseTable(this.Chart);
+    if (!['bar', 'line', 'area', 'pie', 'funnel', 'gauge'].find(this.type)) {
+      this.Table.strings({noData: 'This chart type does not support table data.'})
+    }
 
-    // Set default direction
+    // Set default direction for RTL/LTR
     $('html').css('direction', this.selectedOptions.direction);
 
+    // Conserve space by not prepending to title
     $title.text(($demo.width < 480 ? '' : 'Sucrose ') + this.title);
 
-    this.toggleTab(true);
+    // Show chart tab
+    this.toggleTab('chart');
 
+    // For each manifest data element, update selected options with preset value
     Object.each(options, function (k, v) {
       if (v.val && v.val !== v.def) {
         self.selectedOptions[k] = v.val;
       }
     });
 
+    // Insert new manifest form UI row
     Object.each(this.ui, function (k, v) {
       $form.append(self.createOptionRow(k, v));
     });
 
     // Unbind UI
-    $('button').off('click.example touch.example');
+    $('button').off('click.example touch.example').toggleClass('active', false);
     // Rebind UI
-    $('button[data-action=full]').on('click.example touch.example', $.proxy(function (e) {
+    $('button[data-action=full]').on('click.example touch.example', function (evt) {
+      var $button = $(this);
+      evt.stopPropagation();
       $example.toggleClass('full-screen');
-      this.toggleTooltip($(this));
-      this.chartResizer(this.Chart)(e);
-    }, this));
-    $('button[data-action=reset]').on('click.example touch.example', $.proxy(function (e) {
+      self.toggleTooltip($button);
+      self.chartResizer(self.Chart)(evt);
+      $button.toggleClass('active');
+    });
+    $('button[data-action=reset]').on('click.example touch.example', function (evt) {
+      evt.stopPropagation();
       $example.removeClass('full-screen');
-      this.resetChartSize();
-      this.loadData(this.data.file.val);
-    }, this));
+      $('button[data-action=edit]').removeClass('active');
+      self.resetChartSize();
+      self.loadData(self.data.file.val);
+    });
     // Toggle option panel display
-    $('button[data-action=toggle]').on('click.example touch.example', $.proxy(function (e) {
+    $('button[data-action=toggle]').on('click.example touch.example', function (evt) {
+      evt.stopPropagation();
       if ($demo.width() > 480) {
         $options.toggleClass('hidden');
         $example.toggleClass('full-width');
       } else {
         $options.toggleClass('open');
       }
-      this.chartResizer(this.Chart)(e);
-    }, this));
-    $('button[data-action=download]').on('click.example touch.example', $.proxy(function (e) {
-      generateImage(e);
-    }, this));
+      self.chartResizer(self.Chart)(evt);
+    });
+    $('button[data-action=download]').on('click.example touch.example', function (evt) {
+      evt.stopPropagation();
+      if ($chart.hasClass('hide')) {
+        generateJson(evt);
+      } else {
+        generateImage(evt);
+      }
+    });
+    $('button[data-action=edit]').on('click.example touch.example', function (evt) {
+      var $button = $(this);
+      evt.stopPropagation();
+      if ($button.hasClass('active')) {
+        if (!self.lintErrors.length) {
+          self.parseRawData(JSON.parse(self.Editor.doc.getValue()));
+        }
+        self.unloadDataEditor();
+        self.loadTable();
+        $table.find('table').show();
+        $button.removeClass('active');
+      } else {
+        self.unloadTable();
+        self.loadDataEditor();
+        $table.find('table').hide();
+        $button.addClass('active');
+      }
+    });
 
     $('.tab').off('click.example touch.example');
-    $('.tab').on('click.example touch.example', function (e) {
-      e.stopPropagation();
-      var isChartTab = $(this).data('toggle') === 'chart';
-      self.toggleTab(isChartTab);
-      if (isChartTab) {
+    $('.tab').on('click.example touch.example', function (evt) {
+      evt.stopPropagation();
+      if ($(this).data('toggle') === 'chart') {
+        self.unloadDataEditor();
+        self.unloadTable();
+        $('button[data-action=edit]').removeClass('active');
         self.loadChart();
       } else {
+        self.unloadChart();
+        self.unloadDataEditor();
         self.loadTable();
       }
     });
   },
-  toggleTab: function (isChartTab) {
+  toggleTab: function (tab) {
+    var isChartTab = tab === 'chart';
     $chart.toggleClass('hide', !isChartTab);
     $table.toggleClass('hide', isChartTab);
     $('[data-toggle=chart]').toggleClass('active', isChartTab);
@@ -109,6 +161,10 @@ var Manifest =
     $o.attr('data-title', t2)
       .attr('data-title-toggle', t1);
   },
+
+  /* ------------------------
+   * RESIZE functions ------- */
+
   resetChartSize: function () {
     $chart.removeAttr('style');
   },
@@ -116,15 +172,15 @@ var Manifest =
   chartResizer: function (chart) {
     // TODO: why can't I debounce?
     return chart.render ?
-      function (e) {
-        e.stopPropagation();
+      function (evt) {
+        evt.stopPropagation();
         if ($chart.hasClass('hide')) {
           return;
         }
         chart.render();
       } :
-      function (e) {
-        e.stopPropagation();
+      function (evt) {
+        evt.stopPropagation();
         if ($chart.hasClass('hide')) {
           return;
         }
@@ -133,14 +189,14 @@ var Manifest =
   },
   windowResizer: function (chart, resetter) {
     return chart.render ?
-      (function (e) {
+      (function (evt) {
         resetter();
         if ($chart.hasClass('hide')) {
           return;
         }
         chart.render();
       }).debounce(50) :
-      (function (e) {
+      (function (evt) {
         resetter();
         if ($chart.hasClass('hide')) {
           return;
@@ -158,6 +214,11 @@ var Manifest =
   chartUpdater: function () {
     return this.Chart.update;
   },
+
+  /* ------------------------
+   * FORM functions --------- */
+
+  // Create option form row
   createOptionRow: function (k, v) {
     var row = $('<div class="option-row"/>'),
         name = this.getNameFromSelector(k),
@@ -198,7 +259,7 @@ var Manifest =
     v.each(function (r) {
       radio += '<label><input type="radio" name="' + n + '" value="' + r.value + '"> ' +
         r.label + ' </label> ';
-    })
+    });
     return radio;
   },
   checkboxControl: function (v, n) {
@@ -206,7 +267,7 @@ var Manifest =
     v.each(function (r) {
       checkbox += '<label><input type="checkbox" name="' + n + '" value="' + r.value + '"> ' +
         r.label + ' </label> ';
-    })
+    });
     return checkbox;
   },
   selectControl: function (v, n) {
@@ -281,33 +342,17 @@ var Manifest =
     this.ui['[name=' + k + ']'].setChartOption(v, this);
     this.my.recalc('[name=settings]');
   },
-  updateColorModel: function (v) {
-    var options = {},
-        color = this.data.color.val,
-        gradient = this.data.gradient.val;
 
-    if (color && color === 'graduated') {
-      options = {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength};
-    }
+  /* ------------------------
+   * CHART functions -------- */
 
-    if (color && color === 'data') {
-      options = {c1: this.gradientStart, c2: this.gradientStop};
-    }
-
-    if (gradient && gradient.filter('1').length && color !== 'class') {
-      options.gradient = true;
-      options.orientation = gradient.filter('horizontal').length ? 'horizontal' : 'vertical';
-      options.position = gradient.filter('base').length ? 'base' : 'middle';
-    }
-
-    this.Chart.colorData(color, options);
-  },
   loadChart: function () {
     this.unloadChart();
-    if ($chart.hasClass('hide')) {
-      return;
-    }
+    this.toggleTab('chart');
 
+    chartData = Object.clone(rawData, true);
+
+    // Update chart color data based on current data
     if (this.Chart.colorData) {
       this.updateColorModel();
     }
@@ -329,38 +374,107 @@ var Manifest =
       minWidth: 200
     });
 
+    // Rebind window resizer
     $(window).on('resize.example', this.windowResizer(this.Chart, this.resetChartSize));
     $chart.on('resize.example', this.chartResizer(this.Chart));
   },
   unloadChart: function () {
     $(window).off('resize.example');
     $chart.off('resize.example');
-
     $chart.find('svg').remove();
   },
-  updateChartDataCell: function (d, k, v) {
-    var series = chartData.data[d.series],
-        i = d.x - 1;
-    series.values[i][k] = v;
-    if (series._values) {
-      series._values[i][k] = v;
+  updateChartDataCell: function (d, i, k, v) {
+    var series = rawData.data[d.series];
+    if (series.hasOwnProperty('value')) {
+      series.value = v;
+    } else {
+      series.values[i][k] = v;
     }
-    this.loadChart();
-    this.loadTable();
+    if (series._values) {
+      if (series.hasOwnProperty('value')) {
+        series._value = v;
+      } else {
+        series._values[i][k] = v;
+      }
+    }
   },
   updateChartDataSeries: function (d, k, v) {
-    var series = chartData.data.find({key: d.key});
+    var series = rawData.data.find({key: d.key});
     series[k] = v;
-    this.loadChart();
-    this.loadTable();
   },
+  updateColorModel: function (v) {
+    var options = {},
+        color = this.data.color.val,
+        gradient = this.data.gradient.val;
+
+    if (color && color === 'graduated') {
+      options = {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength};
+    }
+
+    if (color && color === 'data') {
+      options = {c1: this.gradientStart, c2: this.gradientStop};
+    }
+
+    if (gradient && gradient.filter('1').length && color !== 'class') {
+      options.gradient = true;
+      options.orientation = gradient.filter('horizontal').length ? 'horizontal' : 'vertical';
+      options.position = gradient.filter('base').length ? 'base' : 'middle';
+    }
+
+    this.Chart.colorData(color, options);
+  },
+
+  /* ------------------------
+   * DATA EDITOR functions -- */
+
+  loadDataEditor: function () {
+    $('button[data-action=edit]').addClass('active');
+    this.unloadDataEditor();
+    this.Editor = CodeMirror(document.getElementById('table'), {
+      value: JSON.stringify(rawData, null, '  '),
+      mode:  'application/json',
+      lint: {
+        getAnnotations: CodeMirror.jsonValidator,
+        onUpdateLinting: function (annotationsNotSorted, annotations, cm) {
+          // if (!annotationsNotSorted.length) {
+          //   self.parseRawData(cm.doc.getValue());
+          // }
+          self.lintErrors = annotationsNotSorted;
+        }
+      },
+      tabSize: 2,
+      lineNumbers: true,
+      foldGutter: true,
+      gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter', 'CodeMirror-lint-markers']
+    });
+    // this.Editor.doc.on('change', function () {
+    //   console.log(cm.state.lint.marked)
+    //   // chartData = JSON.parse(cm.doc.getValue());
+    //   // self.refreshTable();
+    // });
+    this.Editor.focus();
+  },
+  unloadDataEditor: function () {
+    $table.find('.CodeMirror').remove();
+    this.Editor = null;
+  },
+
+  /* ------------------------
+   * TABLE EDITOR functions - */
+
   loadTable: function () {
+    // this.unloadDataEditor();
     this.unloadTable();
+
+    this.toggleTab('table');
 
     $table.attr('class', 'sc-table sc-table-' + this.type + ($table.hasClass('hide') ? ' hide' : ''));
 
+    chartData = Object.clone(rawData, true);
+
     tableData = transformTableData(chartData, this.type, this.Chart);
-    // Object.watch(tableData, 'data', function() {
+
+    // Object.watch(tableData, 'data', function () {
     //   console.log('property changed!');
     // });
 
@@ -374,59 +488,72 @@ var Manifest =
     $table.find('table').editableTableWidget();
 
     // Listen for changes to data table cell values
-    $table.find('td.sc-val').on('change.editable', $.proxy(function(evt, v) {
-      var data = evt.currentTarget.__data__;
-      this.updateChartDataCell(data, 'y', (isNaN(v) ? v : parseFloat(v)));
-    }, this));
+    $table.find('td.sc-val').on('change.editable', function (evt, val) {
+      var d = evt.currentTarget.__data__,
+          i = d.index,
+          k = d.hasOwnProperty('y') ? 'y' : 1,
+          v = isNaN(val) ? val : parseFloat(val);
+      self.updateChartDataCell(d, i, k, v);
+    });
     // Listen for changes to data table series keys
-    $table.find('td.sc-key').on('change.editable', $.proxy(function(evt, v) {
-      var data = evt.currentTarget.__data__;
-      this.updateChartDataSeries(data, 'key', v);
-    }, this));
+    $table.find('td.sc-key').on('change.editable', function (evt, val) {
+      self.updateChartDataSeries(this.__data__, 'key', val);
+    });
     // Listen for changes to data table series disabled state
-    $table.find('td.sc-state').on('change.editable', $.proxy(function(evt, v) {
-      var data = evt.currentTarget.__data__;
-      this.updateChartDataSeries(data, 'disabled', !evt.target.checked);
-    }, this));
+    $table.find('td.sc-state').on('change.editable', function (evt) {
+      var v = !evt.target.checked;
+      self.updateChartDataSeries(this.__data__, 'disabled', v);
+    });
+    $table.find('td').on('validate', function (evt, value) {
+      var cell = $(this),
+        column = cell.index();
+      if (column === 1) {
+        return !!value && value.trim().length > 0;
+      } else {
+        return !isNaN(parseFloat(value)) && isFinite(value);
+      }
+    });
   },
   unloadTable: function () {
     $table.find('td').off('change.editable');
     $table.find('table').remove();
   },
+
+  /* ------------------------
+   * LOAD DATA functions ---- */
+
+  parseRawData: function (json) {
+    rawData = json;
+    if (this.type === 'treemap' || this.type === 'tree' || this.type === 'globe') {
+      this.colorLength = 0;
+    } else {
+      // raw data from Report API
+      if (!json.data) {
+        rawData = transformDataToD3(json, this.type);
+      }
+      this.colorLength = rawData.properties.colorLength || rawData.data.length;
+      postProcessData(rawData, this.type, this.Chart);
+    }
+  },
+
   loadData: function (file) {
     if (!file) {
       return;
     }
 
-    var promise = $.ajax({ // Load data, $.ajax is promise
-            url: 'data/' + file + '.json',
-            cache: true,
-            dataType: 'json',
-            context: this,
-            async: true
-          })
-          .then(function (json) { // Loaded, then
-            if (!json) {
-              return;
-            }
-
-            if (this.type === 'treemap' || this.type === 'tree' || this.type === 'globe') {
-              chartData = json;
-              this.colorLength = 0;
-            } else {
-              if (json.data) {
-                chartData = json;
-              } else {
-                chartData = transformDataToD3(json, this.type);
-              }
-              this.colorLength = chartData.properties.colorLength || chartData.data.length;
-              postProcessData(chartData, this.type, this.Chart);
-            }
-
-            this.loadChart();
-            this.loadTable();
-          });
-
-    return promise;
+    return $.ajax({ // Load data, $.ajax is promise
+        url: 'data/' + file + '.json',
+        cache: true,
+        dataType: 'json',
+        context: this,
+        async: true
+      })
+      .then(function (json) { // Loaded, then
+        if (!json) {
+          return;
+        }
+        this.parseRawData(json);
+        this.loadChart();
+      });
   }
 };

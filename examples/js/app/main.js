@@ -20,6 +20,7 @@ tootip = null;
 // Application scope variables
 chartType = window.uQuery('type');
 chartStore = {};
+rawData = {};
 chartData = {};
 tableData = {};
 
@@ -54,7 +55,7 @@ d3.selectAll('[rel=tooltip]')
     }, this));
 
 // For both index list and example picker
-$select.on('click', 'a', function (e) {
+$select.on('click touch', 'a', function (e) {
     var type = $(e.currentTarget).data('type');
     e.preventDefault();
     e.stopPropagation();
@@ -71,7 +72,7 @@ $menu.on('click touch', function (e) {
   });
 
 // Close menu when clicking outside
-$('body').on('click', function() {
+$('body').on('click touch', function() {
     $select.removeClass('open');
   });
 

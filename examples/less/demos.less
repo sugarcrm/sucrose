@@ -95,6 +95,7 @@ h1, h2, h3, h4, h5, h6 {
   &.full-screen {
     position: absolute;
     width: 100%;
+    max-width: 100%;
     top: 0;
     right: 0;
     bottom: 0;
@@ -126,6 +127,7 @@ h1, h2, h3, h4, h5, h6 {
   }
   &.full-width {
     width: 100%;
+    max-width: 100%;
     .container-header button.btn:first-child {
       display: inline-block;
     }
@@ -165,6 +167,12 @@ h1, h2, h3, h4, h5, h6 {
     &:first-child {
       float: none;
       display: none;
+    }
+    &.active {
+      background-color: #444;
+      .fa {
+        color: #fff;
+      }
     }
   }
 }
@@ -288,6 +296,11 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 14px;
     line-height: 16px;
     text-align: center;
+    outline-width: 3px;
+    outline-offset: -2px;
+  }
+  .CodeMirror {
+    height: 100%;
   }
 }
 .sc-td {
@@ -299,7 +312,7 @@ h1, h2, h3, h4, h5, h6 {
     }
   }
 }
-.sc-series-keys,
+.sc-th.sc-series-keys,
 .sc-td.sc-key,
 .sc-th.sc-group-sums {
   text-align: left;
@@ -321,11 +334,12 @@ input.mindmup {
   -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px #7ab5d3;
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 6px #7ab5d3;
   outline: rgb(91, 157, 217) auto 3px;
-  outline-offset: -1px;
+  outline-offset: -2px;
   border-width: 1px 0;
   border-color: transparent;
   border-style: solid;
   background-color: #E7F7F7;
+  max-height: 16px;
 }
 
 .ui-resizable-e {
@@ -348,7 +362,6 @@ input.mindmup {
 -------------------------------------------------- */
 .demo .chart-selector {
   display: inline-block;
-  // position: relative;
   float: right;
   max-height: 44px;
   margin-right: 1px;
@@ -362,6 +375,7 @@ input.mindmup {
     position: absolute;
     right: 4px;
     top: 9px;
+    z-index: -1;
   }
   .spacer {
     display: none;
@@ -372,7 +386,6 @@ input.mindmup {
   .wrapper {
     display: inline-block;
     white-space: nowrap;
-    // position: relative;
     vertical-align: top;
     padding: 0;
   }

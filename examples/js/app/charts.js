@@ -32,7 +32,7 @@ function sucroseCharts(type) {
       break;
     case 'funnel':
       chart = sucrose.models.funnelChart()
-        .fmtValueLabel(function(d) { return '$' + (d.label || d.value || d) + 'K'; })
+        .fmtValueLabel(function (d) { return '$' + (d.label || d.value || d) + 'K'; })
         .tooltipContent(function (key, x, y, e, graph) {
           return '<p>Stage: <b>' + key + '</b></p>' +
                  '<p>Amount: <b>$' + parseInt(y) + 'K</b></p>' +
@@ -72,6 +72,8 @@ function sucroseCharts(type) {
       break;
     case 'line':
       chart = sucrose.models.lineChart()
+        .x(function (d) { return d[0]; })
+        .y(function (d) { return d[1]; })
         .useVoronoi(true)
         .clipEdge(false)
         .tooltipContent(function (key, x, y, e, graph) {
@@ -140,18 +142,18 @@ function sucroseCharts(type) {
           var si = d3.formatPrefix(d, 2);
           return '$' + d3.round(si.scale(d), 2) + si.symbol;
         })
-        .tooltipBar(function(key, x, y, e, graph) {
+        .tooltipBar(function (key, x, y, e, graph) {
           return '<p><b>' + key + '</b></p>' +
             '<p><b>' + y + '</b></p>' +
             '<p><b>' + x + '%</b></p>';
         })
-        .tooltipLine(function(key, x, y, e, graph) {
+        .tooltipLine(function (key, x, y, e, graph) {
           return '<p><p>' + key + ': <b>' + y + '</b></p>';
         })
-        .tooltipQuota(function(key, x, y, e, graph) {
+        .tooltipQuota(function (key, x, y, e, graph) {
           return '<p>' + e.key + ': <b>$' + y + '</b></p>';
         })
-        .barClick(function(data, eo, chart, container) {
+        .barClick(function (data, eo, chart, container) {
             var d = eo.series,
                 selectedSeries = eo.seriesIndex;
 
@@ -160,19 +162,19 @@ function sucroseCharts(type) {
             d.disabled = !d.disabled;
 
             if (!chart.stacked()) {
-                data.filter(function(d) {
+                data.filter(function (d) {
                     return d.series === selectedSeries && d.type === 'line';
-                }).map(function(d) {
+                }).map(function (d) {
                     d.disabled = !d.disabled;
                     return d;
                 });
             }
 
             // if there are no enabled data series, enable them all
-            if (!data.filter(function(d) {
+            if (!data.filter(function (d) {
                 return !d.disabled && d.type === 'bar';
             }).length) {
-                data.map(function(d) {
+                data.map(function (d) {
                     d.disabled = false;
                     container.selectAll('.sc-series').classed('disabled', false);
                     return d;
@@ -184,8 +186,8 @@ function sucroseCharts(type) {
       break;
     case 'gauge':
       chart = sucrose.models.gaugeChart()
-        .x(function(d) { return d.key; })
-        .y(function(d) { return d.y; })
+        .x(function (d) { return d.key; })
+        .y(function (d) { return d.y; })
         .ringWidth(50)
         .maxValue(9)
         .transitionMs(4000);
@@ -198,12 +200,12 @@ function sucroseCharts(type) {
       break;
     case 'area':
       chart = sucrose.models.stackedAreaChart()
-        .x(function(d) { return d[0]; })
-        .y(function(d) { return d[1]; })
+        .x(function (d) { return d[0]; })
+        .y(function (d) { return d[1]; })
         .useVoronoi(false)
         //.clipEdge(true)
         //.style('expand', 'stream', 'stacked')
-        .tooltipContent(function(key, x, y, e, graph) {
+        .tooltipContent(function (key, x, y, e, graph) {
           return '<p>Category: <b>' + key + '</b></p>';
         });
 
@@ -212,7 +214,7 @@ function sucroseCharts(type) {
         .tickFormat(d3.format(',.2f'));
 
       chart.xAxis
-        .tickFormat(function(d) { return d3.time.format('%x')(new Date(d)); });
+        .tickFormat(function (d) { return d3.time.format('%x')(new Date(d)); });
 
       tooltips = false;
       break;
@@ -249,7 +251,7 @@ function sucroseCharts(type) {
         })
         .zoomExtents({'min': 0.25, 'max': 4})
         .horizontal(false)
-        .nodeClick(function() {
+        .nodeClick(function () {
           console.log(d3.select(this).select('.sc-org-name').attr('data-url'));
         })
         .nodeCallback(function (d) {
@@ -274,9 +276,6 @@ function sucroseCharts(type) {
         showTitle = false;
         showLegend = false;
         tooltips = false;
-      break;
-    case 'table':
-      chart = sucrose.models.table();
       break;
   }
 

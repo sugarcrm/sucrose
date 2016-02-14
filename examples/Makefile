@@ -4,6 +4,15 @@ LIB_FILES = \
 	js/lib/micro-query.js \
 	js/lib/mindmup-editabletable.js \
 	../node_modules/queue-async/queue.min.js \
+	node_modules/jsonlint/lib/jsonlint.js \
+	node_modules/codemirror/lib/codemirror.js \
+	node_modules/codemirror/mode/javascript/javascript.js \
+	node_modules/codemirror/addon/lint/lint.js \
+	node_modules/codemirror/addon/lint/javascript-lint.js \
+	node_modules/codemirror/addon/lint/json-lint.js \
+	node_modules/codemirror/addon/fold/foldcode.js \
+	node_modules/codemirror/addon/fold/brace-fold.js \
+	node_modules/codemirror/addon/fold/foldgutter.js \
 	node_modules/canvg/canvg.js \
 	node_modules/canvg/rgbcolor.js \
 	node_modules/canvg/StackBlur.js \
@@ -14,8 +23,10 @@ APP_FILES = \
 	js/app/intro.js \
 	js/app/variables.js \
 	js/app/charts.js \
+	js/app/table.js \
 	js/app/transform.js \
 	js/app/saveimage.js \
+	js/app/savejson.js \
 	js/app/loader.js \
 	js/app/manifest.js \
 	js/app/baseui.js \

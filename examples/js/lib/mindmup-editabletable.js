@@ -22,7 +22,7 @@ $.fn.editableTableWidget = function (options) {
 						.offset(active.offset())
 						.css(active.css(activeOptions.cloneProperties))
 						.width(active.width())
-						.height(active.height())
+						.height(active.height() - parseInt(active.css('border-top-width'), 10) - parseInt(active.css('border-bottom-width'), 10))
 						.focus();
 					if (select) {
 						editor.select();
@@ -122,7 +122,7 @@ $.fn.editableTableWidget = function (options) {
 			if (editor.is(':visible')) {
 				editor.offset(active.offset())
 				.width(active.width())
-				.height(active.height());
+				.height(active.height() - parseInt(active.css('border-top-width'), 10) - parseInt(active.css('border-bottom-width'), 10));
 			}
 		});
 	});

@@ -1,5 +1,5 @@
 
-sucrose.models.table = function() {
+sucrose.models.table = function () {
 
   //============================================================
   // Public Variables with Default Settings
@@ -9,8 +9,8 @@ sucrose.models.table = function() {
       width = 0,
       height = 0,
       animate = true,
-      getX = function(d) { return d.x; },
-      getY = function(d) { return d.y; },
+      getX = function (d) { return d.x; },
+      getY = function (d) { return d.y; },
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -22,17 +22,18 @@ sucrose.models.table = function() {
 
 
   function chart(selection) {
-    selection.each(function(chartData) {
+    selection.each(function (chartData) {
       var container = d3.select(this);
 
       //------------------------------------------------------------
 
       var properties = chartData ? chartData.properties : {},
-          data = (chartData && chartData.data) ? chartData.data.map(function(d) {
+          data = (chartData && chartData.data) ? chartData.data.map(function (d, i) {
             return {
               'key': d.key || 'Undefined',
               'type': d.type || null,
               'disabled': d.disabled || false,
+              'series': d.series || i,
               'values': d._values || d.values
             };
           }) : null;
@@ -40,9 +41,9 @@ sucrose.models.table = function() {
       var labels = properties.labels ||
             d3.range(
               1,
-              d3.max(data.map(function(d) { return d.values.length; })) + 1
+              d3.max(data.map(function (d) { return d.values.length; })) + 1
             )
-            .map(function(d) {
+            .map(function (d) {
               return {'group': d, 'l': 'Group ' + d};
             });
 
@@ -51,7 +52,7 @@ sucrose.models.table = function() {
           })) === 1;
 
       function displayNoData(d) {
-        if (d && d.length && d.filter(function(d) { return d.values.length; }).length) {
+        if (d && d.length && d.filter(function (d) { return d.values.length; }).length) {
           container.selectAll('.sc-noData').remove();
           return false;
         }
@@ -65,7 +66,7 @@ sucrose.models.table = function() {
         noDataText.enter().append('div')
           .attr('class', 'sucrose sc-noData')
           .style({'text-align': 'center', 'position': 'absolute', 'top': (h / 2) + 'px', 'width': w + 'px'})
-          .text(function(d) {
+          .text(function (d) {
             return d;
           });
 
@@ -101,7 +102,7 @@ sucrose.models.table = function() {
           cols.enter()
             .append('th').attr('class', 'sc-th sc-group');
           thead.selectAll('.sc-group')
-            .text(function(d) { return d.l; });
+            .text(function (d) { return singleSeries ? 'Series Total' : d.l; });
 
         if (!singleSeries) {
           theadEnter
@@ -120,7 +121,7 @@ sucrose.models.table = function() {
               .text('');
           tfootEnter
             .append('th').attr('class', 'sc-th sc-group-sums')
-              .text('Group Sums');
+              .text(singleSeries ? 'Sum' : 'Group Sums');
 
       var sums = tfoot.selectAll('.sc-sum')
             .data(function (d) {
@@ -129,7 +130,7 @@ sucrose.models.table = function() {
                   return !f.disabled;
                 })
                 .map(function (a) {
-                  return a.values.map(function (b) { return b.y; });
+                  return a.values.map(function (b) { return getY(b); });
                 })
                 .reduce(function (p, c) {
                   return p.map(function (d, i) {
@@ -154,7 +155,7 @@ sucrose.models.table = function() {
                 })
                 .map(function (a) {
                   return a.values
-                    .map(function (b) { return b.y; })
+                    .map(function (b) { return getY(b); })
                     .reduce(function (p, c) {
                       return p + c;
                     });
@@ -172,46 +173,62 @@ sucrose.models.table = function() {
       var tbody = wrap.select('.sc-tbody');
 
       var rows = tbody.selectAll('.sc-series')
-            .data(function(d) { return d; });
+            .data(function (d) { return d; });
           rows.exit().remove();
-      var seriesEnter = rows.enter()
+      var rowsEnter = rows.enter()
             .append('tr').attr('class', 'sc-series');
-          seriesEnter
+          rowsEnter
             .append('td').attr('class', 'sc-td sc-state')
             .attr('tabindex', -1)
             .attr('data-editable', false)
             .append('input')
               .attr('type', 'checkbox');
-          rows.select('.sc-state input')
-            .property('checked', function(d) {return d.disabled ? false : true; });
-          seriesEnter
+          rowsEnter
             .append('td').attr('class', 'sc-td sc-key');
-          rows.select('.sc-key')
-            .text(function(d) { return d.key; });
-          rows
-            .style('color', function(d) {return d.disabled ? '#ddd' : '#000'; })
-            .style('text-decoration', function(d) {return d.disabled ? 'line-through' : 'normal'; });
 
-      var cells = rows.selectAll('.sc-val')
-            .data(function(d) { return d.values; });
+      var series = tbody.selectAll('.sc-series')
+            .style('color', function (d) { return d.disabled ? '#ddd' : '#000'; })
+            .style('text-decoration', function (d) { return d.disabled ? 'line-through' : 'inherit'; });
+          series.select('.sc-state input')
+            .property('checked', function (d) { return d.disabled ? false : true; });
+          series.select('.sc-key')
+            .text(function (d) { return d.key; });
+
+      var cells = series.selectAll('.sc-val')
+            .data(function (d, i) {
+              return d.values.map(function (g, j) {
+                  var val = Array.isArray(g) ?
+                    {
+                      0: g[0],
+                      1: g[1]
+                    } :
+                    {
+                      x: g.x,
+                      y: g.y
+                    };
+                  val.series = i;
+                  val.index = j;
+                  return val;
+                });
+            });
           cells.exit().remove();
           cells.enter()
             .append('td').attr('class', 'sc-td sc-val');
           tbody.selectAll('.sc-val')
-            .text(function(d) { return d.y; });
-
-          rows.selectAll('.sc-val')
+            .text(function (d) {
+              return getY(d);
+            });
 
         if (!singleSeries) {
-          seriesEnter
+          rowsEnter
             .append('td').attr('class', 'sc-td sc-total')
               .attr('tabindex', -1)
               .attr('data-editable', false);
-          rows.select('.sc-total')
-            .text(function(d) {
+          series.select('.sc-total')
+            .text(function (d) {
               return d.values
-                .map(function(d) { return d.y; })
-                .reduce(function(p, c) {
+                .map(function (d) { return getY(d); })
+                .reduce(function (p, c) {
                   return p + c;
                 });
             });
@@ -227,7 +244,7 @@ sucrose.models.table = function() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.margin = function(_) {
+  chart.margin = function (_) {
     if (!arguments.length) return margin;
     margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
     margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
@@ -236,31 +253,31 @@ sucrose.models.table = function() {
     return chart;
   };
 
-  chart.width = function(_) {
+  chart.width = function (_) {
     if (!arguments.length) return width;
     width = _;
     return chart;
   };
 
-  chart.height = function(_) {
+  chart.height = function (_) {
     if (!arguments.length) return height;
     height = _;
     return chart;
   };
 
-  chart.x = function(_) {
+  chart.x = function (_) {
     if (!arguments.length) return getX;
     getX = d3.functor(_);
     return chart;
   };
 
-  chart.y = function(_) {
+  chart.y = function (_) {
     if (!arguments.length) return getY;
     getY = d3.functor(_);
     return chart;
   };
 
-  chart.strings = function(_) {
+  chart.strings = function (_) {
     if (!arguments.length) {
       return strings;
     }
@@ -272,7 +289,7 @@ sucrose.models.table = function() {
     return chart;
   };
 
-  chart.color = function(_) {
+  chart.color = function (_) {
     if (!arguments.length) return color;
     color = sucrose.utils.getColor(_);
     return chart;

@@ -17,6 +17,7 @@ var $title,
 // Application scope variables
 var chartType,
     chartStore,
+    rawData,
     chartData,
     tableData,
     tootip;

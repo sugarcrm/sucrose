@@ -12,7 +12,7 @@ function generateImage(e) {
 
     function reEncode(data) {
       data = encodeURIComponent(data);
-      data = data.replace(/%([0-9A-F]{2})/g, function(match, p1) {
+      data = data.replace(/%([0-9A-F]{2})/g, function (match, p1) {
         var c = String.fromCharCode('0x' + p1);
         return c === '%' ? '%25' : c;
       });
@@ -27,9 +27,11 @@ function generateImage(e) {
             });
         a.target = '_blank';
         a.href = url;
+        // Not supported consistently across browsers
+        // fall back to open image in new tab
         a.download = 'download.png';
         document.body.appendChild(a);
-        a.addEventListener('click', function(e) {
+        a.addEventListener('click', function (e) {
           a.parentNode.removeChild(a);
         });
         a.dispatchEvent(evt);

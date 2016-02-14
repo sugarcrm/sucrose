@@ -4,7 +4,7 @@ function transformDataToD3(json, chartType, barType) {
       properties = {},
       value = 0,
       strUndefined = 'undefined',
-      typeWithValues = ['bar', 'line', 'pie', 'funnel', 'gauge'];
+      typeWithValues = ['bar', 'line', 'area', 'pie', 'funnel', 'gauge'];
 
   function sumValues(values) {
     return values.reduce(function(a, b) { return parseFloat(a) + parseFloat(b); }, 0); // 0 is default value if reducing an empty list
@@ -91,6 +91,7 @@ function transformDataToD3(json, chartType, barType) {
           });
           break;
 
+      case 'area':
       case 'line':
           var discreteValues = d3.max(json.values, function(d) {
                     return d.values.length;
@@ -214,12 +215,36 @@ function transformTableData(chartData, chartType, Chart) {
       properties = chartData.properties || {};
 
   switch (chartType) {
+    case 'multibar':
+      data = chartData.data.map(function(d, i) {
+        var series = {
+          'key': d.key || 'undefined',
+          'count': d.count || null,
+          'disabled': d.disabled || false,
+          'series': d.series || i,
+          'values': (d._values || d.values).map(function(k) {
+              return {'x': k.x, 'y': (isNaN(k.value) ? k.y : k.value)};
+            })
+        };
+        if (d.type) {
+          series['type'] = d.type;
+        }
+        if (d.color) {
+          series['color'] = d.color;
+        }
+        if (d.classes) {
+          series['classes'] = d.classes;
+        }
+        return series;
+      });
+      break;
     case 'funnel':
-      data = chartData.data.map(function(d) {
+      data = chartData.data.map(function(d, i) {
         return {
           'key': d.key || 'undefined',
           'count': d.count || null,
           'disabled': d.disabled || false,
+          'series': d.series || i,
           'values': d.values.map(function(k) {
               return {'x': k.x, 'y': (isNaN(k.value) ? k.y : k.value)};
             })
@@ -232,18 +257,19 @@ function transformTableData(chartData, chartType, Chart) {
           'key': d.key || 'undefined',
           'count': d.count || null,
           'disabled': d.disabled || false,
+          'series': d.series || i,
           'values': [{'x': i + 1, 'y': Chart.y()(d)}]
         };
       });
       break;
+    case 'area':
     case 'line':
       data = chartData.data.map(function(d, i) {
         return {
           'key': d.key || 'undefined',
           'disabled': d.disabled || false,
-          'values': d.values.map(function(j, k) {
-              return {'x': k + 1, 'y': j[1]};
-            })
+          'series': d.series || i,
+          'values': d.values
         };
       });
       properties.labels = properties.labels || d3.merge(chartData.data.map(function(d) {
@@ -262,6 +288,14 @@ function transformTableData(chartData, chartType, Chart) {
           return {'group': i + 1, 'l': Chart.xAxis.tickFormat()(d)};
         });
       break;
+
+    case 'tree':
+    case 'treemap':
+    case 'globe':
+    case 'bubble':
+      data = [];
+      break;
+
     default:
       data = chartData.data;
   }
@@ -282,7 +316,7 @@ function postProcessData(chartData, chartType, Chart) {
         [];
 
       if (chartData.data.length) {
-        if (chartData.data[0].values.length && chartData.data[0].values[0] instanceof Array) {
+        if (chartData.data[0].values.length && Array.isArray(chartData.data[0].values[0])) {
           Chart
             .x(function (d) { return d[0]; })
             .y(function (d) { return d[1]; });
