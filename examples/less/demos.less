@@ -128,7 +128,7 @@ h1, h2, h3, h4, h5, h6 {
   &.full-width {
     width: 100%;
     max-width: 100%;
-    .container-header button.btn:first-child {
+    .tab > button.btn:first-child {
       display: inline-block;
     }
   }
@@ -162,18 +162,16 @@ h1, h2, h3, h4, h5, h6 {
   }
   button.btn {
     display: inline-block;
-    float: right;
     margin-right: 6px;
-    &:first-child {
-      float: none;
-      display: none;
-    }
     &.active {
       background-color: #444;
       .fa {
         color: #fff;
       }
     }
+  }
+  .toolbar {
+    float: right;
   }
 }
 .rtl .container-header button.btn {
@@ -203,6 +201,9 @@ h1, h2, h3, h4, h5, h6 {
     button.btn {
       display: none;
     }
+  }
+  > button.btn:first-child {
+    display: none;
   }
 }
 .rtl {
@@ -669,7 +670,7 @@ a.success:hover { color: darken(@successText, 10%); }
     .tab:first-child {
       padding-left: 4px;
     }
-    button.btn:first-child {
+    > button.btn:first-child {
       display: inline-block;
     }
   }

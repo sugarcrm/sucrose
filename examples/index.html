@@ -1,10 +1,10 @@
 <!doctype html>
-<!-- DEV: -->
+<!-- DEV::
 <html>
-<!-- :DEV -->
-<!-- PROD::
+::DEV -->
+<!-- PROD: -->
 <html manifest="sucrose.appcache">
-::PROD -->
+<!-- :PROD -->
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
@@ -18,15 +18,15 @@
     <link rel="icon" sizes="192x192" href="img/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" href="img/favicons/apple-touch-icon-152x152.png">
     <!-- <script>less = {env: 'production'};</script> -->
-    <!-- DEV: -->
+    <!-- DEV::
     <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
     <link rel="stylesheet/less" type="text/css" href="less/examples.less">
     <script src="js/less.min.js"></script>
-    <!-- :DEV -->
-    <!-- PROD::
+    ::DEV -->
+    <!-- PROD: -->
     <link rel="stylesheet" href="css/sucrose.min.css">
     <link rel="stylesheet" href="css/examples.min.css">
-    ::PROD -->
+    <!-- :PROD -->
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -119,8 +119,10 @@
           <div class="container-header">
             <div class="panel active">
               <span>Options</span>
-              <button class="btn" data-action="toggle" aria-label="hide options" data-title="Hide Options Panel" rel="tooltip"><i class="fa fa-toggle-left"></i></button>
-              <button class="btn" data-action="reset" aria-label="reset form" data-title="Reload Form Manifest" rel="tooltip"><i class="fa fa-refresh"></i></button>
+              <div class="toolbar">
+                <button class="btn" data-action="reset" aria-label="reset form" data-title="Reload Form Manifest" rel="tooltip"><i class="fa fa-refresh"></i></button>
+                <button class="btn" data-action="toggle" aria-label="hide options" data-title="Hide Options Panel" rel="tooltip"><i class="fa fa-toggle-left"></i></button>
+              </div>
             </div>
           </div>
           <div class="sc-form" id="form">
@@ -131,16 +133,20 @@
             <div class="tab active" data-toggle="chart">
               <button class="btn" data-action="toggle" aria-label="show options" data-title="Show Options Panel" rel="tooltip"><i class="fa fa-toggle-right"></i></button>
               <span>Chart</span>
-              <button class="btn" data-action="reset" aria-label="reset" data-title="Reload Chart Data" rel="tooltip"><i class="fa fa-refresh"></i></button>
-              <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="fa fa-arrows-alt"></i></button>
-              <button class="btn" data-action="download" aria-label="download image" data-title="Download Image" rel="tooltip"><i class="fa fa-download"></i></button>
+              <div class="toolbar">
+                <button class="btn" data-action="download" aria-label="download image" data-title="Download Image" rel="tooltip"><i class="fa fa-download"></i></button>
+                <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="fa fa-arrows-alt"></i></button>
+                <button class="btn" data-action="reset" aria-label="reset" data-title="Reload Chart Data" rel="tooltip"><i class="fa fa-refresh"></i></button>
+              </div>
             </div>
             <div class="tab" data-toggle="table">
               <span>Data</span>
-              <button class="btn" data-action="reset" aria-label="reset" data-title="Reload Chart Data" rel="tooltip"><i class="fa fa-refresh"></i></button>
-              <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="fa fa-arrows-alt"></i></button>
-              <button class="btn" data-action="download" aria-label="download data" data-title="Download Data" rel="tooltip"><i class="fa fa-download"></i></button>
-              <button class="btn" data-action="edit" aria-label="edit" data-title="Edit Chart Data" rel="tooltip"><i class="fa fa-pencil"></i></button>
+              <div class="toolbar">
+                <button class="btn" data-action="edit" aria-label="edit" data-title="Edit Chart Data" rel="tooltip"><i class="fa fa-pencil"></i></button>
+                <button class="btn" data-action="download" aria-label="download data" data-title="Download Data" rel="tooltip"><i class="fa fa-download"></i></button>
+                <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="fa fa-arrows-alt"></i></button>
+                <button class="btn" data-action="reset" aria-label="reset" data-title="Reload Chart Data" rel="tooltip"><i class="fa fa-refresh"></i></button>
+              </div>
             </div>
           </div>
           <div class="sc-chart" id="chart">
@@ -170,7 +176,7 @@ and <a href="http://d3js.org">D3</a>
 <script src="js/d3.min.js"></script>
 <script src="js/topojson.min.js"></script>
 
-<!-- DEV: -->
+<!-- DEV::
 <script src="js/sucrose.js"></script>
 <script src="../src/models/table.js"></script>
 <script src="../src/models/lineChart.js"></script>
@@ -184,10 +190,10 @@ and <a href="http://d3js.org">D3</a>
 <script src="js/app/manifest.js"></script>
 <script src="js/app/baseui.js"></script>
 <script src="js/app/main.js"></script>
-<!-- :DEV -->
-<!-- PROD::
+::DEV -->
+<!-- PROD: -->
 <script src="js/sucrose.min.js"></script>
 <script src="js/app.min.js"></script>
-::PROD -->
+<!-- :PROD -->
   </body>
 </html>
