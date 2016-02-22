@@ -1500,7 +1500,8 @@ h6 {
   line-height: 0;
 }
 .container-header span {
-  font-size: 14px;
+  font-family: "Montserrat Bold", Georgia, "Times New Roman", Times, serif;
+  font-size: 16px;
   line-height: 22px;
 }
 .container-header span,
@@ -1540,6 +1541,11 @@ h6 {
 .panel.active,
 .tab.active {
   color: #333;
+  background-color: #fff;
+}
+.panel.active span,
+.tab.active span {
+  color: #717171;
 }
 .panel:not(.active):hover,
 .tab:not(.active):hover {
@@ -1564,12 +1570,6 @@ h6 {
 }
 .tab:first-child {
   margin-right: 4px;
-}
-.tab.active {
-  background-color: #fff;
-}
-.tab.active span {
-  text-decoration: underline;
 }
 .rtl .tab:first-child {
   margin-right: 0;

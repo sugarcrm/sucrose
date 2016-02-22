@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# Version 0.2.6
+# Version 0.2.7
 
 CACHE:
 
@@ -69,12 +69,14 @@ fonts/SucroseFont.eot
 fonts/SucroseFont.svg
 fonts/SucroseFont.ttf
 fonts/SucroseFont.woff
+<<<<<<< HEAD
 
+=======
+>>>>>>> update css and appcache with glyphter changes
 fonts/montserrat-bold-webfont.eot
 fonts/montserrat-bold-webfont.svg
 fonts/montserrat-bold-webfont.ttf
 fonts/montserrat-bold-webfont.woff
-
 fonts/NotoSans-Regular-webfont.eot
 fonts/NotoSans-Regular-webfont.svg
 fonts/NotoSans-Regular-webfont.ttf
@@ -123,8 +125,7 @@ NETWORK:
 *
 
 FALLBACK:
-/fonts/fontawesome-webfont.eot?#iefix fonts/fontawesome-webfont.eot?#iefix
-/fonts/fontawesome-webfont.svg#fontawesomeregular fonts/fontawesome-webfont.svg#fontawesomeregular
-/fonts/fontawesome-webfont.ttf fonts/fontawesome-webfont.ttf
-/fonts/fontawesome-webfont.woff fonts/fontawesome-webfont.woff
-/fonts/fontawesome-webfont.woff2 fonts/fontawesome-webfont.woff2
+/fonts/SucroseFont.eot?#iefix fonts/SucroseFont.eot?#iefix
+/fonts/SucroseFont.svg#SucroseFont fonts/SucroseFont.svg#SucroseFont
+/fonts/SucroseFont.ttf fonts/SucroseFont.ttf
+/fonts/SucroseFont.woff fonts/SucroseFont.woff

@@ -131,7 +131,8 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0;
   line-height: 0;
   span {
-    font-size: 14px;
+    font-family: @serifFontFamily;
+    font-size: 16px;
     line-height: 22px;
   }
   span,
@@ -159,6 +160,7 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0 0 0 8px;
   }
 }
+
 .panel,
 .tab {
   padding: 4px 0 4px 8px;
@@ -170,6 +172,10 @@ h1, h2, h3, h4, h5, h6 {
   border-bottom: none;
   &.active {
     color: #333;
+    background-color: #fff;
+    span {
+      color: @grayLight;
+    }
   }
   &:not(.active) {
     &:hover {
@@ -195,12 +201,6 @@ h1, h2, h3, h4, h5, h6 {
   width: calc(~"50% - 2px");
   &:first-child {
     margin-right: 4px;
-  }
-  &.active {
-    background-color: #fff;
-    span {
-      text-decoration: underline;
-    }
   }
 }
 .rtl .tab {
