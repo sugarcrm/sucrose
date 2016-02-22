@@ -77,7 +77,9 @@ var Manifest =
 
     // Unbind UI
     $('button').off('click.example touch.example').toggleClass('active', false);
+    $('.tab').off('click.example touch.example');
     // Rebind UI
+    // Display panel in full screen
     $('button[data-action=full]').on('click.example touch.example', function (evt) {
       var $button = $(this);
       evt.stopPropagation();
@@ -86,6 +88,7 @@ var Manifest =
       self.chartResizer(self.Chart)(evt);
       $button.toggleClass('active');
     });
+    // Reset data to original state
     $('button[data-action=reset]').on('click.example touch.example', function (evt) {
       evt.stopPropagation();
       $example.removeClass('full-screen');
@@ -104,6 +107,7 @@ var Manifest =
       }
       self.chartResizer(self.Chart)(evt);
     });
+    // Download image or data depending on panel
     $('button[data-action=download]').on('click.example touch.example', function (evt) {
       evt.stopPropagation();
       if ($chart.hasClass('hide')) {
@@ -112,6 +116,7 @@ var Manifest =
         generateImage(evt);
       }
     });
+    // Toggle display of table or code data edit view
     $('button[data-action=edit]').on('click.example touch.example', function (evt) {
       var $button = $(this);
       evt.stopPropagation();
@@ -130,8 +135,7 @@ var Manifest =
         $button.addClass('active');
       }
     });
-
-    $('.tab').off('click.example touch.example');
+    // Toggle display of chart or table tab
     $('.tab').on('click.example touch.example', function (evt) {
       evt.stopPropagation();
       if ($(this).data('toggle') === 'chart') {
@@ -257,16 +261,16 @@ var Manifest =
   radioControl: function (v, n) {
     var radio = '';
     v.each(function (r) {
-      radio += '<label><input type="radio" name="' + n + '" value="' + r.value + '"> ' +
-        r.label + ' </label> ';
+      radio += '<label><input type="radio" name="' + n + '" value="' + r.value + '">' +
+        '<span class="sfa">' + r.label + '</span></label> ';
     });
     return radio;
   },
   checkboxControl: function (v, n) {
     var checkbox = '';
     v.each(function (r) {
-      checkbox += '<label><input type="checkbox" name="' + n + '" value="' + r.value + '"> ' +
-        r.label + ' </label> ';
+      checkbox += '<label><input type="checkbox" name="' + n + '" value="' + r.value + '">' +
+        '<span class="sfa">' + r.label + '</span></label> ';
     });
     return checkbox;
   },

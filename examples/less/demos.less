@@ -1,25 +1,3 @@
-@font-face {
-  font-family: 'Noto Sans';
-  src: url('@{font-path}/NotoSans-Regular-webfont.eot');
-  src: url('@{font-path}/NotoSans-Regular-webfont.eot?#iefix') format('embedded-opentype'),
-       url('@{font-path}/NotoSans-Regular-webfont.woff') format('woff'),
-       url('@{font-path}/NotoSans-Regular-webfont.ttf') format('truetype'),
-       url('@{font-path}/NotoSans-Regular-webfont.svg#noto_sansregular') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: 'Montserrat Bold';
-  src: url('@{font-path}/montserrat-bold-webfont.eot');
-  src: url('@{font-path}/montserrat-bold-webfont.eot?#iefix') format('embedded-opentype'),
-       url('@{font-path}/montserrat-bold-webfont.woff') format('woff'),
-       url('@{font-path}/montserrat-bold-webfont.ttf') format('truetype'),
-       url('@{font-path}/montserrat-bold-webfont.svg#montserratbold') format('svg');
-  font-weight: normal;
-  font-style: normal;
-}
-
 /* Demo Charts
 ----------------*/
 body {
@@ -165,7 +143,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-right: 6px;
     &.active {
       background-color: #444;
-      .fa {
+      .sfa:before {
         color: #fff;
       }
     }
@@ -245,37 +223,123 @@ h1, h2, h3, h4, h5, h6 {
   border-top: none;
 }
 .sc-form {
-  padding: 0px 8px 4px 0;
   overflow: scroll;
   .option-row {
-    padding: 4px 8px;
+    padding: 4px 12px 12px;
   }
   span {
-    padding: 4px;
     color: @grayLight;
     font-size: 10px;
   }
   label {
     display: inline-block;
     height: 19px;
-    margin-left: 4px;
+    margin-right: 8px;
     white-space: nowrap;
+    span {
+      font-size: 12px;
+      font-family: @sansFontFamily;
+      color: @gray;
+    }
   }
   select {
-    margin-left: 4px;
+    -webkit-appearance: none;  /*Removes default chrome and safari style*/
+    -moz-appearance: none; /* Removes Default Firefox style*/
+    appearance: none;
+    background-color: #fff;
+    background-position: 100% 6px;
+    background-repeat: no-repeat;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><path d="M10.24 2.88c0-.173-.063-.323-.19-.45-.126-.127-.276-.19-.45-.19H.64c-.173 0-.323.063-.45.19-.127.126-.19.276-.19.45s.064.324.19.45l4.48 4.48c.126.127.276.19.45.19s.324-.063.45-.19l4.48-4.48c.127-.126.19-.276.19-.45" fill="%23717171" /></svg>');
+    text-indent: 0.01px; /* Removes default arrow from firefox*/
+    text-overflow: "";  /*Removes default arrow from firefox*/ /*My custom style for fonts*/
+    color: @gray;
+    white-space: nowrap;
     max-width: 100%;
+    padding: 4px 24px 4px 4px;
+    &:after {
+      .sfa-icon();
+      content: '\0061';
+    }
   }
   textarea {
     width: 100%;
     height: 150px;
-    padding: 8px;
-    margin-left: 4px;
     box-sizing: border-box;
-    color: #727272;
+    color: @gray;
+  }
+  select,
+  textarea,
+  input[type=text] {
+    border: 1px solid @grayLight !important;
+    margin-left: 0;
+    border-radius: 3px;
+  }
+  textarea,
+  input[type=text] {
+    padding: 4px;
+  }
+  input[type=radio],
+  input[type=checkbox] {
+    /* original check box are push outside the viexport */
+    position: absolute;
+    left: -1000em;
+    + span:before {
+      .sfa-icon();
+      width: 18px;
+      height: 18px;
+      font-size: 14px;
+      vertical-align: text-bottom;
+      text-align: center;
+      margin-right: 3px;
+      padding: 2px;
+      box-sizing: border-box;
+    }
+    &:focus {
+      + span:before {
+        outline: 2px solid rgb(91, 157, 217);
+        outline: 2px solid -moz-mac-focusring;
+        outline: 2px solid -webkit-focus-ring-color;
+        outline-offset: -1px;
+      }
+    }
+  }
+  input[type=radio] {
+    + span:before {
+      content: '\004b';
+    }
+    &:checked {
+      + span:before {
+        content: '\004c';
+      }
+    }
+  }
+  input[type=checkbox] {
+    + span:before {
+      content: '\0046';
+      font-weight: 700;
+    }
+    &:checked {
+      + span:before {
+        content: '\0047';
+      }
+    }
   }
 }
+
 .rtl .sc-form {
-  padding: 0px 4px 4px 4px;
+  label {
+    margin-left: 8px;
+    margin-right: 0;
+  }
+  input[type=radio],
+  input[type=checkbox] {
+    left: auto;
+    right: -1000em;
+    + span:before {
+      margin-left: 3px;
+      margin-right: 0;
+    }
+  }
 }
 .sc-chart,
 .sc-table {

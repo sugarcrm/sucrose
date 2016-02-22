@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# Version 0.2.5
+# Version 0.2.6
 
 CACHE:
 
@@ -65,11 +65,10 @@ data/geo/usa-states-topo-110.json
 data/geo/world-countries-topo-110.json
 
 #fonts
-fonts/fontawesome-webfont.eot
-fonts/fontawesome-webfont.svg
-fonts/fontawesome-webfont.ttf
-fonts/fontawesome-webfont.woff
-fonts/fontawesome-webfont.woff2
+fonts/SucroseFont.eot
+fonts/SucroseFont.svg
+fonts/SucroseFont.ttf
+fonts/SucroseFont.woff
 
 fonts/montserrat-bold-webfont.eot
 fonts/montserrat-bold-webfont.svg
