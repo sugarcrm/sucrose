@@ -20,12 +20,6 @@ chartManifest = {
     tick_display: ['wrap', 'stagger', 'rotate']
   },
   ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'line_data', label: 'Test Line Chart Data #1'}
-      ]
-    },
     '[name=mirror_axis]': {
       init: function ($o) {
         this.initControl($o);

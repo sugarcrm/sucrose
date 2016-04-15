@@ -38,12 +38,6 @@ chartManifest = {
     this.Chart.colorData(color, options);
   },
   ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'globe_data', label: 'Globe Data'}
-      ]
-    },
     '[name=color]': {
       check: /default|class|graduated|data/i,
       events: 'click.my',

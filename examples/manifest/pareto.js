@@ -15,15 +15,6 @@ chartManifest = {
     show_values: '0'
   },
   ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'pareto_data_salesrep_probability', label: 'Sales Rep Worksheet by Probability'},
-        {value: 'pareto_data_salesrep_stage', label: 'Sales Rep Worksheet by Sales Stage'},
-        {value: 'pareto_data_salesrep', label: 'Sales Rep Worksheet'},
-        {value: 'pareto_data_manager', label: 'Manager Worksheet'}
-      ]
-    },
     '[name=show_values]': {
       setChartOption: function (v, self) {
         var value = isNaN(v) ? v : !!parseInt(v, 10);

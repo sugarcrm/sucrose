@@ -22,20 +22,6 @@ chartManifest = {
     tick_display: ['wrap', 'stagger', 'rotate']
   },
   ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'multibar_data', label: 'Forecasting for Q1'},
-        {value: 'multibar_data_color', label: 'Forecasting for Q2 (color data)'},
-        {value: 'multibar_data_negative', label: 'Forecasting for Q1 (negative)'},
-        {value: 'multibar_data_wide', label: 'Opportunities by Industry (wide)'},
-        {value: 'multibar_data_baseline', label: 'Opportunities Won/Lost by Industry (baseline)'},
-        {value: 'multibar_data_opportunities', label: 'All Opportunities By Lead Source By Outcome'},
-        {value: 'multibar_data_long', label: 'Accounts by Type by Industry'},
-        {value: 'multibar_data_short', label: 'Apples or Oranges'},
-        {value: 'multibar_data_raw', label: 'Raw Report Data'}
-      ]
-    },
     '[name=vertical]': {
       setChartOption: function (v, self) {
         var value = !!parseInt(v, 10);

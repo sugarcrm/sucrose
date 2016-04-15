@@ -13,15 +13,7 @@ chartManifest = {
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {},
   filterAssigned: 'group',
-  ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'top10_opportunities', label: 'Top 10 Opportunities'},
-        {value: 'bubble_year_data', label: 'Year Data'}
-      ]
-    }
-  }
+  ui: {}
 };
 var cachedManifest = $.my.tojson(chartManifest);
 console.log(cachedManifest);

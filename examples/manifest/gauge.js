@@ -16,12 +16,6 @@ chartManifest = {
     show_pointer: '1'
   },
   ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'gauge_data', label: 'Closed Won Opportunities'}
-      ]
-    },
     '[name=show_values]': {
       setChartOption: function (v, self) {
         var value = isNaN(v) ? v : !!parseInt(v, 10);

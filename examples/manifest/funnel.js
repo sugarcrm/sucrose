@@ -15,17 +15,6 @@ chartManifest = {
     wrap_labels: '1'
   },
   ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'funnel_data', label: 'Opportunity Total by Sales Stage'},
-        {value: 'funnel_data_opps', label: 'Opportunity Data'},
-        {value: 'funnel_data_long', label: 'Long Label Lengths'},
-        {value: 'funnel_data_uniform', label: 'Uniform Data and Labels'},
-        {value: 'funnel_data_single', label: 'One Long Single Label'},
-        {value: 'sugar_data_grouped', label: 'Test Grouped Data'}
-      ]
-    },
     '[name=wrap_labels]': {
       setChartOption: function (v, self) {
         var value = !!parseInt(v, 10);

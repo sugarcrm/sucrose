@@ -20,18 +20,6 @@ chartManifest = {
     tick_display: ['wrap', 'stagger', 'rotate']
   },
   ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'line_data', label: 'Test Line Chart Data #1'},
-        {value: 'line_raw_data', label: 'Test Line Chart Data (raw) #2'},
-        {value: 'line_data_bar', label: 'Test Bar Data'},
-        {value: 'line_single_data', label: 'Test Single Data Point (time)'},
-        {value: 'line_single_bar', label: 'Test Single Data Point (bar data)'},
-        {value: 'line_two_single', label: 'Test Two Single Data Points'},
-        {value: 'data_null', label: 'Test Null Data'}
-      ]
-    },
     '[name=mirror_axis]': {
       bind: function (d, v, $o) {
         return this.bindControl(d, v, $o, this.chartUpdater());

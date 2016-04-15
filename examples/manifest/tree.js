@@ -15,12 +15,6 @@ chartManifest = {
     controls: ''
   },
   ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'tree_data', label: 'Organization'}
-      ]
-    },
     '[name=controls]': {
       init: function ($o) {
         this.initControl($o);

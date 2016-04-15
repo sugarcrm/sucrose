@@ -12,15 +12,7 @@ chartManifest = {
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {},
-  ui: {
-    '[name=file]': {
-      // Set data file options in Manifest control
-      values: [
-        {value: 'flare', label: 'Flare Code Lines'},
-        {value: 'treemap_data', label: 'Treemap Data'}
-      ]
-    }
-  }
+  ui: {}
 };
 var cachedManifest = $.my.tojson(chartManifest);
 console.log(cachedManifest);

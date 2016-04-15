@@ -13,15 +13,6 @@ chartManifest = {
     donut_ratio: '0.4'
   },
   ui: {
-    '[name=file]': {
-      values: [
-        {value: 'pie_data', label: 'All Opportunities by Lead Source'},
-        {value: 'pie_data_quarters', label: 'Test Quarter Labels'},
-        {value: 'pie_data_null', label: 'Test Empty Data'},
-        {value: 'sugar_data_grouped', label: 'Test Grouped Data'},
-        {value: 'pie_data_single', label: 'Test Single Slice Data'}
-      ]
-    },
     '[name=show_labels]': {
       setChartOption: function (v, self) {
         var value = isNaN(v) ? v : !!parseInt(v, 10);
