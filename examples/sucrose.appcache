@@ -1,15 +1,17 @@
 CACHE MANIFEST
 
-# Version 0.2.7
+# Version 0.3.0
 
 CACHE:
 
 #root
 index.html
+manifest.json
 
 #css
 css/examples.min.css
 css/sucrose.min.css
+browserconfig.xml
 
 #data
 data/bubble_data.json
@@ -94,8 +96,22 @@ img/gripper.svg
 img/user.svg
 
 #img/favicons
+img/favicons/favicon.ico
+img/favicons/favicon-16x16.png
+img/favicons/favicon-32x32.png
+img/favicons/favicon-96x96.png
+img/favicons/android-chrome-192x192.png
+img/favicons/apple-touch-icon-57x57.png
+img/favicons/apple-touch-icon-60x60.png
+img/favicons/apple-touch-icon-72x72.png
+img/favicons/apple-touch-icon-76x76.png
+img/favicons/apple-touch-icon-114x114.png
+img/favicons/apple-touch-icon-120x120.png
+img/favicons/apple-touch-icon-144x144.png
 img/favicons/apple-touch-icon-152x152.png
-img/favicons/favicon-192x192.png
+img/favicons/apple-touch-icon-180x180.png
+img/favicons/safari-pinned-tab.svg
+img/favicons/apple-touch-icon.png
 img/favicons/mstile-144x144.png
 
 #js
