@@ -49,7 +49,7 @@ install-prod: npm-prod all index-prod
 npm-prod:
 	npm i --production
 
-all: sucrose lib examples
+all: sucrose lib
 
 sucrose: clean-sucrose
 	cp ../sucrose.js js/sucrose.js
@@ -91,7 +91,7 @@ clean: clean-sucrose clean-libraries
 
 #DEVELOPMENT
 
-install-dev: npm-prod npm-dev all lib-dev index-dev
+install-dev: npm-prod all npm-dev lib-dev index-dev examples
 
 npm-dev:
 	npm i
