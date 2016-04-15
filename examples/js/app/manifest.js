@@ -10,6 +10,8 @@ var Manifest =
 
   // (will also be reset by chart type manifest)
   type: 'multibar',
+  // ok, what's the deal here?
+  locale: 'en',
 
   // D3 chart
   Chart: null,
@@ -33,7 +35,8 @@ var Manifest =
     file: '',
     color: 'default',
     gradient: ['0', 'vertical', 'middle'],
-    direction: 'ltr'
+    direction: 'ltr',
+    locale: 'en'
   },
 
   // UI elements
@@ -44,12 +47,19 @@ var Manifest =
    * INIT functions --------- */
 
   init: function ($node, runtime) {
-    var options = Object.clone(this.data);
     self = this;
 
+    // For each manifest data element, update selected options with preset value
+    Object.each(Object.clone(this.data), function (k, v) {
+      if (v.val && v.val !== v.def) {
+        self.selectedOptions[k] = v.val;
+      }
+    });
+
     // Set manifest D3 visualization objects
-    this.Chart = sucroseCharts(this.type);
+    this.Chart = sucroseCharts(this.type, localeData[this.selectedOptions.locale]);
     this.Table = sucroseTable(this.Chart);
+
     if (!['bar', 'line', 'area', 'pie', 'funnel', 'gauge'].find(this.type)) {
       this.Table.strings({noData: 'This chart type does not support table data.'})
     }
@@ -62,13 +72,6 @@ var Manifest =
 
     // Show chart tab
     this.toggleTab('chart');
-
-    // For each manifest data element, update selected options with preset value
-    Object.each(options, function (k, v) {
-      if (v.val && v.val !== v.def) {
-        self.selectedOptions[k] = v.val;
-      }
-    });
 
     // Insert new manifest form UI row
     Object.each(this.ui, function (k, v) {
@@ -323,7 +326,7 @@ var Manifest =
     if (v == null) {
       return this.getData(d, k);
     }
-    // Update the my scode data
+    // Update the my scope data
     this.setData(d, k, v, callback);
     // Store and display chart options
     this.setOptions(d, k, v);
@@ -334,7 +337,7 @@ var Manifest =
     // First, lets update and store the option
     // in case it overrides a form preset value
     this.selectedOptions[k] = v;
-    chartStore.chartOptions = Object.clone(this.selectedOptions);
+    chartStore.optionPresets = Object.clone(this.selectedOptions);
     store.set('example-' + this.type, chartStore);
 
     // Now, if the options is the default, lets remove it from display
@@ -346,6 +349,13 @@ var Manifest =
     this.ui['[name=' + k + ']'].setChartOption(v, this);
     this.my.recalc('[name=settings]');
   },
+  getLocaleOptions: function () {
+    var locales = [];
+    Object.each(localeData, function (k, v) {
+      locales.push({value: k, label: v.language});
+    });
+    return locales;
+  },
 
   /* ------------------------
    * CHART functions -------- */
@@ -355,11 +365,6 @@ var Manifest =
     this.toggleTab('chart');
 
     chartData = Object.clone(rawData, true);
-
-    // Update chart color data based on current data
-    if (this.Chart.colorData) {
-      this.updateColorModel();
-    }
 
     // this.toggleTab(true);
     $chart.attr('class', 'sc-chart sc-chart-' + this.type + ($chart.hasClass('hide') ? ' hide' : ''));
@@ -410,6 +415,10 @@ var Manifest =
     var options = {},
         color = this.data.color.val,
         gradient = this.data.gradient.val;
+
+    if (!this.Chart.colorData) {
+      return;
+    }
 
     if (color && color === 'graduated') {
       options = {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength};
@@ -510,7 +519,7 @@ var Manifest =
     });
     $table.find('td').on('validate', function (evt, value) {
       var cell = $(this),
-        column = cell.index();
+          column = cell.index();
       if (column === 1) {
         return !!value && value.trim().length > 0;
       } else {
@@ -545,19 +554,50 @@ var Manifest =
       return;
     }
 
-    return $.ajax({ // Load data, $.ajax is promise
+    $.ajax({ // Load data, $.ajax is promise
         url: 'data/' + file + '.json',
         cache: true,
         dataType: 'json',
         context: this,
         async: true
       })
-      .then(function (json) { // Loaded, then
+      .done(function (json) { // Loaded, then
         if (!json) {
           return;
         }
         this.parseRawData(json);
+        this.updateColorModel();
         this.loadChart();
       });
+    // fs.root.getDirectory('data', {}, function (dirEntry){
+    //   var dirReader = dirEntry.createReader();
+    //   dirReader.readEntries(function (entries) {
+    //     for(var i = 0; i < entries.length; i++) {
+    //       var entry = entries[i];
+    //       if (entry.isDirectory){
+    //         console.log('Directory: ' + entry.fullPath);
+    //       }
+    //       else if (entry.isFile){
+    //         console.log('File: ' + entry.fullPath);
+    //       }
+    //     }
+
+    //   }, errorHandler);
+    // }, errorHandler);
+    // if (!file) {
+    //   return;
+    // }
+  },
+
+  loadColor: function (color) {
+    this.updateColorModel(color);
+    this.chartUpdater()();
+  },
+
+  loadLocale: function (locale) {
+    this.locale = locale;
+
+    this.Chart.locality(localeData[locale]);
+    this.chartUpdater()();
   }
 };

@@ -4,30 +4,36 @@
 'use strict';
 $(function () {
 // jQuery.my variables
-var Manifest, Data, baseUI;
+var Manifest, Data, baseUI, settingsUI;
 
 // jQuery references
-var $title,
+var $demo,
+    $chart,
+    $example,
+    $form,
+    $index,
+    $menu,
+    $options,
     $picker,
     $select,
-    $index,
-    $demo,
-    $options,
-    $form,
-    $example,
-    $chart,
     $table,
-    $menu;
+    $title;
 
 // Application scope variables
-var chartType,
+var chartData,
     chartStore,
+    chartType,
+    fileCatalog,
+    localeData,
     rawData,
-    chartData,
     tableData,
-    tootip;
+    tooltip;
 
-function sucroseCharts(type) {
+// Data dependent variables
+var xIsDatetime,
+    yIsCurrency;
+
+function sucroseCharts(type, locality) {
   var chart,
       showTitle = true,
       showLegend = true,
@@ -35,6 +41,7 @@ function sucroseCharts(type) {
       tooltips = true;
 
   switch (type) {
+
     case 'pie':
       chart = sucrose.models.pieChart()
         .donut(true)
@@ -43,9 +50,11 @@ function sucroseCharts(type) {
         .maxRadius(250)
         .minRadius(100)
         .tooltipContent(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+              percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
           return '<p>Stage: <b>' + key + '</b></p>' +
-                 '<p>Amount: <b>$' + parseInt(y) + 'K</b></p>' +
-                 '<p>Percent: <b>' + x + '%</b></p>';
+                 '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+                 '<p>Percent: <b>' + percent + '%</b></p>';
         });
         // .rotateDegrees(rotate)
         // .arcDegrees(arc)
@@ -58,18 +67,27 @@ function sucroseCharts(type) {
       chart.pie
         .textureFill(true);
       break;
+
     case 'funnel':
       chart = sucrose.models.funnelChart()
-        .fmtValueLabel(function (d) { return '$' + (d.label || d.value || d) + 'K'; })
+        .fmtValue(function (d) {
+            return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+        })
+        .fmtCount(function (d) {
+            return d ? ' (' + sucrose.utils.numberFormatSI(d, 2, false, chart.locality()) + ')' : '';
+        })
         .tooltipContent(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+              percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
           return '<p>Stage: <b>' + key + '</b></p>' +
-                 '<p>Amount: <b>$' + parseInt(y) + 'K</b></p>' +
-                 '<p>Percent: <b>' + x + '%</b></p>';
+                 '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+                 '<p>Percent: <b>' + percent + '%</b></p>';
         });
 
       chart.funnel
         .textureFill(true);
       break;
+
     case 'multibar':
       chart = sucrose.models.multiBarChart()
         .stacked(true)
@@ -79,10 +97,15 @@ function sucroseCharts(type) {
         //   var si = d3.formatPrefix(d, 2);
         //   return d3.round(si.scale(d), 2) + si.symbol;
         // })
+        .valueFormat(function (d) {
+          return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+        })
         .tooltipContent(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+              percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
           return '<p>Outcome: <b>' + key + '</b></p>' +
-                 '<p>Percentage: <b>' + x + '%</b></p>' +
-                 '<p>Amount: <b>$' + parseInt(y, 10) + 'K</b></p>';
+                 '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+                 '<p>Percentage: <b>' + percent + '%</b></p>';
         })
         .seriesClick(function (data, eo, chart) {
           chart.dataSeriesActivate(eo);
@@ -98,22 +121,23 @@ function sucroseCharts(type) {
       chart.yAxis
         .tickFormat(chart.multibar.valueFormat());
       break;
+
     case 'line':
       chart = sucrose.models.lineChart()
-        .x(function (d) { return d[0]; })
-        .y(function (d) { return d[1]; })
         .useVoronoi(true)
         .clipEdge(false)
         .tooltipContent(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
           var content = '<p>Category: <b>' + key + '</b></p>' +
-                 '<p>Amount: <b>$' + parseInt(y) + 'M</b></p>',
+                        '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>',
               dateCheck = new Date(x);
           if (dateCheck instanceof Date && !isNaN(dateCheck.valueOf())) {
-            content += '<p>Date: <b>' + x + '</b></p>';
+            content += '<p>Date: <b>' + sucrose.utils.dateFormat(x, '%x', chart.locality()) + '</b></p>';
           }
           return content;
         });
       break;
+
     case 'bubble':
       chart = sucrose.models.bubbleChart()
         .x(function (d) { return d3.time.format('%Y-%m-%d').parse(d.x); })
@@ -132,14 +156,15 @@ function sucroseCharts(type) {
                  '<p>Account: <b>' + e.point.account_name + '</b></p>';
         });
       break;
+
     case 'treemap':
       chart = sucrose.models.treemapChart()
         .leafClick(function (d) {
           alert('leaf clicked');
         })
         .getSize(function (d) { return d.size; });
-        // .getSize(function(d) { return d.value; })
-        // .tooltipContent(function(point) {
+        // .getSize(function (d) { return d.value; })
+        // .tooltipContent(function (point) {
         //   var rep = (point.assigned_user_name) ? point.assigned_user_name : (point.className) ? point.parent.name : point.name,
         //       stage = (point.sales_stage) ? point.sales_stage : (point.className) ? point.name : null,
         //       account = (point.account_name) ? point.account_name : null;
@@ -153,33 +178,31 @@ function sucroseCharts(type) {
         //   }
         //   return tt;
         // })
-
-
       showTitle = false;
       showLegend = false;
       break;
+
     case 'pareto':
       chart = sucrose.models.paretoChart()
         .stacked(true)
         .clipEdge(false)
-        .yAxisTickFormat(function (d) {
-          var si = d3.formatPrefix(d, 2);
-          return '$' + d3.round(si.scale(d), 2) + si.symbol;
-        })
-        .quotaTickFormat(function (d) {
-          var si = d3.formatPrefix(d, 2);
-          return '$' + d3.round(si.scale(d), 2) + si.symbol;
+        .valueFormat(function (d) {
+          return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
         })
         .tooltipBar(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality()),
+              percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
           return '<p><b>' + key + '</b></p>' +
-            '<p><b>' + y + '</b></p>' +
-            '<p><b>' + x + '%</b></p>';
+                 '<p><b>' + val + '</b></p>' +
+                 '<p><b>' + percent + '%</b></p>';
         })
         .tooltipLine(function (key, x, y, e, graph) {
-          return '<p><p>' + key + ': <b>' + y + '</b></p>';
+          var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+          return '<p><p>' + key + ': <b>' + val + '</b></p>';
         })
         .tooltipQuota(function (key, x, y, e, graph) {
-          return '<p>' + e.key + ': <b>$' + y + '</b></p>';
+          var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+          return '<p>' + e.key + ': <b>' + val + '</b></p>';
         })
         .barClick(function (data, eo, chart, container) {
             var d = eo.series,
@@ -212,6 +235,7 @@ function sucroseCharts(type) {
             container.call(chart);
         });
       break;
+
     case 'gauge':
       chart = sucrose.models.gaugeChart()
         .x(function (d) { return d.key; })
@@ -220,12 +244,14 @@ function sucroseCharts(type) {
         .maxValue(9)
         .transitionMs(4000);
       break;
+
     case 'globe':
       chart = sucrose.models.globeChart()
         .id('chart');
       showTitle = false;
       showLegend = false;
       break;
+
     case 'area':
       chart = sucrose.models.stackedAreaChart()
         .x(function (d) { return d[0]; })
@@ -246,6 +272,7 @@ function sucroseCharts(type) {
 
       tooltips = false;
       break;
+
     case 'tree':
       chart = sucrose.models.tree()
         .duration(500)
@@ -329,6 +356,10 @@ function sucroseCharts(type) {
         chart.dataSeriesActivate(eo);
       });
   }
+  if (chart.locality) {
+    chart
+      .locality(locality);
+  }
 
   // chart.transition().duration(500)
   // chart.legend.showAll(true);
@@ -363,7 +394,7 @@ function transformDataToD3(json, chartType, barType) {
   var data = [],
       properties = {},
       value = 0,
-      strUndefined = 'undefined',
+      strNoLabel = 'undefined',
       typeWithValues = ['bar', 'line', 'area', 'pie', 'funnel', 'gauge'];
 
   function sumValues(values) {
@@ -372,8 +403,7 @@ function transformDataToD3(json, chartType, barType) {
 
   function pickLabel(label) {
     var l = [].concat(label)[0];
-    //d.label && d.label !== '' ? Array.isArray(d.label) ? d.label[0] : d.label : strUndefined
-    return l ? l : strUndefined;
+    return l ? l : strNoLabel;
   }
 
   function hasValues(d) {
@@ -388,30 +418,30 @@ function transformDataToD3(json, chartType, barType) {
           data = barType === 'stacked' || barType === 'grouped' ?
             json.label.map(function(d, i) {
               return {
-                'key': pickLabel(d),
-                'type': 'bar',
-                'disabled': d.disabled || false,
-                'values': json.values.map(function(e, j) {
+                key: pickLabel(d),
+                type: 'bar',
+                disabled: d.disabled || false,
+                values: json.values.map(function(e, j) {
                     return {
-                      'series': i,
-                      'x': j + 1,
-                      'y': parseFloat(e.values[i]) || 0,
-                      'y0': 0
+                      series: i,
+                      x: j + 1,
+                      y: parseFloat(e.values[i]) || 0,
+                      y0: 0
                     };
                   })
               };
             }) :
             json.values.map(function(d, i) {
               return {
-                'key': d.values.length > 1 ? d.label : pickLabel(d.label),
-                'type': 'bar',
-                'disabled': d.disabled || false,
-                'values': json.values.map(function(e, j) {
+                key: d.values.length > 1 ? d.label : pickLabel(d.label),
+                type: 'bar',
+                disabled: d.disabled || false,
+                values: json.values.map(function(e, j) {
                     return {
-                      'series': i,
-                      'x': j + 1,
-                      'y': i === j ? sumValues(e.values) : 0,
-                      'y0': 0
+                      series: i,
+                      x: j + 1,
+                      y: i === j ? sumValues(e.values) : 0,
+                      y0: 0
                     };
                   })
               };
@@ -421,9 +451,9 @@ function transformDataToD3(json, chartType, barType) {
       case 'pie':
           data = json.values.map(function(d, i) {
               var data = {
-                  'key': pickLabel(d.label),
-                  'disabled': d.disabled || false,
-                  'value': sumValues(d.values)
+                  key: pickLabel(d.label),
+                  disabled: d.disabled || false,
+                  value: sumValues(d.values)
               };
               if (d.color !== undefined) {
                 data.color = d.color;
@@ -438,14 +468,14 @@ function transformDataToD3(json, chartType, barType) {
       case 'funnel':
           data = json.values.reverse().map(function(d, i) {
               return {
-                  'key': pickLabel(d.label),
-                  'disabled': d.disabled || false,
-                  'values': [{
-                    'series': i,
-                    'label': d.valuelabels[0] ? d.valuelabels[0] : d.values[0],
-                    'x': 0,
-                    'y': sumValues(d.values),
-                    'y0': 0
+                  key: pickLabel(d.label),
+                  disabled: d.disabled || false,
+                  values: [{
+                    series: i,
+                    label: d.valuelabels[0] ? d.valuelabels[0] : d.values[0],
+                    x: 0,
+                    y: sumValues(d.values),
+                    y0: 0
                   }]
               };
           });
@@ -458,8 +488,8 @@ function transformDataToD3(json, chartType, barType) {
                   }) === 1;
           data = json.values.map(function(d, i) {
               return {
-                  'key': pickLabel(d.label),
-                  'values': discreteValues ?
+                  key: pickLabel(d.label),
+                  values: discreteValues ?
                       d.values.map(function(e, j) {
                           return [i, parseFloat(e)];
                       }) :
@@ -473,53 +503,53 @@ function transformDataToD3(json, chartType, barType) {
       case 'gauge':
           value = json.values.shift().gvalue;
           var y0 = 0;
-
           data = json.values.map(function(d, i) {
               var values = {
-                  'key': pickLabel(d.label),
-                  'y': parseFloat(d.values[0]) + y0
+                  key: pickLabel(d.label),
+                  y: parseFloat(d.values[0]) + y0
               };
               y0 += parseFloat(d.values[0]);
               return values;
           });
           break;
-
     }
 
     properties = {
-      'title': json.properties[0].title,
+      title: json.properties[0].title,
+      yDataType: json.properties[0].yDataType,
+      xDataType: json.properties[0].xDataType,
       // bar group data (x-axis)
-      'labels': chartType === 'line' && json.label ?
+      labels: chartType === 'line' && json.label ?
         json.label.map(function(d, i) {
           return {
-            'group': i + 1,
-            'l': pickLabel(d)
+            group: i + 1,
+            l: pickLabel(d)
           };
         }) :
         json.values.filter(function(d) { return d.values.length; }).length ?
           json.values.map(function(d, i) {
             return {
-              'group': i + 1,
-              'l': pickLabel(d.label)
+              group: i + 1,
+              l: pickLabel(d.label)
             };
           }) :
           [],
-      'values': chartType === 'gauge' ?
-        [{'group' : 1, 't': value}] :
+      values: chartType === 'gauge' ?
+        [{group: 1, t: value}] :
         json.values.filter(function(d) { return d.values.length; }).length ?
           json.values.map(function(d, i) {
             return {
-                'group': i + 1,
-                't': sumValues(d.values)
+                group: i + 1,
+                t: sumValues(d.values)
             };
           }) :
           [],
-      'colorLength': data.length
+      colorLength: data.length
     };
 
     return {
-      'properties': properties,
-      'data': data
+      properties: properties,
+      data: data
     };
 
   } else if (typeWithValues.indexOf(chartType) === -1) {
@@ -538,7 +568,7 @@ function transformDataToD3(json, chartType, barType) {
           //       .key(function(d){return d.probability;})
           //       .entries(chartData.data).length;
           chartData = {
-            data: data.records.map(function (d) {
+            data: json.records.map(function (d) {
               return {
                 id: d.id,
                 x: d.date_closed,
@@ -555,7 +585,9 @@ function transformDataToD3(json, chartType, barType) {
             }),
             properties: {
               title: 'Bubble Chart Data',
-              colorLength: data.records.length
+              yDataType: 'string',
+              xDataType: 'datetime',
+              colorLength: json.records.length
             }
           };
         }
@@ -568,7 +600,6 @@ function transformDataToD3(json, chartType, barType) {
 
 }
 
-var xTickLabels;
 
 function transformTableData(chartData, chartType, Chart) {
   var data = [],
@@ -578,22 +609,22 @@ function transformTableData(chartData, chartType, Chart) {
     case 'multibar':
       data = chartData.data.map(function(d, i) {
         var series = {
-          'key': d.key || 'undefined',
-          'count': d.count || null,
-          'disabled': d.disabled || false,
-          'series': d.series || i,
-          'values': (d._values || d.values).map(function(k) {
-              return {'x': k.x, 'y': (isNaN(k.value) ? k.y : k.value)};
+          key: d.key || strNoLabel,
+          count: d.count || null,
+          disabled: d.disabled || false,
+          series: d.series || i,
+          values: (d._values || d.values).map(function(k) {
+              return {x: k.x, y: (isNaN(k.value) ? k.y : k.value)};
             })
         };
         if (d.type) {
-          series['type'] = d.type;
+          series.type = d.type;
         }
         if (d.color) {
-          series['color'] = d.color;
+          series.color = d.color;
         }
         if (d.classes) {
-          series['classes'] = d.classes;
+          series.classes = d.classes;
         }
         return series;
       });
@@ -601,12 +632,12 @@ function transformTableData(chartData, chartType, Chart) {
     case 'funnel':
       data = chartData.data.map(function(d, i) {
         return {
-          'key': d.key || 'undefined',
-          'count': d.count || null,
-          'disabled': d.disabled || false,
-          'series': d.series || i,
-          'values': d.values.map(function(k) {
-              return {'x': k.x, 'y': (isNaN(k.value) ? k.y : k.value)};
+          key: d.key || strNoLabel,
+          count: d.count || null,
+          disabled: d.disabled || false,
+          series: d.series || i,
+          values: d.values.map(function(k) {
+              return {x: k.x, y: (isNaN(k.value) ? k.y : k.value)};
             })
         };
       });
@@ -614,11 +645,11 @@ function transformTableData(chartData, chartType, Chart) {
     case 'pie':
       data = chartData.data.map(function(d, i) {
         return {
-          'key': d.key || 'undefined',
-          'count': d.count || null,
-          'disabled': d.disabled || false,
-          'series': d.series || i,
-          'values': [{'x': i + 1, 'y': Chart.y()(d)}]
+          key: d.key || strNoLabel,
+          count: d.count || null,
+          disabled: d.disabled || false,
+          series: d.series || i,
+          values: [{x: i + 1, y: Chart.y()(d)}]
         };
       });
       break;
@@ -626,10 +657,10 @@ function transformTableData(chartData, chartType, Chart) {
     case 'line':
       data = chartData.data.map(function(d, i) {
         return {
-          'key': d.key || 'undefined',
-          'disabled': d.disabled || false,
-          'series': d.series || i,
-          'values': d.values
+          key: d.key || strNoLabel,
+          disabled: d.disabled || false,
+          series: d.series || i,
+          values: d.values
         };
       });
       properties.labels = properties.labels || d3.merge(chartData.data.map(function(d) {
@@ -645,7 +676,7 @@ function transformTableData(chartData, chartType, Chart) {
           return a - b;
         })
         .map(function(d, i) {
-          return {'group': i + 1, 'l': Chart.xAxis.tickFormat()(d)};
+          return {group: i + 1, l: Chart.xAxis.tickFormat()(d)};
         });
       break;
 
@@ -661,19 +692,26 @@ function transformTableData(chartData, chartType, Chart) {
   }
 
   return {
-    'properties': properties,
-    'data': data
+    properties: properties,
+    data: data
   };
 }
 
+// var xTickLabels;
+
 function postProcessData(chartData, chartType, Chart) {
+
+  if (chartData.properties) {
+    yIsCurrency = chartData.properties.yDataType === 'currency';
+    xIsDatetime = chartData.properties.xDataType === 'datetime';
+  }
 
   switch (chartType) {
 
     case 'line':
-      xTickLabels = chartData.properties.labels ?
-        chartData.properties.labels.map(function (d) { return d.l || d; }) :
-        [];
+      // xTickLabels = chartData.properties.labels ?
+      //   chartData.properties.labels.map(function (d) { return d.l || d; }) :
+      //   [];
 
       if (chartData.data.length) {
         if (chartData.data[0].values.length && Array.isArray(chartData.data[0].values[0])) {
@@ -681,28 +719,28 @@ function postProcessData(chartData, chartType, Chart) {
             .x(function (d) { return d[0]; })
             .y(function (d) { return d[1]; });
 
-          if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
-            Chart.xAxis
-              .tickFormat(function (d) {
-                return d3.time.format('%x')(new Date(d));
-              });
-          } else if (xTickLabels.length > 0) {
-            Chart.xAxis
-              .tickFormat(function (d) {
-                return xTickLabels[d] || ' ';
-              });
-          }
+          // if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
+          //   Chart.xAxis
+          //     .tickFormat(function (d) {
+          //       return d3.time.format('%x')(new Date(d));
+          //     });
+          // } else if (xTickLabels.length > 0) {
+          //   Chart.xAxis
+          //     .tickFormat(function (d) {
+          //       return xTickLabels[d] || ' ';
+          //     });
+          // }
         } else {
           Chart
             .x(function (d) { return d.x; })
             .y(function (d) { return d.y; });
 
-          if (xTickLabels.length > 0) {
-            Chart.xAxis
-              .tickFormat(function (d) {
-                return xTickLabels[d - 1] || ' ';
-              });
-          }
+          // if (xTickLabels.length > 0) {
+          //   Chart.xAxis
+          //     .tickFormat(function (d) {
+          //       return xTickLabels[d - 1] || ' ';
+          //     });
+          // }
         }
       }
       break;
@@ -826,68 +864,68 @@ function parseTreemapData(data) {
 //https://github.com/exupero/saveSvgAsPng
 
 function generateImage(e) {
-    e.preventDefault();
-    e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-    function reEncode(data) {
-      data = encodeURIComponent(data);
-      data = data.replace(/%([0-9A-F]{2})/g, function (match, p1) {
-        var c = String.fromCharCode('0x' + p1);
-        return c === '%' ? '%25' : c;
-      });
-      return decodeURIComponent(data);
-    }
-    function openTab(url) {
-        var a = window.document.createElement('a');
-        var evt = new MouseEvent('click', {
-              bubbles: false,
-              cancelable: true,
-              view: window,
-            });
-        a.target = '_blank';
-        a.href = url;
-        // Not supported consistently across browsers
-        // fall back to open image in new tab
-        a.download = 'download.png';
-        document.body.appendChild(a);
-        a.addEventListener('click', function (e) {
-          a.parentNode.removeChild(a);
+  function reEncode(data) {
+    data = encodeURIComponent(data);
+    data = data.replace(/%([0-9A-F]{2})/g, function (match, p1) {
+      var c = String.fromCharCode('0x' + p1);
+      return c === '%' ? '%25' : c;
+    });
+    return decodeURIComponent(data);
+  }
+  function openTab(url) {
+    var a = window.document.createElement('a');
+    var evt = new MouseEvent('click', {
+          bubbles: false,
+          cancelable: true,
+          view: window,
         });
-        a.dispatchEvent(evt);
-    }
+    a.target = '_blank';
+    a.href = url;
+    // Not supported consistently across browsers
+    // fall back to open image in new tab
+    a.download = 'download.png';
+    document.body.appendChild(a);
+    a.addEventListener('click', function (e) {
+      a.parentNode.removeChild(a);
+    });
+    a.dispatchEvent(evt);
+  }
 
-    $.ajax({
-        url: 'css/sucrose.css',
-        dataType: 'text',
-        success: function(css) {
-            var doctype = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
-            var chart = $('#chart');
-            var width = chart.width();
-            var height = chart.height();
-            var dom = chart.find('svg').html();
-            var svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="' +
-                       width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '" class="sc-chart-print">' +
-                      '<defs><style rel="stylesheet/less" type="text/css"><![CDATA[' + css + ']]></style></defs>' + dom + '</svg>';
-            var url = 'data:image/svg+xml;charset=utf-8;base64,' + window.btoa(reEncode(svg));
-            var canvas = document.createElement('canvas');
-            var ctx = canvas.getContext('2d');
-            var img = new Image();
+  $.ajax({
+      url: 'css/sucrose.css',
+      dataType: 'text'
+    })
+    .success(function (css) {
+      var doctype = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+      var chart = $('#chart');
+      var width = chart.width();
+      var height = chart.height();
+      var dom = chart.find('svg').html();
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="' +
+                 width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '" class="sc-chart-print">' +
+                '<defs><style rel="stylesheet/less" type="text/css"><![CDATA[' + css + ']]></style></defs>' + dom + '</svg>';
+      var url = 'data:image/svg+xml;charset=utf-8;base64,' + window.btoa(reEncode(svg));
+      var canvas = document.createElement('canvas');
+      var ctx = canvas.getContext('2d');
+      var img = new Image();
 
-            canvas.width = width;
-            canvas.height = height;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+      canvas.width = width;
+      canvas.height = height;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            img.onload = function () {
-                var uri;
-                ctx.drawImage(img, 0, 0);
-                uri = canvas.toDataURL('image/png');
-                openTab(uri);
-                ctx.clearRect(0, 0, width, height);
-            }
+      img.onload = function () {
+          var uri;
+          ctx.drawImage(img, 0, 0);
+          uri = canvas.toDataURL('image/png');
+          openTab(uri);
+          ctx.clearRect(0, 0, width, height);
+      }
 
-            img.src = url;
-        }
+      img.src = url;
     });
 }
 
@@ -925,104 +963,87 @@ function loader(type) {
     return;
   }
 
+  // Load manifest for chart type
   $.ajax({
-    url: 'manifest/' + type + '.json',
-    cache: true,
-    dataType: 'text',
-    context: this,
-    async: true
-  })
-  .success(function (json) {
-    if (!json) {
-      return;
-    }
-    var options = {};
+      url: 'manifest/' + type + '.json',
+      dataType: 'text'
+    })
+    .then(function (manifest) {
+      var presets = {};
+      var chartManifest = $.my.fromjson(manifest);
 
-    // Load manifest for chart type
-    var chartManifest = $.my.fromjson(json);
+      // Reset manifest UI Object from Base UI
+      Manifest.ui = Object.clone(baseUI, true);
 
-    $index.addClass('hidden');
-    $demo.removeClass('hidden');
+      // Append settings textarea to end of chart options ui
+      Object.merge(chartManifest.ui, Object.clone(settingsUI, true));
 
-    // Append settings textarea to end of chart options ui
-    Object.merge(
-      chartManifest.ui,
-      {'[name=settings]': {
-          init: $.noop,
-          bind: function (d, v, $o) {
-            $o.html(JSON.stringify(this.selectedOptions, null, '  '));
-            if (!v) return $o.html();
-          },
-          events: 'blur.my',
-          title: 'Chart Option Settings',
-          type: 'textarea',
-          values: [
-            {value: ''}
-          ]
+      // Combine base and custom Manifest UIs
+      Object.merge(Manifest, chartManifest, true);
+
+      // Define additional attributes of form elements
+      Object.each(Manifest.ui, function (k, v, d) {
+        if (v.hidden) {
+          delete d[k];
+        } else {
+          Object.merge(
+            d[k],
+            {
+              init: function ($o) {
+                this.initControl($o);
+              },
+              bind: function (d, v, $o) {
+                return this.bindControl(d, v, $o, this.loadChart);
+              },
+              values: [
+                {value: '0', label: 'No'},
+                {value: '1', label: 'Yes'}
+              ]
+            },
+            false, // shallow copy
+            false  // do not overwrite
+          );
         }
-      }
-    );
+      });
 
-    // Reset manifest UI Object from Base UI
-    Manifest.ui = Object.clone(baseUI, true);
+      // Set data file options in Manifest control
+      Manifest.ui['[name=file]'].values = fileCatalog[type];
 
-    // Combine common and custom Manifest UIs
-    Object.merge(Manifest, chartManifest, true);
+      // Data containers persisted in localStorage
+      store.set('example-type', type);
+      // Set Application scope variables
+      chartType = type;
+      chartStore = store.get('example-' + type) || {};
+      // TODO: we need to store modified chartData somewhere
+      // chartData = chartStore.chartData || {};
 
-    Object.each(Manifest.ui, function (k, v, d) {
-      if (v.hidden) {
-        delete d[k];
-      } else {
-        Object.merge(
-          d[k],
-          {
-            init: function ($o) {
-              this.initControl($o);
-            },
-            bind: function (d, v, $o) {
-              return this.bindControl(d, v, $o, this.loadChart);
-            },
-            values: [
-              {value: '0', label: 'No'},
-              {value: '1', label: 'Yes'}
-            ]
-          },
-          false, // shallow copy
-          false  // do not overwrite
-        );
-      }
+      // Build Data from stored selected values with chart type overrides
+      presets = chartStore.optionPresets || chartManifest.optionPresets;
+      // Data will contain default value an
+      Object.each(Manifest.optionDefaults, function (prop, val) {
+        Data[prop] = {};
+        Data[prop].def = val;
+        Data[prop].val = window.uQuery(prop) || presets[prop];
+      });
+
+      $index.addClass('hidden');
+      $demo.removeClass('hidden');
+
+      // TODO: is there a way to reinit jQuery.my with new Data?
+      // I get an bind error if I try to do it, so I have to
+      // Delete and recreate the entire form
+      $form.remove();
+      $options.append('<div class="sc-form" id="form"/>');
+      // Reset application scope reference to form
+      $form = $('#form');
+
+      // Instantiate jQuery.my
+      $form.my(Manifest, Data);
+      $picker.find('a')
+        .removeClass('active')
+        .filter('[data-type=' + type + ']')
+        .addClass('active');
     });
-
-    // Data containers persisted in localStorage
-    store.set('example-type', type);
-    // Set Application scope variables
-    chartType = type;
-    chartStore = store.get('example-' + type) || {};
-    // chartData = chartStore.chartData || {};
-    // Build Data from stored selected values with chart type overrides
-    options = chartStore.chartOptions || chartManifest.optionPresets;
-    // Data will contain default value an
-    $.each(Manifest.optionDefaults, function (k) {
-      Data[k] = {};
-      Data[k].def = this;
-      Data[k].val = window.uQuery(k) || options[k];
-    });
-    // TODO: is there a way to reinit jQuery.my with new Data?
-    // I get an bind error if I try to do it, so I have to
-    // Delete and recreate the entire form
-    $form.remove();
-    $options.append('<div class="sc-form" id="form"/>');
-    // Reset application scope reference to form
-    $form = $('#form');
-
-    // Instantiate jQuery.my
-    $form.my(Manifest, Data);
-
-    $picker.find('a')
-      .removeClass('active')
-      .filter('[data-type=' + type + ']')
-      .addClass('active');
-  });
 }
 
 // jQuery.my manifest
@@ -1036,6 +1057,8 @@ var Manifest =
 
   // (will also be reset by chart type manifest)
   type: 'multibar',
+  // ok, what's the deal here?
+  locale: 'en',
 
   // D3 chart
   Chart: null,
@@ -1059,7 +1082,8 @@ var Manifest =
     file: '',
     color: 'default',
     gradient: ['0', 'vertical', 'middle'],
-    direction: 'ltr'
+    direction: 'ltr',
+    locale: 'en'
   },
 
   // UI elements
@@ -1070,12 +1094,19 @@ var Manifest =
    * INIT functions --------- */
 
   init: function ($node, runtime) {
-    var options = Object.clone(this.data);
     self = this;
 
+    // For each manifest data element, update selected options with preset value
+    Object.each(Object.clone(this.data), function (k, v) {
+      if (v.val && v.val !== v.def) {
+        self.selectedOptions[k] = v.val;
+      }
+    });
+
     // Set manifest D3 visualization objects
-    this.Chart = sucroseCharts(this.type);
+    this.Chart = sucroseCharts(this.type, localeData[this.selectedOptions.locale]);
     this.Table = sucroseTable(this.Chart);
+
     if (!['bar', 'line', 'area', 'pie', 'funnel', 'gauge'].find(this.type)) {
       this.Table.strings({noData: 'This chart type does not support table data.'})
     }
@@ -1088,13 +1119,6 @@ var Manifest =
 
     // Show chart tab
     this.toggleTab('chart');
-
-    // For each manifest data element, update selected options with preset value
-    Object.each(options, function (k, v) {
-      if (v.val && v.val !== v.def) {
-        self.selectedOptions[k] = v.val;
-      }
-    });
 
     // Insert new manifest form UI row
     Object.each(this.ui, function (k, v) {
@@ -1349,7 +1373,7 @@ var Manifest =
     if (v == null) {
       return this.getData(d, k);
     }
-    // Update the my scode data
+    // Update the my scope data
     this.setData(d, k, v, callback);
     // Store and display chart options
     this.setOptions(d, k, v);
@@ -1360,7 +1384,7 @@ var Manifest =
     // First, lets update and store the option
     // in case it overrides a form preset value
     this.selectedOptions[k] = v;
-    chartStore.chartOptions = Object.clone(this.selectedOptions);
+    chartStore.optionPresets = Object.clone(this.selectedOptions);
     store.set('example-' + this.type, chartStore);
 
     // Now, if the options is the default, lets remove it from display
@@ -1372,6 +1396,18 @@ var Manifest =
     this.ui['[name=' + k + ']'].setChartOption(v, this);
     this.my.recalc('[name=settings]');
   },
+  getLocaleOptions: function () {
+    var locales = [];
+    Object.each(localeData, function (k, v) {
+      locales.push({value: k, label: v.language});
+    });
+    // [
+    //   {value: 'en', label: 'English (US)'},
+    //   {value: 'ru', label: 'Russian'},
+    //   {value: 'de', label: 'German'}
+    //  ]
+    return locales;
+  },
 
   /* ------------------------
    * CHART functions -------- */
@@ -1381,11 +1417,6 @@ var Manifest =
     this.toggleTab('chart');
 
     chartData = Object.clone(rawData, true);
-
-    // Update chart color data based on current data
-    if (this.Chart.colorData) {
-      this.updateColorModel();
-    }
 
     // this.toggleTab(true);
     $chart.attr('class', 'sc-chart sc-chart-' + this.type + ($chart.hasClass('hide') ? ' hide' : ''));
@@ -1436,6 +1467,10 @@ var Manifest =
     var options = {},
         color = this.data.color.val,
         gradient = this.data.gradient.val;
+
+    if (!this.Chart.colorData) {
+      return;
+    }
 
     if (color && color === 'graduated') {
       options = {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength};
@@ -1536,7 +1571,7 @@ var Manifest =
     });
     $table.find('td').on('validate', function (evt, value) {
       var cell = $(this),
-        column = cell.index();
+          column = cell.index();
       if (column === 1) {
         return !!value && value.trim().length > 0;
       } else {
@@ -1571,20 +1606,51 @@ var Manifest =
       return;
     }
 
-    return $.ajax({ // Load data, $.ajax is promise
+    $.ajax({ // Load data, $.ajax is promise
         url: 'data/' + file + '.json',
         cache: true,
         dataType: 'json',
         context: this,
         async: true
       })
-      .then(function (json) { // Loaded, then
+      .done(function (json) { // Loaded, then
         if (!json) {
           return;
         }
         this.parseRawData(json);
+        this.updateColorModel();
         this.loadChart();
       });
+    // fs.root.getDirectory('data', {}, function (dirEntry){
+    //   var dirReader = dirEntry.createReader();
+    //   dirReader.readEntries(function (entries) {
+    //     for(var i = 0; i < entries.length; i++) {
+    //       var entry = entries[i];
+    //       if (entry.isDirectory){
+    //         console.log('Directory: ' + entry.fullPath);
+    //       }
+    //       else if (entry.isFile){
+    //         console.log('File: ' + entry.fullPath);
+    //       }
+    //     }
+
+    //   }, errorHandler);
+    // }, errorHandler);
+    // if (!file) {
+    //   return;
+    // }
+  },
+
+  loadColor: function (color) {
+    this.updateColorModel(color);
+    this.chartUpdater()();
+  },
+
+  loadLocale: function (locale) {
+    this.locale = locale;
+
+    this.Chart.locality(localeData[locale]);
+    this.chartUpdater()();
   }
 };
 
@@ -1601,9 +1667,28 @@ var baseUI =
     title: 'Data File',
     type: 'select'
   },
+  '[name=locale]': {
+    bind: function (d, v, $o) {
+      return this.bindControl(d, v, $o, this.loadLocale);
+    },
+    setChartOption: $.noop,
+    check: /[a-z0-9_]+/i,
+    // fire on initial load
+    // events: 'change.my'
+    title: 'Locale',
+    type: 'select',
+    values: [
+      {value: 'en', label: 'English (US)'},
+      {value: 'ru', label: 'Russian'},
+      {value: 'de', label: 'German'}
+     ]
+    // localeData.keys().map(function(k) {
+    //   return {value: k, label: localeData[k].label};
+    // })
+  },
   '[name=color]': {
     bind: function (d, v, $o) {
-      return this.bindControl(d, v, $o, this.loadChart);
+      return this.bindControl(d, v, $o, this.loadColor);
     },
     setChartOption: $.noop,
     check: /default|class|graduated/i,
@@ -1622,7 +1707,7 @@ var baseUI =
       // if (v == null || !v.filter('1').length) {
       //   v = null;
       // }
-      return this.bindControl(d, v, $o, this.loadChart);
+      return this.bindControl(d, v, $o, this.loadColor);
     },
     setChartOption: $.noop,
     recalc: '[name=color]',
@@ -1667,15 +1752,21 @@ $chart = $('#chart');
 $table = $('#table');
 $menu = $('#menu');
 
-// Application scope D3 reference to button tooltip
-tootip = null;
-
 // Application scope variables
-chartType = window.uQuery('type');
-chartStore = {};
-rawData = {};
 chartData = {};
+chartStore = {};
+chartType = window.uQuery('type');
+fileCatalog = {};
+localeData = {};
+rawData = {};
 tableData = {};
+
+// Application scope D3 reference to button tooltip
+tooltip = null;
+
+xIsDatetime = false;
+yIsCurrency = false;
+
 
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
@@ -1725,17 +1816,39 @@ $menu.on('click touch', function (e) {
   });
 
 // Close menu when clicking outside
-$('body').on('click touch', function() {
+$('body').on('click touch', function () {
     $select.removeClass('open');
   });
 
-// If chartType was passed in url, open it
-if (chartType) {
-  loader(chartType);
-}
+
+$.when(
+    $.get({url:'data/locales/locales.json', dataType: 'json'}),
+    $.get({url:'data/catalog.json', dataType: 'json'}),
+    // Load manifest for settings display textarea
+    $.get({url: 'manifest/settings.json', dataType: 'text'}),
+    // Load manifest for base ui
+    $.get({url: 'manifest/base.json', dataType: 'text'})
+  )
+  .then(function () {
+    return [].slice.apply(arguments, [0]).map(function (result) {
+      return result[0];
+    });
+  })
+  .then(function (json) {
+    localeData = Object.extended(json[0]);
+    fileCatalog = Object.extended(json[1]);
+    settingsUI = $.my.fromjson(json[2]);
+    baseUI = $.my.fromjson(json[3]);
+  })
+  .then(function () {
+    // If chartType was passed in url, open it
+    if (chartType) {
+      loader(chartType);
+    }
+  });
 // })();
 });
 
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
     new FastClick(document.body);
 }, false);

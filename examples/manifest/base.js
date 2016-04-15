@@ -7,14 +7,25 @@ var baseUI =
     },
     setChartOption: $.noop,
     check: /[a-z0-9_]+/i,
-    // fire on initial load
-    // events: 'change.my'
     title: 'Data File',
-    type: 'select'
+    type: 'select',
+    values: []
+  },
+  '[name=locale]': {
+    bind: function (d, v, $o) {
+      return this.bindControl(d, v, $o, this.loadLocale);
+    },
+    setChartOption: $.noop,
+    check: /[a-z0-9_]+/i,
+    title: 'Locale',
+    type: 'select',
+    values: localeData.keys().map(function(k) {
+      return {value: k, label: localeData[k].label};
+    })
   },
   '[name=color]': {
     bind: function (d, v, $o) {
-      return this.bindControl(d, v, $o, this.loadChart);
+      return this.bindControl(d, v, $o, this.loadColor);
     },
     setChartOption: $.noop,
     check: /default|class|graduated/i,
@@ -30,10 +41,7 @@ var baseUI =
   },
   '[name=gradient]': {
     bind: function (d, v, $o) {
-      // if (v == null || !v.filter('1').length) {
-      //   v = null;
-      // }
-      return this.bindControl(d, v, $o, this.loadChart);
+      return this.bindControl(d, v, $o, this.loadColor);
     },
     setChartOption: $.noop,
     recalc: '[name=color]',
@@ -42,9 +50,9 @@ var baseUI =
     title: 'Gradient',
     type: 'checkbox',
     values: [
-      {value: '1', label: 'Use gradient'}, // 0 | 1
-      {value: 'horizontal', label: 'Align horizontally'}, // vertical | horizontal
-      {value: 'base', label: 'Align base'} // middle | base
+      {value: '1', label: 'Use gradient'},
+      {value: 'horizontal', label: 'Align horizontally'},
+      {value: 'base', label: 'Align base'}
      ]
   },
   '[name=direction]': {
@@ -62,3 +70,5 @@ var baseUI =
     ]
   }
 };
+var cachedManifest = $.my.tojson(baseUI);
+console.log(cachedManifest);

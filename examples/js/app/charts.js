@@ -1,5 +1,5 @@
 
-function sucroseCharts(type) {
+function sucroseCharts(type, locality) {
   var chart,
       showTitle = true,
       showLegend = true,
@@ -7,6 +7,7 @@ function sucroseCharts(type) {
       tooltips = true;
 
   switch (type) {
+
     case 'pie':
       chart = sucrose.models.pieChart()
         .donut(true)
@@ -15,9 +16,11 @@ function sucroseCharts(type) {
         .maxRadius(250)
         .minRadius(100)
         .tooltipContent(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+              percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
           return '<p>Stage: <b>' + key + '</b></p>' +
-                 '<p>Amount: <b>$' + parseInt(y) + 'K</b></p>' +
-                 '<p>Percent: <b>' + x + '%</b></p>';
+                 '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+                 '<p>Percent: <b>' + percent + '%</b></p>';
         });
         // .rotateDegrees(rotate)
         // .arcDegrees(arc)
@@ -30,18 +33,27 @@ function sucroseCharts(type) {
       chart.pie
         .textureFill(true);
       break;
+
     case 'funnel':
       chart = sucrose.models.funnelChart()
-        .fmtValueLabel(function (d) { return '$' + (d.label || d.value || d) + 'K'; })
+        .fmtValue(function (d) {
+            return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+        })
+        .fmtCount(function (d) {
+            return d ? ' (' + sucrose.utils.numberFormatSI(d, 2, false, chart.locality()) + ')' : '';
+        })
         .tooltipContent(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+              percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
           return '<p>Stage: <b>' + key + '</b></p>' +
-                 '<p>Amount: <b>$' + parseInt(y) + 'K</b></p>' +
-                 '<p>Percent: <b>' + x + '%</b></p>';
+                 '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+                 '<p>Percent: <b>' + percent + '%</b></p>';
         });
 
       chart.funnel
         .textureFill(true);
       break;
+
     case 'multibar':
       chart = sucrose.models.multiBarChart()
         .stacked(true)
@@ -51,10 +63,15 @@ function sucroseCharts(type) {
         //   var si = d3.formatPrefix(d, 2);
         //   return d3.round(si.scale(d), 2) + si.symbol;
         // })
+        .valueFormat(function (d) {
+          return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+        })
         .tooltipContent(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+              percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
           return '<p>Outcome: <b>' + key + '</b></p>' +
-                 '<p>Percentage: <b>' + x + '%</b></p>' +
-                 '<p>Amount: <b>$' + parseInt(y, 10) + 'K</b></p>';
+                 '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+                 '<p>Percentage: <b>' + percent + '%</b></p>';
         })
         .seriesClick(function (data, eo, chart) {
           chart.dataSeriesActivate(eo);
@@ -70,22 +87,23 @@ function sucroseCharts(type) {
       chart.yAxis
         .tickFormat(chart.multibar.valueFormat());
       break;
+
     case 'line':
       chart = sucrose.models.lineChart()
-        .x(function (d) { return d[0]; })
-        .y(function (d) { return d[1]; })
         .useVoronoi(true)
         .clipEdge(false)
         .tooltipContent(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
           var content = '<p>Category: <b>' + key + '</b></p>' +
-                 '<p>Amount: <b>$' + parseInt(y) + 'M</b></p>',
+                        '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>',
               dateCheck = new Date(x);
           if (dateCheck instanceof Date && !isNaN(dateCheck.valueOf())) {
-            content += '<p>Date: <b>' + x + '</b></p>';
+            content += '<p>Date: <b>' + sucrose.utils.dateFormat(x, '%x', chart.locality()) + '</b></p>';
           }
           return content;
         });
       break;
+
     case 'bubble':
       chart = sucrose.models.bubbleChart()
         .x(function (d) { return d3.time.format('%Y-%m-%d').parse(d.x); })
@@ -104,14 +122,15 @@ function sucroseCharts(type) {
                  '<p>Account: <b>' + e.point.account_name + '</b></p>';
         });
       break;
+
     case 'treemap':
       chart = sucrose.models.treemapChart()
         .leafClick(function (d) {
           alert('leaf clicked');
         })
         .getSize(function (d) { return d.size; });
-        // .getSize(function(d) { return d.value; })
-        // .tooltipContent(function(point) {
+        // .getSize(function (d) { return d.value; })
+        // .tooltipContent(function (point) {
         //   var rep = (point.assigned_user_name) ? point.assigned_user_name : (point.className) ? point.parent.name : point.name,
         //       stage = (point.sales_stage) ? point.sales_stage : (point.className) ? point.name : null,
         //       account = (point.account_name) ? point.account_name : null;
@@ -125,33 +144,31 @@ function sucroseCharts(type) {
         //   }
         //   return tt;
         // })
-
-
       showTitle = false;
       showLegend = false;
       break;
+
     case 'pareto':
       chart = sucrose.models.paretoChart()
         .stacked(true)
         .clipEdge(false)
-        .yAxisTickFormat(function (d) {
-          var si = d3.formatPrefix(d, 2);
-          return '$' + d3.round(si.scale(d), 2) + si.symbol;
-        })
-        .quotaTickFormat(function (d) {
-          var si = d3.formatPrefix(d, 2);
-          return '$' + d3.round(si.scale(d), 2) + si.symbol;
+        .valueFormat(function (d) {
+          return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
         })
         .tooltipBar(function (key, x, y, e, graph) {
+          var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality()),
+              percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
           return '<p><b>' + key + '</b></p>' +
-            '<p><b>' + y + '</b></p>' +
-            '<p><b>' + x + '%</b></p>';
+                 '<p><b>' + val + '</b></p>' +
+                 '<p><b>' + percent + '%</b></p>';
         })
         .tooltipLine(function (key, x, y, e, graph) {
-          return '<p><p>' + key + ': <b>' + y + '</b></p>';
+          var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+          return '<p><p>' + key + ': <b>' + val + '</b></p>';
         })
         .tooltipQuota(function (key, x, y, e, graph) {
-          return '<p>' + e.key + ': <b>$' + y + '</b></p>';
+          var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+          return '<p>' + e.key + ': <b>' + val + '</b></p>';
         })
         .barClick(function (data, eo, chart, container) {
             var d = eo.series,
@@ -184,6 +201,7 @@ function sucroseCharts(type) {
             container.call(chart);
         });
       break;
+
     case 'gauge':
       chart = sucrose.models.gaugeChart()
         .x(function (d) { return d.key; })
@@ -192,12 +210,14 @@ function sucroseCharts(type) {
         .maxValue(9)
         .transitionMs(4000);
       break;
+
     case 'globe':
       chart = sucrose.models.globeChart()
         .id('chart');
       showTitle = false;
       showLegend = false;
       break;
+
     case 'area':
       chart = sucrose.models.stackedAreaChart()
         .x(function (d) { return d[0]; })
@@ -218,6 +238,7 @@ function sucroseCharts(type) {
 
       tooltips = false;
       break;
+
     case 'tree':
       chart = sucrose.models.tree()
         .duration(500)
@@ -300,6 +321,10 @@ function sucroseCharts(type) {
       .seriesClick(function (data, eo, chart) {
         chart.dataSeriesActivate(eo);
       });
+  }
+  if (chart.locality) {
+    chart
+      .locality(locality);
   }
 
   // chart.transition().duration(500)

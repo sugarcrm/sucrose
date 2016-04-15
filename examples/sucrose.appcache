@@ -7,11 +7,11 @@ CACHE:
 #root
 index.html
 manifest.json
+browserconfig.xml
 
 #css
 css/examples.min.css
 css/sucrose.min.css
-browserconfig.xml
 
 #data
 data/bubble_data.json
@@ -36,7 +36,6 @@ data/line_raw_data.json
 data/line_single_bar.json
 data/line_single_data.json
 data/line_two_single.json
-data/multibar_accounts_industry_type.json
 data/multibar_data.json
 data/multibar_data_baseline.json
 data/multibar_data_color.json
@@ -65,16 +64,13 @@ data/treemap_data.json
 data/geo/cldr_en.json
 data/geo/usa-states-topo-110.json
 data/geo/world-countries-topo-110.json
+data/locales/locales.json
 
 #fonts
 fonts/SucroseFont.eot
 fonts/SucroseFont.svg
 fonts/SucroseFont.ttf
 fonts/SucroseFont.woff
-<<<<<<< HEAD
-
-=======
->>>>>>> update css and appcache with glyphter changes
 fonts/montserrat-bold-webfont.eot
 fonts/montserrat-bold-webfont.svg
 fonts/montserrat-bold-webfont.ttf
@@ -125,6 +121,7 @@ js/topojson.min.js
 
 #manifest
 manifest/area.json
+manifest/base.json
 manifest/bubble.json
 manifest/funnel.json
 manifest/gauge.json
@@ -133,6 +130,7 @@ manifest/line.json
 manifest/multibar.json
 manifest/pareto.json
 manifest/pie.json
+manifest/settings.json
 manifest/tree.json
 manifest/treemap.json
 

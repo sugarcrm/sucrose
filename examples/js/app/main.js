@@ -14,15 +14,21 @@ $chart = $('#chart');
 $table = $('#table');
 $menu = $('#menu');
 
-// Application scope D3 reference to button tooltip
-tootip = null;
-
 // Application scope variables
-chartType = window.uQuery('type');
-chartStore = {};
-rawData = {};
 chartData = {};
+chartStore = {};
+chartType = window.uQuery('type');
+fileCatalog = {};
+localeData = {};
+rawData = {};
 tableData = {};
+
+// Application scope D3 reference to button tooltip
+tooltip = null;
+
+xIsDatetime = false;
+yIsCurrency = false;
+
 
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
@@ -72,11 +78,33 @@ $menu.on('click touch', function (e) {
   });
 
 // Close menu when clicking outside
-$('body').on('click touch', function() {
+$('body').on('click touch', function () {
     $select.removeClass('open');
   });
 
-// If chartType was passed in url, open it
-if (chartType) {
-  loader(chartType);
-}
+
+$.when(
+    $.get({url:'data/locales/locales.json', dataType: 'json'}),
+    $.get({url:'data/catalog.json', dataType: 'json'}),
+    // Load manifest for settings display textarea
+    $.get({url: 'manifest/settings.json', dataType: 'text'}),
+    // Load manifest for base ui
+    $.get({url: 'manifest/base.json', dataType: 'text'})
+  )
+  .then(function () {
+    return [].slice.apply(arguments, [0]).map(function (result) {
+      return result[0];
+    });
+  })
+  .then(function (json) {
+    localeData = Object.extended(json[0]);
+    fileCatalog = Object.extended(json[1]);
+    settingsUI = $.my.fromjson(json[2]);
+    baseUI = $.my.fromjson(json[3]);
+  })
+  .then(function () {
+    // If chartType was passed in url, open it
+    if (chartType) {
+      loader(chartType);
+    }
+  });

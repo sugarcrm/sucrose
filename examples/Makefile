@@ -29,7 +29,6 @@ APP_FILES = \
 	js/app/savejson.js \
 	js/app/loader.js \
 	js/app/manifest.js \
-	js/app/baseui.js \
 	js/app/main.js \
 	js/app/outro.js
 

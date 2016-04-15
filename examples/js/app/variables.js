@@ -1,23 +1,29 @@
 // jQuery.my variables
-var Manifest, Data, baseUI;
+var Manifest, Data, baseUI, settingsUI;
 
 // jQuery references
-var $title,
+var $demo,
+    $chart,
+    $example,
+    $form,
+    $index,
+    $menu,
+    $options,
     $picker,
     $select,
-    $index,
-    $demo,
-    $options,
-    $form,
-    $example,
-    $chart,
     $table,
-    $menu;
+    $title;
 
 // Application scope variables
-var chartType,
+var chartData,
     chartStore,
+    chartType,
+    fileCatalog,
+    localeData,
     rawData,
-    chartData,
     tableData,
-    tootip;
+    tooltip;
+
+// Data dependent variables
+var xIsDatetime,
+    yIsCurrency;
