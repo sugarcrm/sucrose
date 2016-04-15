@@ -3,6 +3,9 @@
     "name": " for Q3 2013",
     "quota": 1023353,
     "quotaLabel": "Quota (Adjusted)",
+    "yDataType": "currency",
+    "xDataType": "string",
+    "stacked": false,
     "groupData": [
       {
         "group": 0,
@@ -21,8 +24,7 @@
       }
     ],
     "targetQuota": 724390,
-    "targetQuotaLabel": "Quota",
-    "stacked": false
+    "targetQuotaLabel": "Quota"
   },
   "data": [
     {

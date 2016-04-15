@@ -1,7 +1,6 @@
 {
   "properties": {
-    "title": "Total is 1890.00",
-    "yDataType": "currency",
+    "title": "Total is 3780.00",
     "groups": [
       {"label": "Red"},
       {"label": "Yellow"},
@@ -15,14 +14,6 @@
         {"x": 1, "y": 1234},
         {"x": 2, "y": 567},
         {"x": 3, "y": 89}
-      ]
-    },
-    {
-      "key": "Oranges",
-      "values": [
-        {"x": 1, "y": 89},
-        {"x": 2, "y": 567},
-        {"x": 3, "y": 1234}
       ]
     }
   ]

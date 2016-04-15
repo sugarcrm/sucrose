@@ -3,6 +3,9 @@
     "name": " for 2014 Q4",
     "quota": 50,
     "quotaLabel": "Quota",
+    "stacked": false,
+    "yDataType": "currency",
+    "xDataType": "datetime",
     "groupData": [
       {
         "group": 0,
@@ -19,8 +22,7 @@
         "l": "Sarah Smith",
         "t": 30
       }
-    ],
-    "stacked": false
+    ]
   },
   "data": [
     {

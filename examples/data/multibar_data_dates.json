@@ -2,10 +2,11 @@
   "properties": {
     "title": "Total is 1890.00",
     "yDataType": "currency",
+    "xDataType": "datetime",
     "groups": [
-      {"label": "Red"},
-      {"label": "Yellow"},
-      {"label": "Green"}
+      {"label": "01 Jan 2016 21:30:28 GMT"},
+      {"label": "01 Feb 2016 21:30:28 GMT"},
+      {"label": "01 Mar 2016 21:30:28 GMT"}
     ]
   },
   "data": [

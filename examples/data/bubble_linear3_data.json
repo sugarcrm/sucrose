@@ -42,6 +42,8 @@
   ],
   "properties": {
     "title": "Top 10 Sales",
-    "value": 3
+    "value": 3,
+    "yDataType": "string",
+    "xDataType": "datetime"
   }
 }

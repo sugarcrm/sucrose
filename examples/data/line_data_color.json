@@ -1,7 +1,9 @@
 {
   "properties": {
     "title": "Test Line Chart",
-    "value": 4
+    "value": 4,
+    "yDataType": "currency",
+    "xDataType": "datetime"
   },
   "data": [
   {
