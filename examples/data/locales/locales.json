@@ -1,0 +1,254 @@
+{
+  "en": {
+    "label": "English",
+    "decimal": ".",
+    "thousands": ",",
+    "grouping": [
+      3
+    ],
+    "currency": [
+      "$",
+      ""
+    ],
+    "dateTime": "%B %-d, %Y at %-I:%M:%S %p GMT%Z",
+    "date": "%-m/%-d/%Y",
+    "time": "%-I:%M %p",
+    "periods": [
+      "AM",
+      "PM"
+    ],
+    "days": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "shortDays": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ],
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "shortMonths": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "full": "%A, %B %-d, %Y at %-I:%M:%S %p GMT%Z",
+    "long": "%B %-d, %Y at %-I:%M:%S %p GMT%Z",
+    "medium": "%b %-d, %Y, %-I:%M:%S %p",
+    "short": "%-m/%-d/%y, %-I:%M %p",
+    "yMMMEd": "E, %b %-d, %Y",
+    "yMEd": "E, %-m/%-d/%Y",
+    "yMMMMd": "%b %-d, %Y",
+    "yMMMd": "%b %-d, %Y",
+    "yMd": "%-m/%-d/%Y",
+    "yMMMM": "%B %Y",
+    "yMMM": "%b %Y",
+    "MMMd": "%b %-d",
+    "EEEE": "%A",
+    "MMMM": "%B",
+    "MMM": "%b",
+    "M": "%-m",
+    "y": "%Y",
+    "d": "%-d",
+    "E": "%a"
+  },
+  "de": {
+    "label": "Deutsch",
+    "decimal": ",",
+    "thousands": ".",
+    "grouping": [
+      3
+    ],
+    "currency": [
+      "",
+      " €"
+    ],
+    "dateTime": "%-d. %B %Y um %H:%M:%S GMT%Z",
+    "date": "%-d.%-m.%Y",
+    "time": "%H:%M",
+    "periods": [
+      "vorm.",
+      "nachm."
+    ],
+    "days": [
+      "Sonntag",
+      "Montag",
+      "Dienstag",
+      "Mittwoch",
+      "Donnerstag",
+      "Freitag",
+      "Samstag"
+    ],
+    "shortDays": [
+      "So.",
+      "Mo.",
+      "Di.",
+      "Mi.",
+      "Do.",
+      "Fr.",
+      "Sa."
+    ],
+    "months": [
+      "Januar",
+      "Februar",
+      "März",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember"
+    ],
+    "shortMonths": [
+      "Jan.",
+      "Feb.",
+      "März",
+      "Apr.",
+      "Mai",
+      "Juni",
+      "Juli",
+      "Aug.",
+      "Sep.",
+      "Okt.",
+      "Nov.",
+      "Dez."
+    ],
+    "full": "%A, %-d. %B %Y um %H:%M:%S GMT%Z",
+    "long": "%-d. %B %Y um %H:%M:%S GMT%Z",
+    "medium": "%d.%m.%Y, %H:%M:%S",
+    "short": "%d.%m.%y, %H:%M",
+    "yMMMEd": "E, %-d. %b %Y",
+    "yMEd": "E, %-d.%-m.%Y",
+    "yMMMMd": "%b %-d, %Y",
+    "yMMMd": "%b %-d, %Y",
+    "yMd": "%-d.%-m.%Y",
+    "yMMMM": "%B %Y",
+    "yMMM": "%b %Y",
+    "MMMd": "%-d. %b",
+    "EEEE": "%A",
+    "MMMM": "%B",
+    "MMM": "%b",
+    "M": "%-m",
+    "y": "%Y",
+    "d": "%-d",
+    "E": "%a"
+  },
+  "ru": {
+    "label": "русский",
+    "decimal": ",",
+    "thousands": " ",
+    "grouping": [
+      3
+    ],
+    "currency": [
+      "",
+      " ₽"
+    ],
+    "dateTime": "%-d %B %Y г., %-H:%M:%S GMT%Z",
+    "date": "%d.%m.%Y",
+    "time": "%-H:%M",
+    "periods": [
+      "ДП",
+      "ПП"
+    ],
+    "days": [
+      "воскресенье",
+      "понедельник",
+      "вторник",
+      "среда",
+      "четверг",
+      "пятница",
+      "суббота"
+    ],
+    "shortDays": [
+      "вс",
+      "пн",
+      "вт",
+      "ср",
+      "чт",
+      "пт",
+      "сб"
+    ],
+    "months": [
+      "января",
+      "февраля",
+      "марта",
+      "апреля",
+      "мая",
+      "июня",
+      "июля",
+      "августа",
+      "сентября",
+      "октября",
+      "ноября",
+      "декабря"
+    ],
+    "shortMonths": [
+      "янв.",
+      "февр.",
+      "мар.",
+      "апр.",
+      "мая",
+      "июн.",
+      "июл.",
+      "авг.",
+      "сент.",
+      "окт.",
+      "нояб.",
+      "дек."
+    ],
+    "full": "%A, %-d %B %Y г., %-H:%M:%S GMT%Z",
+    "long": "%-d %B %Y г., %-H:%M:%S GMT%Z",
+    "medium": "%-d %b %Y г., %-H:%M:%S",
+    "short": "%d.%m.%y, %-H:%M",
+    "yMMMEd": "E, %-d %b %Y г.",
+    "yMEd": "ccc, %-d.%m.%Y г.",
+    "yMMMMd": "%b %-d, %Y",
+    "yMMMd": "%b %-d, %Y",
+    "yMd": "%d.%m.%Y",
+    "yMMMM": "%B %Y г.",
+    "yMMM": "%b %Y г.",
+    "MMMd": "%-d %b",
+    "EEEE": "%A",
+    "MMMM": "%B",
+    "MMM": "%b",
+    "M": "%-m",
+    "y": "%Y",
+    "d": "%-d",
+    "E": "%a"
+  }
+}

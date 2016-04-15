@@ -27,11 +27,14 @@
     "url": "https://github.com/sugarcrm/sucrose.git"
   },
   "dependencies": {
+    "cldr-data": "^29.0.1",
     "jquery": "^2.1.4",
     "jquerymy": "^1.2.1"
   },
   "devDependencies": {
     "canvg": "git://github.com/gabelerner/canvg.git",
+    "cldr-data": "^29.0.1",
+    "cldrjs": "^0.4.4",
     "codemirror": "^5.11.0",
     "jsonlint": "^1.6.2",
     "store2": "^2.3.2",
