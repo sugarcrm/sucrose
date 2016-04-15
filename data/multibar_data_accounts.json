@@ -1,0 +1,236 @@
+{
+  "properties": {
+    "title": "Total is 50",
+    "groups": [
+      {"label": "Customer"},
+      {"label": "Integrator"},
+      {"label": "Partner"}
+    ]
+ },
+  "data": [
+    {
+      "key": "",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Banking",
+      "values": [
+        {"x": 1, "y": 3},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Biotechnology",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Chemicals",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Communications",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Construction",
+      "values": [
+        {"x": 1, "y": 2},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Consulting",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Education",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Electronics",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Energy",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Engineering",
+      "values": [
+        {"x": 1, "y": 2},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Entertainment",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Environmental",
+      "values": [
+        {"x": 1, "y": 5},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Finance",
+      "values": [
+        {"x": 1, "y": 3},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Government",
+      "values": [
+        {"x": 1, "y": 2},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Hospitality",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Insurance",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 1},
+        {"x": 3, "y": 1}
+      ]
+   },
+    {
+      "key": "Machinery",
+      "values": [
+        {"x": 1, "y": 2},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Manufacturing",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Media",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Not For Profit",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Recreation",
+      "values": [
+        {"x": 1, "y": 2},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Shipping",
+      "values": [
+        {"x": 1, "y": 2},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Technology",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Telecommunications",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Transportation",
+      "values": [
+        {"x": 1, "y": 1},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Utilities",
+      "values": [
+        {"x": 1, "y": 3},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   },
+    {
+      "key": "Other",
+      "values": [
+        {"x": 1, "y": 5},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0}
+      ]
+   }
+  ]
+}

@@ -3,6 +3,9 @@
     "name": " for 2015 Q2",
     "quota": 8237.777778,
     "quotaLabel": "Quota",
+    "yDataType": "currency",
+    "xDataType": "datetime",
+    "stacked": true,
     "groupData": [
       {
         "group": 0,
@@ -19,8 +22,7 @@
         "l": "June 2015",
         "t": 10949.444445
       }
-    ],
-    "stacked": true
+    ]
   },
   "data": [
     {

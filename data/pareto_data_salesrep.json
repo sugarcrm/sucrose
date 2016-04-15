@@ -3,6 +3,9 @@
     "name": " for Q3 2013",
     "quota": 101540,
     "quotaLabel": "Quota",
+    "yDataType": "currency",
+    "xDataType": "datetime",
+    "stacked": true,
     "groupData": [
       {
         "group": 0,
@@ -19,8 +22,7 @@
         "l": "September 2013",
         "t": 33936
       }
-    ],
-    "stacked": true
+    ]
   },
   "data": [
     {

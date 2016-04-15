@@ -1,6 +1,7 @@
 {
   "properties": {
-    "title": "All Opportunities by Lead Source"
+    "title": "All Opportunities by Lead Source",
+    "yDataType": "currency"
   },
   "data": [
     {

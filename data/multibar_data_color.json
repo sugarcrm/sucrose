@@ -1,72 +1,62 @@
 {
   "properties": {
     "title": "Forecasting for Q1 2012",
-    "labels": [
-      {"group": 1, "l": "Mark Gibson"},
-      {"group": 2, "l": "Terence Li"},
-      {"group": 3, "l": "James Joplin"},
-      {"group": 4, "l": "Amy McCray"},
-      {"group": 5, "l": "My Opps"}
-    ],
-    "values": [
-      {"group": 1, "t": 110},
-      {"group": 2, "t": 220},
-      {"group": 3, "t": 260},
-      {"group": 4, "t": 270},
-      {"group": 5, "t": 270}
+    "yDataType": "currency",
+    "groups": [
+      {"label": "Mark Gibson"},
+      {"label": "Terence Li"},
+      {"label": "James Joplin"},
+      {"label": "Amy McCray"},
+      {"label": "My Opps"}
     ]
   },
   "data": [
     {
       "key": "Qualified",
-      "type": "bar",
       "color": "#ffbb78",
-      "classes": "sc-fill06",
+      "classes": "nv-fill06",
       "values": [
-        {"series": 0, "x": 1, "y": 50,  "y0": 0},
-        {"series": 0, "x": 2, "y": 80,  "y0": 0},
-        {"series": 0, "x": 3, "y": 100, "y0": 0},
-        {"series": 0, "x": 4, "y": 100, "y0": 0},
-        {"series": 0, "x": 5, "y": 100, "y0": 0}
+        {"x": 1, "y": 50},
+        {"x": 2, "y": 80},
+        {"x": 3, "y": 100},
+        {"x": 4, "y": 100},
+        {"x": 5, "y": 100}
       ]
     },
     {
       "key": "Proposal",
-      "type": "bar",
       "color": "#ff7f0e",
-      "classes": "sc-fill04",
+      "classes": "nv-fill04",
       "values": [
-        {"series": 1, "x": 1, "y": 50,  "y0":  50},
-        {"series": 1, "x": 2, "y": 80,  "y0":  80},
-        {"series": 1, "x": 3, "y": 100, "y0": 100},
-        {"series": 1, "x": 4, "y": 100, "y0": 100},
-        {"series": 1, "x": 5, "y": 100, "y0": 100}
+        {"x": 1, "y": 50},
+        {"x": 2, "y": 80},
+        {"x": 3, "y": 100},
+        {"x": 4, "y": 100},
+        {"x": 5, "y": 100}
       ]
     },
     {
       "key": "Negotiation",
-      "type": "bar",
       "color": "#aec7e8",
-      "classes": "sc-fill02",
+      "classes": "nv-fill02",
       "values": [
-        {"series": 2, "x": 1, "y": 10, "y0": 100},
-        {"series": 2, "x": 2, "y": 50, "y0": 160},
-        {"series": 2, "x": 3, "y": 40, "y0": 200},
-        {"series": 2, "x": 4, "y": 40, "y0": 200},
-        {"series": 2, "x": 5, "y": 40, "y0": 200}
+        {"x": 1, "y": 10},
+        {"x": 2, "y": 50},
+        {"x": 3, "y": 40},
+        {"x": 4, "y": 40},
+        {"x": 5, "y": 40}
       ]
     },
     {
       "key": "Closed",
-      "type": "bar",
       "color": "#1f77b4",
-      "classes": "sc-fill00",
+      "classes": "nv-fill00",
       "values": [
-        {"series": 3, "x": 1, "y":  0, "y0": 110},
-        {"series": 3, "x": 2, "y": 10, "y0": 210},
-        {"series": 3, "x": 3, "y": 20, "y0": 240},
-        {"series": 3, "x": 4, "y": 30, "y0": 240},
-        {"series": 3, "x": 5, "y": 30, "y0": 240}
+        {"x": 1, "y":  0},
+        {"x": 2, "y": 10},
+        {"x": 3, "y": 20},
+        {"x": 4, "y": 30},
+        {"x": 5, "y": 30}
       ]
     }
   ]

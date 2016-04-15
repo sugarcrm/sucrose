@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "title": "All Opportunities by Lead Source",
+    "yDataType": "currency",
+    "xDataType": "datetime"
+  },
+  "data": [
+    {
+      "key": "Jan 1 2010"
+      , "value": 100
+    },
+    {
+      "key": "Feb 1 2010"
+      , "value": 100
+    },
+    {
+      "key": "Mar 1 2010"
+      , "value": 100
+    },
+    {
+      "key": "Apr 1 2010"
+      , "value": 100
+    }
+  ]
+}

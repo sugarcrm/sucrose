@@ -1,1 +1,1 @@
-{"type": "bubble","title": "Bubble Chart","optionPresets": {"file": "bubble_year_data"},"optionDefaults": {},"filterAssigned": "group","ui": {"[name=file]": {"values": [{"value": "top10_opportunities","label": "Top 10 Opportunities"},{"value": "bubble_year_data","label": "Year Data"}]}}}
+{"type": "bubble","title": "Bubble Chart","optionPresets": {"file": "bubble_year_data"},"optionDefaults": {},"filterAssigned": "group","ui": {}}

@@ -3,13 +3,12 @@
     {
       "title": "Total is 200",
       "subtitle": "",
-      "type": "bar chart",
+      "type": "pie chart",
       "legend": "on",
       "labels": "value",
       "print": "on",
       "thousands": "",
-      "yDataType": "numerical",
-      "xDataType": "string"
+      "yDataType": ""
     }
   ],
   "label": [
@@ -66,10 +65,10 @@
         ""
       ],
       "values": [
-        12
+        19
       ],
       "valuelabels": [
-        "12"
+        "19"
       ],
       "links": [
         ""
@@ -77,7 +76,7 @@
     },
     {
       "label": [
-        "ColdCallasdfasdfasdfasdfasdfsdfafsd"
+        "Cold Call"
       ],
       "values": [
         9
@@ -94,10 +93,10 @@
         "Existing Customer"
       ],
       "values": [
-        11
+        16
       ],
       "valuelabels": [
-        "11"
+        "16"
       ],
       "links": [
         ""
@@ -108,10 +107,10 @@
         "Self Generated"
       ],
       "values": [
-        11
+        8
       ],
       "valuelabels": [
-        "11"
+        "8"
       ],
       "links": [
         ""
@@ -120,20 +119,6 @@
     {
       "label": [
         "Employee"
-      ],
-      "values": [
-        12
-      ],
-      "valuelabels": [
-        "12"
-      ],
-      "links": [
-        ""
-      ]
-    },
-    {
-      "label": [
-        "Partner"
       ],
       "values": [
         16
@@ -147,13 +132,27 @@
     },
     {
       "label": [
+        "Partner"
+      ],
+      "values": [
+        13
+      ],
+      "valuelabels": [
+        "13"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
         "Public Relations"
       ],
       "values": [
-        11
+        12
       ],
       "valuelabels": [
-        "11"
+        "12"
       ],
       "links": [
         ""
@@ -164,10 +163,10 @@
         "Direct Mail"
       ],
       "values": [
-        18
+        13
       ],
       "valuelabels": [
-        "18"
+        "13"
       ],
       "links": [
         ""
@@ -178,10 +177,10 @@
         "Conference"
       ],
       "values": [
-        17
+        6
       ],
       "valuelabels": [
-        "17"
+        "6"
       ],
       "links": [
         ""
@@ -192,10 +191,10 @@
         "Trade Show"
       ],
       "values": [
-        10
+        12
       ],
       "valuelabels": [
-        "10"
+        "12"
       ],
       "links": [
         ""
@@ -206,10 +205,10 @@
         "Web Site"
       ],
       "values": [
-        14
+        16
       ],
       "valuelabels": [
-        "14"
+        "16"
       ],
       "links": [
         ""
@@ -234,10 +233,10 @@
         "Email"
       ],
       "values": [
-        10
+        11
       ],
       "valuelabels": [
-        "10"
+        "11"
       ],
       "links": [
         ""
@@ -246,20 +245,6 @@
     {
       "label": [
         "Campaign"
-      ],
-      "values": [
-        10
-      ],
-      "valuelabels": [
-        "10"
-      ],
-      "links": [
-        ""
-      ]
-    },
-    {
-      "label": [
-        "Support Portal User Registration"
       ],
       "values": [
         8
@@ -273,13 +258,27 @@
     },
     {
       "label": [
+        "Support Portal User Registration"
+      ],
+      "values": [
+        18
+      ],
+      "valuelabels": [
+        "18"
+      ],
+      "links": [
+        ""
+      ]
+    },
+    {
+      "label": [
         "Other"
       ],
       "values": [
-        16
+        8
       ],
       "valuelabels": [
-        "16"
+        "8"
       ],
       "links": [
         ""
