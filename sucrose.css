@@ -607,45 +607,45 @@ text.sc-pie-hole-label {
 /**********
 * Pareto
 */
-.sc-multiBarWithLegend .sc-line .sc-scatter .sc-groups .sc-point {
-  fill-opacity: 1;
-  stroke-opacity: 1;
-  stroke-width: 2px;
-}
-.sc-pareto .sc-quotaWrap line {
+.sc-chart-pareto .sc-quotaWrap line {
   opacity: .8;
   stroke: #444;
   stroke-width: 4px;
   fill: none;
   /*stroke-dasharray: '20, 5'; dashed lines must be defined in JS*/
 }
-.sc-pareto .sc-quotaWrap line.sc-quotaLineTarget {
+.sc-chart-pareto .sc-quotaWrap line.sc-quotaLineTarget {
   stroke: #777;
 }
-.sc-pareto .sc-quotaWrap line.sc-quotaLineBackground {
+.sc-chart-pareto .sc-quotaWrap line.sc-quotaLineBackground {
   opacity: 0;
   stroke-width: 12px;
 }
-.sc-pareto .sc-y.sc-axis .domain {
+.sc-chart-pareto .sc-y.sc-axis .domain {
   display: none;
 }
-.sc-pareto .sc-y.sc-axis text.sc-quotaValue,
-.sc-pareto .sc-y.sc-axis text.sc-targetQuotaValue {
+.sc-chart-pareto .sc-y.sc-axis text.sc-quotaValue,
+.sc-chart-pareto .sc-y.sc-axis text.sc-targetQuotaValue {
   font-weight: bold;
 }
-.sc-pareto .sc-multibar .sc-groups rect {
+.sc-chart-pareto .sc-multibar .sc-groups rect {
   stroke-opacity: 1;
   stroke-width: 2px;
   stroke: #fff;
   fill-opacity: 0.85;
 }
-.sc-pareto .sc-line .sc-groups path {
+.sc-chart-pareto .sc-line .sc-groups path {
   stroke-width: 4px;
 }
-.sc-pareto .sc-linesWrap1 .sc-line .sc-groups path {
+.sc-chart-pareto .sc-line .sc-scatter .sc-groups .sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+  stroke-width: 2px;
+}
+.sc-chart-pareto .sc-linesWrap1 .sc-line .sc-groups path {
   stroke-width: 6px;
 }
-.sc-pareto .sc-linesWrap2 .sc-scatter .sc-groups circle {
+.sc-chart-pareto .sc-linesWrap2 .sc-scatter .sc-groups circle {
   stroke: #fff;
 }
 /**********
