@@ -71,8 +71,8 @@
     var rect = container.getBoundingClientRect();
 
     var pos = [
-          container.offsetLeft > 0 ? (evt.clientX - rect.left) : evt.clientX,
-          container.offsetTop > 0 ? (evt.clientY - rect.top) : evt.clientY
+          evt.clientX - rect.left,
+          evt.clientY - rect.top
         ];
 
     var tooltipWidth = parseInt(tooltip.offsetWidth, 10),

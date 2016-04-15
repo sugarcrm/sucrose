@@ -21,10 +21,14 @@ sucrose.models.legend = function() {
       collapsed = false,
       rowsCount = 3, //number of rows to display if showAll = false
       enabled = false,
-      strings = {close: 'Hide legend', type: 'Show legend'},
+      strings = {
+        close: 'Hide legend',
+        type: 'Show legend',
+        noLabel: 'undefined'
+      },
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getKey = function(d) {
-        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : 'undefined';
+        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
       },
       color = function(d, i) { return sucrose.utils.defaultColor()(d, i); },
       classes = function(d, i) { return ''; },
@@ -101,12 +105,64 @@ sucrose.models.legend = function() {
         .append('g').attr('class', 'sc-legend');
       var mask = wrap.select('.sc-legend-mask');
       var g = wrap.select('g.sc-legend');
-      g .attr('transform', 'translate(0,0)');
+      g.attr('transform', 'translate(0,0)');
 
-      var series = g.selectAll('.sc-series')
-            .data(function(d) { return d; }, function(d) { return d.key; });
-      var seriesEnter = series.enter().append('g').attr('class', 'sc-series');
-      series.exit().remove();
+      var sEnter = g.selectAll('.sc-series')
+            .data(sucrose.identity, function(d) { return d.key; });
+      sEnter.exit().remove();
+      var seriesEnter = sEnter.enter()
+        .append('g').attr('class', 'sc-series')
+          .on('mouseover', function(d, i) {
+            dispatch.legendMouseover(d, i);  //TODO: Make consistent with other event objects
+          })
+          .on('mouseout', function(d, i) {
+            dispatch.legendMouseout(d, i);
+          })
+          .on('click', function(d, i) {
+            d3.event.preventDefault();
+            d3.event.stopPropagation();
+            dispatch.legendClick(d, i);
+          });
+      var series = g.selectAll('.sc-series');
+
+      seriesEnter
+        .append('rect')
+          .attr('x', (diameter + textGap) / -2)
+          .attr('y', (diameter + lineSpacing) / -2)
+          .attr('width', diameter + textGap)
+          .attr('height', diameter + lineSpacing)
+          .style('fill', '#FFE')
+          .style('opacity', 0.1);
+
+
+      var circlesEnter = sEnter.selectAll('circle')
+            .data(function(d) { return type === 'line' ? [d, d] : [d]; });
+      circlesEnter.exit().remove();
+      circlesEnter.enter()
+        .append('circle')
+          .attr('r', radius)
+          .attr('stroke', '#fff')
+          .style('stroke-width', 2);
+
+      if (type === 'line') {
+        var lineEnter = sEnter.selectAll('line')
+              .data(function(d) { return [d]; });
+        lineEnter.exit().remove();
+        lineEnter.enter()
+          .append('line')
+            .attr('x0', 0)
+            .attr('y0', 0)
+            .attr('y1', 0)
+            .style('stroke-width', '4px');
+      }
+
+      seriesEnter.append('text')
+        .attr('dy', inline ? '.36em' : '.71em')
+        .attr('dx', 0);
+
+
+      //------------------------------------------------------------
+      // Update legend attributes
 
       clip
         .attr('x', 0.5)
@@ -137,71 +193,20 @@ sucrose.models.legend = function() {
           dispatch.toggleMenu(d, i);
         });
 
-      seriesEnter
-        .on('mouseover', function(d, i) {
-          dispatch.legendMouseover(d, i);  //TODO: Make consistent with other event objects
-        })
-        .on('mouseout', function(d, i) {
-          dispatch.legendMouseout(d, i);
-        })
-        .on('click', function(d, i) {
-          d3.event.preventDefault();
-          d3.event.stopPropagation();
-          dispatch.legendClick(d, i);
-        });
-
-      seriesEnter.append('rect')
-        .attr('x', (diameter + textGap) / -2)
-        .attr('y', (diameter + lineSpacing) / -2)
-        .attr('width', diameter + textGap)
-        .attr('height', diameter + lineSpacing)
-        .style('fill', '#FFE')
-        .style('opacity', 0.1);
-
-      if (type === 'bar') {
-
-        seriesEnter.append('circle')
-          .attr('r', radius)
-          .style('stroke-width', 2);
-
-        seriesEnter.append('text')
-          .attr('dy', inline ? '.36em' : '.71em');
-
-      } else {
-
-        seriesEnter.append('circle')
-          .attr('stroke', '#fff')
-          .style('stroke-width', 2);
-        seriesEnter.append('line')
-          .attr('x0', 0)
-          .attr('y0', 0)
-          .attr('y1', 0)
-          .style('stroke-width', '4px');
-
-        seriesEnter.append('circle')
-          .attr('stroke', '#fff')
-          .style('stroke-width', 2);
-
-        series.select('line')
-          .attr('class', function(d, i) {
-            return classes(d, i);
-          })
-          .attr('stroke', function(d, i) {
-            return color(d, i);
-          });
-
-        seriesEnter.append('text')
-          .attr('dy', inline ? '.36em' : '.71em')
-          .attr('dx', 0);
-
-      }
-
       series.selectAll('circle')
         .attr('class', function(d, i) {
           return classes(d, i);
         })
         .attr('fill', function(d, i) {
           return color(d, i);
+        })
+        .attr('stroke', function(d, i) {
+          return color(d, i);
+        });
+
+      series.select('line')
+        .attr('class', function(d, i) {
+          return classes(d, i);
         })
         .attr('stroke', function(d, i) {
           return color(d, i);

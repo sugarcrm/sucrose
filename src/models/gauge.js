@@ -12,6 +12,7 @@ sucrose.models.gauge = function() {
     , getValues = function(d) { return d.values; }
     , getX = function(d) { return d.key; }
     , getY = function(d) { return d.y; }
+    , locality = sucrose.utils.buildLocality()
     , id = Math.floor(Math.random() * 10000) //Create semi-unique ID in case user doesn't select one
     , labelFormat = d3.format(',g')
     , valueFormat = d3.format(',.f')
@@ -446,6 +447,14 @@ sucrose.models.gauge = function() {
   chart.showPointer = function(_) {
     if (!arguments.length) return showPointer;
     showPointer = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = sucrose.utils.buildLocality(_);
     return chart;
   };
 

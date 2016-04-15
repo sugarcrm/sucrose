@@ -36,13 +36,24 @@ sucrose.models.bubbleChart = function() {
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
+  var xValueFormat = function(d, labels, isDate) {
+          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
+            d : labels[parseInt(d, 10)] || d;
+          return isDate ? sucrose.utils.dateFormat(val, 'MMM', chart.locality()) : val;
+      };
+  var yValueFormat = function(d, labels, isCurrency) {
+          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
+            d : labels[parseInt(d, 10)].key || d;
+          return sucrose.utils.numberFormatSI(val, 2, isCurrency, chart.locality());
+      };
 
   var scatter = sucrose.models.scatter()
         .padData(true)
@@ -52,16 +63,15 @@ sucrose.models.bubbleChart = function() {
         .singlePoint(true),
       xAxis = sucrose.models.axis()
         .orient('bottom')
+        .valueFormat(xValueFormat)
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
         .showMaxMin(false)
-        .ticks(d3.time.months, 1)
-        .tickFormat(function(d) {
-          return d3.time.format('%b')(new Date(d));
-        }),
+        .ticks(d3.time.months, 1),
       yAxis = sucrose.models.axis()
         .orient('left')
+        .valueFormat(yValueFormat)
         .tickPadding(7)
         .highlightZero(false)
         .showMaxMin(false),
@@ -95,7 +105,9 @@ sucrose.models.bubbleChart = function() {
           timeExtent,
           xD,
           yD,
-          yValues;
+          yValues,
+          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
       chart.container = this;
 
@@ -432,7 +444,8 @@ sucrose.models.bubbleChart = function() {
         yAxis
           .margin(innerMargin)
           .tickFormat(function(d, i) {
-            return sucrose.utils.stringEllipsify(yValues[i].key, container, Math.max(availableWidth * 0.2, 75));
+            var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
+            return sucrose.utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
           });
         yAxisWrap
           .call(yAxis);
@@ -444,7 +457,10 @@ sucrose.models.bubbleChart = function() {
         // X-Axis
         xAxis
           .tickSize(0)
-          .margin(innerMargin);
+          .margin(innerMargin)
+          .tickFormat(function(d) {
+            return xAxis.valueFormat()(d, null, xIsDatetime);
+          });
         xAxisWrap
           .call(xAxis);
         // reset inner dimensions
@@ -584,7 +600,7 @@ sucrose.models.bubbleChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  d3.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient');
+  d3.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
   d3.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
   d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 

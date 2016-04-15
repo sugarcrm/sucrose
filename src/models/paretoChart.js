@@ -9,6 +9,7 @@ sucrose.models.paretoChart = function() {
         height = null,
         getX = function(d) { return d.x; },
         getY = function(d) { return d.y; },
+        locality = sucrose.utils.buildLocality(),
         showTitle = false,
         showLegend = true,
         tooltip = null,
@@ -25,21 +26,29 @@ sucrose.models.paretoChart = function() {
         tooltipQuota = function(key, x, y, e, graph) {
             return '<p>' + e.key + ': <b>' + y + '</b></p>';
         },
-        yAxisTickFormat = sucrose.utils.numberFormatSI,
-        quotaTickFormat = sucrose.utils.numberFormatSI,
         x,
         y,
         strings = {
             barlegend: {close: 'Hide bar legend', open: 'Show bar legend'},
             linelegend: {close: 'Hide line legend', open: 'Show line legend'},
             controls: {close: 'Hide controls', open: 'Show controls'},
-            noData: 'No Data Available.'
+            noData: 'No Data Available.',
+            noLabel: 'undefined'
         },
         dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove');
 
     //============================================================
     // Private Variables
     //------------------------------------------------------------
+
+    var xValueFormat = function(d, labels, isDate) {
+            var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
+                d : labels[parseInt(d, 10)] || d;
+            return isDate ? sucrose.utils.dateFormat(val, 'yMMMM', chart.locality()) : val;
+        };
+    var yValueFormat = function(d, isCurrency) {
+            return sucrose.utils.numberFormatSI(d, 2, isCurrency, chart.locality());
+        };
 
     var multibar = sucrose.models.multiBar()
             .stacked(true)
@@ -56,14 +65,15 @@ sucrose.models.paretoChart = function() {
             .color('data')
             .nice(false),
         xAxis = sucrose.models.axis()
+            .valueFormat(xValueFormat)
             .orient('bottom')
             .tickSize(0)
             .tickPadding(4)
             .wrapTicks(true)
             .highlightZero(false)
-            .showMaxMin(false)
-            .tickFormat(function(d) { return d; }),
+            .showMaxMin(false),
         yAxis = sucrose.models.axis()
+            .valueFormat(yValueFormat)
             .orient('left')
             .tickPadding(7)
             .showMaxMin(true),
@@ -77,16 +87,13 @@ sucrose.models.paretoChart = function() {
     var showTooltip = function(eo, offsetElement, dataGroup) {
         var key = eo.series.key,
             per = (eo.point.y * 100 / dataGroup[eo.pointIndex].t).toFixed(1),
-            amt = yAxis.tickFormat()(lines2.y()(eo.point, eo.pointIndex)),
+            amt = lines2.y()(eo.point, eo.pointIndex),
             content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
-
         tooltip = sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
     };
 
     var showQuotaTooltip = function(eo, offsetElement) {
-        var amt = d3.format(',.2s')(eo.val),
-            content = tooltipQuota(eo.key, 0, amt, eo, chart);
-
+        var content = tooltipQuota(eo.key, 0, eo.val, eo, chart);
         tooltip = sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
     };
 
@@ -123,7 +130,9 @@ sucrose.models.paretoChart = function() {
                 maxBarLegendWidth = 0,
                 maxLineLegendWidth = 0,
                 widthRatio = 0,
-                pointSize = Math.pow(6, 2) * Math.PI; // set default point size to 6
+                pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
+                xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+                yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
             chart.update = function() {
                 container.call(chart);
@@ -229,6 +238,9 @@ sucrose.models.paretoChart = function() {
                 });
 
             var dataGroup = properties.groupData,
+                groupLabels = dataGroup.map(function(d) {
+                  return [].concat(d.l)[0] || chart.strings().noLabel;
+                }),
                 quotaValue = properties.quota || 0,
                 quotaLabel = properties.quotaLabel || '',
                 targetQuotaValue = properties.targetQuota || 0,
@@ -279,17 +291,20 @@ sucrose.models.paretoChart = function() {
             y = multibar.yScale();
 
             xAxis
+                .tickFormat(function(d, i, noEllipsis) {
+                  // Set xAxis to use trimmed array rather than data
+                  var label = xAxis.valueFormat()(i, groupLabels, xIsDatetime);
+                  if (!noEllipsis) {
+                    label = sucrose.utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
+                  }
+                  return label;
+                })
                 .scale(x);
             yAxis
-                .scale(y)
-                .tickFormat(yAxisTickFormat);
-
-            if (dataGroup.length) {
-                xAxis
-                    .tickFormat(function(d, i) {
-                        return dataGroup[i] ? dataGroup[i].l : 'undefined';
-                    });
-            }
+                .tickFormat(function(d, i) {
+                  return yAxis.valueFormat()(d, yIsCurrency);
+                })
+                .scale(y);
 
             //------------------------------------------------------------
             // Setup containers and skeleton of chart
@@ -487,7 +502,7 @@ sucrose.models.paretoChart = function() {
 
                 // Target Quota line label
                 yAxisWrap.append('text')
-                    .text(chart.quotaTickFormat()(targetQuotaValue))
+                    .text(yAxis.valueFormat()(targetQuotaValue, true))
                     .attr('class', 'sc-targetQuotaValue')
                     .attr('dy', '.36em')
                     .attr('dx', '0')
@@ -518,7 +533,7 @@ sucrose.models.paretoChart = function() {
 
                 // Quota line label
                 yAxisWrap.append('text')
-                    .text(chart.quotaTickFormat()(quotaValue))
+                    .text(yAxis.valueFormat()(quotaValue, true))
                     .attr('class', 'sc-quotaValue')
                     .attr('dy', '.36em')
                     .attr('dx', '0')
@@ -993,22 +1008,6 @@ sucrose.models.paretoChart = function() {
         return chart;
     };
 
-    chart.yAxisTickFormat = function(_) {
-        if (!arguments.length) {
-            return yAxisTickFormat;
-        }
-        yAxisTickFormat = _;
-        return chart;
-    };
-
-    chart.quotaTickFormat = function(_) {
-        if (!arguments.length) {
-            return quotaTickFormat;
-        }
-        quotaTickFormat = _;
-        return chart;
-    };
-
     chart.strings = function(_) {
         if (!arguments.length) {
             return strings;
@@ -1033,6 +1032,15 @@ sucrose.models.paretoChart = function() {
         return chart;
     };
 
+    chart.locality = function(_) {
+        if (!arguments.length) {
+            return locality;
+        }
+        locality = sucrose.utils.buildLocality(_);
+        multibar.locality(_);
+        lines1.locality(_);
+        return chart;
+    };
     //============================================================
 
     return chart;

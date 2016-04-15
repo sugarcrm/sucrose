@@ -15,6 +15,7 @@ sucrose.models.funnel = function() {
       getY = function(d) { return d.y; },
       getH = function(d) { return d.height; },
       getV = function(d) { return d.value; },
+      locality = sucrose.utils.buildLocality(),
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
       clipEdge = true,
       yDomain,
@@ -22,7 +23,9 @@ sucrose.models.funnel = function() {
       wrapLabels = true,
       minLabelWidth = 75,
       durationMs = 0,
-      fmtValueLabel = function(d) { return d.label || d.value || d; },
+      fmtKey = function(d) { return d; },
+      fmtValue = function(d) { return d; },
+      fmtCount = function(d) { return (' (' + d + ')').replace(' ()', ''); },
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
       textureFill = false,
@@ -55,21 +58,13 @@ sucrose.models.funnel = function() {
           funnelOffset = 0;
 
       // Add series index to each data point for reference
-      data.map(function(series, i) {
-        series.values = series.values.map(function(point) {
+      data.forEach(function(series, i) {
+        series.values.forEach(function(point) {
+          //reset point index because raw data
+          //may have disabled series
           point.index = i;
-          if (typeof point.series === 'undefined') {
-            point.series = i;
-          }
-          // if value is undefined, not a legitimate 0 value, use point.y
-          if (typeof point.value == 'undefined') {
-            point.value = getY(point);
-          }
-          // count total of funnel
           funnelTotal += parseFloat(point.value);
-          return point;
         });
-        return series;
       });
 
       //------------------------------------------------------------
@@ -168,10 +163,34 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      var groups = wrap.select('.sc-groups').selectAll('.sc-group')
-            .data(function(d) { return d; }, function(d) { return d.key; });
+      var groupsEnter = wrap.select('.sc-groups').selectAll('.sc-group')
+            .data(data, function(d) { return d.series; });
 
-      groups.enter().append('g')
+      groupsEnter.exit().transition().duration(durationMs)
+        .selectAll('g.sc-slice')
+        .delay(function(d, i) { return i * delay / data[0].values.length; })
+          .attr('points', function(d) {
+            return pointsTrapezoid(d, 0, calculatedWidth);
+          })
+          .style('stroke-opacity', 1e-6)
+          .style('fill-opacity', 1e-6)
+          .remove();
+
+      groupsEnter.exit().transition().duration(durationMs)
+        .selectAll('g.sc-label-value')
+        .delay(function(d, i) { return i * delay / data[0].values.length; })
+          .attr('y', 0)
+          .attr('transform', 'translate(' + calculatedCenter + ',0)')
+          .style('stroke-opacity', 1e-6)
+          .style('fill-opacity', 1e-6)
+          .remove();
+
+      groupsEnter.exit().remove();
+      groupsEnter.enter().append('g').attr('class', 'sc-group');
+
+      var groups = wrap.select('.sc-groups').selectAll('.sc-group');
+
+      groups
         .style('stroke-opacity', 1e-6)
         .style('fill-opacity', 1e-6);
 
@@ -187,53 +206,35 @@ sucrose.models.funnel = function() {
           .style('stroke-opacity', 1)
           .style('fill-opacity', 1);
 
-      groups.exit().transition().duration(durationMs)
-        .selectAll('g.sc-slice')
-        .delay(function(d, i) { return i * delay / data[0].values.length; })
-          .attr('points', function(d) {
-            return pointsTrapezoid(d, 0, calculatedWidth);
-          })
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6)
-          .remove();
-
-      groups.exit().transition().duration(durationMs)
-        .selectAll('g.sc-label-value')
-        .delay(function(d, i) { return i * delay / data[0].values.length; })
-          .attr('y', 0)
-          .attr('transform', 'translate(' + calculatedCenter + ',0)')
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6)
-          .remove();
 
       //------------------------------------------------------------
       // Append polygons for funnel
 
-      var funs = groups.selectAll('g.sc-slice')
-            .data(function(d) {
-              return d.values;
-            });
-      var funsEnter = funs.enter().append('g').attr('class', 'sc-slice');
+      var sliceJoin = groupsEnter.selectAll('g.sc-slice')
+            .data(function(d) { return d.values; }, function(d) { return d.series; });
+      sliceJoin.exit().remove();
+      var sliceEnter = sliceJoin.enter().append('g').attr('class', 'sc-slice');
+      var slices = groups.selectAll('g.sc-slice');
 
-      funs.exit().remove();
-
-      funsEnter.append('polygon')
-        .attr('class', 'sc-base')
+      sliceEnter.append('polygon')
+        .attr('class', 'sc-base');
+      slices.selectAll('.sc-base')
         .attr('points', function(d) {
           return pointsTrapezoid(d, 0, calculatedWidth);
         });
 
       if (textureFill) {
         // For on click active bars
-        funsEnter.append('polygon')
-          .attr('class', 'sc-texture')
+        sliceEnter.append('polygon')
+          .attr('class', 'sc-texture');
+        slices.selectAll('.sc-texture')
           .attr('points', function(d) {
             return pointsTrapezoid(d, 0, calculatedWidth);
           })
           .style('mask', 'url(' + mask + ')');
       }
 
-      funs
+      slices
         .on('mouseover', function(d, i) {
           d3.select(this).classed('hover', true);
           var eo = buildEventObject(d3.event, d, i);
@@ -273,13 +274,14 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append containers for labels
 
-      var labels = groups.selectAll('.sc-label-value')
-            .data(function(d) { return d.values; });
+      var labelsEnter = groupsEnter.selectAll('.sc-label-value')
+            .data(function(d) { return d.values; }, function(d) { return d.series; });
+      labelsEnter.exit().remove();
+      labelsEnter.enter().append('g').attr('class', 'sc-label-value');
+      var labels = groups.selectAll('g.sc-label-value');
 
-      labels.enter()
-        .append('g')
-          .attr('class', 'sc-label-value')
-          .attr('transform', 'translate(' + calculatedCenter + ',0)');
+      labels
+        .attr('transform', 'translate(' + calculatedCenter + ',0)');
 
       var sideLabels = labels.filter('.sc-label-side');
 
@@ -292,8 +294,7 @@ sucrose.models.funnel = function() {
         labels.selectAll('rect').remove();
         labels.selectAll('text').remove();
 
-        labels
-          .append('rect')
+        labels.append('rect')
           .attr('class', 'sc-label-box')
           .attr('x', 0)
           .attr('y', 0)
@@ -307,7 +308,9 @@ sucrose.models.funnel = function() {
 
         // Append label text and wrap if needed
         labels.append('text')
-          .text(fmtKey)
+          .text(function(d) {
+            return fmtKey(data[d.index].key);
+          })
             .call(fmtLabel, 'sc-label', 0.85, 'middle', fmtFill);
 
         labels.select('.sc-label')
@@ -322,12 +325,16 @@ sucrose.models.funnel = function() {
 
         // Append value and count text
         labels.append('text')
-          .text(fmtValueLabel)
+          .text(function(d) {
+            return fmtValue(d.value || d.label || d);
+          })
             .call(fmtLabel, 'sc-value', 0.85, 'middle', fmtFill);
 
         labels.select('.sc-value')
           .append('tspan')
-            .text(fmtCount);
+            .text(function(d) {
+              return fmtCount(data[d.index].count);
+            });
 
         labels
           .call(positionValue);
@@ -355,7 +362,9 @@ sucrose.models.funnel = function() {
 
         // Position side labels
         sideLabels.append('text')
-          .text(fmtKey)
+          .text(function(d) {
+            return fmtKey(data[d.index].key);
+          })
             .call(fmtLabel, 'sc-label', 0.85, 'start', '#555');
 
         sideLabels.select('.sc-label')
@@ -458,13 +467,13 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Reposition responsive elements
 
-      funs.selectAll('polygon')
+      slices.selectAll('polygon')
         .attr('points', function(d) {
           return pointsTrapezoid(d, 1, calculatedWidth);
         });
 
       if (textureFill) {
-        funs.select('.sc-texture')
+        slices.selectAll('.sc-texture')
           .style('fill', fmtFill);
       }
 
@@ -743,15 +752,6 @@ sucrose.models.funnel = function() {
         return sucrose.utils.getTextContrast(backColor, i);
       }
 
-      function fmtKey(d) {
-        return data[d.index].key;
-      }
-
-      function fmtCount(d) {
-        var i = data[d.index].count;
-        return i ? ' (' + i + ')' : '';
-      }
-
       function fmtDirection(d) {
         var m = sucrose.utils.isRTLChar(d.slice(-1)),
             dir = m ? 'rtl' : 'ltr';
@@ -901,9 +901,21 @@ sucrose.models.funnel = function() {
     return chart;
   };
 
-  chart.fmtValueLabel = function(_) {
-    if (!arguments.length) return fmtValueLabel;
-    fmtValueLabel = d3.functor(_);
+  chart.fmtKey = function(_) {
+    if (!arguments.length) return fmtKey;
+    fmtKey = _;
+    return chart;
+  };
+
+  chart.fmtValue = function(_) {
+    if (!arguments.length) return fmtValue;
+    fmtValue = _;
+    return chart;
+  };
+
+  chart.fmtCount = function(_) {
+    if (!arguments.length) return fmtCount;
+    fmtCount = _;
     return chart;
   };
 
@@ -922,6 +934,14 @@ sucrose.models.funnel = function() {
   chart.textureFill = function(_) {
     if (!arguments.length) return textureFill;
     textureFill = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = sucrose.utils.buildLocality(_);
     return chart;
   };
 

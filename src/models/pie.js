@@ -7,12 +7,14 @@ sucrose.models.pie = function() {
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = 500,
       height = 500,
+      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getValues = function(d) { return d; },
       getX = function(d) { return d.key; },
       getY = function(d) { return d.value; },
+      locality = sucrose.utils.buildLocality(),
       getDescription = function(d) { return d.description; },
-      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      valueFormat = sucrose.utils.numberFormatSI,
+      valueFormat = function(d) { return d.data ? getY(d.data) : d; },
+      labelFormat = function(d) { return d.data ? getX(d.data) : d; },
       showLabels = true,
       showLeaders = true,
       pieLabelsOutside = true,
@@ -51,7 +53,7 @@ sucrose.models.pie = function() {
       direction = 'ltr',
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
-      textureFill = true,
+      textureFill = false,
       classes = function(d, i) { return 'sc-slice sc-series-' + d.series; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
@@ -76,9 +78,10 @@ sucrose.models.pie = function() {
           doLabels = showLabels && pieLabelsOutside ? true : false;
       if (doLabels) {
         labelLengths = sucrose.utils.stringSetLengths(
-            data.map(function(d) { return d.key; }),
+            data.map(getX),
             container,
-            function(d) { return d; }
+            labelFormat,
+            'sc-label'
           );
       }
 
@@ -317,7 +320,7 @@ sucrose.models.pie = function() {
 
         slices.select('.sc-label text')
           .text(function(d) {
-            return labelOpacity(d) ? getX(d.data) : '';
+            return labelFormat(d);
           })
           .attr('dy', '.35em')
           .style('fill', '#555')
@@ -342,9 +345,8 @@ sucrose.models.pie = function() {
                   sin = Math.abs(Math.sin(theta)),
                   bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
                   rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
-
               if (rW < 0) {
-                var label = sucrose.utils.stringEllipsify(d.data.key, container, labelLengths[i] + rW);
+                var label = sucrose.utils.stringEllipsify(labelFormat(d), container, labelLengths[i] + rW);
                 d3.select(this).select('text').text(label);
               }
             }
@@ -403,8 +405,8 @@ sucrose.models.pie = function() {
 
       function buildEventObject(e, d, i) {
         return {
-            label: getX(d.data),
-            value: getY(d.data),
+            label: labelFormat(d),
+            value: valueFormat(d),
             point: d.data,
             pointIndex: i,
             id: id,
@@ -772,6 +774,14 @@ sucrose.models.pie = function() {
     return chart;
   };
 
+  chart.labelFormat = function(_) {
+    if (!arguments.length) {
+      return labelFormat;
+    }
+    labelFormat = _;
+    return chart;
+  };
+
   chart.labelThreshold = function(_) {
     if (!arguments.length) {
       return labelThreshold;
@@ -831,6 +841,14 @@ sucrose.models.pie = function() {
   chart.textureFill = function(_) {
     if (!arguments.length) return textureFill;
     textureFill = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = sucrose.utils.buildLocality(_);
     return chart;
   };
 

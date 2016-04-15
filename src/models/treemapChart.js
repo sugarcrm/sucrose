@@ -26,7 +26,8 @@ sucrose.models.treemapChart = function() {
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
 

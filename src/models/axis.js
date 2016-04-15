@@ -17,6 +17,7 @@ sucrose.models.axis = function() {
       hasRangeBand = false,
       textAnchor = null,
       ticks = null,
+      valueFormat = function(d) { return d; },
       axisLabelDistance = 8; //The larger this number is, the closer the axis label is to the axis.
 
   // Public Read-only Variables
@@ -27,7 +28,7 @@ sucrose.models.axis = function() {
   var axis = d3.svg.axisStatic()
         .scale(scale)
         .orient('bottom')
-        .tickFormat(function(d) { return d; });
+        .tickFormat(function(d) { return valueFormat(d); });
 
   // Private Variables
   //------------------------------------------------------------
@@ -49,7 +50,6 @@ sucrose.models.axis = function() {
 
       var vertical = axis.orient() === 'left' || axis.orient() === 'right' ? true : false,
           reflect = axis.orient() === 'left' || axis.orient() === 'top' ? -1 : 1,
-          fmt = axis.tickFormat(),
           maxLabelWidth = 0,
           maxLabelHeight = 0,
           tickGap = 6,
@@ -84,10 +84,6 @@ sucrose.models.axis = function() {
         showMaxMin = false;
       }
 
-      if (fmt === null) {
-        fmt = scale0.tickFormat();
-      }
-
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
@@ -115,8 +111,7 @@ sucrose.models.axis = function() {
       if (showMaxMin) {
         axisMaxMin.select('text')
           .text(function(d, i) {
-            var v = fmt(d, i, false);
-            return ('' + v).match('NaN') ? '' : v;
+            return axis.tickFormat()(d, i, false);
           });
       }
 
@@ -432,7 +427,8 @@ sucrose.models.axis = function() {
               isMax = dMax === null || d.right >= dMax,
               textWidth = 0,
               tickPosition = 0,
-              availableSpace = 0;
+              availableSpace = 0,
+              textWidth = 0;
 
           if (!isMin && !isMax) {
             return;
@@ -500,9 +496,10 @@ sucrose.models.axis = function() {
         tickSpacing = getTickSpacing();
 
         tickText.each(function(d, i) {
-          var textContent = fmt(d, i, true),
+          var textContent = axis.tickFormat()(d, i, true),
               textNode = d3.select(this),
-              textArray = textContent && textContent !== '' ? textContent.replace('/', '/ ').split(' ') : [],
+              isDate = sucrose.utils.isValidDate(textContent),
+              textArray = (textContent && textContent !== '' ? isDate ? textContent : textContent.replace('/', '/ ') : []).split(' '),
               i = 0,
               l = textArray.length,
               dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
@@ -636,6 +633,14 @@ sucrose.models.axis = function() {
       return ticks;
     }
     ticks = _;
+    return chart;
+  };
+
+  chart.valueFormat = function(_) {
+    if (!arguments.length) {
+      return valueFormat;
+    }
+    valueFormat = _;
     return chart;
   };
 

@@ -21,7 +21,8 @@ sucrose.models.gaugeChart = function() {
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove');
 
@@ -248,7 +249,7 @@ sucrose.models.gaugeChart = function() {
   chart.gauge = gauge;
   chart.legend = legend;
 
-  d3.rebind(chart, gauge, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient');
+  d3.rebind(chart, gauge, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
   d3.rebind(chart, gauge, 'valueFormat', 'values', 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue', 'transitionMs');
 
   chart.colorData = function(_) {

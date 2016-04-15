@@ -21,7 +21,8 @@ sucrose.models.pieChart = function() {
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
@@ -33,10 +34,10 @@ sucrose.models.pieChart = function() {
       legend = sucrose.models.legend()
         .align('center');
 
-  var showTooltip = function(eo, offsetElement, total) {
+  var showTooltip = function(eo, offsetElement, properties) {
     var key = eo.point.key,
-        x = (pie.y()(eo.point) * 100 / total).toFixed(1),
-        y = pie.valueFormat()(pie.y()(eo.point)),
+        x = properties.total ? (pie.y()(eo.point) * 100 / properties.total).toFixed(1) : 100,
+        y = pie.y()(eo.point),
         content = tooltipContent(key, x, y, eo, chart);
 
     tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
@@ -109,8 +110,12 @@ sucrose.models.pieChart = function() {
       //add series index to each data point for reference
       var pieData = data.map(function(d, i) {
             d.series = i;
-            if (!d.value) {
+            if (!d.value && !d.values) {
+              d.value = 0;
               d.disabled = true;
+            } else {
+              d.value = d.value || d3.sum(d.values, function(d) { return d.y || d; });
+              d.disabled = d.disabled || d.value === 0;
             }
             return d;
           });
@@ -125,6 +130,8 @@ sucrose.models.pieChart = function() {
                 return d.value;
               })
           );
+
+      properties.total = totalAmount;
 
       //set state.disabled
       state.disabled = pieData.map(function(d) { return !!d.disabled; });
@@ -282,7 +289,7 @@ sucrose.models.pieChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          showTooltip(eo, that.parentNode, total);
+          showTooltip(eo, that.parentNode, properties);
         }
       });
 
@@ -351,8 +358,8 @@ sucrose.models.pieChart = function() {
   chart.pie = pie;
   chart.legend = legend;
 
-  d3.rebind(chart, pie, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient');
-  d3.rebind(chart, pie, 'valueFormat', 'values', 'description', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
+  d3.rebind(chart, pie, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
+  d3.rebind(chart, pie, 'valueFormat', 'labelFormat', 'values', 'description', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
   d3.rebind(chart, pie, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 
   chart.colorData = function(_) {

@@ -20,7 +20,8 @@ sucrose.models.lineChart = function() {
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       pointRadius = 3,
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
@@ -29,18 +30,27 @@ sucrose.models.lineChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
+  var xValueFormat = function(d, labels, isDate) {
+          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
+            d : labels[parseInt(d, 10)] || d;
+          return isDate ? sucrose.utils.dateFormat(val, 'yMMMM', chart.locality()) : val;
+        };
+  var yValueFormat = function(d, isCurrency) {
+          return sucrose.utils.numberFormatSI(d, 2, isCurrency, chart.locality());
+        };
+
   var lines = sucrose.models.line()
         .clipEdge(true),
       xAxis = sucrose.models.axis()
         .orient('bottom')
+        .valueFormat(xValueFormat)
         .tickPadding(4)
         .highlightZero(false)
-        .showMaxMin(false)
-        .tickFormat(function(d) { return d; }),
+        .showMaxMin(false),
       yAxis = sucrose.models.axis()
         .orient('left')
-        .tickPadding(4)
-        .tickFormat(sucrose.utils.numberFormatSI),
+        .valueFormat(yValueFormat)
+        .tickPadding(4),
       legend = sucrose.models.legend()
         .align('right'),
       controls = sucrose.models.legend()
@@ -54,7 +64,7 @@ sucrose.models.lineChart = function() {
 
   var showTooltip = function(eo, offsetElement) {
     var key = eo.series.key,
-        x = xAxis.tickFormat()(lines.x()(eo.point, eo.pointIndex)),
+        x = lines.x()(eo.point, eo.pointIndex),
         y = lines.y()(eo.point, eo.pointIndex),
         content = tooltipContent(key, x, y, eo, chart);
 
@@ -74,11 +84,14 @@ sucrose.models.lineChart = function() {
           data = chartData ? chartData.data : null,
           labels = properties.labels ? properties.labels.map(function(d) { return d.l || d; }) : [];
 
-      var lineData,
+      var lineData = [],
+          xTickLabels = [],
           totalAmount = 0,
           singlePoint = false,
-          isTimeSeries = false,
-          showMaxMin = false;
+          showMaxMin = false,
+          isArrayData = true,
+          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
       chart.container = this;
 
@@ -124,6 +137,15 @@ sucrose.models.lineChart = function() {
       //------------------------------------------------------------
       // Process data
 
+      isArrayData = Array.isArray(data[0].values[0]);
+      if (isArrayData) {
+        lines.x(function(d) { return d[0]; });
+        lines.y(function(d) { return d[1]; });
+      } else {
+        lines.x(function(d) { return d.x; });
+        lines.y(function(d) { return d.y; });
+      }
+
       // set title display option
       showTitle = showTitle && properties.title;
 
@@ -139,9 +161,18 @@ sucrose.models.lineChart = function() {
         }
       });
 
-      isTimeSeries = data[0].values.length && data[0].values[0] instanceof Array && sucrose.utils.isValidDate(data[0].values[0][0]);
+      xTickLabels = properties.labels ?
+          properties.labels.map(function(d) { return [].concat(d.l)[0] || chart.strings().noLabel; }) :
+          [];
+
+      // TODO: what if the dimension is a numerical range?
+      // xValuesAreDates = xTickLabels.length ?
+      //       sucrose.utils.isValidDate(xTickLabels[0]) :
+      //       sucrose.utils.isValidDate(lines.x()(data[0].values[0]));
+      // xValuesAreDates = isArrayData && sucrose.utils.isValidDate(data[0].values[0][0]);
+
       // SAVE FOR LATER
-      // isOrdinalSeries = !isTimeSeries && labels.length > 0 && d3.min(lineData, function(d) {
+      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(lineData, function(d) {
       //   return d3.min(d.values, function(d, i) {
       //     return lines.x()(d, i);
       //   });
@@ -188,14 +219,12 @@ sucrose.models.lineChart = function() {
           return d.values.length;
         }) === 1;
 
-      showMaxMin = isTimeSeries || sucrose.utils.isValidDate(labels[0]) ? true : false;
-
       lines
         .padData(singlePoint ? false : true)
         .padDataOuter(-1)
         .singlePoint(singlePoint)
         // set x-scale as time instead of linear
-        .xScale(isTimeSeries ? d3.time.scale() : d3.scale.linear());
+        .xScale(xIsDatetime && !xTickLabels.length ? d3.time.scale() : d3.scale.linear());
 
       if (singlePoint) {
 
@@ -212,7 +241,7 @@ sucrose.models.lineChart = function() {
                 return a - b;
               }),
             xExtents = d3.extent(xValues),
-            xOffset = 1 * (isTimeSeries ? 86400000 : 1);
+            xOffset = 1 * (xIsDatetime && !xTickLabels.length ? 86400000 : 1);
 
         var yValues = d3.merge(lineData.map(function(d) {
                 return d.values.map(function(d, i) {
@@ -249,7 +278,7 @@ sucrose.models.lineChart = function() {
         xAxis
           .ticks(null)
           .tickValues(null)
-          .showMaxMin(showMaxMin);
+          .showMaxMin(xIsDatetime);
         yAxis
           .ticks(null)
           .showMaxMin(true)
@@ -448,7 +477,10 @@ sucrose.models.lineChart = function() {
 
         // Y-Axis
         yAxis
-          .margin(innerMargin);
+          .margin(innerMargin)
+          .tickFormat(function(d, i) {
+            return yAxis.valueFormat()(d, yIsCurrency);
+          });
         yAxisWrap
           .call(yAxis);
         // reset inner dimensions
@@ -464,7 +496,11 @@ sucrose.models.lineChart = function() {
         // resize ticks based on new dimensions
         xAxis
           .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
-          .margin(innerMargin);
+          .margin(innerMargin)
+          .tickFormat(function(d, i, noEllipsis) {
+            return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
+          });
+
         xAxisWrap
           .call(xAxis);
         xAxisMargin = xAxis.margin();
@@ -655,7 +691,7 @@ sucrose.models.lineChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  d3.rebind(chart, lines, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient');
+  d3.rebind(chart, lines, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   d3.rebind(chart, lines, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
   d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 

@@ -22,7 +22,8 @@ sucrose.models.multiBarChart = function() {
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       hideEmptyGroups = true,
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
@@ -35,17 +36,27 @@ sucrose.models.multiBarChart = function() {
   var useScroll = false,
       scrollOffset = 0;
 
+  var xValueFormat = function(d, labels, isDate) {
+          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
+            d : labels[parseInt(d, 10)] || d;
+          return isDate ? sucrose.utils.dateFormat(val, '%x', chart.locality()) : val;
+        };
+  var yValueFormat = function(d, isCurrency) {
+          return sucrose.utils.numberFormatSI(d, 2, isCurrency, chart.locality());
+        };
+
   var multibar = sucrose.models.multiBar()
-        .stacked(false),
+        .stacked(false)
+        .clipEdge(false),
       xAxis = sucrose.models.axis()
+        .valueFormat(xValueFormat)
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
-        .showMaxMin(false)
-        .tickFormat(function(d) { return d; }),
+        .showMaxMin(false),
       yAxis = sucrose.models.axis()
-        .tickPadding(4)
-        .tickFormat(multibar.valueFormat()),
+        .valueFormat(yValueFormat)
+        .tickPadding(4),
       legend = sucrose.models.legend(),
       controls = sucrose.models.legend()
         .color(['#444']),
@@ -56,12 +67,12 @@ sucrose.models.multiBarChart = function() {
            '<p>' + y + ' on ' + x + '</p>';
   };
 
-  var showTooltip = function(eo, offsetElement, groupTotals) {
+  var showTooltip = function(eo, offsetElement, groupData) {
     var key = eo.series.key,
-        x = (groupTotals) ?
-              (eo.point.y * 100 / groupTotals[eo.pointIndex].t).toFixed(1) :
-              xAxis.tickFormat()(multibar.x()(eo.point, eo.pointIndex)),
-        y = multibar.y()(eo.point, eo.pointIndex),
+        y = eo.point.y,
+        x = (groupData) ?
+              Math.abs(y * 100 / groupData[eo.groupIndex]._height).toFixed(1) :
+              xAxis.tickFormat()(eo.point.x),
         content = tooltipContent(key, x, y, eo, chart),
         gravity = eo.value < 0 ?
           vertical ? 'n' : 'e' :
@@ -87,12 +98,15 @@ sucrose.models.multiBarChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
-      var dataBars = [],
-          groupLabels = [],
-          groupTotals = [],
-          totalAmount = 0,
+      var seriesData = [],
           seriesCount = 0,
-          groupCount = 0;
+          groupData = [],
+          groupLabels = [].
+          groupCount = 0,
+          totalAmount = 0,
+          hasData = false,
+          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
       chart.container = this;
 
@@ -103,7 +117,7 @@ sucrose.models.multiBarChart = function() {
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
-      function displayNoData(d) {
+      function displayNoData (d) {
         if (d && d.length && d.filter(function(d) { return d.values.length; }).length) {
           container.selectAll('.sc-noData').remove();
           return false;
@@ -179,109 +193,114 @@ sucrose.models.multiBarChart = function() {
 
       // add series index to each data point for reference
       // and disable data series if total is zero
-      data
-        .map(function(d, i) {
-          d.series = i;
-          d.total = d3.sum(d.values, function(d) {
-            return d.y;
-          });
-          if (!d.total) {
-            d.disabled = true;
-          }
-          //make sure untrimmed values array exists
-          if (hideEmptyGroups && !d._values) {
-            d._values = d.values;
-          }
-          d.values
-            .map(function(m, j) {
-              m.series = d.series;
-              if (d.color) {
-                m.color = d.color;
-              }
-              m.active = typeof d.active !== 'undefined' ? d.active : ''; // do not eval d.active because it can be false
-            });
+      data.forEach(function(series, s) {
+        // make sure untrimmed values array exists
+        // and set unmutable series values
+        series.series = s;
+        series.values.forEach(function(value, v) {
+          value.series = s;
+
         });
+        if (!series._values) {
+          series._values = series.values.map(function(value, v) {
+            return {
+                  'series': series.series,
+                  'group': v,
+                  'color': typeof series.color !== 'undefined' ? series.color : '',
+                  'x': multibar.x()(value, v),
+                  'y': multibar.y()(value, v)
+                };
+          });
+          series.total = d3.sum(series._values, function(value, v) {
+              return value.y;
+            });
+        }
+        // disabled if all values in series are zero
+        // or the series was disabled by the legend
+        series.disabled = series.disabled || series.total === 0;
+        // inherit values from series
+        series._values.forEach(function(value, v) {
+          // do not eval d.active because it can be false
+          value.active = typeof series.active !== 'undefined' ? series.active : '';
+        });
+      });
+
+      seriesData = data.filter(function(series, s) {
+          return !series.disabled && (!series.type || series.type === 'bar');
+        });
+
+      seriesCount = seriesData.length;
+      // hasData = data.filter(function(series) {return !d.disabled}).length > 0;
+      hasData = seriesCount > 0;
 
       // update groupTotal amounts based on enabled data series
-      groupTotals = properties.values
-        .map(function(d, i) {
-          d.h = 0;
-          d.t = d3.sum(
-            // only sum enabled series
-            data
-              .map(function(m, j) {
-                if (m.disabled) {
-                  return 0;
-                }
-                return (hideEmptyGroups ? m._values : m.values)
-                  .filter(function(v, k) {
-                    return multibar.x()(v, k) === d.group;
-                  })
-                  .map(function(v, k) {
-                    d.h += Math.abs(multibar.y()(v, k));
-                    return multibar.y()(v, k);
-                  });
+      groupData = properties.groups.map(function(group, g) {
+          group.total = 0;
+          group._height = 0;
+          // only sum enabled series
+          seriesData.forEach(function(series, s) {
+            series._values
+              .filter(function(value, v) {
+                return value.group === g;
               })
-          );
-          return d;
+              .forEach(function(value, v) {
+                group.total += value.y;
+                group._height += Math.abs(value.y);
+              });
+          });
+          return group;
         });
 
-      totalAmount = d3.sum(groupTotals, function(d) { return d.t; });
+      totalAmount = d3.sum(groupData, function(group) { return group.total; });
 
       // build a trimmed array for active group only labels
-      groupLabels = properties.labels
-        .filter(function(d, i) {
-          return hideEmptyGroups ? groupTotals[i].h !== 0 : true;
+      groupLabels = groupData
+        .filter(function(group, g) {
+          return hideEmptyGroups ? group._height !== 0 : true;
         })
-        .map(function(d) {
-          return [].concat(d.l)[0];
+        .map(function(group) {
+          return group.label || chart.strings().noLabel;
         });
+      // xValuesAreDates = groupLabels.length ?
+      //     groupLabels.reduce(function(p, c) { return p && sucrose.utils.isValidDate(c); }, true) : false;
 
       groupCount = groupLabels.length;
-
-      dataBars = data
-        .filter(function(d, i) {
-          return !d.disabled && (!d.type || d.type === 'bar');
-        });
 
       if (hideEmptyGroups) {
         // build a discrete array of data values for the multibar
         // based on enabled data series
-        dataBars
-          .map(function(d, i) {
-            //reset series values to exlcude values for
-            //groups that have a sum of zero
-            d.values = d._values
-              .filter(function(d, i) {
-                return groupTotals[i].h !== 0;
-              })
-              .map(function(m, j) {
-                return {
-                  'series': d.series,
-                  'color': d.color,
-                  'x': (j + 1),
-                  'y': m.y,
-                  'y0': m.y0,
-                  'active': typeof d.active !== 'undefined' ? d.active : ''
-                };
-              });
-            return d;
-          });
+        seriesData.forEach(function(series, s) {
+          //reset series values to exlcude values for
+          //groups that have all zero values
+          series.values = series._values
+            .filter(function(value, v) {
+              return groupData[v]._height !== 0;
+            })
+            .map(function(value, v) {
+              return {
+                'series': value.series,
+                'group': value.group,
+                'color': value.color,
+                'x': (v + 1),
+                'y': value.y,
+                'active': value.active
+              };
+            });
+          return series;
+        });
       }
-
-      seriesCount = dataBars.length;
 
       //------------------------------------------------------------
       // Display No Data message if there's nothing to show.
 
-      if (!totalAmount) {
+      if (!hasData) {
         displayNoData();
         return chart;
       }
 
       // safety array
-      if (!dataBars.length) {
-        dataBars = [{values: []}];
+      if (!seriesData.length) {
+        seriesData = [{values: []}];
       }
 
       // set state.disabled
@@ -303,11 +322,7 @@ sucrose.models.multiBarChart = function() {
       y = multibar.yScale();
 
       xAxis
-        .scale(x)
-        .tickFormat(function(d, i) {
-          // Set xAxis to use trimmed array rather than data
-          return groupLabels[i] || 'undefined';
-        });
+        .scale(x);
 
       yAxis
         .scale(y);
@@ -498,10 +513,9 @@ sucrose.models.multiBarChart = function() {
           .baseDimension(baseDimension)
           .disabled(data.map(function(series) { return series.disabled; }))
           .width(getDimension('width'))
-          .height(getDimension('height'))
-          .clipEdge(false);
+          .height(getDimension('height'));
         barsWrap
-          .data([dataBars])
+          .data([seriesData])
           .call(multibar);
 
         //------------------------------------------------------------
@@ -527,8 +541,11 @@ sucrose.models.multiBarChart = function() {
         // Y-Axis
         yAxis
           .orient(vertical ? 'left' : 'bottom')
-          .ticks(innerHeight / 48)
-          .margin(innerMargin);
+          .margin(innerMargin)
+          .tickFormat(function(d, i) {
+            return yAxis.valueFormat()(d, yIsCurrency);
+          })
+          .ticks(innerHeight / 48);
         yAxisWrap
           .call(yAxis);
         // reset inner dimensions
@@ -546,11 +563,11 @@ sucrose.models.multiBarChart = function() {
 
         // X-Axis
         xAxis
-          .margin(innerMargin)
           .orient(vertical ? 'bottom' : 'left')
+          .margin(innerMargin)
           .tickFormat(function(d, i, noEllipsis) {
             // Set xAxis to use trimmed array rather than data
-            var label = groupLabels[i] || 'undefined';
+            var label = xAxis.valueFormat()(i, groupLabels, xIsDatetime);
             if (!noEllipsis) {
               label = sucrose.utils.stringEllipsify(label, container, Math.max(vertical ? baseDimension * 2 : availableWidth * 0.2, 75));
             }
@@ -652,15 +669,15 @@ sucrose.models.multiBarChart = function() {
         d.disabled = !d.disabled;
         d.active = false;
 
-        if (hideEmptyGroups) {
-          data.map(function(m, j) {
-            m._values.map(function(v, k) {
-              v.disabled = (k === i ? d.disabled : v.disabled ? true : false);
-              return v;
-            });
-            return m;
-          });
-        }
+        // if (hideEmptyGroups) {
+        //   data.map(function(m, j) {
+        //     m._values.map(function(v, k) {
+        //       v.disabled = (k === i ? d.disabled : v.disabled ? true : false);
+        //       return v;
+        //     });
+        //     return m;
+        //   });
+        // }
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
@@ -715,7 +732,7 @@ sucrose.models.multiBarChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          showTooltip(eo, that.parentNode, groupTotals);
+          showTooltip(eo, that.parentNode, groupData);
         }
       });
 
@@ -795,8 +812,8 @@ sucrose.models.multiBarChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  d3.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient');
-  d3.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice');
+  d3.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  d3.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice');
   d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -998,7 +1015,6 @@ sucrose.models.multiBarChart = function() {
     controls.direction(_);
     return chart;
   };
-
 
   //============================================================
 

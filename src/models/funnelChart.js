@@ -24,7 +24,8 @@ sucrose.models.funnelChart = function() {
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
@@ -38,13 +39,8 @@ sucrose.models.funnelChart = function() {
       yScale = d3.scale.linear();
 
   var showTooltip = function(eo, offsetElement, properties) {
-    var xVal = 0;
-    // defense against the dark divide-by-zero arts
-    if (properties.total > 0) {
-      xVal = (eo.point.value * 100 / properties.total).toFixed(1);
-    }
     var key = eo.series.key,
-        x = xVal,
+        x = properties.total ? (eo.point.value * 100 / properties.total).toFixed(1) : 100,
         y = eo.point.value,
         content = tooltipContent(key, x, y, eo, chart),
         gravity = eo.value < 0 ? 'n' : 's';
@@ -118,23 +114,28 @@ sucrose.models.funnelChart = function() {
       //------------------------------------------------------------
       // Process data
       // add series index to each data point for reference
-      data.map(function(d, i) {
-        d.series = i;
-        d.values.map(function(v) {
-          v.series = d.series;
+      data.forEach(function(s, i) {
+        s.series = i;
+
+        s.values.forEach(function(p, i) {
+          p.series = s.series;
+          p.index = i;
+          if (typeof p.value == 'undefined') {
+            p.value = p.y;
+          }
         });
-        d.total = d3.sum(d.values, function(d, i) {
-          return funnel.y()(d, i);
+
+        s.total = d3.sum(s.values, function(p, i) {
+          return p.value; //funnel.y()(d, i);
         });
-        if (!d.total) {
-          d.disabled = true;
+
+        if (!s.total) {
+          s.disabled = true;
         }
-        return d;
       });
 
       // only sum enabled series
-      var funnelData = data
-            .filter(function(d, i) {
+      var funnelData = data.filter(function(d, i) {
               return !d.disabled;
             });
 
@@ -148,6 +149,7 @@ sucrose.models.funnelChart = function() {
       var totalCount = d3.sum(funnelData, function(d) {
               return d.count;
             });
+      properties.total = totalAmount;
 
       //set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
@@ -402,8 +404,8 @@ sucrose.models.funnelChart = function() {
   chart.funnel = funnel;
   chart.legend = legend;
 
-  d3.rebind(chart, funnel, 'id', 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'color', 'fill', 'classes', 'gradient');
-  d3.rebind(chart, funnel, 'fmtValueLabel', 'clipEdge', 'delay', 'wrapLabels', 'minLabelWidth');
+  d3.rebind(chart, funnel, 'id', 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'color', 'fill', 'classes', 'gradient', 'locality');
+  d3.rebind(chart, funnel, 'fmtKey', 'fmtValue', 'fmtCount', 'clipEdge', 'delay', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {
     var type = arguments[0],

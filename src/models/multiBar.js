@@ -12,13 +12,14 @@ sucrose.models.multiBar = function() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
+      locality = sucrose.utils.buildLocality(),
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
       stacked = true,
       barColor = null, // adding the ability to set the color for each rather than the whole group
       disabled, // used in conjunction with barColor to communicate to multiBarChart what series are disabled
       clipEdge = true,
       showValues = false,
-      valueFormat = sucrose.utils.numberFormatSI,
+      valueFormat = function(d) { return d; },
       withLine = false,
       vertical = true,
       baseDimension = 60,
@@ -135,9 +136,7 @@ sucrose.models.multiBar = function() {
               groupTotals.map(function(d) { return d.neg; }).concat(
                 groupTotals.map(function(d) { return d.pos; })
               ) :
-              seriesData.map(function(d, i) {
-                return d.y;
-              });
+              seriesData.map(getY);
 
         var seriesExtents = d3.extent(data.map(function(d, i) { return d.series; }));
         minSeries = seriesExtents[0];
@@ -420,6 +419,7 @@ sucrose.models.multiBar = function() {
             series: data[j],
             pointIndex: i,
             seriesIndex: j,
+            groupIndex: d.group,
             id: id,
             e: e
           };
@@ -857,7 +857,7 @@ sucrose.models.multiBar = function() {
     if (!arguments.length) {
       return showValues;
     }
-    showValues = _;
+    showValues = isNaN(parseInt(_, 10)) ? _ : parseInt(_, 10) && true || false;
     return chart;
   };
 
@@ -912,6 +912,14 @@ sucrose.models.multiBar = function() {
   chart.textureFill = function(_) {
     if (!arguments.length) return textureFill;
     textureFill = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = sucrose.utils.buildLocality(_);
     return chart;
   };
 

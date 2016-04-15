@@ -5,30 +5,29 @@ sucrose.models.stackedArea = function () {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var margin = {top: 0, right: 0, bottom: 0, left: 0}
-    , width = 960
-    , height = 500
-    , getX = function (d) { return d.x; } // accessor to get the x value from a data point
-    , getY = function (d) { return d.y; } // accessor to get the y value from a data point
-    , style = 'stack'
-    , offset = 'zero'
-    , order = 'default'
-    , interpolate = 'linear'  // controls the line interpolation
-    , clipEdge = false // if true, masks lines within x and y scale
-    , x //can be accessed via chart.xScale()
-    , y //can be accessed via chart.yScale()
-    , delay = 200
-    , scatter = sucrose.models.scatter()
-    , color = function (d, i) { return sucrose.utils.defaultColor()(d, d.series); }
-    , fill = color
-    , classes = function (d,i) { return 'sc-area sc-area-' + d.series; }
-    , dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'areaClick', 'areaMouseover', 'areaMouseout', 'areaMousemove')
-    ;
+  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = 960,
+      height = 500,
+      getX = function (d) { return d.x; }, // accessor to get the x value from a data point
+      getY = function (d) { return d.y; }, // accessor to get the y value from a data point
+      locality = sucrose.utils.buildLocality(),
+      style = 'stack',
+      offset = 'zero',
+      order = 'default',
+      interpolate = 'linear',  // controls the line interpolation
+      clipEdge = false, // if true, masks lines within x and y scale
+      x, //can be accessed via chart.xScale()
+      y, //can be accessed via chart.yScale()
+      delay = 200,
+      scatter = sucrose.models.scatter(),
+      color = function (d, i) { return sucrose.utils.defaultColor()(d, d.series); },
+      fill = color,
+      classes = function (d,i) { return 'sc-area sc-area-' + d.series; },
+      dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'areaClick', 'areaMouseover', 'areaMouseout', 'areaMousemove');
 
   scatter
     .size(2.2) // default size
-    .sizeDomain([2.2]) // all the same size by default
-    ;
+    .sizeDomain([2.2]); // all the same size by default
 
   /************************************
    * offset:
@@ -65,7 +64,7 @@ sucrose.models.stackedArea = function () {
       data = data.map(function (aseries, i) {
         aseries.values = aseries.values.map(function (d, j) {
           d.index = j;
-          d.stackedY = aseries.disabled ? 0 : getY(d,j);
+          d.stackedY = aseries.disabled ? 0 : getY(d, j);
           return d;
         });
         return aseries;
@@ -83,8 +82,7 @@ sucrose.models.stackedArea = function () {
             y: y,
             y0: y0
           };
-        })
-        (data);
+        })(data);
 
 
       //------------------------------------------------------------
@@ -97,8 +95,8 @@ sucrose.models.stackedArea = function () {
       var g = wrap.select('g');
 
       //set up the gradient constructor function
-      chart.gradient = function (d,i,p) {
-        return sucrose.utils.colorLinearGradient( d, chart.id() +'-'+ i, p, color(d,i), wrap.select('defs') );
+      chart.gradient = function (d, i, p) {
+        return sucrose.utils.colorLinearGradient( d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs') );
       };
 
       gEnter.append('g').attr('class', 'sc-areaWrap');
@@ -135,62 +133,56 @@ sucrose.models.stackedArea = function () {
 
 
       var area = d3.svg.area()
-          .x(function (d,i)  { return x(getX(d,i)); })
+          .x(function (d, i)  { return x(getX(d, i)); })
           .y0(function (d) { return y(d.display.y0); })
           .y1(function (d) { return y(d.display.y + d.display.y0); })
           .interpolate(interpolate);
 
       var zeroArea = d3.svg.area()
-          .x(function (d,i)  { return x(getX(d,i)); })
+          .x(function (d, i) { return x(getX(d, i)); })
           .y0(function (d) { return y(d.display.y0); })
           .y1(function (d) { return y(d.display.y0); });
 
 
       var path = g.select('.sc-areaWrap').selectAll('path.sc-area')
-          .data(function (d) { return d; });
-          //.data(function (d) { return d }, function (d) { return d.key });
+          .data(data);
+
       path.enter().append('path')
-			//.attr('class', function (d,i) { return 'sc-area sc-area-' + i })
-          .on('mouseover', function (d,i) {
+          .on('mouseover', function (d, i) {
             d3.select(this).classed('hover', true);
             dispatch.areaMouseover({
               point: d,
               series: d.key,
-              pos: [d3.event.offsetX, d3.event.offsetY],
-              seriesIndex: i
+              seriesIndex: i,
+              e: d3.event
             });
             g.select('.sc-chart-' + chart.id() + ' .sc-area-' + i).classed('hover', true);
           })
-          .on('mouseout', function (d,i) {
+          .on('mouseout', function (d, i) {
             d3.select(this).classed('hover', false);
             dispatch.areaMouseout({
               point: d,
               series: d.key,
-              pos: [d3.event.offsetX, d3.event.offsetY],
-              seriesIndex: i
+              seriesIndex: i,
+              e: d3.event
             });
             g.select('.sc-chart-' + chart.id() + ' .sc-area-' + i).classed('hover', false);
           })
-          .on('mousemove', function (d,i){
-            dispatch.areaMousemove({
-              point: d,
-              pointIndex: i,
-              pos: [d3.event.offsetX, d3.event.offsetY],
-              seriesIndex: i
-            });
+          .on('mousemove', function (d, i) {
+            dispatch.areaMousemove(d3.event);
           })
-          .on('click', function (d,i) {
+          .on('click', function (d, i) {
             d3.select(this).classed('hover', false);
             dispatch.areaClick({
               point: d,
               series: d.key,
-              pos: [d3.event.offsetX, d3.event.offsetY],
-              seriesIndex: i
+              seriesIndex: i,
+              e: d3.event
             });
           });
       //d3.transition(path.exit())
       path.exit()
-          .attr('d', function (d,i) { return zeroArea(d.values,i); })
+          .attr('d', function (d, i) { return zeroArea(d.values, i); })
           .remove();
       path
           .attr('class', classes)
@@ -198,7 +190,7 @@ sucrose.models.stackedArea = function () {
           .attr('stroke', color);
       //d3.transition(path)
       path
-          .attr('d', function (d,i) { return area(d.values,i); });
+          .attr('d', function (d, i) { return area(d.values, i); });
 
 
       //============================================================
@@ -245,7 +237,7 @@ sucrose.models.stackedArea = function () {
   chart.dispatch = dispatch;
   chart.scatter = scatter;
 
-  d3.rebind(chart, scatter, 'interactive', 'size', 'id', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'forceX', 'forceY', 'forceSize', 'clipVoronoi', 'useVoronoi', 'clipRadius');
+  d3.rebind(chart, scatter, 'interactive', 'size', 'id', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'forceX', 'forceY', 'forceSize', 'clipVoronoi', 'useVoronoi', 'clipRadius', 'locality');
 
   chart.color = function (_) {
     if (!arguments.length) { return color; }
@@ -361,6 +353,14 @@ sucrose.models.stackedArea = function () {
     if (!arguments.length) { return interpolate; }
     interpolate = _;
     return interpolate;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = sucrose.utils.buildLocality(_);
+    return chart;
   };
 
   //============================================================

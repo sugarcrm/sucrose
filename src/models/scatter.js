@@ -18,6 +18,7 @@ sucrose.models.scatter = function() {
       getY = function(d) { return d.y; }, // accessor to get the y value
       getSize = function(d) { return d.size || 1; }, // accessor to get the point size
       getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
+      locality = sucrose.utils.buildLocality(),
       onlyCircles = true, // Set to false to use shapes
       forceX = [], // List of numbers to Force into the X scale (ie. 0, or a max / min, etc.)
       forceY = [], // List of numbers to Force into the Y scale
@@ -656,6 +657,14 @@ sucrose.models.scatter = function() {
       return nice;
     }
     nice = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = sucrose.utils.buildLocality(_);
     return chart;
   };
 

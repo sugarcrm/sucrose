@@ -168,7 +168,7 @@ sucrose.models.line = function() {
             var values = x.domain().map(function(x, i) {
                 // if data point is array, then it should be returned as an array
                 // the getX and getY methods handle the internal mechanics of positioning
-                if (d.values[0] instanceof Array) {
+                if (Array.isArray(d.values[0])) {
                   return [x, d.values[0][1]];
                 } else {
                   // sometimes the line data point is an object
@@ -224,7 +224,7 @@ sucrose.models.line = function() {
   chart.dispatch = scatter.dispatch;
   chart.scatter = scatter;
 
-  d3.rebind(chart, scatter, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice');
+  d3.rebind(chart, scatter, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
 
   chart.color = function(_) {
     if (!arguments.length) { return color; }
