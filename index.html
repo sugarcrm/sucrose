@@ -1,35 +1,36 @@
 <!doctype html>
-<!-- DEV::
-<html>
-::DEV -->
-<!-- PROD: -->
 <html manifest="sucrose.appcache">
-<!-- :PROD -->
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#e61718">
+    <title>Sucrose Charts</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="application-name" content="Sucrose Charts">
+    <meta name="theme-color" content="#bb0000">
+    <meta name="background-color" content="#bb0000">
+    <link rel="shortcut icon" href="img/favicons/favicon.ico">
+    <link rel="icon" type="image/png" href="img/favicons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="img/favicons/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="img/favicons/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="img/favicons/android-chrome-192x192.png" sizes="192x192">
+    <meta name="apple-mobile-web-app-title" content="Sucrose Charts">
+    <link rel="apple-touch-icon" sizes="57x57" href="img/favicons/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="img/favicons/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="img/favicons/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="img/favicons/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="img/favicons/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="img/favicons/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="img/favicons/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="img/favicons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="img/favicons/apple-touch-icon-180x180.png">
+    <link rel="mask-icon" href="img/favicons/safari-pinned-tab.svg" color="#bb0000">
+    <meta name="msapplication-config" content="img/favicons/browserconfig.xml">
     <meta name="msapplication-TileColor" content="#ffffff">
     <meta name="msapplication-TileImage" content="img/favicons/mstile-144x144.png">
-    <title>Sucrose</title>
-    <link rel="shortcut icon" href="data:image/png;base64,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" type="image/png">
-    <link rel="icon" sizes="192x192" href="img/favicons/favicon-192x192.png">
-    <link rel="apple-touch-icon" href="img/favicons/apple-touch-icon-152x152.png">
-    <!-- <script>less = {env: 'production'};</script> -->
-    <!-- DEV::
-    <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
-    <link rel="stylesheet/less" type="text/css" href="less/examples.less">
-    <script src="js/less.min.js"></script>
-    ::DEV -->
-    <!-- PROD: -->
     <link rel="stylesheet" href="css/sucrose.min.css">
     <link rel="stylesheet" href="css/examples.min.css">
-    <!-- :PROD -->
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
   </head>
   <body>
     <header>
@@ -176,24 +177,7 @@ and <a href="http://d3js.org">D3</a>
 <script src="js/d3.min.js"></script>
 <script src="js/topojson.min.js"></script>
 
-<!-- DEV::
-<script src="js/sucrose.js"></script>
-<script src="../src/models/table.js"></script>
-<script src="../src/models/lineChart.js"></script>
-<script src="js/app/variables.js"></script>
-<script src="js/app/charts.js"></script>
-<script src="js/app/table.js"></script>
-<script src="js/app/transform.js"></script>
-<script src="js/app/saveimage.js"></script>
-<script src="js/app/savejson.js"></script>
-<script src="js/app/loader.js"></script>
-<script src="js/app/manifest.js"></script>
-<script src="js/app/baseui.js"></script>
-<script src="js/app/main.js"></script>
-::DEV -->
-<!-- PROD: -->
 <script src="js/sucrose.min.js"></script>
 <script src="js/app.min.js"></script>
-<!-- :PROD -->
   </body>
 </html>

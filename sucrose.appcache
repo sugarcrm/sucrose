@@ -1,11 +1,13 @@
 CACHE MANIFEST
 
-# Version 0.2.7
+# Version 0.3.0
 
 CACHE:
 
 #root
 index.html
+manifest.json
+browserconfig.xml
 
 #css
 css/examples.min.css
@@ -34,7 +36,6 @@ data/line_raw_data.json
 data/line_single_bar.json
 data/line_single_data.json
 data/line_two_single.json
-data/multibar_accounts_industry_type.json
 data/multibar_data.json
 data/multibar_data_baseline.json
 data/multibar_data_color.json
@@ -63,6 +64,7 @@ data/treemap_data.json
 data/geo/cldr_en.json
 data/geo/usa-states-topo-110.json
 data/geo/world-countries-topo-110.json
+data/locales/locales.json
 
 #fonts
 fonts/SucroseFont.eot
@@ -90,8 +92,22 @@ img/gripper.svg
 img/user.svg
 
 #img/favicons
+img/favicons/favicon.ico
+img/favicons/favicon-16x16.png
+img/favicons/favicon-32x32.png
+img/favicons/favicon-96x96.png
+img/favicons/android-chrome-192x192.png
+img/favicons/apple-touch-icon-57x57.png
+img/favicons/apple-touch-icon-60x60.png
+img/favicons/apple-touch-icon-72x72.png
+img/favicons/apple-touch-icon-76x76.png
+img/favicons/apple-touch-icon-114x114.png
+img/favicons/apple-touch-icon-120x120.png
+img/favicons/apple-touch-icon-144x144.png
 img/favicons/apple-touch-icon-152x152.png
-img/favicons/favicon-192x192.png
+img/favicons/apple-touch-icon-180x180.png
+img/favicons/safari-pinned-tab.svg
+img/favicons/apple-touch-icon.png
 img/favicons/mstile-144x144.png
 
 #js
@@ -105,6 +121,7 @@ js/topojson.min.js
 
 #manifest
 manifest/area.json
+manifest/base.json
 manifest/bubble.json
 manifest/funnel.json
 manifest/gauge.json
@@ -113,6 +130,7 @@ manifest/line.json
 manifest/multibar.json
 manifest/pareto.json
 manifest/pie.json
+manifest/settings.json
 manifest/tree.json
 manifest/treemap.json
 
