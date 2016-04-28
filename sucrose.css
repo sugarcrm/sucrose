@@ -10,38 +10,45 @@
  */
 /* Chart colors defined in colors.less */
 .sc-background {
-  fill: #FFF;
+  fill: #fff;
 }
 .sc-chart-background {
   fill: transparent;
   stroke-width: 0.5px;
   stroke: #717171;
 }
+.sc-print {
+  visibility: hidden;
+  position: absolute !important;
+  left: -10000px;
+  width: 720px;
+  height: 480px;
+}
 .sc-chart {
   height: 400px;
-  min-width: 300px;
-  min-height: 100px;
-  overflow: hidden;
-  position: relative;
   /*
     Minimum height and width is a good idea to prevent negative SVG dimensions...
     For example width should be =< margin.left + margin.right + 1,
     of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
   */
+  min-width: 300px;
+  min-height: 100px;
+  overflow: hidden;
+  position: relative;
 }
+/********************
+ * SVG CSS
+ */
 .sc-chart svg {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   user-select: none;
   /* Trying to get SVG to act like a greedy block in all browsers */
   display: block;
   width: 100%;
   height: 100%;
 }
-.sucrose text {
+.sc-chart svg text {
   font-style: normal;
   font-size: 11px;
   font-family: "Noto Sans", "Helvetica Neue", Arial, sans-serif;
@@ -53,22 +60,44 @@
   font-size: 15px;
   font-weight: bold;
 }
-text.sc-title {
+.sc-title {
   font-size: 13px;
 }
 .sc-labels text {
   font-weight: bold;
   fill: #666;
 }
-.sc-label-value text {
+.sc-label-value text,
+text.sc-label-value {
   font-size: 13px;
 }
-.sc-print {
-  visibility: hidden;
-  position: absolute !important;
-  left: -10000px;
-  width: 720px;
-  height: 480px;
+.sc-label-box {
+  fill: transparent;
+}
+.calc-text-strings {
+  fill: #000000;
+  stroke: rgba(0, 0, 0, 0);
+  pointer-events: none;
+}
+/**********
+*  Texture
+*/
+.sc-texture {
+  fill-opacity: 0 !important;
+  pointer-events: none;
+}
+.texture-line {
+  stroke-opacity: .5;
+  stroke-width: 1px;
+}
+.sc-active .sc-texture {
+  fill-opacity: 1 !important;
+}
+.sc-active .sc-label-box {
+  fill: inherit;
+}
+.sc-inactive .sc-texture {
+  fill-opacity: 0 !important;
 }
 /***********
 * Colors
@@ -239,122 +268,6 @@ text.sc-title {
   stroke: #ff6fcf;
   color: #ff6fcf;
 }
-.sc-tooltip {
-  pointer-events: none;
-}
-.sc-tooltip-pending-removal {
-  position: absolute;
-  pointer-events: none;
-}
-.tooltip {
-  position: absolute;
-  z-index: 1070;
-  display: block;
-  visibility: visible;
-  padding: 5px;
-  font-size: 11px;
-  opacity: 0;
-  filter: alpha(opacity=0);
-}
-.tooltip.in {
-  opacity: 0.8;
-  filter: alpha(opacity=80);
-}
-.tooltip.top {
-  margin-top: -3px;
-}
-.tooltip.right {
-  margin-left: 3px;
-}
-.tooltip.bottom {
-  margin-top: 3px;
-}
-.tooltip.left {
-  margin-left: -3px;
-}
-.tooltip-inner {
-  max-width: 200px;
-  padding: 3px 8px;
-  color: #fff;
-  text-align: center;
-  text-decoration: none;
-  background-color: #000;
-  -webkit-border-radius: 3px;
-  -moz-border-radius: 3px;
-  border-radius: 3px;
-}
-.tooltip-arrow {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-color: transparent;
-  border-style: solid;
-}
-.tooltip.top .tooltip-arrow {
-  bottom: 0;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px 5px 0;
-  border-top-color: #000;
-}
-.tooltip.right .tooltip-arrow {
-  top: 50%;
-  left: 0;
-  margin-top: -5px;
-  border-width: 5px 5px 5px 0;
-  border-right-color: #000;
-}
-.tooltip.left .tooltip-arrow {
-  top: 50%;
-  right: 0;
-  margin-top: -5px;
-  border-width: 5px 0 5px 5px;
-  border-left-color: #000;
-}
-.tooltip.bottom .tooltip-arrow {
-  top: 0;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 0 5px 5px;
-  border-bottom-color: #000;
-}
-/* SugarCRM Customizations
-   -----------------------*/
-.tooltip {
-  z-index: 1070;
-  text-shadow: none;
-  font-weight: normal;
-  word-wrap: break-word;
-  pointer-events: none;
-}
-.tooltip.bottom {
-  margin-top: 8px;
-}
-.tooltip.in {
-  opacity: 1;
-  filter: alpha(opacity=100);
-}
-.tooltip div,
-.tooltip span,
-.tooltip a {
-  color: #fff;
-}
-.tooltip-inner {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-.tooltip-inner > div {
-  text-align: left;
-}
-.tooltip-inner > p {
-  margin: 0;
-}
-.tooltip-inner h3 {
-  font-size: 13px;
-  color: #717171;
-  line-height: normal;
-  margin: 3px 0;
-}
 /**********
 *  Legend
 */
@@ -376,11 +289,11 @@ text.sc-title {
   stroke: rgba(161, 160, 160, 0.75);
   stroke-width: 1px;
 }
-text.sc-legend-link {
+.sc-legend-link {
   cursor: pointer;
   fill: #176de5;
 }
-text.sc-legend-link:hover {
+.sc-legend-link:hover {
   fill: #1257b7;
   text-decoration: underline;
 }
@@ -427,43 +340,15 @@ text.sc-legend-link:hover {
 /**********
 *  MultiBars
 */
-.sc-multibar .sc-groups rect {
+.sc-multibar .sc-bar rect {
   stroke-opacity: 1;
   stroke-width: 2px;
   stroke: #fff;
 }
-.sc-multibar .sc-groups .sc-group rect:hover {
+.sc-multibar .sc-bar rect:hover {
   fill-opacity: .75;
 }
-.sc-texture {
-  fill-opacity: 0;
-  pointer-events: none;
-}
-.sc-texture:hover {
-  fill-opacity: 0;
-}
-.sc-active .sc-texture {
-  fill-opacity: 1;
-}
-.texture-line {
-  stroke-opacity: .5;
-  stroke-width: 1px;
-}
-.sc-inactive polygon,
-.sc-inactive rect {
-  fill-opacity: 1;
-}
-.sc-inactive polygon:hover,
-.sc-inactive rect:hover {
-  fill-opacity: .75;
-}
-.sc-inactive .sc-texture {
-  fill-opacity: .5;
-  mask: none !important;
-  fill: #fff !important;
-}
-.calc-text-strings,
-.sc-multibar .sc-groups text {
+.sc-multibar .sc-bar text {
   fill: #000000;
   stroke: rgba(0, 0, 0, 0);
   pointer-events: none;
@@ -471,14 +356,12 @@ text.sc-legend-link:hover {
 /***********
 *  Pie Chart
 */
-.sc-pie .sc-slice.hover path.sc-base {
-  fill-opacity: .7;
+.sc-pie .sc-slice.hover path {
+  fill-opacity: .75;
 }
-.sc-pie .sc-inactive path.sc-base {
-  fill-opacity: 0.5;
-}
-.sc-pie .sc-inactive:hover path.sc-base {
-  fill-opacity: 0.75;
+.sc-pie .sc-slice polyline {
+  stroke-width: 1px;
+  pointer-events: none;
 }
 .sc-holeWrap text {
   text-anchor: middle;
@@ -585,8 +468,17 @@ text.sc-pie-hole-label {
 /**********
 * Funnel
 */
+.sc-funnelChart .sc-slice.hover polygon {
+  fill-opacity: .75;
+}
 .sc-funnelChart .sc-y path {
   stroke: none;
+}
+.sc-funnelChart .sc-label-value text.sc-label {
+  font-size: 11px;
+}
+.sc-funnelChart .sc-label-value text.sc-value {
+  font-size: 13px;
 }
 /**********
 * Bubble
@@ -594,15 +486,6 @@ text.sc-pie-hole-label {
 .sc-bubbleChart .sc-scatter.sc-single-point .sc-groups .sc-point {
   fill-opacity: 1;
   stroke-opacity: 1;
-}
-/**********
-*  Line Plus Bar
-*/
-.sc-linePlusBar .sc-bar rect {
-  fill-opacity: .75;
-}
-.sc-linePlusBar .sc-bar rect:hover {
-  fill-opacity: 1;
 }
 /**********
 * Pareto
@@ -627,12 +510,6 @@ text.sc-pie-hole-label {
 .sc-chart-pareto .sc-y.sc-axis text.sc-quotaValue,
 .sc-chart-pareto .sc-y.sc-axis text.sc-targetQuotaValue {
   font-weight: bold;
-}
-.sc-chart-pareto .sc-multibar .sc-groups rect {
-  stroke-opacity: 1;
-  stroke-width: 2px;
-  stroke: #fff;
-  fill-opacity: 0.85;
 }
 .sc-chart-pareto .sc-line .sc-groups path {
   stroke-width: 4px;
@@ -714,6 +591,125 @@ text.sc-pie-hole-label {
   fill: none;
   stroke: #ccc;
   stroke-width: 1.5px;
+}
+/**********
+* Tooltips
+*/
+.sctooltip-pending-removal {
+  position: absolute;
+  pointer-events: none;
+}
+/* Twitter bootstrap classes
+   -----------------------*/
+.tooltip {
+  position: absolute;
+  z-index: 1070;
+  display: block;
+  visibility: visible;
+  padding: 5px;
+  font-size: 11px;
+  opacity: 0;
+  filter: alpha(opacity=0);
+}
+.tooltip.in {
+  opacity: 0.8;
+  filter: alpha(opacity=80);
+}
+.tooltip.top {
+  margin-top: -3px;
+}
+.tooltip.right {
+  margin-left: 3px;
+}
+.tooltip.bottom {
+  margin-top: 3px;
+}
+.tooltip.left {
+  margin-left: -3px;
+}
+.tooltip-inner {
+  max-width: 200px;
+  padding: 3px 8px;
+  color: #fff;
+  text-align: center;
+  text-decoration: none;
+  background-color: #000;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  border-radius: 3px;
+}
+.tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+}
+.tooltip.top .tooltip-arrow {
+  bottom: 0;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px 5px 0;
+  border-top-color: #000;
+}
+.tooltip.right .tooltip-arrow {
+  top: 50%;
+  left: 0;
+  margin-top: -5px;
+  border-width: 5px 5px 5px 0;
+  border-right-color: #000;
+}
+.tooltip.left .tooltip-arrow {
+  top: 50%;
+  right: 0;
+  margin-top: -5px;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #000;
+}
+.tooltip.bottom .tooltip-arrow {
+  top: 0;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 0 5px 5px;
+  border-bottom-color: #000;
+}
+/* SugarCRM Customizations
+   -----------------------*/
+.tooltip {
+  z-index: 1070;
+  text-shadow: none;
+  font-weight: normal;
+  word-wrap: break-word;
+  pointer-events: none;
+}
+.tooltip.bottom {
+  margin-top: 8px;
+}
+.tooltip.in {
+  opacity: 1;
+  filter: alpha(opacity=100);
+}
+.tooltip div,
+.tooltip span,
+.tooltip a {
+  color: #fff;
+}
+.tooltip-inner {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.tooltip-inner > div {
+  text-align: left;
+}
+.tooltip-inner > p {
+  margin: 0;
+}
+.tooltip-inner h3 {
+  font-size: 13px;
+  color: #b6b6b6;
+  line-height: normal;
+  padding: 0;
+  margin: 0;
 }
 /**********
 * Globe

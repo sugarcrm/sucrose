@@ -1,14 +1,14 @@
-//
-// Bootstrap Tooltips
-// --------------------------------------------------
+/**********
+* Tooltips
+*/
 
-.sc-tooltip {
-  pointer-events: none;
-}
-.sc-tooltip-pending-removal {
+.sctooltip-pending-removal {
   position: absolute;
   pointer-events: none;
 }
+
+/* Twitter bootstrap classes
+   -----------------------*/
 
 // Base class
 .tooltip {
@@ -107,8 +107,9 @@
   }
   h3 {
     font-size: 13px;
-    color: @grayLight;
+    color: darken(@grayLighter, 25%);
     line-height: normal;
-    margin: 3px 0;
+    padding: 0;
+    margin: 0;
   }
 }

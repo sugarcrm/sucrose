@@ -3,14 +3,12 @@
 */
 
 .sc-pie {
-  .sc-slice.hover path.sc-base {
-    fill-opacity: .7;
+  .sc-slice.hover path {
+    fill-opacity: .75;
   }
-  .sc-inactive path.sc-base {
-    fill-opacity: 0.5;
-  }
-  .sc-inactive:hover path.sc-base {
-    fill-opacity: 0.75;
+  .sc-slice polyline {
+    stroke-width: 1px;
+    pointer-events: none;
   }
 }
 
