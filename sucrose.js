@@ -9627,12 +9627,16 @@ sucrose.models.multiBar = function() {
                  .offset('zero')
                  .values(function(d) { return d.values; })
                  .y(getY)(data);
+        // stacked bars can't have label position 'top'
         if (labelPosition === 'top' || labelPosition === true) {
           labelPosition = 'end';
         }
       } else if (labelPosition) {
+        // grouped bars can't have label position 'total'
         if (labelPosition === 'total') {
           labelPosition = 'top';
+        } else if (labelPosition === true) {
+          labelPosition = 'end';
         }
         verticalLabels = vertical;
       }
@@ -10108,9 +10112,7 @@ sucrose.models.multiBar = function() {
               return textColor;
             })
             .style('fill-opacity', function(d, i) {
-              if (!stacked) {
-                return 1;
-              } else if (labelPosition === 'total') {
+              if (labelPosition === 'total') {
                 if (d.series !== minSeries && d.series !== maxSeries) {
                   return 0;
                 }
@@ -10156,34 +10158,39 @@ sucrose.models.multiBar = function() {
 
           //------------------------------------------------------------
           // Label background box
-          bars.filter(function(d, i) {
-              return labelPosition === 'total' && stacked ? (d.series !== minSeries && d.series !== maxSeries) : false;
-            }).select('rect.sc-label-box')
-            .style('fill-opacity', 0);
-
+          // bars.filter(function(d, i) {
+          //     return labelPosition === 'total' && stacked ? (d.series !== minSeries && d.series !== maxSeries) : false;
+          //   })
+          //   .select('rect.sc-label-box')
+          //       .style('fill-opacity', 0);
+          if (labelPosition === 'total' && stacked) {
+            bars.select('rect.sc-label-box')
+              .style('fill-opacity', 0);
+          }
           bars.filter(function(d, i) {
               return labelPosition === 'total' && stacked ? (d.series === minSeries || d.series === maxSeries) : true;
-            }).select('rect.sc-label-box')
-            .attr('x', function(d, i) {
-              return getLabelBoxOffset(d, i, true, 4);
             })
-            .attr('y', function(d, i) {
-              return getLabelBoxOffset(d, i, false, -4);
-            })
-            .attr('width', function(d, i) {
-              return verticalLabels ? d.labelHeight : d.labelWidth;
-            })
-            .attr('height', function(d, i) {
-              return verticalLabels ? d.labelWidth : d.labelHeight;
-            })
-            .style('fill', function(d, i) {
-              return labelPosition === 'top' || labelPosition === 'total' ? '#fff' : fill(d, i);
-            })
-            .style('fill-opacity', function(d, i) {
-              var lengthOverlaps = d.barLength < (!vertical || verticalLabels ? d.labelWidth : d.labelHeight) + 8,
-                  thicknessOverlaps = d.barThickness < (!vertical || verticalLabels ? d.labelHeight : d.labelWidth) + 4;
-              return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
-            });
+            .select('rect.sc-label-box')
+                .attr('x', function(d, i) {
+                  return getLabelBoxOffset(d, i, true, 4);
+                })
+                .attr('y', function(d, i) {
+                  return getLabelBoxOffset(d, i, false, -4);
+                })
+                .attr('width', function(d, i) {
+                  return verticalLabels ? d.labelHeight : d.labelWidth;
+                })
+                .attr('height', function(d, i) {
+                  return verticalLabels ? d.labelWidth : d.labelHeight;
+                })
+                .style('fill', function(d, i) {
+                  return labelPosition === 'top' || labelPosition === 'total' ? '#fff' : fill(d, i);
+                })
+                .style('fill-opacity', function(d, i) {
+                  var lengthOverlaps = d.barLength < (!vertical || verticalLabels ? d.labelWidth : d.labelHeight) + 8,
+                      thicknessOverlaps = d.barThickness < (!vertical || verticalLabels ? d.labelHeight : d.labelWidth) + 4;
+                  return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
+                });
 
       } else {
         barText
@@ -10540,7 +10547,7 @@ sucrose.models.multiBarChart = function() {
   };
 
   var showTooltip = function(eo, offsetElement, groupData) {
-    var key = eo.series.key,
+    var key = groupData[eo.groupIndex].label,
         y = eo.point.y,
         x = (groupData) ?
               Math.abs(y * 100 / groupData[eo.groupIndex]._height).toFixed(1) :
@@ -10671,18 +10678,17 @@ sucrose.models.multiBarChart = function() {
         series.series = s;
         series.values.forEach(function(value, v) {
           value.series = s;
-
         });
         if (!series._values) {
           series._values = series.values.map(function(value, v) {
-            return {
-                  'series': series.series,
-                  'group': v,
-                  'color': typeof series.color !== 'undefined' ? series.color : '',
-                  'x': multibar.x()(value, v),
-                  'y': multibar.y()(value, v)
-                };
-          });
+              return {
+                    'series': series.series,
+                    'group': v,
+                    'color': typeof series.color !== 'undefined' ? series.color : '',
+                    'x': multibar.x()(value, v),
+                    'y': multibar.y()(value, v)
+                  };
+            });
           series.total = d3.sum(series._values, function(value, v) {
               return value.y;
             });
@@ -10733,8 +10739,6 @@ sucrose.models.multiBarChart = function() {
         .map(function(group) {
           return group.label || chart.strings().noLabel;
         });
-      // xValuesAreDates = groupLabels.length ?
-      //     groupLabels.reduce(function(p, c) { return p && sucrose.utils.isValidDate(c); }, true) : false;
 
       groupCount = groupLabels.length;
 
@@ -11140,16 +11144,6 @@ sucrose.models.multiBarChart = function() {
       legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
         d.active = false;
-
-        // if (hideEmptyGroups) {
-        //   data.map(function(m, j) {
-        //     m._values.map(function(v, k) {
-        //       v.disabled = (k === i ? d.disabled : v.disabled ? true : false);
-        //       return v;
-        //     });
-        //     return m;
-        //   });
-        // }
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
@@ -13452,7 +13446,7 @@ sucrose.models.pieChart = function() {
 
     selection.each(function(chartData) {
 
-      var properties = chartData.properties,
+      var properties = chartData.properties || {},
           data = chartData.data,
           container = d3.select(this),
           that = this,

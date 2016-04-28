@@ -68,7 +68,7 @@ sucrose.models.multiBarChart = function() {
   };
 
   var showTooltip = function(eo, offsetElement, groupData) {
-    var key = eo.series.key,
+    var key = groupData[eo.groupIndex].label,
         y = eo.point.y,
         x = (groupData) ?
               Math.abs(y * 100 / groupData[eo.groupIndex]._height).toFixed(1) :
@@ -199,18 +199,17 @@ sucrose.models.multiBarChart = function() {
         series.series = s;
         series.values.forEach(function(value, v) {
           value.series = s;
-
         });
         if (!series._values) {
           series._values = series.values.map(function(value, v) {
-            return {
-                  'series': series.series,
-                  'group': v,
-                  'color': typeof series.color !== 'undefined' ? series.color : '',
-                  'x': multibar.x()(value, v),
-                  'y': multibar.y()(value, v)
-                };
-          });
+              return {
+                    'series': series.series,
+                    'group': v,
+                    'color': typeof series.color !== 'undefined' ? series.color : '',
+                    'x': multibar.x()(value, v),
+                    'y': multibar.y()(value, v)
+                  };
+            });
           series.total = d3.sum(series._values, function(value, v) {
               return value.y;
             });
@@ -261,8 +260,6 @@ sucrose.models.multiBarChart = function() {
         .map(function(group) {
           return group.label || chart.strings().noLabel;
         });
-      // xValuesAreDates = groupLabels.length ?
-      //     groupLabels.reduce(function(p, c) { return p && sucrose.utils.isValidDate(c); }, true) : false;
 
       groupCount = groupLabels.length;
 
@@ -668,16 +665,6 @@ sucrose.models.multiBarChart = function() {
       legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
         d.active = false;
-
-        // if (hideEmptyGroups) {
-        //   data.map(function(m, j) {
-        //     m._values.map(function(v, k) {
-        //       v.disabled = (k === i ? d.disabled : v.disabled ? true : false);
-        //       return v;
-        //     });
-        //     return m;
-        //   });
-        // }
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {

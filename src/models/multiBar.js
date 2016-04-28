@@ -84,12 +84,16 @@ sucrose.models.multiBar = function() {
                  .offset('zero')
                  .values(function(d) { return d.values; })
                  .y(getY)(data);
+        // stacked bars can't have label position 'top'
         if (labelPosition === 'top' || labelPosition === true) {
           labelPosition = 'end';
         }
       } else if (labelPosition) {
+        // grouped bars can't have label position 'total'
         if (labelPosition === 'total') {
           labelPosition = 'top';
+        } else if (labelPosition === true) {
+          labelPosition = 'end';
         }
         verticalLabels = vertical;
       }
@@ -565,9 +569,7 @@ sucrose.models.multiBar = function() {
               return textColor;
             })
             .style('fill-opacity', function(d, i) {
-              if (!stacked) {
-                return 1;
-              } else if (labelPosition === 'total') {
+              if (labelPosition === 'total') {
                 if (d.series !== minSeries && d.series !== maxSeries) {
                   return 0;
                 }
@@ -613,34 +615,39 @@ sucrose.models.multiBar = function() {
 
           //------------------------------------------------------------
           // Label background box
-          bars.filter(function(d, i) {
-              return labelPosition === 'total' && stacked ? (d.series !== minSeries && d.series !== maxSeries) : false;
-            }).select('rect.sc-label-box')
-            .style('fill-opacity', 0);
-
+          // bars.filter(function(d, i) {
+          //     return labelPosition === 'total' && stacked ? (d.series !== minSeries && d.series !== maxSeries) : false;
+          //   })
+          //   .select('rect.sc-label-box')
+          //       .style('fill-opacity', 0);
+          if (labelPosition === 'total' && stacked) {
+            bars.select('rect.sc-label-box')
+              .style('fill-opacity', 0);
+          }
           bars.filter(function(d, i) {
               return labelPosition === 'total' && stacked ? (d.series === minSeries || d.series === maxSeries) : true;
-            }).select('rect.sc-label-box')
-            .attr('x', function(d, i) {
-              return getLabelBoxOffset(d, i, true, 4);
             })
-            .attr('y', function(d, i) {
-              return getLabelBoxOffset(d, i, false, -4);
-            })
-            .attr('width', function(d, i) {
-              return verticalLabels ? d.labelHeight : d.labelWidth;
-            })
-            .attr('height', function(d, i) {
-              return verticalLabels ? d.labelWidth : d.labelHeight;
-            })
-            .style('fill', function(d, i) {
-              return labelPosition === 'top' || labelPosition === 'total' ? '#fff' : fill(d, i);
-            })
-            .style('fill-opacity', function(d, i) {
-              var lengthOverlaps = d.barLength < (!vertical || verticalLabels ? d.labelWidth : d.labelHeight) + 8,
-                  thicknessOverlaps = d.barThickness < (!vertical || verticalLabels ? d.labelHeight : d.labelWidth) + 4;
-              return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
-            });
+            .select('rect.sc-label-box')
+                .attr('x', function(d, i) {
+                  return getLabelBoxOffset(d, i, true, 4);
+                })
+                .attr('y', function(d, i) {
+                  return getLabelBoxOffset(d, i, false, -4);
+                })
+                .attr('width', function(d, i) {
+                  return verticalLabels ? d.labelHeight : d.labelWidth;
+                })
+                .attr('height', function(d, i) {
+                  return verticalLabels ? d.labelWidth : d.labelHeight;
+                })
+                .style('fill', function(d, i) {
+                  return labelPosition === 'top' || labelPosition === 'total' ? '#fff' : fill(d, i);
+                })
+                .style('fill-opacity', function(d, i) {
+                  var lengthOverlaps = d.barLength < (!vertical || verticalLabels ? d.labelWidth : d.labelHeight) + 8,
+                      thicknessOverlaps = d.barThickness < (!vertical || verticalLabels ? d.labelHeight : d.labelWidth) + 4;
+                  return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
+                });
 
       } else {
         barText

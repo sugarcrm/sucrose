@@ -53,7 +53,7 @@ sucrose.models.pieChart = function() {
 
     selection.each(function(chartData) {
 
-      var properties = chartData.properties,
+      var properties = chartData.properties || {},
           data = chartData.data,
           container = d3.select(this),
           that = this,
