@@ -2137,7 +2137,7 @@ a.success:hover {
   .container .container-header .tab:first-child {
     padding-left: 4px;
   }
-  .container .container-header > button.btn:first-child {
+  .container .container-header .tab:first-child > button.btn:first-child {
     display: inline-block;
   }
 }

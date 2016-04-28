@@ -29,56 +29,69 @@ tooltip = null;
 xIsDatetime = false;
 yIsCurrency = false;
 
+// Ignore touchstart in favour of touchend
+function touchstart(evt) {
+  if (evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+  }
+}
 
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
-    .on('mouseover', $.proxy(function () {
-      var $target = $(d3.event.currentTarget),
-          title = $target.data('title'),
-          open = $target.closest('.chart-selector').hasClass('open');
-      if (!open) {
-        this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
-      }
-    }, this))
-    .on('mousemove', $.proxy(function () {
-      if (this.tooltip) {
-        sucrose.tooltip.position(d3.select('.demo').node(), this.tooltip, d3.event);
-      }
-    }, this))
-    .on('mouseout', $.proxy(function () {
-      if (this.tooltip) {
-        sucrose.tooltip.cleanup();
-      }
-    }, this))
-    .on('touchstart', $.proxy(function () {
-      d3.event.preventDefault();
-      this.tooltip = false;
-    }, this))
-    .on('click', $.proxy(function () {
-      if (this.tooltip) {
-        sucrose.tooltip.cleanup();
-      }
-    }, this));
+  .on('mouseover', $.proxy(function () {
+    var $target = $(d3.event.currentTarget),
+        title = $target.data('title'),
+        open = $target.closest('.chart-selector').hasClass('open');
+    if (!open) {
+      this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
+    }
+  }, this))
+  .on('mousemove', $.proxy(function () {
+    if (this.tooltip) {
+      sucrose.tooltip.position(d3.select('.demo').node(), this.tooltip, d3.event);
+    }
+  }, this))
+  .on('mouseout', $.proxy(function () {
+    if (this.tooltip) {
+      sucrose.tooltip.cleanup();
+    }
+  }, this))
+  .on('touchstart', touchstart)
+  .on('touchend', $.proxy(function () {
+    d3.event.preventDefault();
+    this.tooltip = false;
+  }, this))
+  .on('click', $.proxy(function () {
+    if (this.tooltip) {
+      sucrose.tooltip.cleanup();
+    }
+  }, this));
 
 // For both index list and example picker
-$select.on('click touch', 'a', function (e) {
-    var type = $(e.currentTarget).data('type');
-    e.preventDefault();
-    e.stopPropagation();
+$select
+  .on('touchstart', touchstart)
+  .on('click touchend', 'a', function (evt) {
+    var type = $(evt.currentTarget).data('type');
+    evt.preventDefault();
+    evt.stopPropagation();
     if (type !== chartType) {
       loader(type);
     }
   });
 
 // Open menu when button clicked
-$menu.on('click touch', function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+$menu
+  .on('touchstart', touchstart)
+  .on('click touchend', function (evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
     $select.toggleClass('open');
   });
 
 // Close menu when clicking outside
-$('body').on('click touch', function () {
+$('body')
+  .on('click touchend', function () {
     $select.removeClass('open');
   });
 

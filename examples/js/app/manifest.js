@@ -79,79 +79,90 @@ var Manifest =
     });
 
     // Unbind UI
-    $('button').off('click.example touch.example').toggleClass('active', false);
-    $('.tab').off('click.example touch.example');
+    $('button')
+      .off('click.example touchstart.example touchend.example')
+      .toggleClass('active', false);
+    $('.tab').off('click.example touchstart.example touchend.example');
     // Rebind UI
+    $('button').on('touchstart.example', touchstart);
     // Display panel in full screen
-    $('button[data-action=full]').on('click.example touch.example', function (evt) {
-      var $button = $(this);
-      evt.stopPropagation();
-      $example.toggleClass('full-screen');
-      self.toggleTooltip($button);
-      self.chartResizer(self.Chart)(evt);
-      $button.toggleClass('active');
-    });
+    $('button[data-action=full]')
+      .on('click.example touchend.example', function (evt) {
+        var $button = $(this);
+        evt.stopPropagation();
+        $example.toggleClass('full-screen');
+        self.toggleTooltip($button);
+        self.chartResizer(self.Chart)(evt);
+        $button.toggleClass('active');
+      });
     // Reset data to original state
-    $('button[data-action=reset]').on('click.example touch.example', function (evt) {
-      evt.stopPropagation();
-      $example.removeClass('full-screen');
-      $('button[data-action=edit]').removeClass('active');
-      self.resetChartSize();
-      self.loadData(self.data.file.val);
-    });
-    // Toggle option panel display
-    $('button[data-action=toggle]').on('click.example touch.example', function (evt) {
-      evt.stopPropagation();
-      if ($demo.width() > 480) {
-        $options.toggleClass('hidden');
-        $example.toggleClass('full-width');
-      } else {
-        $options.toggleClass('open');
-      }
-      self.chartResizer(self.Chart)(evt);
-    });
-    // Download image or data depending on panel
-    $('button[data-action=download]').on('click.example touch.example', function (evt) {
-      evt.stopPropagation();
-      if ($chart.hasClass('hide')) {
-        generateJson(evt);
-      } else {
-        generateImage(evt);
-      }
-    });
-    // Toggle display of table or code data edit view
-    $('button[data-action=edit]').on('click.example touch.example', function (evt) {
-      var $button = $(this);
-      evt.stopPropagation();
-      if ($button.hasClass('active')) {
-        if (!self.lintErrors.length) {
-          self.parseRawData(JSON.parse(self.Editor.doc.getValue()));
-        }
-        self.unloadDataEditor();
-        self.loadTable();
-        $table.find('table').show();
-        $button.removeClass('active');
-      } else {
-        self.unloadTable();
-        self.loadDataEditor();
-        $table.find('table').hide();
-        $button.addClass('active');
-      }
-    });
-    // Toggle display of chart or table tab
-    $('.tab').on('click.example touch.example', function (evt) {
-      evt.stopPropagation();
-      if ($(this).data('toggle') === 'chart') {
-        self.unloadDataEditor();
-        self.unloadTable();
+    $('button[data-action=reset]')
+      .on('click.example touchend.example', function (evt) {
+        evt.stopPropagation();
+        $example.removeClass('full-screen');
         $('button[data-action=edit]').removeClass('active');
-        self.loadChart();
-      } else {
-        self.unloadChart();
-        self.unloadDataEditor();
-        self.loadTable();
-      }
-    });
+        self.resetChartSize();
+        self.loadData(self.data.file.val);
+      });
+    // Toggle option panel display
+    $('button[data-action=toggle]')
+      .on('click.example touchend.example', function (evt) {
+        evt.stopPropagation();
+        if ($demo.width() > 480) {
+          $options.toggleClass('hidden');
+          $example.toggleClass('full-width');
+        } else {
+          $options.toggleClass('open');
+        }
+        self.chartResizer(self.Chart)(evt);
+      });
+    // Download image or data depending on panel
+    $('button[data-action=download]')
+      .on('click.example touchend.example', function (evt) {
+        evt.stopPropagation();
+        if ($chart.hasClass('hide')) {
+          generateJson(evt);
+        } else {
+          generateImage(evt);
+        }
+      });
+    // Toggle display of table or code data edit view
+    $('button[data-action=edit]')
+      .on('click.example touchend.example', function (evt) {
+        var $button = $(this);
+        evt.stopPropagation();
+        if ($button.hasClass('active')) {
+          if (!self.lintErrors.length) {
+            self.parseRawData(JSON.parse(self.Editor.doc.getValue()));
+          }
+          self.unloadDataEditor();
+          self.loadTable();
+          $table.find('table').show();
+          $button.removeClass('active');
+        } else {
+          self.unloadTable();
+          self.loadDataEditor();
+          $table.find('table').hide();
+          $button.addClass('active');
+        }
+      });
+    // Toggle display of chart or table tab
+    $('.tab')
+      .on('touchstart.example', touchstart)
+      .on('click.example touchend.example', function (evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        if ($(this).data('toggle') === 'chart') {
+          self.unloadDataEditor();
+          self.unloadTable();
+          $('button[data-action=edit]').removeClass('active');
+          self.loadChart();
+        } else {
+          self.unloadChart();
+          self.unloadDataEditor();
+          self.loadTable();
+        }
+      });
   },
   toggleTab: function (tab) {
     var isChartTab = tab === 'chart';

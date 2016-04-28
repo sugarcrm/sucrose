@@ -2,6 +2,11 @@
  * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
  */
 'use strict';
+
+$(function() {
+    FastClick.attach(document.body);
+});
+
 $(function () {
 // jQuery.my variables
 var Manifest, Data, baseUI, settingsUI;
@@ -1126,79 +1131,90 @@ var Manifest =
     });
 
     // Unbind UI
-    $('button').off('click.example touch.example').toggleClass('active', false);
-    $('.tab').off('click.example touch.example');
+    $('button')
+      .off('click.example touchstart.example touchend.example')
+      .toggleClass('active', false);
+    $('.tab').off('click.example touchstart.example touchend.example');
     // Rebind UI
+    $('button').on('touchstart.example', touchstart);
     // Display panel in full screen
-    $('button[data-action=full]').on('click.example touch.example', function (evt) {
-      var $button = $(this);
-      evt.stopPropagation();
-      $example.toggleClass('full-screen');
-      self.toggleTooltip($button);
-      self.chartResizer(self.Chart)(evt);
-      $button.toggleClass('active');
-    });
+    $('button[data-action=full]')
+      .on('click.example touchend.example', function (evt) {
+        var $button = $(this);
+        evt.stopPropagation();
+        $example.toggleClass('full-screen');
+        self.toggleTooltip($button);
+        self.chartResizer(self.Chart)(evt);
+        $button.toggleClass('active');
+      });
     // Reset data to original state
-    $('button[data-action=reset]').on('click.example touch.example', function (evt) {
-      evt.stopPropagation();
-      $example.removeClass('full-screen');
-      $('button[data-action=edit]').removeClass('active');
-      self.resetChartSize();
-      self.loadData(self.data.file.val);
-    });
-    // Toggle option panel display
-    $('button[data-action=toggle]').on('click.example touch.example', function (evt) {
-      evt.stopPropagation();
-      if ($demo.width() > 480) {
-        $options.toggleClass('hidden');
-        $example.toggleClass('full-width');
-      } else {
-        $options.toggleClass('open');
-      }
-      self.chartResizer(self.Chart)(evt);
-    });
-    // Download image or data depending on panel
-    $('button[data-action=download]').on('click.example touch.example', function (evt) {
-      evt.stopPropagation();
-      if ($chart.hasClass('hide')) {
-        generateJson(evt);
-      } else {
-        generateImage(evt);
-      }
-    });
-    // Toggle display of table or code data edit view
-    $('button[data-action=edit]').on('click.example touch.example', function (evt) {
-      var $button = $(this);
-      evt.stopPropagation();
-      if ($button.hasClass('active')) {
-        if (!self.lintErrors.length) {
-          self.parseRawData(JSON.parse(self.Editor.doc.getValue()));
-        }
-        self.unloadDataEditor();
-        self.loadTable();
-        $table.find('table').show();
-        $button.removeClass('active');
-      } else {
-        self.unloadTable();
-        self.loadDataEditor();
-        $table.find('table').hide();
-        $button.addClass('active');
-      }
-    });
-    // Toggle display of chart or table tab
-    $('.tab').on('click.example touch.example', function (evt) {
-      evt.stopPropagation();
-      if ($(this).data('toggle') === 'chart') {
-        self.unloadDataEditor();
-        self.unloadTable();
+    $('button[data-action=reset]')
+      .on('click.example touchend.example', function (evt) {
+        evt.stopPropagation();
+        $example.removeClass('full-screen');
         $('button[data-action=edit]').removeClass('active');
-        self.loadChart();
-      } else {
-        self.unloadChart();
-        self.unloadDataEditor();
-        self.loadTable();
-      }
-    });
+        self.resetChartSize();
+        self.loadData(self.data.file.val);
+      });
+    // Toggle option panel display
+    $('button[data-action=toggle]')
+      .on('click.example touchend.example', function (evt) {
+        evt.stopPropagation();
+        if ($demo.width() > 480) {
+          $options.toggleClass('hidden');
+          $example.toggleClass('full-width');
+        } else {
+          $options.toggleClass('open');
+        }
+        self.chartResizer(self.Chart)(evt);
+      });
+    // Download image or data depending on panel
+    $('button[data-action=download]')
+      .on('click.example touchend.example', function (evt) {
+        evt.stopPropagation();
+        if ($chart.hasClass('hide')) {
+          generateJson(evt);
+        } else {
+          generateImage(evt);
+        }
+      });
+    // Toggle display of table or code data edit view
+    $('button[data-action=edit]')
+      .on('click.example touchend.example', function (evt) {
+        var $button = $(this);
+        evt.stopPropagation();
+        if ($button.hasClass('active')) {
+          if (!self.lintErrors.length) {
+            self.parseRawData(JSON.parse(self.Editor.doc.getValue()));
+          }
+          self.unloadDataEditor();
+          self.loadTable();
+          $table.find('table').show();
+          $button.removeClass('active');
+        } else {
+          self.unloadTable();
+          self.loadDataEditor();
+          $table.find('table').hide();
+          $button.addClass('active');
+        }
+      });
+    // Toggle display of chart or table tab
+    $('.tab')
+      .on('touchstart.example', touchstart)
+      .on('click.example touchend.example', function (evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        if ($(this).data('toggle') === 'chart') {
+          self.unloadDataEditor();
+          self.unloadTable();
+          $('button[data-action=edit]').removeClass('active');
+          self.loadChart();
+        } else {
+          self.unloadChart();
+          self.unloadDataEditor();
+          self.loadTable();
+        }
+      });
   },
   toggleTab: function (tab) {
     var isChartTab = tab === 'chart';
@@ -1401,11 +1417,6 @@ var Manifest =
     Object.each(localeData, function (k, v) {
       locales.push({value: k, label: v.language});
     });
-    // [
-    //   {value: 'en', label: 'English (US)'},
-    //   {value: 'ru', label: 'Russian'},
-    //   {value: 'de', label: 'German'}
-    //  ]
     return locales;
   },
 
@@ -1653,89 +1664,6 @@ var Manifest =
     this.chartUpdater()();
   }
 };
-
-var baseUI =
-{
-  '[name=file]': {
-    bind: function (d, v, $o) {
-      return this.bindControl(d, v, $o, this.loadData);
-    },
-    setChartOption: $.noop,
-    check: /[a-z0-9_]+/i,
-    // fire on initial load
-    // events: 'change.my'
-    title: 'Data File',
-    type: 'select'
-  },
-  '[name=locale]': {
-    bind: function (d, v, $o) {
-      return this.bindControl(d, v, $o, this.loadLocale);
-    },
-    setChartOption: $.noop,
-    check: /[a-z0-9_]+/i,
-    // fire on initial load
-    // events: 'change.my'
-    title: 'Locale',
-    type: 'select',
-    values: [
-      {value: 'en', label: 'English (US)'},
-      {value: 'ru', label: 'Russian'},
-      {value: 'de', label: 'German'}
-     ]
-    // localeData.keys().map(function(k) {
-    //   return {value: k, label: localeData[k].label};
-    // })
-  },
-  '[name=color]': {
-    bind: function (d, v, $o) {
-      return this.bindControl(d, v, $o, this.loadColor);
-    },
-    setChartOption: $.noop,
-    check: /default|class|graduated/i,
-    events: 'click.my',
-    title: 'Color Model',
-    type: 'radio',
-    watch: '[name=gradient]',
-    values: [
-      {value: 'default', label: 'Default'},
-      {value: 'class', label: 'Class'},
-      {value: 'graduated', label: 'Graduated'}
-     ]
-  },
-  '[name=gradient]': {
-    bind: function (d, v, $o) {
-      // if (v == null || !v.filter('1').length) {
-      //   v = null;
-      // }
-      return this.bindControl(d, v, $o, this.loadColor);
-    },
-    setChartOption: $.noop,
-    recalc: '[name=color]',
-    check: /0|1|vertical|horizontal|middle|base/i,
-    events: 'click.my',
-    title: 'Gradient',
-    type: 'checkbox',
-    values: [
-      {value: '1', label: 'Use gradient'}, // 0 | 1
-      {value: 'horizontal', label: 'Align horizontally'}, // vertical | horizontal
-      {value: 'base', label: 'Align base'} // middle | base
-     ]
-  },
-  '[name=direction]': {
-    setChartOption: function (v, self) {
-      $('html').css('direction', v).attr('class', v);
-      self.Chart.direction(v);
-    },
-    check: /ltr|rtl/i,
-    events: 'change.my',
-    title: 'Direction',
-    type: 'radio',
-    values: [
-      {value: 'ltr', label: 'Left-to-Right'},
-      {value: 'rtl', label: 'Right-to-Left'}
-    ]
-  }
-};
 // jQuery.my data
 Data = {};
 
@@ -1767,56 +1695,69 @@ tooltip = null;
 xIsDatetime = false;
 yIsCurrency = false;
 
+// Ignore touchstart in favour of touchend
+function touchstart(evt) {
+  if (evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+  }
+}
 
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
-    .on('mouseover', $.proxy(function () {
-      var $target = $(d3.event.currentTarget),
-          title = $target.data('title'),
-          open = $target.closest('.chart-selector').hasClass('open');
-      if (!open) {
-        this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
-      }
-    }, this))
-    .on('mousemove', $.proxy(function () {
-      if (this.tooltip) {
-        sucrose.tooltip.position(d3.select('.demo').node(), this.tooltip, d3.event);
-      }
-    }, this))
-    .on('mouseout', $.proxy(function () {
-      if (this.tooltip) {
-        sucrose.tooltip.cleanup();
-      }
-    }, this))
-    .on('touchstart', $.proxy(function () {
-      d3.event.preventDefault();
-      this.tooltip = false;
-    }, this))
-    .on('click', $.proxy(function () {
-      if (this.tooltip) {
-        sucrose.tooltip.cleanup();
-      }
-    }, this));
+  .on('mouseover', $.proxy(function () {
+    var $target = $(d3.event.currentTarget),
+        title = $target.data('title'),
+        open = $target.closest('.chart-selector').hasClass('open');
+    if (!open) {
+      this.tooltip = sucrose.tooltip.show(d3.event, title, null, null, d3.select('.demo').node());
+    }
+  }, this))
+  .on('mousemove', $.proxy(function () {
+    if (this.tooltip) {
+      sucrose.tooltip.position(d3.select('.demo').node(), this.tooltip, d3.event);
+    }
+  }, this))
+  .on('mouseout', $.proxy(function () {
+    if (this.tooltip) {
+      sucrose.tooltip.cleanup();
+    }
+  }, this))
+  .on('touchstart', touchstart)
+  .on('touchend', $.proxy(function () {
+    d3.event.preventDefault();
+    this.tooltip = false;
+  }, this))
+  .on('click', $.proxy(function () {
+    if (this.tooltip) {
+      sucrose.tooltip.cleanup();
+    }
+  }, this));
 
 // For both index list and example picker
-$select.on('click touch', 'a', function (e) {
-    var type = $(e.currentTarget).data('type');
-    e.preventDefault();
-    e.stopPropagation();
+$select
+  .on('touchstart', touchstart)
+  .on('click touchend', 'a', function (evt) {
+    var type = $(evt.currentTarget).data('type');
+    evt.preventDefault();
+    evt.stopPropagation();
     if (type !== chartType) {
       loader(type);
     }
   });
 
 // Open menu when button clicked
-$menu.on('click touch', function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+$menu
+  .on('touchstart', touchstart)
+  .on('click touchend', function (evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
     $select.toggleClass('open');
   });
 
 // Close menu when clicking outside
-$('body').on('click touch', function () {
+$('body')
+  .on('click touchend', function () {
     $select.removeClass('open');
   });
 
@@ -1848,7 +1789,3 @@ $.when(
   });
 // })();
 });
-
-window.addEventListener('load', function () {
-    new FastClick(document.body);
-}, false);
