@@ -1,5 +1,5 @@
 
-function generateJson(e) {
+function generatePackage(e) {
     e.preventDefault();
     e.stopPropagation();
 
@@ -14,7 +14,7 @@ function generateJson(e) {
         a.href = url;
         // Not supported consistently across browsers
         // fall back to open data in new tab
-        a.download = 'download.json';
+        a.download = 'sucrose-package.json';
         document.body.appendChild(a);
         a.addEventListener('click', function (e) {
           a.parentNode.removeChild(a);

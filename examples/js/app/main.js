@@ -4,15 +4,19 @@ Data = {};
 // Application scope jQuery references to main page elements
 $title = $('#title');
 $picker = $('#picker');
-$select = $('.chart-selector');
+$menu = $('#menu');
+
 $index = $('.index');
 $demo = $('.demo');
-$options = $('#options');
-$form = $('#form');
+
 $example = $('#example');
 $chart = $('#chart');
-$table = $('#table');
-$menu = $('#menu');
+$table = $('#table table');
+$data = $('#data');
+
+$options = $('#options');
+$form = $('#form form');
+$config = $('#config');
 
 // Application scope variables
 chartData = {};
@@ -69,7 +73,7 @@ d3.selectAll('[rel=tooltip]')
   }, this));
 
 // For both index list and example picker
-$select
+$picker
   .on('touchstart', touchstart)
   .on('click touchend', 'a', function (evt) {
     var type = $(evt.currentTarget).data('type');
@@ -86,13 +90,13 @@ $menu
   .on('click touchend', function (evt) {
     evt.preventDefault();
     evt.stopPropagation();
-    $select.toggleClass('open');
+    $picker.toggleClass('open');
   });
 
 // Close menu when clicking outside
 $('body')
   .on('click touchend', function () {
-    $select.removeClass('open');
+    $picker.removeClass('open');
   });
 
 

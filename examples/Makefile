@@ -25,8 +25,10 @@ APP_FILES = \
 	js/app/charts.js \
 	js/app/table.js \
 	js/app/transform.js \
-	js/app/saveimage.js \
-	js/app/savejson.js \
+	js/app/generatepackage.js \
+	js/app/generateimage.js \
+	js/app/generatedata.js \
+	js/app/generateconfig.js \
 	js/app/loader.js \
 	js/app/manifest.js \
 	js/app/main.js \

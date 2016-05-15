@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=320" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Test Link</title>
+    <script src="js/jquery.min.js"></script>
+  </head>
+  <body>
+
+    <div>
+      <a id="mylink" href="http://www.google.com">Google</a>
+    </div>
+
+    <button id="testjquery">Test jQuery click()</button>
+    <button id="testclick">Test native click()</button>
+    <button id="testnative">Test native event dispatch</button>
+
+    <script>
+      $(function () {
+        var $link = $('#mylink');
+        $link.on('click', function() {
+          console.log('jquery click triggered?');
+        });
+
+        var aLink = document.getElementById('mylink');
+        aLink.addEventListener('click', function (e) {
+          console.log('native click dispatched');
+        });
+
+        // This will trigger the jquery assigned event handler
+        // but does not actually trigger a native click
+        $('#testjquery').on('click', function() {
+          $link.click();
+        });
+
+        // This works because it gets the DOM element, not jQuery element
+        // but will fail if the browser does not support .click()
+        $('#testclick').on('click', function() {
+          var myLink = $link[0];
+          myLink.click();
+        });
+
+        // This will trigger both native and jQuery assigned event handlers
+        $('#testnative').on('click', function() {
+          var evt = new MouseEvent('click', {
+            bubbles: false,
+            cancelable: true,
+            view: window,
+          });
+          aLink.dispatchEvent(evt);
+        });
+
+      });
+    </script>
+  </body>
+</html>
+
+

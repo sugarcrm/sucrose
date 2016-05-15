@@ -126,44 +126,47 @@
     </div>
 
     <section class="demo hidden">
-        <div class="container-header">
-          <div class="tab active" data-toggle="chart">
-            <span>Chart</span>
-            <div class="toolbar">
-              <button class="btn" data-action="save" aria-label="save image" data-title="Save Image" rel="tooltip"><i class="sfa sfa-camera"></i></button>
-              <button class="btn" data-action="download" aria-label="download package" data-title="Download Package" rel="tooltip"><i class="sfa sfa-download"></i></button>
-              <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="sfa sfa-full-screen"></i></button>
-              <button class="btn" data-action="reset" aria-label="reset" data-title="Rerender Chart" rel="tooltip"><i class="sfa sfa-refresh"></i></button>
-            </div>
-          </div>
-          <div class="tab" data-toggle="table">
-            <span>Data</span>
-            <div class="toolbar">
-              <button class="btn" data-action="edit" aria-label="edit" data-title="Edit Data" rel="tooltip"><i class="sfa sfa-edit"></i></button>
-              <button class="btn" data-action="download" aria-label="download data" data-title="Download Data" rel="tooltip"><i class="sfa sfa-download"></i></button>
-              <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="sfa sfa-full-screen"></i></button>
-              <button class="btn" data-action="reset" aria-label="reset" data-title="Reload Data" rel="tooltip"><i class="sfa sfa-refresh"></i></button>
-            </div>
-          </div>
-          <div class="tab right active" data-toggle="options">
-            <span>Options</span>
-            <div class="toolbar">
-              <button class="btn" data-action="edit" aria-label="edit" data-title="Edit Chart Data" rel="tooltip"><i class="sfa sfa-edit"></i></button>
-              <button class="btn" data-action="download" aria-label="download data" data-title="Download Data" rel="tooltip"><i class="sfa sfa-download"></i></button>
-              <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="sfa sfa-full-screen"></i></button>
-              <button class="btn" data-action="reset" aria-label="reset form" data-title="Reload Form Manifest" rel="tooltip"><i class="sfa sfa-refresh"></i></button>
-            </div>
+      <div class="tab-bar">
+        <div class="tab active" data-toggle="chart">
+          <span>Chart</span>
+          <div class="toolbar">
+            <button class="btn" data-action="download" data-type="image" aria-label="download image" data-title="Download Image" rel="tooltip"><i class="sfa sfa-camera"></i></button>
+            <button class="btn" data-action="download" data-type="package" aria-label="download package" data-title="Download Package" rel="tooltip"><i class="sfa sfa-download"></i></button>
+            <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="sfa sfa-full-screen"></i></button>
+            <button class="btn" data-action="reset" aria-label="reset" data-title="Rerender Chart" rel="tooltip"><i class="sfa sfa-refresh"></i></button>
           </div>
         </div>
-      <div class="container example" id="example">
-        <div class="sc-chart" id="chart">
-          <svg></svg>
+        <div class="tab" data-toggle="table">
+          <span>Data</span>
+          <div class="toolbar">
+            <button class="btn" data-action="edit" data-type="data" aria-label="edit chart data" data-title="Edit Chart Data" rel="tooltip"><i class="sfa sfa-edit"></i></button>
+            <button class="btn" data-action="download" data-type="data" aria-label="download data" data-title="Download Data" rel="tooltip"><i class="sfa sfa-download"></i></button>
+            <button class="btn" data-action="full" aria-label="full screen" data-title="Enter Full Screen" data-title-toggle="Exit Full Screen" rel="tooltip"><i class="sfa sfa-full-screen"></i></button>
+            <button class="btn" data-action="reset" aria-label="reset" data-title="Reload Data" rel="tooltip"><i class="sfa sfa-refresh"></i></button>
+          </div>
         </div>
-        <div class="sc-table hide" id="table">
+        <div class="tab right active" data-toggle="options">
+          <span>Options</span>
+          <div class="toolbar">
+            <button class="btn" data-action="edit" data-type="config" aria-label="edit chart config" data-title="Edit Chart Config" rel="tooltip"><i class="sfa sfa-edit"></i></button>
+            <button class="btn" data-action="download" data-type="config" aria-label="download config" data-title="Download Config" rel="tooltip"><i class="sfa sfa-download"></i></button>
+            <button class="btn" data-action="reset" aria-label="reset form" data-title="Reload Form Manifest" rel="tooltip"><i class="sfa sfa-refresh"></i></button>
+          </div>
         </div>
       </div>
-      <div class="container options open" id="options">
-        <div class="sc-form" id="form">
+      <div class="pane example" id="example">
+        <div class="panel chart" id="chart">
+          <svg class="sucrose"></svg>
+        </div>
+        <div class="panel table hide" id="table">
+          <table class="sucrose"></table>
+          <div class="code" id="data"></div>
+        </div>
+      </div>
+      <div class="pane options open" id="options">
+        <div class="panel form" id="form">
+          <form class="sucrose"></form>
+          <div class="code" id="config"></div>
         </div>
       </div>
     </section>
@@ -202,8 +205,10 @@
 <script src="js/app/charts.js"></script>
 <script src="js/app/table.js"></script>
 <script src="js/app/transform.js"></script>
-<script src="js/app/saveimage.js"></script>
-<script src="js/app/savejson.js"></script>
+<script src="js/app/generateimage.js"></script>
+<script src="js/app/generatepackage.js"></script>
+<script src="js/app/generatedata.js"></script>
+<script src="js/app/generateconfig.js"></script>
 <script src="js/app/loader.js"></script>
 <script src="js/app/manifest.js"></script>
 <script src="js/app/main.js"></script>

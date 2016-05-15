@@ -17,9 +17,10 @@ var Manifest =
   Chart: null,
   // D3 table
   Table: null,
-  // CodeMirror
-  Editor: null,
 
+  // CodeMirror
+  dataEditor: null,
+  configEditor: null,
   lintErrors: [],
 
   // Default data
@@ -91,9 +92,10 @@ var Manifest =
         var $button = $(this);
         evt.stopPropagation();
         $demo.toggleClass('full-screen');
+        // $('button[data-action=full]').removeClass('active');
+        $('button[data-action=full]').toggleClass('active', $demo.hasClass('full-screen'));
         self.toggleTooltip($button);
         self.chartResizer(self.Chart)(evt);
-        $button.toggleClass('active');
       });
     // Reset data to original state
     $('button[data-action=reset]')
@@ -105,50 +107,74 @@ var Manifest =
         self.loadData(self.data.file.val);
       });
     // Toggle option panel display
-    $('button[data-action=toggle]')
-      .on('click.example touchend.example', function (evt) {
-        evt.stopPropagation();
-        if ($demo.width() > 480) {
-          $options.toggleClass('hidden');
-          $example.toggleClass('full-width');
-        } else {
-          $options.toggleClass('open');
-        }
-        self.chartResizer(self.Chart)(evt);
-      });
+    // $('button[data-action=toggle]')
+    //   .on('click.example touchend.example', function (evt) {
+    //     evt.stopPropagation();
+    //     if ($demo.width() > 480) {
+    //       $options.toggleClass('hidden');
+    //       $example.toggleClass('full-width');
+    //     } else {
+    //       $options.toggleClass('open');
+    //     }
+    //     self.chartResizer(self.Chart)(evt);
+    //   });
     // Download image or data depending on panel
     $('button[data-action=download]')
       .on('click.example touchend.example', function (evt) {
+        var dataType = $(this).data('type');
         evt.stopPropagation();
-        if ($chart.hasClass('hide')) {
-          generateJson(evt);
-        } else {
-          generatePackage(evt);
+        switch (dataType) {
+          case 'package':
+            generatePackage(evt);
+            break;
+          case 'data':
+            generateData(evt);
+            break;
+          case 'config':
+            generateConfig(evt);
+            break;
+          case 'image':
+            generateImage(evt);
+            break;
         }
-      });
-    $('button[data-action=save]')
-      .on('click.example touchend.example', function (evt) {
-        evt.stopPropagation();
-        generateImage(evt);
       });
     // Toggle display of table or code data edit view
     $('button[data-action=edit]')
       .on('click.example touchend.example', function (evt) {
         var $button = $(this);
         evt.stopPropagation();
-        if ($button.hasClass('active')) {
-          if (!self.lintErrors.length) {
-            self.parseRawData(JSON.parse(self.Editor.doc.getValue()));
-          }
-          self.unloadDataEditor();
-          self.loadTable();
-          $table.find('table').show();
-          $button.removeClass('active');
-        } else {
-          self.unloadTable();
-          self.loadDataEditor();
-          $table.find('table').hide();
-          $button.addClass('active');
+
+        switch ($button.data('type')) {
+          case 'data':
+            if ($button.hasClass('active')) {
+              if (!self.lintErrors.length) {
+                self.parseRawData(JSON.parse(self.dataEditor.doc.getValue()));
+              }
+              self.unloadDataEditor('data');
+              self.loadTable();
+              $table.show();
+              $button.removeClass('active');
+            } else {
+              self.unloadTable();
+              self.loadDataEditor('data', rawData);
+              $table.hide();
+              $button.addClass('active');
+            }
+            break;
+          case 'config':
+            if ($button.hasClass('active')) {
+              if (!self.lintErrors.length) {
+                Data = JSON.parse(self.configEditor.doc.getValue());
+              }
+              self.unloadDataEditor('config');
+              self.loadForm();
+              $button.removeClass('active');
+            } else {
+              self.unloadForm();
+              self.loadDataEditor('config', Data);
+              $button.addClass('active');
+            }
+            break;
         }
       });
     // Toggle display of chart or table tab
@@ -157,33 +183,64 @@ var Manifest =
       .on('click.example touchend.example', function (evt) {
         evt.stopPropagation();
         evt.preventDefault();
+
+        $('button[data-action=edit]').removeClass('active');
+
         switch ($(this).data('toggle')) {
           case 'chart':
-            self.unloadDataEditor();
+            self.unloadDataEditor('data');
             self.unloadTable();
-            $('button[data-action=edit]').removeClass('active');
             self.loadChart();
             break;
           case 'table':
             self.unloadChart();
-            self.unloadDataEditor();
+            self.unloadDataEditor('data');
             self.loadTable();
             break;
           case 'options':
-            $('[data-toggle=options]').toggleClass('active');
-            $example.toggleClass('full-width');
-            $options.toggleClass('open');
+            self.toggleTab('options');
+            self.unloadDataEditor('config');
             self.chartResizer(self.Chart)(evt);
             break;
         }
       });
   },
+
+  loadForm: function () {
+    // TODO: is there a way to reinit jQuery.my with new Data?
+    // I get an bind error if I try to do it, so I have to
+    // Delete and recreate the entire form
+    $form.remove();
+    $('#form').append('<form class="sucrose"/>');
+    // Reset application scope reference to form
+    $form = $('#form form');
+    // Instantiate jQuery.my
+    $form.my(Manifest, Data);
+  },
+  unloadForm: function () {
+    $form.hide();
+  },
+
   toggleTab: function (tab) {
-    var isChartTab = tab === 'chart';
-    $chart.toggleClass('hide', !isChartTab);
-    $table.toggleClass('hide', isChartTab);
-    $('[data-toggle=chart]').toggleClass('active', isChartTab);
-    $('[data-toggle=table]').toggleClass('active', !isChartTab);
+    switch (tab) {
+      case 'chart':
+        $('[data-toggle=chart]').addClass('active');
+        $('[data-toggle=table]').removeClass('active');
+        $chart.removeClass('hide');
+        $('#table').addClass('hide');
+        break;
+      case 'table':
+        $('[data-toggle=table]').addClass('active');
+        $('[data-toggle=chart]').removeClass('active');
+        $('#table').removeClass('hide');
+        $chart.addClass('hide');
+        break;
+      case 'options':
+        $('[data-toggle=options]').toggleClass('active');
+        $example.toggleClass('full-width');
+        $options.toggleClass('open');
+        break;
+    }
   },
   toggleTooltip: function ($o) {
     var t1 = $o.data('title'),
@@ -370,8 +427,8 @@ var Manifest =
       delete this.selectedOptions[k];
     }
 
-    // Update the settings display textarea
     this.ui['[name=' + k + ']'].setChartOption(v, this);
+    // Update the settings display textarea
     this.my.recalc('[name=settings]');
   },
   getLocaleOptions: function () {
@@ -392,8 +449,8 @@ var Manifest =
     chartData = Object.clone(rawData, true);
 
     // this.toggleTab(true);
-    $chart.attr('class', 'sc-chart sc-chart-' + this.type + ($chart.hasClass('hide') ? ' hide' : ''));
     $chart.append('<svg/>');
+    $chart.find('svg').attr('class', 'sucrose sc-chart sc-chart-' + this.type); // + ($chart.hasClass('hide') ? ' hide' : '')
 
     // Bind D3 chart to SVG element
     d3.select('#chart svg').datum(chartData).call(this.Chart);
@@ -465,11 +522,10 @@ var Manifest =
   /* ------------------------
    * DATA EDITOR functions -- */
 
-  loadDataEditor: function () {
-    $('button[data-action=edit]').addClass('active');
-    this.unloadDataEditor();
-    this.Editor = CodeMirror(document.getElementById('table'), {
-      value: JSON.stringify(rawData, null, '  '),
+  loadDataEditor: function (id, data) {
+    this.unloadDataEditor(id);
+    var editor = CodeMirror(document.getElementById(id), {
+      value: JSON.stringify(data, null, '  '),
       mode:  'application/json',
       lint: {
         getAnnotations: CodeMirror.jsonValidator,
@@ -490,11 +546,27 @@ var Manifest =
     //   // chartData = JSON.parse(cm.doc.getValue());
     //   // self.refreshTable();
     // });
-    this.Editor.focus();
+    editor.focus();
+    switch (id) {
+      case 'data':
+        this.dataEditor = editor;
+        break;
+      case 'config':
+        this.configEditor = editor;
+        break;
+    }
   },
-  unloadDataEditor: function () {
-    $table.find('.CodeMirror').remove();
-    this.Editor = null;
+  unloadDataEditor: function (id) {
+    switch (id) {
+      case 'data':
+        $data.find('.CodeMirror').remove();
+        this.dataEditor = null;
+        break;
+      case 'config':
+        $config.find('.CodeMirror').remove();
+        this.configEditor = null;
+        break;
+    }
   },
 
   /* ------------------------
@@ -505,8 +577,6 @@ var Manifest =
     this.unloadTable();
 
     this.toggleTab('table');
-
-    $table.attr('class', 'sc-table sc-table-' + this.type + ($table.hasClass('hide') ? ' hide' : ''));
 
     chartData = Object.clone(rawData, true);
 
@@ -522,8 +592,13 @@ var Manifest =
     // Dismiss editor
     d3.select('#table').on('click', this.Chart.dispatch.tableClick);
 
+    $table = $('#table table');
+
+    $table.attr('class', 'sucrose sc-table sc-table-' + this.type);
+    // + ($table.hasClass('hide') ? ' hide' : '')
+
     // Enable editing of data table
-    $table.find('table').editableTableWidget();
+    $table.editableTableWidget();
 
     // Listen for changes to data table cell values
     $table.find('td.sc-val').on('change.editable', function (evt, val) {
@@ -554,7 +629,7 @@ var Manifest =
   },
   unloadTable: function () {
     $table.find('td').off('change.editable');
-    $table.find('table').remove();
+    $table.remove();
   },
 
   /* ------------------------

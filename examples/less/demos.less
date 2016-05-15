@@ -75,20 +75,30 @@ section {
     bottom: 0;
     left: 0;
     padding: 0;
-    z-index: 2;
+    z-index: 3;
     border: none;
-    .container-header {
+    .tab-bar {
       border-width: 0 0 1px 0;
       border-radius: 0;
       margin-right: 0;
     }
-    .container {
+    .pane {
       margin-bottom: 0;
-      &:last-child {
-        margin-right: 0;
+    }
+    .example {
+      min-width: calc(~"98% - 350px");
+      max-width: calc(~"98% - 240px");
+      &.full-width {
+        width: 100%;
+        max-width: 100%;
       }
     }
-    .sc-chart {
+    .options {
+      right: 0;
+      margin-right: 0;
+      width: 40%;
+    }
+    .chart {
       border: none;
     }
     .ui-resizable-handle {
@@ -113,12 +123,13 @@ section {
 }
 
 // ----------------
-// CONTAINER HEADER
+// PANE HEADER
 
-.container-header {
+.tab-bar {
   font-size: 0;
   line-height: 0;
   margin-right: 2%;
+  position: relative;
   span {
     font-family: @serifFontFamily;
     font-size: 16px;
@@ -142,7 +153,7 @@ section {
     }
   }
 }
-.rtl .container-header {
+.rtl .tab-bar {
   span {
     float: right;
     margin: 0 0 0 6px;
@@ -153,7 +164,6 @@ section {
   }
 }
 
-.panel,
 .tab {
   padding: 4px 0 4px 6px;
   box-sizing: border-box;
@@ -190,7 +200,6 @@ section {
   }
 }
 .rtl {
-  .panel,
   .tab {
     padding: 4px 6px 4px 0;
   }
@@ -206,18 +215,26 @@ section {
 
 
 // ---------
-// CONTAINER
+// PANE
 
-.container {
+.pane {
   height: calc(~"100% - 31px");
   float: left;
-  box-sizing: border-box;
   margin: 0 2% 16px 0;
+  box-sizing: border-box;
+  border-radius: 0 0 4px 4px;
+  background-color: #eee;
+  .CodeMirror {
+    height: 100%;
+  }
+}
+.rtl .pane {
+  float: right;
 }
 .example {
   width: 58%;
   min-width: calc(~"96% - 350px");
-  max-width: calc(~"96% - 200px");
+  max-width: calc(~"96% - 240px");
   &.full-width {
     width: 98%;
     max-width: 98%;
@@ -226,26 +243,21 @@ section {
 .options {
   width: 38%;
   max-width: 350px;
-  min-width: 200px;
-}
-.rtl .container {
-  float: right;
-}
-.rtl .sc-form .option-row {
-  text-align: right;
+  min-width: 240px;
 }
 
-.sc-form,
-.sc-chart,
-.sc-table {
+
+.panel {
   width: 100%;
   height: 100%;
-  border-radius: 0 0 4px 4px;
   box-sizing: border-box;
+  &.hide {
+    display: none;
+  }
 }
-.sc-form {
+
+.form {
   overflow: scroll;
-  background-color: #eee;
   .option-row {
     padding: 4px 12px 12px;
   }
@@ -347,7 +359,7 @@ section {
     }
   }
 }
-.rtl .sc-form {
+.rtl .form {
   label {
     margin-left: 8px;
     margin-right: 0;
@@ -361,18 +373,16 @@ section {
       margin-right: 0;
     }
   }
-}
-.sc-chart,
-.sc-table {
-  min-width: 100px;
-  min-height: 100px;
-  float: left;
-  background-color: #fff;
-  &.hide {
-    display: none;
+  .option-row {
+    text-align: right;
   }
 }
-.sc-table {
+
+.example .panel {
+  background-color: #fff;
+}
+
+.table {
   padding: 12px;
   overflow: scroll;
   tbody tr:last-child td {
@@ -385,9 +395,6 @@ section {
     text-align: center;
     outline-width: 3px;
     outline-offset: -2px;
-  }
-  .CodeMirror {
-    height: 100%;
   }
 }
 .sc-td {
@@ -517,6 +524,7 @@ input.mindmup {
     right: auto;
   }
 }
+
 /* Popovers
 -------------------------------------------------- */
 .popover-well {
@@ -732,11 +740,23 @@ a.success:hover { color: darken(@successText, 10%); }
   h3 {
     font-size: 16px;
   }
-  // .container-header .tab.right:not(.open) .toolbar {
-  //   display: none;
-  // }
+  .tab.right {
+    position: absolute;
+    right: 0;
+    &.active {
+      box-shadow: -2px 2px 3px #999;
+    }
+  }
+  .rtl .tab.right {
+    right: auto;
+    left: 0;
+    &.active {
+      box-shadow: 2px 2px 3px #999;
+    }
+  }
   .example {
     width: 98%;
+    min-width: 98%;
     max-width: 98%;
   }
   .options {
@@ -751,9 +771,6 @@ a.success:hover { color: darken(@successText, 10%); }
       z-index: 2;
       display: block;
       box-shadow: -2px 2px 3px #999;
-      .panel {
-        border-bottom: none;
-      }
     }
   }
   .rtl .options {
@@ -761,6 +778,16 @@ a.success:hover { color: darken(@successText, 10%); }
     right: auto;
     &.open {
       box-shadow: 2px 2px 3px #999;
+    }
+  }
+
+  section.full-screen {
+    .example {
+      width: 100%;
+      max-width: 100%;
+    }
+    .options {
+      height: calc(~"100% - 31px");
     }
   }
 }

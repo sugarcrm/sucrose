@@ -70,16 +70,9 @@ function loader(type) {
       $index.addClass('hidden');
       $demo.removeClass('hidden');
 
-      // TODO: is there a way to reinit jQuery.my with new Data?
-      // I get an bind error if I try to do it, so I have to
-      // Delete and recreate the entire form
-      $form.remove();
-      $options.append('<div class="sc-form" id="form"/>');
-      // Reset application scope reference to form
-      $form = $('#form');
+      Manifest.loadForm();
 
-      // Instantiate jQuery.my
-      $form.my(Manifest, Data);
+      //
       $picker.find('a')
         .removeClass('active')
         .filter('[data-type=' + type + ']')

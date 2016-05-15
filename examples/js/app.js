@@ -861,6 +861,35 @@ function parseTreemapData(data) {
     return root;
 }
 
+function generatePackage(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    function openTab(url) {
+        var a = window.document.createElement('a');
+        var evt = new MouseEvent('click', {
+              bubbles: false,
+              cancelable: true,
+              view: window,
+            });
+        a.target = '_blank';
+        a.href = url;
+        // Not supported consistently across browsers
+        // fall back to open data in new tab
+        a.download = 'sucrose-package.json';
+        document.body.appendChild(a);
+        a.addEventListener('click', function (e) {
+          a.parentNode.removeChild(a);
+        });
+        a.dispatchEvent(evt);
+    }
+
+    var json = JSON.stringify(tableData, null, '  ');
+    var uri = 'data:text/json;charset=utf-8,' + encodeURIComponent(json);
+
+    openTab(uri);
+}
+
 //https://developer.mozilla.org/en-US/docs/Web/API/Window.btoa
 //http://techslides.com/save-svg-as-an-image/
 //http://tutorials.jenkov.com/svg/svg-and-css.html
@@ -934,7 +963,7 @@ function generateImage(e) {
     });
 }
 
-function generateJson(e) {
+function generateData(e) {
     e.preventDefault();
     e.stopPropagation();
 
@@ -949,7 +978,7 @@ function generateJson(e) {
         a.href = url;
         // Not supported consistently across browsers
         // fall back to open data in new tab
-        a.download = 'download.json';
+        a.download = 'sucrose-data.json';
         document.body.appendChild(a);
         a.addEventListener('click', function (e) {
           a.parentNode.removeChild(a);
@@ -959,6 +988,45 @@ function generateJson(e) {
 
     var json = JSON.stringify(tableData, null, '  ');
     var uri = 'data:text/json;charset=utf-8,' + encodeURIComponent(json);
+
+    openTab(uri);
+}
+
+function generateOptions(e) {
+    var options = {},
+        json,
+        uri;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    function openTab(url) {
+        var a = window.document.createElement('a');
+        var evt = new MouseEvent('click', {
+              bubbles: false,
+              cancelable: true,
+              view: window,
+            });
+        a.target = '_blank';
+        a.href = url;
+        // Not supported consistently across browsers
+        // fall back to open data in new tab
+        a.download = 'sucrose-options.json';
+        document.body.appendChild(a);
+        a.addEventListener('click', function (e) {
+          a.parentNode.removeChild(a);
+        });
+        a.dispatchEvent(evt);
+    }
+
+    Object.each(Object.clone(self.data), function (k, v) {
+      if (k !== 'file') {
+        options[k] = v.val || v.def;
+      }
+    });
+
+    json = JSON.stringify(options, null, '  ');
+    uri = 'data:text/json;charset=utf-8,' + encodeURIComponent(json);
 
     openTab(uri);
 }
@@ -1143,9 +1211,10 @@ var Manifest =
         var $button = $(this);
         evt.stopPropagation();
         $demo.toggleClass('full-screen');
+        $('button[data-action=full]').removeClass('active');
+        $button.toggleClass('active', $demo.hasClass('full-screen'));
         self.toggleTooltip($button);
         self.chartResizer(self.Chart)(evt);
-        $button.toggleClass('active');
       });
     // Reset data to original state
     $('button[data-action=reset]')
@@ -1171,17 +1240,22 @@ var Manifest =
     // Download image or data depending on panel
     $('button[data-action=download]')
       .on('click.example touchend.example', function (evt) {
+        var dataType = $(this).data('type');
         evt.stopPropagation();
-        if ($chart.hasClass('hide')) {
-          generateJson(evt);
-        } else {
-          generatePackage(evt);
+        switch (dataType) {
+          case 'package':
+            generatePackage(evt);
+            break;
+          case 'data':
+            generateData(evt);
+            break;
+          case 'options':
+            generateOptions(evt);
+            break;
+          case 'image':
+            generateImage(evt);
+            break;
         }
-      });
-    $('button[data-action=save]')
-      .on('click.example touchend.example', function (evt) {
-        evt.stopPropagation();
-        generateImage(evt);
       });
     // Toggle display of table or code data edit view
     $('button[data-action=edit]')
@@ -1422,8 +1496,8 @@ var Manifest =
       delete this.selectedOptions[k];
     }
 
-    // Update the settings display textarea
     this.ui['[name=' + k + ']'].setChartOption(v, this);
+    // Update the settings display textarea
     this.my.recalc('[name=settings]');
   },
   getLocaleOptions: function () {
