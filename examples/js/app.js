@@ -1142,7 +1142,7 @@ var Manifest =
       .on('click.example touchend.example', function (evt) {
         var $button = $(this);
         evt.stopPropagation();
-        $example.toggleClass('full-screen');
+        $demo.toggleClass('full-screen');
         self.toggleTooltip($button);
         self.chartResizer(self.Chart)(evt);
         $button.toggleClass('active');
@@ -1175,8 +1175,13 @@ var Manifest =
         if ($chart.hasClass('hide')) {
           generateJson(evt);
         } else {
-          generateImage(evt);
+          generatePackage(evt);
         }
+      });
+    $('button[data-action=save]')
+      .on('click.example touchend.example', function (evt) {
+        evt.stopPropagation();
+        generateImage(evt);
       });
     // Toggle display of table or code data edit view
     $('button[data-action=edit]')
@@ -1204,15 +1209,24 @@ var Manifest =
       .on('click.example touchend.example', function (evt) {
         evt.stopPropagation();
         evt.preventDefault();
-        if ($(this).data('toggle') === 'chart') {
-          self.unloadDataEditor();
-          self.unloadTable();
-          $('button[data-action=edit]').removeClass('active');
-          self.loadChart();
-        } else {
-          self.unloadChart();
-          self.unloadDataEditor();
-          self.loadTable();
+        switch ($(this).data('toggle')) {
+          case 'chart':
+            self.unloadDataEditor();
+            self.unloadTable();
+            $('button[data-action=edit]').removeClass('active');
+            self.loadChart();
+            break;
+          case 'table':
+            self.unloadChart();
+            self.unloadDataEditor();
+            self.loadTable();
+            break;
+          case 'options':
+            $('[data-toggle=options]').toggleClass('active');
+            $example.toggleClass('full-width');
+            $options.toggleClass('open');
+            self.chartResizer(self.Chart)(evt);
+            break;
         }
       });
   },
