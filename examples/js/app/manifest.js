@@ -211,9 +211,9 @@ var Manifest =
     // I get an bind error if I try to do it, so I have to
     // Delete and recreate the entire form
     $form.remove();
-    $('#form').append('<form class="sucrose"/>');
+    $('#form_').append('<form class="sucrose"/>');
     // Reset application scope reference to form
-    $form = $('#form form');
+    $form = $('#form_ form');
     // Instantiate jQuery.my
     $form.my(Manifest, Data);
   },
@@ -227,12 +227,12 @@ var Manifest =
         $('[data-toggle=chart]').addClass('active');
         $('[data-toggle=table]').removeClass('active');
         $chart.removeClass('hide');
-        $('#table').addClass('hide');
+        $('#table_').addClass('hide');
         break;
       case 'table':
         $('[data-toggle=table]').addClass('active');
         $('[data-toggle=chart]').removeClass('active');
-        $('#table').removeClass('hide');
+        $('#table_').removeClass('hide');
         $chart.addClass('hide');
         break;
       case 'options':
@@ -428,8 +428,6 @@ var Manifest =
     }
 
     this.ui['[name=' + k + ']'].setChartOption(v, this);
-    // Update the settings display textarea
-    this.my.recalc('[name=settings]');
   },
   getLocaleOptions: function () {
     var locales = [];
@@ -453,10 +451,10 @@ var Manifest =
     $chart.find('svg').attr('class', 'sucrose sc-chart sc-chart-' + this.type); // + ($chart.hasClass('hide') ? ' hide' : '')
 
     // Bind D3 chart to SVG element
-    d3.select('#chart svg').datum(chartData).call(this.Chart);
+    d3.select('#chart_ svg').datum(chartData).call(this.Chart);
 
     // Dismiss tooltips
-    d3.select('#chart').on('click', this.Chart.dispatch.chartClick);
+    d3.select('#chart_').on('click', this.Chart.dispatch.chartClick);
 
     // Rebind jQuery resizable plugin
     $chart.resizable({
@@ -522,10 +520,21 @@ var Manifest =
   /* ------------------------
    * DATA EDITOR functions -- */
 
-  loadDataEditor: function (id, data) {
+  loadDataEditor: function (id, json) {
     this.unloadDataEditor(id);
-    var editor = CodeMirror(document.getElementById(id), {
-      value: JSON.stringify(data, null, '  '),
+
+    switch (id) {
+      case 'data':
+        this.dataEditor = this.createEditor(id, json);
+        break;
+      case 'config':
+        this.configEditor = this.createEditor(id, json);
+        break;
+    }
+  },
+  createEditor: function (id, json) {
+    var editor = CodeMirror(document.getElementById(id + '_'), {
+      value: JSON.stringify(json, null, '  '),
       mode:  'application/json',
       lint: {
         getAnnotations: CodeMirror.jsonValidator,
@@ -541,20 +550,8 @@ var Manifest =
       foldGutter: true,
       gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter', 'CodeMirror-lint-markers']
     });
-    // this.Editor.doc.on('change', function () {
-    //   console.log(cm.state.lint.marked)
-    //   // chartData = JSON.parse(cm.doc.getValue());
-    //   // self.refreshTable();
-    // });
     editor.focus();
-    switch (id) {
-      case 'data':
-        this.dataEditor = editor;
-        break;
-      case 'config':
-        this.configEditor = editor;
-        break;
-    }
+    return editor;
   },
   unloadDataEditor: function (id) {
     switch (id) {
@@ -587,15 +584,14 @@ var Manifest =
     // });
 
     // Bind D3 table to TABLE element
-    d3.select('#table').datum(tableData).call(this.Table);
+    d3.select('#table_').datum(tableData).call(this.Table);
 
     // Dismiss editor
-    d3.select('#table').on('click', this.Chart.dispatch.tableClick);
+    d3.select('#table_').on('click', this.Chart.dispatch.tableClick);
 
-    $table = $('#table table');
+    $table = $('#table_ table');
 
     $table.attr('class', 'sucrose sc-table sc-table-' + this.type);
-    // + ($table.hasClass('hide') ? ' hide' : '')
 
     // Enable editing of data table
     $table.editableTableWidget();

@@ -16,9 +16,6 @@ function loader(type) {
       // Reset manifest UI Object from Base UI
       Manifest.ui = Object.clone(baseUI, true);
 
-      // Append settings textarea to end of chart options ui
-      Object.merge(chartManifest.ui, Object.clone(settingsUI, true));
-
       // Combine base and custom Manifest UIs
       Object.merge(Manifest, chartManifest, true);
 

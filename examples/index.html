@@ -1,10 +1,10 @@
 <!doctype html>
-<!-- DEV::
+<!-- DEV: -->
 <html>
-::DEV -->
-<!-- PROD: -->
+<!-- :DEV -->
+<!-- PROD::
 <html manifest="sucrose.appcache">
-<!-- :PROD -->
+::PROD -->
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
@@ -41,15 +41,15 @@
     <meta name="msapplication-TileImage" content="img/favicons/mstile-144x144.png">
 
     <!-- <script>less = {env: 'production'};</script> -->
-    <!-- DEV::
+    <!-- DEV: -->
     <link rel="stylesheet/less" type="text/css" href="../src/less/sucrose.less">
     <link rel="stylesheet/less" type="text/css" href="less/examples.less">
     <script src="js/less.min.js"></script>
-    ::DEV -->
-    <!-- PROD: -->
+    <!-- :DEV -->
+    <!-- PROD::
     <link rel="stylesheet" href="css/sucrose.min.css">
     <link rel="stylesheet" href="css/examples.min.css">
-    <!-- :PROD -->
+    ::PROD -->
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -62,11 +62,11 @@
             <span class="sugar-cube sc-small">
               <svg width="20" height="20"><use xlink:href="img/charticons.svg#cube"></svg>
             </span>
-            <span class="title" id="title">Sucrose Charts</span>
+            <span id="title_" class="title">Sucrose Charts</span>
           </a>
         </h2>
-        <div id="picker" class="chart-selector">
-          <button id="menu" class="btn" type="button"><i class="sfa sfa-menu"></i></button>
+        <div id="picker_" class="chart-selector">
+          <button id="menu_" class="btn" type="button"><i class="sfa sfa-menu"></i></button>
           <span class="spacer"> </span>
           <menu class="wrapper">
           <menuitem><a href="index.html?type=multibar" data-type="multibar" data-title="Multibar Chart" rel="tooltip"><svg><use xlink:href="img/charticons.svg#vertical"></use></svg><span>Multibar Chart</span></a></menuitem>
@@ -86,7 +86,7 @@
       </nav>
     </header>
 
-    <div class="index">
+    <div id="index_" class="index">
       <nav>
         <p>SugarCRM's Chart Library: based on <a href="http://d3js.org">D3</a> and derived from <a href="http://nvd3.org/">NVD3</a></p>
         <p><a href="https://github.com/sugarcrm/sucrose">https://github.com/sugarcrm/sucrose</a></p>
@@ -98,34 +98,34 @@
       </nav>
 
       <section>
-      <h3>Building Charts for Business Applications</h3>
-      <p>There were many factors that influenced our decision to create our own charting library:</p>
-      <ul>
-        <menuitem>flexible integration within the Sugar development environment</menuitem>
-        <menuitem>single library for both desktop and mobile applications</menuitem>
-        <menuitem>responsive content and formatting controls</menuitem>
-        <menuitem>internationalization and localization support</menuitem>
-        <menuitem>clean styling for legibility and clarity</menuitem>
-      </ul>
-      <h3>Chart Examples</h3>
-      <p>Test chart types and build configuration:</p>
-      <menu id="list" class="chart-selector">
-        <menuitem><a href="index.html?type=multibar" data-type="multibar"><span>Multibar Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=line" data-type="line"><span>Line Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=pie" data-type="pie"><span>Pie Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=funnel" data-type="funnel"><span>Funnel Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=bubble" data-type="bubble"><span>Bubble Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=treemap" data-type="treemap"><span>Treemap Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=pareto" data-type="pareto"><span>Pareto Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=gauge" data-type="gauge"><span>Gauge Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=area" data-type="area"><span>Stacked Area Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=tree" data-type="tree"><span>Tree Chart</span></a></menuitem>
-        <menuitem><a href="index.html?type=globe" data-type="globe"><span>Globe Chart</span></a></menuitem>
-      </menu>
+        <h3>Building Charts for Business Applications</h3>
+        <p>There were many factors that influenced our decision to create our own charting library:</p>
+        <ul>
+          <menuitem>flexible integration within the Sugar development environment</menuitem>
+          <menuitem>single library for both desktop and mobile applications</menuitem>
+          <menuitem>responsive content and formatting controls</menuitem>
+          <menuitem>internationalization and localization support</menuitem>
+          <menuitem>clean styling for legibility and clarity</menuitem>
+        </ul>
+        <h3>Chart Examples</h3>
+        <p>Test chart types and build configuration:</p>
+        <menu id="list_" class="chart-selector">
+          <menuitem><a href="index.html?type=multibar" data-type="multibar"><span>Multibar Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=line" data-type="line"><span>Line Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=pie" data-type="pie"><span>Pie Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=funnel" data-type="funnel"><span>Funnel Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=bubble" data-type="bubble"><span>Bubble Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=treemap" data-type="treemap"><span>Treemap Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=pareto" data-type="pareto"><span>Pareto Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=gauge" data-type="gauge"><span>Gauge Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=area" data-type="area"><span>Stacked Area Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=tree" data-type="tree"><span>Tree Chart</span></a></menuitem>
+          <menuitem><a href="index.html?type=globe" data-type="globe"><span>Globe Chart</span></a></menuitem>
+        </menu>
       </section>
     </div>
 
-    <section class="demo hidden">
+    <section id="demo_" class="demo hidden">
       <div class="tab-bar">
         <div class="tab active" data-toggle="chart">
           <span>Chart</span>
@@ -154,19 +154,19 @@
           </div>
         </div>
       </div>
-      <div class="pane example" id="example">
-        <div class="panel chart" id="chart">
+      <div id="example_" class="pane example">
+        <div id="chart_" class="panel chart">
           <svg class="sucrose"></svg>
         </div>
-        <div class="panel table hide" id="table">
+        <div id="table_" class="panel table hide">
           <table class="sucrose"></table>
-          <div class="code" id="data"></div>
+          <div id="data_" class="code"></div>
         </div>
       </div>
-      <div class="pane options open" id="options">
-        <div class="panel form" id="form">
+      <div id="options_" class="pane options open">
+        <div id="form_" class="panel form">
           <form class="sucrose"></form>
-          <div class="code" id="config"></div>
+          <div id="config_" class="code"></div>
         </div>
       </div>
     </section>
@@ -199,7 +199,7 @@
 <script src="js/d3.min.js"></script>
 <script src="js/topojson.min.js"></script>
 
-<!-- DEV::
+<!-- DEV: -->
 <script src="js/sucrose.js"></script>
 <script src="js/app/variables.js"></script>
 <script src="js/app/charts.js"></script>
@@ -212,10 +212,10 @@
 <script src="js/app/loader.js"></script>
 <script src="js/app/manifest.js"></script>
 <script src="js/app/main.js"></script>
-::DEV -->
-<!-- PROD: -->
+<!-- :DEV -->
+<!-- PROD::
 <script src="js/sucrose.min.js"></script>
 <script src="js/app.min.js"></script>
-<!-- :PROD -->
+::PROD -->
   </body>
 </html>

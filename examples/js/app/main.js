@@ -2,21 +2,21 @@
 Data = {};
 
 // Application scope jQuery references to main page elements
-$title = $('#title');
-$picker = $('#picker');
-$menu = $('#menu');
+$title = $('#title_');
+$picker = $('#picker_');
+$menu = $('#menu_');
 
-$index = $('.index');
-$demo = $('.demo');
+$index = $('#index_');
+$demo = $('#demo_');
 
-$example = $('#example');
-$chart = $('#chart');
-$table = $('#table table');
-$data = $('#data');
+$example = $('#example_');
+$chart = $('#chart_');
+$table = $('#table_ table');
+$data = $('#data_');
 
-$options = $('#options');
-$form = $('#form form');
-$config = $('#config');
+$options = $('#options_');
+$form = $('#form_ form');
+$config = $('#config_');
 
 // Application scope variables
 chartData = {};
@@ -103,8 +103,6 @@ $('body')
 $.when(
     $.get({url:'data/locales/locales.json', dataType: 'json'}),
     $.get({url:'data/catalog.json', dataType: 'json'}),
-    // Load manifest for settings display textarea
-    $.get({url: 'manifest/settings.json', dataType: 'text'}),
     // Load manifest for base ui
     $.get({url: 'manifest/base.json', dataType: 'text'})
   )
@@ -116,8 +114,7 @@ $.when(
   .then(function (json) {
     localeData = Object.extended(json[0]);
     fileCatalog = Object.extended(json[1]);
-    settingsUI = $.my.fromjson(json[2]);
-    baseUI = $.my.fromjson(json[3]);
+    baseUI = $.my.fromjson(json[2]);
   })
   .then(function () {
     // If chartType was passed in url, open it

@@ -1,1 +1,0 @@
-{"[name=settings]": {"init": "function () {}","bind": "function (d,v,$o) {\n              $o.html(JSON.stringify(this.selectedOptions, null, '  '));\n              if (!v) return $o.html();\n            }","events": "blur.my","title": "Chart Option Settings","type": "textarea","values": [{"value": ""}]}}
