@@ -1,5 +1,5 @@
 
-function loader(type) {
+function loader(type, options) {
   if (!type) {
     return;
   }
@@ -55,13 +55,14 @@ function loader(type) {
       // TODO: we need to store modified chartData somewhere
       // chartData = chartStore.chartData || {};
 
-      // Build Data from stored selected values with chart type overrides
-      presets = chartStore.optionPresets || chartManifest.optionPresets;
-      // Data will contain default value an
+      // Build Config data from stored selected values with chart type overrides
+      presets = options || chartStore.optionPresets || chartManifest.optionPresets;
+      console.log(presets)
+      // Config will contain default value an
       Object.each(Manifest.optionDefaults, function (prop, val) {
-        Data[prop] = {};
-        Data[prop].def = val;
-        Data[prop].val = window.uQuery(prop) || presets[prop];
+        Config[prop] = {};
+        Config[prop].def = val;
+        Config[prop].val = window.uQuery(prop) || presets[prop];
       });
 
       $index.addClass('hidden');

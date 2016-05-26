@@ -1,5 +1,3 @@
-// jQuery.my data
-Data = {};
 
 // Application scope jQuery references to main page elements
 $title = $('#title_');
@@ -19,12 +17,17 @@ $form = $('#form_ form');
 $config = $('#config_');
 
 // Application scope variables
-chartData = {};
 chartStore = {};
 chartType = window.uQuery('type');
 fileCatalog = {};
 localeData = {};
-rawData = {};
+
+// jQuery.my data
+Config = {};
+
+// Visualization data
+Data = {};
+chartData = {};
 tableData = {};
 
 // Application scope D3 reference to button tooltip

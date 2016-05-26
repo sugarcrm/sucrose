@@ -1,5 +1,5 @@
 // jQuery.my variables
-var Manifest, Data, baseUI, settingsUI;
+var Manifest, Config, baseUI;
 
 // jQuery references
 var $demo,
@@ -16,14 +16,16 @@ var $demo,
     $title;
 
 // Application scope variables
-var chartData,
-    chartStore,
+var chartStore,
     chartType,
     fileCatalog,
     localeData,
-    rawData,
-    tableData,
     tooltip;
+
+// Visualization data
+var Data,
+    chartData,
+    tableData;
 
 // Data dependent variables
 var xIsDatetime,

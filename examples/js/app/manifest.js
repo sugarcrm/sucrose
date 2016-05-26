@@ -156,7 +156,7 @@ var Manifest =
               $button.removeClass('active');
             } else {
               self.unloadTable();
-              self.loadDataEditor('data', rawData);
+              self.loadDataEditor('data', Data);
               $table.hide();
               $button.addClass('active');
             }
@@ -164,14 +164,14 @@ var Manifest =
           case 'config':
             if ($button.hasClass('active')) {
               if (!self.lintErrors.length) {
-                Data = JSON.parse(self.configEditor.doc.getValue());
+                Config = JSON.parse(self.configEditor.doc.getValue());
               }
               self.unloadDataEditor('config');
               self.loadForm();
               $button.removeClass('active');
             } else {
               self.unloadForm();
-              self.loadDataEditor('config', Data);
+              self.loadDataEditor('config', Config);
               $button.addClass('active');
             }
             break;
@@ -207,7 +207,7 @@ var Manifest =
   },
 
   loadForm: function () {
-    // TODO: is there a way to reinit jQuery.my with new Data?
+    // TODO: is there a way to reinit jQuery.my with new Config data?
     // I get an bind error if I try to do it, so I have to
     // Delete and recreate the entire form
     $form.remove();
@@ -215,7 +215,7 @@ var Manifest =
     // Reset application scope reference to form
     $form = $('#form_ form');
     // Instantiate jQuery.my
-    $form.my(Manifest, Data);
+    $form.my(Manifest, Config);
   },
   unloadForm: function () {
     $form.hide();
@@ -444,7 +444,7 @@ var Manifest =
     this.unloadChart();
     this.toggleTab('chart');
 
-    chartData = Object.clone(rawData, true);
+    chartData = Object.clone(Data, true);
 
     // this.toggleTab(true);
     $chart.append('<svg/>');
@@ -473,7 +473,7 @@ var Manifest =
     $chart.find('svg').remove();
   },
   updateChartDataCell: function (d, i, k, v) {
-    var series = rawData.data[d.series];
+    var series = Data.data[d.series];
     if (series.hasOwnProperty('value')) {
       series.value = v;
     } else {
@@ -488,7 +488,7 @@ var Manifest =
     }
   },
   updateChartDataSeries: function (d, k, v) {
-    var series = rawData.data.find({key: d.key});
+    var series = Data.data.find({key: d.key});
     series[k] = v;
   },
   updateColorModel: function (v) {
@@ -575,7 +575,7 @@ var Manifest =
 
     this.toggleTab('table');
 
-    chartData = Object.clone(rawData, true);
+    chartData = Object.clone(Data, true);
 
     tableData = transformTableData(chartData, this.type, this.Chart);
 
@@ -632,16 +632,16 @@ var Manifest =
    * LOAD DATA functions ---- */
 
   parseRawData: function (json) {
-    rawData = json;
+    Data = json;
     if (this.type === 'treemap' || this.type === 'tree' || this.type === 'globe') {
       this.colorLength = 0;
     } else {
       // raw data from Report API
       if (!json.data) {
-        rawData = transformDataToD3(json, this.type);
+        Data = transformDataToD3(json, this.type);
       }
-      this.colorLength = rawData.properties.colorLength || rawData.data.length;
-      postProcessData(rawData, this.type, this.Chart);
+      this.colorLength = Data.properties.colorLength || Data.data.length;
+      postProcessData(Data, this.type, this.Chart);
     }
   },
 
