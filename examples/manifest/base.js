@@ -19,9 +19,9 @@ var baseUI =
     check: /[a-z0-9_]+/i,
     title: 'Locale',
     type: 'select',
-    values: localeData.keys().map(function(k) {
-      return {value: k, label: localeData[k].label};
-    })
+    values: [
+      {"value": "en","label": "English (US)"}
+    ]
   },
   '[name=color]': {
     bind: function (d, v, $o) {

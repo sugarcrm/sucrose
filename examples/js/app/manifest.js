@@ -58,7 +58,7 @@ var Manifest =
     });
 
     // Set manifest D3 visualization objects
-    this.Chart = sucroseCharts(this.type, localeData[this.selectedOptions.locale]);
+    this.Chart = sucroseCharts(this.type, this.getLocaleData(this.selectedOptions.locale));
     this.Table = sucroseTable(this.Chart);
 
     if (!['bar', 'line', 'area', 'pie', 'funnel', 'gauge'].find(this.type)) {
@@ -164,14 +164,14 @@ var Manifest =
           case 'config':
             if ($button.hasClass('active')) {
               if (!self.lintErrors.length) {
-                Config = JSON.parse(self.configEditor.doc.getValue());
+                self.setConfig(JSON.parse(self.configEditor.doc.getValue()));
               }
               self.unloadDataEditor('config');
               self.loadForm();
               $button.removeClass('active');
             } else {
               self.unloadForm();
-              self.loadDataEditor('config', Config);
+              self.loadDataEditor('config', self.selectedOptions);
               $button.addClass('active');
             }
             break;
@@ -400,7 +400,7 @@ var Manifest =
   initControl: function ($o) {
     var k = $o.attr('name'),
         v = this.getData(this.data, k);
-    this.setOptions(this.data, k, v);
+    this.setOption(this.data, k, v);
   },
   // jQuery.my common method for binding control
   bindControl: function (d, v, $o, callback) {
@@ -411,30 +411,45 @@ var Manifest =
     // Update the my scope data
     this.setData(d, k, v, callback);
     // Store and display chart options
-    this.setOptions(d, k, v);
+    this.setOption(d, k, v);
     // Usually chartRender or chartUpdate
     callback(v, this);
   },
-  setOptions: function (d, k, v) {
+  setOption: function (d, k, v) {
     // First, lets update and store the option
     // in case it overrides a form preset value
     this.selectedOptions[k] = v;
-    chartStore.optionPresets = Object.clone(this.selectedOptions);
-    store.set('example-' + this.type, chartStore);
 
     // Now, if the options is the default, lets remove it from display
     if (this.selectedOptions[k] === d[k].def) {
       delete this.selectedOptions[k];
     }
 
+    chartStore.optionPresets = Object.clone(this.selectedOptions);
+    store.set('example-' + this.type, chartStore);
+
     this.ui['[name=' + k + ']'].setChartOption(v, this);
   },
-  getLocaleOptions: function () {
-    var locales = [];
-    Object.each(localeData, function (k, v) {
-      locales.push({value: k, label: v.language});
+  setConfig: function (presets) {
+    // Config will contain default value an
+    Object.each(this.optionDefaults, function (prop, val) {
+      Config[prop] = {};
+      Config[prop].def = val;
+      Config[prop].val = window.uQuery(prop) || presets[prop];
     });
-    return locales;
+  },
+  getLocaleOptions: function () {
+    return localeData.keys().map(function(k) {
+        return {value: k, label: localeData[k].label};
+      });
+    // var locales = [];
+    // Object.each(localeData, function (k, v) {
+    //   locales.push({value: k, label: v.language});
+    // });
+    // return locales;
+  },
+  getLocaleData: function (lang) {
+    return localeData[lang];
   },
 
   /* ------------------------
@@ -532,6 +547,18 @@ var Manifest =
         break;
     }
   },
+  unloadDataEditor: function (id) {
+    switch (id) {
+      case 'data':
+        $data.find('.CodeMirror').remove();
+        this.dataEditor = null;
+        break;
+      case 'config':
+        $config.find('.CodeMirror').remove();
+        this.configEditor = null;
+        break;
+    }
+  },
   createEditor: function (id, json) {
     var editor = CodeMirror(document.getElementById(id + '_'), {
       value: JSON.stringify(json, null, '  '),
@@ -552,18 +579,6 @@ var Manifest =
     });
     editor.focus();
     return editor;
-  },
-  unloadDataEditor: function (id) {
-    switch (id) {
-      case 'data':
-        $data.find('.CodeMirror').remove();
-        this.dataEditor = null;
-        break;
-      case 'config':
-        $config.find('.CodeMirror').remove();
-        this.configEditor = null;
-        break;
-    }
   },
 
   /* ------------------------
@@ -693,7 +708,7 @@ var Manifest =
   loadLocale: function (locale) {
     this.locale = locale;
 
-    this.Chart.locality(localeData[locale]);
+    this.Chart.locality(this.getLocaleData(locale));
     this.chartUpdater()();
   }
 };

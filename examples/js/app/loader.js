@@ -46,6 +46,7 @@ function loader(type, options) {
 
       // Set data file options in Manifest control
       Manifest.ui['[name=file]'].values = fileCatalog[type];
+      Manifest.ui['[name=locale]'].values = Manifest.getLocaleOptions();
 
       // Data containers persisted in localStorage
       store.set('example-type', type);
@@ -57,13 +58,7 @@ function loader(type, options) {
 
       // Build Config data from stored selected values with chart type overrides
       presets = options || chartStore.optionPresets || chartManifest.optionPresets;
-      console.log(presets)
-      // Config will contain default value an
-      Object.each(Manifest.optionDefaults, function (prop, val) {
-        Config[prop] = {};
-        Config[prop].def = val;
-        Config[prop].val = window.uQuery(prop) || presets[prop];
-      });
+      Manifest.setConfig(presets);
 
       $index.addClass('hidden');
       $demo.removeClass('hidden');
