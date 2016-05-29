@@ -1,4 +1,3 @@
-
 var baseUI =
 {
   '[name=file]': {
@@ -45,7 +44,7 @@ var baseUI =
     },
     setChartOption: $.noop,
     recalc: '[name=color]',
-    check: /0|1|vertical|horizontal|middle|base/i,
+    check: /[0|1|default|vertical|horizontal|middle|base]+/ig,
     events: 'click.my',
     title: 'Gradient',
     type: 'checkbox',

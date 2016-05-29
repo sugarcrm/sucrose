@@ -312,7 +312,7 @@ var Manifest =
     var row = $('<div class="option-row"/>'),
         name = this.getNameFromSelector(k),
         control = this.createControlFromType(v.type, v.values, name);
-    row.append($('<span>' + v.title + '</span>')).append('<br/>');
+    row.append($('<span class="title">' + v.title + '</span>'));
     row.append($(control));
     return row;
   },
@@ -680,6 +680,8 @@ var Manifest =
         this.updateColorModel();
         this.loadChart();
       });
+    // window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
+    // window.requestFileSystem(type, size, successCallback, opt_errorCallback)
     // fs.root.getDirectory('data', {}, function (dirEntry){
     //   var dirReader = dirEntry.createReader();
     //   dirReader.readEntries(function (entries) {

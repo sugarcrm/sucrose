@@ -712,7 +712,7 @@ footer {
   left: 0;
   width: 100%;
   height: 46px;
-  padding: 10px 10px 0px;
+  padding: 10px 2% 0px;
   box-sizing: border-box;
   overflow: auto;
   color: #B4B4B4;
@@ -1409,10 +1409,12 @@ header h2 .title {
 footer .sugar-logo {
   float: left;
   margin-right: 10px;
+  line-height: 0;
+  margin: 4px 2% 15px 0;
 }
 .rtl footer .sugar-logo {
   float: right;
-  margin-left: 10px;
+  margin-left: 2%;
   margin-right: 0;
 }
 section.demo {
@@ -1432,21 +1434,31 @@ section.full-screen {
   bottom: 0;
   left: 0;
   padding: 0;
-  z-index: 2;
+  z-index: 3;
   border: none;
 }
-section.full-screen .container-header {
+section.full-screen .tab-bar {
   border-width: 0 0 1px 0;
   border-radius: 0;
   margin-right: 0;
 }
-section.full-screen .container {
+section.full-screen .pane {
   margin-bottom: 0;
 }
-section.full-screen .container:last-child {
-  margin-right: 0;
+section.full-screen .example {
+  min-width: calc(98% - 350px);
+  max-width: calc(98% - 240px);
 }
-section.full-screen .sc-chart {
+section.full-screen .example.full-width {
+  width: 100%;
+  max-width: 100%;
+}
+section.full-screen .options {
+  right: 0;
+  margin-right: 0;
+  width: 40%;
+}
+section.full-screen .chart {
   border: none;
 }
 section.full-screen .ui-resizable-handle {
@@ -1465,12 +1477,13 @@ section.full-screen .tab.active {
 .rtl .right {
   float: left;
 }
-.container-header {
+.tab-bar {
   font-size: 0;
   line-height: 0;
   margin-right: 2%;
+  position: relative;
 }
-.container-header span {
+.tab-bar span {
   font-family: "Montserrat Bold", Georgia, "Times New Roman", Times, serif;
   font-size: 16px;
   line-height: 22px;
@@ -1478,29 +1491,28 @@ section.full-screen .tab.active {
   float: left;
   vertical-align: middle;
 }
-.container-header .toolbar {
+.tab-bar .toolbar {
   float: right;
   display: inline-block;
 }
-.container-header button.btn {
+.tab-bar button.btn {
   vertical-align: middle;
   margin-right: 6px;
 }
-.container-header button.btn.active {
+.tab-bar button.btn.active {
   background-color: #444;
 }
-.container-header button.btn.active .sfa:before {
+.tab-bar button.btn.active .sfa:before {
   color: #fff;
 }
-.rtl .container-header span {
+.rtl .tab-bar span {
   float: right;
   margin: 0 0 0 6px;
 }
-.rtl .container-header .toolbar {
+.rtl .tab-bar .toolbar {
   float: left;
   margin: 0 0 0 6px;
 }
-.panel,
 .tab {
   padding: 4px 0 4px 6px;
   box-sizing: border-box;
@@ -1510,25 +1522,20 @@ section.full-screen .tab.active {
   border-bottom: none;
   cursor: pointer;
 }
-.panel.active,
 .tab.active {
   color: #333;
   background-color: #fff;
 }
-.panel.active span,
 .tab.active span {
   color: #717171;
 }
-.panel.right,
 .tab.right {
   background-color: #eee;
 }
-.panel:not(.active):not(.open):hover,
 .tab:not(.active):not(.open):hover {
   background: #ddd;
   cursor: pointer;
 }
-.panel:not(.active):not(.open) .toolbar,
 .tab:not(.active):not(.open) .toolbar {
   display: none;
 }
@@ -1539,7 +1546,6 @@ section.full-screen .tab.active {
 .tab:last-child {
   margin-right: 0;
 }
-.rtl .panel,
 .rtl .tab {
   padding: 4px 6px 4px 0;
 }
@@ -1549,16 +1555,24 @@ section.full-screen .tab.active {
 .rtl .tab:last-child {
   margin-right: 4px;
 }
-.container {
+.pane {
   height: calc(100% - 31px);
   float: left;
-  box-sizing: border-box;
   margin: 0 2% 16px 0;
+  box-sizing: border-box;
+  border-radius: 0 0 4px 4px;
+  background-color: #eee;
+}
+.pane .CodeMirror {
+  height: 100%;
+}
+.rtl .pane {
+  float: right;
 }
 .example {
   width: 58%;
   min-width: calc(96% - 350px);
-  max-width: calc(96% - 200px);
+  max-width: calc(96% - 240px);
 }
 .example.full-width {
   width: 98%;
@@ -1567,45 +1581,42 @@ section.full-screen .tab.active {
 .options {
   width: 38%;
   max-width: 350px;
-  min-width: 200px;
+  min-width: 240px;
 }
-.rtl .container {
-  float: right;
-}
-.rtl .sc-form .option-row {
-  text-align: right;
-}
-.sc-form,
-.sc-chart,
-.sc-table {
+.panel {
   width: 100%;
   height: 100%;
-  border-radius: 0 0 4px 4px;
   box-sizing: border-box;
 }
-.sc-form {
+.panel.hide {
+  display: none;
+}
+.form {
   overflow: scroll;
-  background-color: #eee;
 }
-.sc-form .option-row {
-  padding: 4px 12px 12px;
+.form form {
+  padding: 12px 12px 2px;
 }
-.sc-form span {
+.form .option-row {
+  padding: 0 0 10px;
+}
+.form .title {
   color: #717171;
   font-size: 10px;
+  display: block;
 }
-.sc-form label {
+.form label {
   display: inline-block;
   height: 19px;
   margin-right: 8px;
   white-space: nowrap;
 }
-.sc-form label span {
+.form label span {
   font-size: 12px;
   font-family: "Noto Sans", "Helvetica Neue", Arial, sans-serif;
   color: #555;
 }
-.sc-form select {
+.form select {
   -webkit-appearance: none;
   /*Removes default chrome and safari style*/
   -moz-appearance: none;
@@ -1625,10 +1636,10 @@ section.full-screen .tab.active {
   max-width: 100%;
   padding: 4px 24px 4px 4px;
 }
-.sc-form select:after {
+.form select:after {
   content: '\0061';
 }
-.sc-form select:after:before {
+.form select:after:before {
   width: 12px;
   height: 12px;
   color: #717171;
@@ -1639,31 +1650,31 @@ section.full-screen .tab.active {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-.sc-form textarea {
+.form textarea {
   width: 100%;
   height: 150px;
   box-sizing: border-box;
   color: #555;
 }
-.sc-form select,
-.sc-form textarea,
-.sc-form input[type=text] {
+.form select,
+.form textarea,
+.form input[type=text] {
   border: 1px solid #717171 !important;
   margin-left: 0;
   border-radius: 3px;
 }
-.sc-form textarea,
-.sc-form input[type=text] {
+.form textarea,
+.form input[type=text] {
   padding: 4px;
 }
-.sc-form input[type=radio],
-.sc-form input[type=checkbox] {
+.form input[type=radio],
+.form input[type=checkbox] {
   /* original check box are push outside the viexport */
   position: absolute;
   left: -1000em;
 }
-.sc-form input[type=radio] + span:before,
-.sc-form input[type=checkbox] + span:before {
+.form input[type=radio] + span:before,
+.form input[type=checkbox] + span:before {
   width: 18px;
   height: 18px;
   font-size: 14px;
@@ -1673,8 +1684,8 @@ section.full-screen .tab.active {
   padding: 2px;
   box-sizing: border-box;
 }
-.sc-form input[type=radio] + span:before:before,
-.sc-form input[type=checkbox] + span:before:before {
+.form input[type=radio] + span:before:before,
+.form input[type=checkbox] + span:before:before {
   width: 12px;
   height: 12px;
   color: #717171;
@@ -1685,68 +1696,60 @@ section.full-screen .tab.active {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-.sc-form input[type=radio]:focus + span:before,
-.sc-form input[type=checkbox]:focus + span:before {
+.form input[type=radio]:focus + span:before,
+.form input[type=checkbox]:focus + span:before {
   outline: 2px solid #5b9dd9;
   outline: 2px solid -moz-mac-focusring;
   outline: 2px solid -webkit-focus-ring-color;
   outline-offset: -1px;
 }
-.sc-form input[type=radio] + span:before {
+.form input[type=radio] + span:before {
   content: '\004b';
 }
-.sc-form input[type=radio]:checked + span:before {
+.form input[type=radio]:checked + span:before {
   content: '\004c';
 }
-.sc-form input[type=checkbox] + span:before {
+.form input[type=checkbox] + span:before {
   content: '\0046';
   font-weight: 700;
 }
-.sc-form input[type=checkbox]:checked + span:before {
+.form input[type=checkbox]:checked + span:before {
   content: '\0047';
 }
-.rtl .sc-form label {
+.rtl .form label {
   margin-left: 8px;
   margin-right: 0;
 }
-.rtl .sc-form input[type=radio],
-.rtl .sc-form input[type=checkbox] {
+.rtl .form input[type=radio],
+.rtl .form input[type=checkbox] {
   left: auto;
   right: -1000em;
 }
-.rtl .sc-form input[type=radio] + span:before,
-.rtl .sc-form input[type=checkbox] + span:before {
+.rtl .form input[type=radio] + span:before,
+.rtl .form input[type=checkbox] + span:before {
   margin-left: 3px;
   margin-right: 0;
 }
-.sc-chart,
-.sc-table {
-  min-width: 100px;
-  min-height: 100px;
-  float: left;
+.rtl .form .option-row {
+  text-align: right;
+}
+.example .panel {
   background-color: #fff;
 }
-.sc-chart.hide,
-.sc-table.hide {
-  display: none;
-}
-.sc-table {
+.table {
   padding: 12px;
   overflow: scroll;
 }
-.sc-table tbody tr:last-child td {
+.table tbody tr:last-child td {
   border-bottom: none;
 }
-.sc-table th,
-.sc-table td {
+.table th,
+.table td {
   font-size: 14px;
   line-height: 16px;
   text-align: center;
   outline-width: 3px;
   outline-offset: -2px;
-}
-.sc-table .CodeMirror {
-  height: 100%;
 }
 .sc-td.sc-sum:focus,
 .sc-td.sc-total:focus,
@@ -2099,8 +2102,23 @@ a.success:hover {
   h3 {
     font-size: 16px;
   }
+  .tab.right {
+    position: absolute;
+    right: 0;
+  }
+  .tab.right.active {
+    box-shadow: -2px 2px 3px #999;
+  }
+  .rtl .tab.right {
+    right: auto;
+    left: 0;
+  }
+  .rtl .tab.right.active {
+    box-shadow: 2px 2px 3px #999;
+  }
   .example {
     width: 98%;
+    min-width: 98%;
     max-width: 98%;
   }
   .options {
@@ -2117,14 +2135,18 @@ a.success:hover {
     display: block;
     box-shadow: -2px 2px 3px #999;
   }
-  .options.open .panel {
-    border-bottom: none;
-  }
   .rtl .options {
     left: 2%;
     right: auto;
   }
   .rtl .options.open {
     box-shadow: 2px 2px 3px #999;
+  }
+  section.full-screen .example {
+    width: 100%;
+    max-width: 100%;
+  }
+  section.full-screen .options {
+    height: calc(100% - 31px);
   }
 }
