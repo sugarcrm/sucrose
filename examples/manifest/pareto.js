@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-pareto',
   type: 'pareto',
   title: 'Pareto Chart',

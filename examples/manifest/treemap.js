@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-treemap',
   type: 'treemap',
   title: 'Treemap Chart',

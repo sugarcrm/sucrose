@@ -1831,7 +1831,7 @@ input.mindmup {
   vertical-align: top;
   padding: 2px 0;
   float: right;
-  margin-right: -5px;
+  margin-right: -2px;
 }
 .chart-selector menuitem {
   display: inline-block;
@@ -1859,7 +1859,7 @@ input.mindmup {
 }
 .rtl .chart-selector .wrapper {
   float: left;
-  margin-left: -5px;
+  margin-left: -2px;
   margin-right: 0;
 }
 .rtl .chart-selector button {

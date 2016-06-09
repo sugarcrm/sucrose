@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-line',
   type: 'line',
   title: 'Line Chart',

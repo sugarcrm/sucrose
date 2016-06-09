@@ -1,39 +1,35 @@
 
 function generateConfig(e) {
-    var options = {},
-        json,
-        uri;
+  var options = {},
+      json,
+      uri;
 
-    e.preventDefault();
-    e.stopPropagation();
+  e.preventDefault();
+  e.stopPropagation();
 
-    function openTab(url) {
-        var a = window.document.createElement('a');
-        var evt = new MouseEvent('click', {
-              bubbles: false,
-              cancelable: true,
-              view: window,
-            });
-        a.target = '_blank';
-        a.href = url;
-        // Not supported consistently across browsers
-        // fall back to open data in new tab
-        a.download = 'sucrose-options.json';
-        document.body.appendChild(a);
-        a.addEventListener('click', function (e) {
-          a.parentNode.removeChild(a);
+  function openTab(url) {
+    var a = window.document.createElement('a');
+    var evt = new MouseEvent('click', {
+          bubbles: false,
+          cancelable: true,
+          view: window,
         });
-        a.dispatchEvent(evt);
-    }
-
-    Object.each(Object.clone(self.data), function (k, v) {
-      if (k !== 'file') {
-        options[k] = v.val || v.def;
-      }
+    a.target = '_blank';
+    a.href = url;
+    // Not supported consistently across browsers
+    // fall back to open data in new tab
+    a.download = 'sucrose-options.json';
+    document.body.appendChild(a);
+    a.addEventListener('click', function (e) {
+      a.parentNode.removeChild(a);
     });
+    a.dispatchEvent(evt);
+  }
 
-    json = JSON.stringify(options, null, '  ');
-    uri = 'data:text/json;charset=utf-8,' + encodeURIComponent(json);
+  options = Manifest.getConfig();
 
-    openTab(uri);
+  json = JSON.stringify(options, null, '  ');
+  uri = 'data:text/json;charset=utf-8,' + encodeURIComponent(json);
+
+  openTab(uri);
 }

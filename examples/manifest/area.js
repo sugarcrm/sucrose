@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-area',
   type: 'area',
   title: 'Stacked Area Chart',
@@ -21,9 +20,6 @@ chartManifest = {
   },
   ui: {
     '[name=mirror_axis]': {
-      init: function ($o) {
-        this.initControl($o);
-      },
       bind: function (d, v, $o) {
         return this.bindControl(d, v, $o, this.chartUpdater());
       },
@@ -43,9 +39,6 @@ chartManifest = {
       ]
     },
     '[name=show_labels]': {
-      init: function ($o) {
-        this.initControl($o);
-      },
       bind: function (d, v, $o) {
         return this.bindControl(d, v, $o, this.chartRenderer());
       },
@@ -64,9 +57,6 @@ chartManifest = {
       ]
     },
     '[name=tick_display]': {
-      init: function ($o) {
-        this.initControl($o);
-      },
       bind: function (d, v, $o) {
         return this.bindControl(d, v, $o, this.chartRenderer());
       },

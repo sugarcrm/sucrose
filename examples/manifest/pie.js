@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-pie',
   type: 'pie',
   title: 'Pie Chart',

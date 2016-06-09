@@ -29,7 +29,8 @@
   "dependencies": {
     "cldr-data": "^29.0.1",
     "jquery": "^2.1.4",
-    "jquerymy": "^1.2.1"
+    "jquerymy": "^1.2.1",
+    "jszip": "^3.0.0"
   },
   "devDependencies": {
     "canvg": "git://github.com/gabelerner/canvg.git",

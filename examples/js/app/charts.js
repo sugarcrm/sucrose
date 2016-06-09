@@ -1,15 +1,14 @@
 
-function sucroseCharts(type, locality) {
-  var chart,
-      showTitle = true,
+var sucroseCharts = function () {
+  var showTitle = true,
       showLegend = true,
       showControls = true,
-      tooltips = true;
+      tooltips = true,
+      textureFill = true;
 
-  switch (type) {
-
-    case 'pie':
-      chart = sucrose.models.pieChart()
+  var charts = {
+    pie: function() {
+    var chart = sucrose.models.pieChart()
         .donut(true)
         .donutRatio(0.5)
         .pieLabelsOutside(true)
@@ -25,17 +24,16 @@ function sucroseCharts(type, locality) {
         // .rotateDegrees(rotate)
         // .arcDegrees(arc)
         // .fixedRadius(function (container, chart) {
-        //   var n = d3.select('#chart1').node(),
+        //   var n = d3.select('#chart_').node(),
         //       r = Math.min(n.clientWidth * 0.25, n.clientHeight * 0.4);
         //   return Math.max(r, 75);
         // });
 
-      chart.pie
-        .textureFill(true);
-      break;
+      return chart;
+    },
 
-    case 'funnel':
-      chart = sucrose.models.funnelChart()
+    funnel: function() {
+    var chart = sucrose.models.funnelChart()
         .fmtValue(function (d) {
             return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
         })
@@ -50,19 +48,12 @@ function sucroseCharts(type, locality) {
                  '<p>Percent: <b>' + percent + '%</b></p>';
         });
 
-      chart.funnel
-        .textureFill(true);
-      break;
+      return chart;
+    },
 
-    case 'multibar':
-      chart = sucrose.models.multiBarChart()
+    multibar: function() {
+    var chart = sucrose.models.multiBarChart()
         .stacked(true)
-        // .margin({top: 0, right: 0, bottom: 0, left: 0})
-        // TODO: replace when PAT-2448 is merged
-        // .valueFormat(function (d) {
-        //   var si = d3.formatPrefix(d, 2);
-        //   return d3.round(si.scale(d), 2) + si.symbol;
-        // })
         .valueFormat(function (d) {
           return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
         })
@@ -75,21 +66,20 @@ function sucroseCharts(type, locality) {
         })
         .seriesClick(function (data, eo, chart) {
           chart.dataSeriesActivate(eo);
-        })
-        .overflowHandler(function (d) {
-          var b = $('body');
-          b.scrollTop(b.scrollTop() + d);
         });
-
-      chart.multibar
-        .textureFill(true);
+        // .overflowHandler(function (d) {
+        //   var b = $('body');
+        //   b.scrollTop(b.scrollTop() + d);
+        // });
 
       chart.yAxis
         .tickFormat(chart.multibar.valueFormat());
-      break;
 
-    case 'line':
-      chart = sucrose.models.lineChart()
+      return chart;
+    },
+
+    line: function() {
+    var chart = sucrose.models.lineChart()
         .useVoronoi(true)
         .clipEdge(false)
         .tooltipContent(function (key, x, y, e, graph) {
@@ -102,10 +92,12 @@ function sucroseCharts(type, locality) {
           }
           return content;
         });
-      break;
 
-    case 'bubble':
-      chart = sucrose.models.bubbleChart()
+      return chart;
+    },
+
+    bubble: function() {
+    var chart = sucrose.models.bubbleChart()
         .x(function (d) { return d3.time.format('%Y-%m-%d').parse(d.x); })
         .y(function (d) { return d.y; })
         .groupBy(function (d) {
@@ -121,10 +113,12 @@ function sucroseCharts(type, locality) {
                  '<p>Probability: <b>' + e.point.probability + '%</b></p>' +
                  '<p>Account: <b>' + e.point.account_name + '</b></p>';
         });
-      break;
 
-    case 'treemap':
-      chart = sucrose.models.treemapChart()
+      return chart;
+    },
+
+    treemap: function() {
+    var chart = sucrose.models.treemapChart()
         .leafClick(function (d) {
           alert('leaf clicked');
         })
@@ -146,10 +140,12 @@ function sucroseCharts(type, locality) {
         // })
       showTitle = false;
       showLegend = false;
-      break;
 
-    case 'pareto':
-      chart = sucrose.models.paretoChart()
+      return chart;
+    },
+
+    pareto: function() {
+    var chart = sucrose.models.paretoChart()
         .stacked(true)
         .clipEdge(false)
         .valueFormat(function (d) {
@@ -200,26 +196,33 @@ function sucroseCharts(type, locality) {
 
             container.call(chart);
         });
-      break;
 
-    case 'gauge':
-      chart = sucrose.models.gaugeChart()
+      return chart;
+    },
+
+    gauge: function() {
+    var chart = sucrose.models.gaugeChart()
         .x(function (d) { return d.key; })
         .y(function (d) { return d.y; })
         .ringWidth(50)
         .maxValue(9)
         .transitionMs(4000);
-      break;
 
-    case 'globe':
-      chart = sucrose.models.globeChart()
+      return chart;
+    },
+
+    globe: function() {
+    var chart = sucrose.models.globeChart()
         .id('chart');
+
       showTitle = false;
       showLegend = false;
-      break;
 
-    case 'area':
-      chart = sucrose.models.stackedAreaChart()
+      return chart;
+    },
+
+    area: function() {
+    var chart = sucrose.models.stackedAreaChart()
         .x(function (d) { return d[0]; })
         .y(function (d) { return d[1]; })
         .useVoronoi(false)
@@ -237,10 +240,12 @@ function sucroseCharts(type, locality) {
         .tickFormat(function (d) { return d3.time.format('%x')(new Date(d)); });
 
       tooltips = false;
-      break;
 
-    case 'tree':
-      chart = sucrose.models.tree()
+      return chart;
+    },
+
+    tree: function() {
+    var chart = sucrose.models.tree()
         .duration(500)
         .nodeSize({'width': 124, 'height': 56})
         .nodeRenderer(function (content, d, w, h) {
@@ -276,7 +281,7 @@ function sucroseCharts(type, locality) {
           console.log(d3.select(this).select('.sc-org-name').attr('data-url'));
         })
         .nodeCallback(function (d) {
-          var container = d3.select('#chart svg');
+          var container = d3.select('#chart_ svg');
           d.selectAll('text').text(function () {
             var text = d3.select(this).text();
             return sucrose.utils.stringEllipsify(text, container, 96);
@@ -294,41 +299,63 @@ function sucroseCharts(type, locality) {
             });
         });
 
-        showTitle = false;
-        showLegend = false;
-        tooltips = false;
-      break;
-  }
+      showTitle = false;
+      showLegend = false;
+      tooltips = false;
 
-  if (chart.showTitle) {
-    chart
-      .showTitle(showTitle);
-  }
-  if (chart.showLegend) {
-    chart
-      .showLegend(showLegend)
-  }
-  if (chart.showControls) {
-    chart
-      .showControls(showControls)
-  }
-  if (chart.tooltips) {
-    chart
-      .tooltips(tooltips);
-  }
-  if (chart.seriesClick) {
-    chart
-      .seriesClick(function (data, eo, chart) {
-        chart.dataSeriesActivate(eo);
-      });
-  }
-  if (chart.locality) {
-    chart
-      .locality(locality);
-  }
+      return chart;
+    }
+  };
 
-  // chart.transition().duration(500)
-  // chart.legend.showAll(true);
+  return {
+    get: function (type, locality) {
 
-  return chart;
-}
+      var chart = charts[type]();
+
+      if (chart.showTitle) {
+        chart
+          .showTitle(showTitle);
+      }
+      if (chart.showLegend) {
+        chart
+          .showLegend(showLegend)
+      }
+      if (chart.showControls) {
+        chart
+          .showControls(showControls)
+      }
+      if (chart.tooltips) {
+        chart
+          .tooltips(tooltips);
+      }
+      if (chart.seriesClick) {
+        chart
+          .seriesClick(function (data, eo, chart) {
+            chart.dataSeriesActivate(eo);
+          });
+      }
+      if (chart.textureFill) {
+        chart
+          .textureFill(textureFill);
+      }
+      if (chart.locality) {
+        chart
+          .locality(locality);
+      }
+
+      // chart.transition().duration(500)
+      // chart.legend.showAll(true);
+
+      return chart;
+    },
+
+    exportToString: function(type) {
+      var fn = charts[type]
+        .toString()
+        .replace(/function[\s]*\(\)\{/, '')
+        .replace(/\;[\n\s]*return chart[\;]*\}/, '');
+      return fn;
+    }
+  };
+
+}();

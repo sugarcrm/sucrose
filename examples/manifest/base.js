@@ -22,7 +22,7 @@ var baseUI =
       {"value": "en","label": "English (US)"}
     ]
   },
-  '[name=color]': {
+  '[name=color_data]': {
     bind: function (d, v, $o) {
       return this.bindControl(d, v, $o, this.loadColor);
     },
@@ -43,7 +43,7 @@ var baseUI =
       return this.bindControl(d, v, $o, this.loadColor);
     },
     setChartOption: $.noop,
-    recalc: '[name=color]',
+    recalc: '[name=color_data]',
     check: /[0|1|default|vertical|horizontal|middle|base]+/ig,
     events: 'click.my',
     title: 'Gradient',

@@ -34,7 +34,7 @@ var Manifest =
   // The default values for the BaseUI manifest
   optionDefaults: {
     file: '',
-    color: 'default',
+    color_data: 'default',
     gradient: ['0', 'vertical', 'middle'],
     direction: 'ltr',
     locale: 'en'
@@ -58,7 +58,7 @@ var Manifest =
     });
 
     // Set manifest D3 visualization objects
-    this.Chart = sucroseCharts(this.type, this.getLocaleData(this.selectedOptions.locale));
+    this.Chart = sucroseCharts.get(this.type, this.getLocaleData(this.selectedOptions.locale));
     this.Table = sucroseTable(this.Chart);
 
     if (!['bar', 'line', 'area', 'pie', 'funnel', 'gauge'].find(this.type)) {
@@ -106,6 +106,7 @@ var Manifest =
         self.resetChartSize();
         self.loadData(self.data.file.val);
       });
+
     // Toggle option panel display
     // $('button[data-action=toggle]')
     //   .on('click.example touchend.example', function (evt) {
@@ -118,7 +119,9 @@ var Manifest =
     //     }
     //     self.chartResizer(self.Chart)(evt);
     //   });
-    // Download image or data depending on panel
+
+    // Download packaged zip example chart,
+    // data json, config json, or image file
     $('button[data-action=download]')
       .on('click.example touchend.example', function (evt) {
         var dataType = $(this).data('type');
@@ -438,6 +441,15 @@ var Manifest =
       Config[prop].val = window.uQuery(prop) || presets[prop];
     });
   },
+  getConfig: function () {
+    var options = {};
+    Object.each(Object.clone(self.data), function (k, v) {
+      if (k !== 'file') {
+        options[k] = v.val || v.def;
+      }
+    });
+    return options;
+  },
   getLocaleOptions: function () {
     return localeData.keys().map(function(k) {
         return {value: k, label: localeData[k].label};
@@ -507,30 +519,49 @@ var Manifest =
     series[k] = v;
   },
   updateColorModel: function (v) {
-    var options = {},
-        color = this.data.color.val,
-        gradient = this.data.gradient.val;
-
+    var color = this.getData(self.data, 'color_data'),
+        options = this.getColorOptions();
     if (!this.Chart.colorData) {
       return;
     }
+    this.Chart.colorData(color, options);
+  },
+  getColorOptions: function () {
+    var options = {},
+        color = this.getData(self.data, 'color_data'),
+        gradient = this.getData(self.data, 'gradient'),
+        startColor = this.gradientStart,
+        stopColor = this.gradientStop,
+        lengthColor = self.colorLength;
 
-    if (color && color === 'graduated') {
-      options = {c1: this.gradientStart, c2: this.gradientStop, l: this.colorLength};
+    if (this.type === 'globe') {
+      if (color === 'graduated') {
+        startColor = '#41E864';
+        stopColor = '#3578B2';
+        lengthColor = 13;
+      } else
+      if (color === 'data') {
+        startColor = '#aaa';
+        stopColor = '#369';
+      }
     }
 
-    if (color && color === 'data') {
-      options = {c1: this.gradientStart, c2: this.gradientStop};
+    if (color === 'graduated') {
+      options = {c1: startColor, c2: stopColor, l: lengthColor};
+    } else
+    if (color === 'data') {
+      options = {c1: startColor, c2: stopColor};
     }
 
-    if (gradient && gradient.filter('1').length && color !== 'class') {
+    if (color !== 'class' && this.gradientStop && gradient.filter('1').length) {
       options.gradient = true;
       options.orientation = gradient.filter('horizontal').length ? 'horizontal' : 'vertical';
       options.position = gradient.filter('base').length ? 'base' : 'middle';
     }
 
-    this.Chart.colorData(color, options);
+    return options;
   },
+
 
   /* ------------------------
    * DATA EDITOR functions -- */
@@ -702,8 +733,8 @@ var Manifest =
     // }
   },
 
-  loadColor: function (color) {
-    this.updateColorModel(color);
+  loadColor: function () {
+    this.updateColorModel();
     this.chartUpdater()();
   },
 

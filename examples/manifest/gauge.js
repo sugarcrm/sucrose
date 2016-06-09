@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-gauge',
   type: 'gauge',
   title: 'Gauge Chart',
@@ -33,12 +32,6 @@ chartManifest = {
       setChartOption: function (v, self) {
         var value = !!parseInt(v, 10);
         self.Chart.showPointer(value);
-        // d3.select('#chart svg')
-        //     .datum(null)
-        //     .call(chart);
-        // d3.select('#chart svg')
-        //     .datum(chartData)
-        //     .call(chart);
       },
       check: /0|1/i,
       events: 'change.my',

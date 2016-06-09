@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-multibar',
   type: 'multibar',
   title: 'Multibar Chart',
@@ -56,9 +55,6 @@ chartManifest = {
       ]
     },
     '[name=allow_scroll]': {
-      bind: function (d, v, $o) {
-        return this.bindControl(d, v, $o, this.loadChart);
-      },
       setChartOption: function (v, self) {
         var value = !!parseInt(v, 10);
         self.Chart.allowScroll(value);

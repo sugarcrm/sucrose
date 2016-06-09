@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-bubble',
   type: 'bubble',
   title: 'Bubble Chart',

@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-tree',
   type: 'tree',
   title: 'Tree Chart',
@@ -47,7 +46,7 @@ chartManifest = {
         {value: 'zoom-to-fit', label: 'Zoom to fit'}
       ]
     },
-    '[name=color]': {
+    '[name=color_data]': {
       hidden: true
     },
     '[name=gradient]': {

@@ -1,5 +1,4 @@
-
-chartManifest = {
+var chartManifest = {
   id: 'sucrose-funnel',
   type: 'funnel',
   title: 'Funnel Chart',

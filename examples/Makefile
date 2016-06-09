@@ -3,7 +3,6 @@ LIB_FILES = \
 	js/lib/jquery-ui.min.js \
 	js/lib/micro-query.js \
 	js/lib/mindmup-editabletable.js \
-	../node_modules/queue-async/queue.min.js \
 	node_modules/jsonlint/lib/jsonlint.js \
 	node_modules/codemirror/lib/codemirror.js \
 	node_modules/codemirror/mode/javascript/javascript.js \
@@ -13,6 +12,8 @@ LIB_FILES = \
 	node_modules/codemirror/addon/fold/foldcode.js \
 	node_modules/codemirror/addon/fold/brace-fold.js \
 	node_modules/codemirror/addon/fold/foldgutter.js \
+	node_modules/jszip/dist/jszip.js \
+	node_modules/jszip/vendor/FileSaver.js \
 	node_modules/canvg/canvg.js \
 	node_modules/canvg/rgbcolor.js \
 	node_modules/canvg/StackBlur.js \
@@ -67,6 +68,7 @@ lib: $(LIB_FILES) clean-lib
 	# copy node module files
 	cp ../node_modules/d3/d3.min.js js/d3.min.js
 	cp ../node_modules/topojson/topojson.min.js js/topojson.min.js
+	cp ../node_modules/queue-async/queue.min.js js/queue.min.js
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
 	cp node_modules/jquerymy/jquerymy.min.js js/jquerymy.min.js
 	# build lib js files
@@ -74,7 +76,7 @@ lib: $(LIB_FILES) clean-lib
 	cat $(LIB_FILES) | $(JS_COMPILER) >> js/lib.min.js
 
 clean-lib:
-	rm -rf js/d3.min.js js/topojson.min.js
+	rm -rf js/d3.min.js js/topojson.min.js js/queue.min.js
 	rm -rf js/jquery.min.js js/jquerymy.min.js
 	rm -rf js/lib.js js/lib.min.js
 
