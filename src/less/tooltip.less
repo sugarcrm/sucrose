@@ -1,40 +1,63 @@
 /**********
 * Tooltips
-*/
+* Twitter bootstrap classes
+* with
+* SugarCRM Customizations
+  -----------------------*/
 
 .sctooltip-pending-removal {
   position: absolute;
   pointer-events: none;
 }
 
-/* Twitter bootstrap classes
-   -----------------------*/
-
 // Base class
 .tooltip {
-    position: absolute;
-    z-index: @zindexTooltip;
-    display: block;
-    visibility: visible;
-    padding: 5px;
-    font-size: 11px;
-    .opacity(0);
-    &.in     { .opacity(80); }
-    &.top    { margin-top:  -3px; }
-    &.right  { margin-left:  3px; }
-    &.bottom { margin-top:   3px; }
-    &.left   { margin-left: -3px; }
+  position: absolute;
+  z-index: @zindexTooltip;
+  display: block;
+  visibility: visible;
+  padding: 5px;
+  pointer-events: none;
+  .opacity(0);
+  &.in     { .opacity(100); }
+  &.top    { margin-top:  -3px; }
+  &.right  { margin-left:  3px; }
+  &.bottom { margin-top:   3px; }
+  &.left   { margin-left: -3px; }
+  div, span, a {
+    color: @white;
+  }
 }
 
 // Wrapper for the tooltip content
 .tooltip-inner {
-    max-width: 200px;
-    padding: 3px 8px;
-    color: @tooltipColor;
-    text-align: center;
-    text-decoration: none;
-    background-color: @tooltipBackground;
-    .border-radius(@baseBorderRadius);
+  font-family: @sansFontFamily;
+  font-weight: normal;
+  font-size: 11px;
+  line-height: 15px;
+  color: @tooltipColor;
+  background-color: @tooltipBackground;
+  max-width: 200px;
+  padding: 3px 8px;
+  text-align: center;
+  text-decoration: none;
+  text-shadow: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  .border-radius(@baseBorderRadius);
+  &> div {
+    text-align: left;
+  }
+  &> p {
+    margin: 0;
+  }
+  h3 {
+    font-size: 13px;
+    color: darken(@grayLighter, 25%);
+    line-height: normal;
+    padding: 0;
+    margin: 0;
+  }
 }
 
 // Arrows
@@ -74,42 +97,4 @@
         border-width: 0 @tooltipArrowWidth @tooltipArrowWidth;
         border-bottom-color: @tooltipArrowColor;
     }
-}
-
-/* SugarCRM Customizations
-   -----------------------*/
-
-.tooltip {
-  z-index: @zindexTooltip;
-  text-shadow: none;
-  font-weight: normal;
-  word-wrap: break-word;
-  pointer-events: none;
-  &.bottom {
-    margin-top: 8px;
-  }
-  &.in {
-    .opacity(100);
-  }
-  div, span, a {
-    color: @white;
-  }
-}
-
-.tooltip-inner {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  &> div {
-    text-align: left;
-  }
-  &> p {
-    margin: 0;
-  }
-  h3 {
-    font-size: 13px;
-    color: darken(@grayLighter, 25%);
-    line-height: normal;
-    padding: 0;
-    margin: 0;
-  }
 }
