@@ -87,7 +87,7 @@ window.onload = function () {
 
     // Bind D3 chart to SVG element
     d3.select('#chart_ svg')
-        .attr('class', 'sucrose sc-chart sc-chart-{{Type}}')
+        .attr('class', 'sucrose sc-chart sc-chart-' + type)
         .datum(Data).call(chart);
 
     // Dismiss tooltips
