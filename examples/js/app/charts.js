@@ -213,7 +213,7 @@ var sucroseCharts = function () {
 
     globe: function() {
     var chart = sucrose.models.globeChart()
-        .id('chart');
+        .id('chart_');
 
       showTitle = false;
       showLegend = false;
@@ -352,8 +352,8 @@ var sucroseCharts = function () {
     exportToString: function(type) {
       var fn = charts[type]
         .toString()
-        .replace(/function[\s]*\(\)\{/, '')
-        .replace(/\;[\n\s]*return chart[\;]*\}/, '');
+        .replace(/function\s*\(\)\s*{/, '')
+        .replace(/[;]*[\n\s]*return chart[;]*[\n\s]*}/, '');
       return fn;
     }
   };
