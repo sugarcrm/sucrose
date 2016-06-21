@@ -9,16 +9,16 @@ function generatePackage(e) {
 
   var indexTemplate;
   var zip = new JSZip();
-  var type = chartType;
+  var type = this.chartType;
   var data = Data;
-  var config = Manifest.getConfig();
+  var settings = Manifest.getConfig();
+  var chart = sucroseCharts.getChart(type);
+  var config = {};
 
-  config.locality = Manifest.getLocaleData(config.locale);
-  config.color_options = Manifest.getColorOptions();
+  settings.locality = Manifest.getLocaleData(settings.locale);
+  settings.colorOptions = Manifest.getColorOptions();
 
-  if (!JSZip.support.blob) {
-    return;
-  }
+  config = sucroseCharts.getConfig(type, chart, settings);
 
   $.when(
     $.get({url: 'tpl/index.html', dataType: 'text'}),
@@ -32,9 +32,10 @@ function generatePackage(e) {
 
     indexTemplate = files[0]
       .replace('{{Type}}', type)
-      .replace('{{Chart}}', sucroseCharts.exportToString(type))
       .replace('{{Data}}', jsonString(data))
-      .replace('{{Config}}', jsonString(config));
+      .replace('{{Config}}', jsonString(config))
+      .replace('{{Model}}', sucroseCharts.getChartModel(type))
+      .replace('{{Format}}', sucroseCharts.exportToString(type));
 
     zip.file('index.html', indexTemplate);
     zip.file('sucrose.min.js', files[1]);
@@ -42,7 +43,7 @@ function generatePackage(e) {
 
     zip.generateAsync({type:'blob'}).then(
       function (blob) {
-        saveAs(blob, 'sucrose-example.zip');
+        saveAs(blob, 'sucrose-example-' + type + '.zip');
       },
       function (err) {
         console.log(err);
