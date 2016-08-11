@@ -66,7 +66,7 @@ clean-sucrose:
 
 lib: $(LIB_FILES) clean-lib
 	# copy node module files
-	cp ../node_modules/d3/d3.min.js js/d3.min.js
+	cp ../node_modules/d3/build/d3.min.js js/d3.min.js
 	cp ../node_modules/topojson/topojson.min.js js/topojson.min.js
 	cp ../node_modules/queue-async/queue.min.js js/queue.min.js
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
@@ -95,7 +95,7 @@ clean: clean-sucrose clean-libraries
 
 #DEVELOPMENT
 
-install-dev: npm-prod all npm-dev lib-dev index-dev examples
+install-dev: npm-dev sucrose lib lib-dev index-dev examples
 
 npm-dev:
 	npm i

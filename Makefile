@@ -35,9 +35,6 @@ JS_FILES = \
 CSS_FILES = \
 	src/less/sucrose.less
 
-D3_FILES = \
-	lib/d3.js
-
 JS_COMPILER = \
 	node_modules/uglify-js/bin/uglifyjs
 
@@ -58,12 +55,12 @@ npm-prod:
 	npm i --production
 
 dependencies: clean-dependencies
-	cp node_modules/d3/d3.min.js d3.min.js
+	cp node_modules/d3/build/d3.min.js d3.min.js
 	cp node_modules/topojson/topojson.min.js topojson.min.js
-	cp node_modules/queue-async/queue.min.js queue.min.js
+	cp node_modules/d3fc-rebind/build/d3fc-rebind.min.js d3fc-rebind.min.js
 
 clean-dependencies:
-	rm -rf d3.min.js topojson.min.js queue.min.js
+	rm -rf d3.min.js topojson.min.js d3fc-rebind.min.js
 
 
 #DEVELOPMENT
@@ -104,14 +101,6 @@ sucrose.min.css: sucrose.css
 	mv temp ./$@
 clean-css:
 	rm -rf sucrose.css sucrose.min.css
-
-# Dependencies
-
-d3.min.js: $(D3_FILES)
-
-d3.min.js:
-	rm -f ./lib/$@
-	cat $(filter %.js,$^) | $(JS_COMPILER) >> ./lib/$@
 
 
 # EXAMPLES

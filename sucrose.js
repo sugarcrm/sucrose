@@ -108,236 +108,6 @@ function d3_time_range(floor, step, number) {
   };
 }
 
-d3.time.monthEnd = function(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 0);
-};
-
-d3.time.monthEnds = d3_time_range(d3.time.monthEnd, function(date) {
-    date.setUTCDate(date.getUTCDate() + 1);
-    date.setDate(daysInMonth(date.getMonth() + 1, date.getFullYear()));
-  }, function(date) {
-    return date.getMonth();
-  }
-);
-
-/* Create static d3 axis for printing */
-d3.svg.axisStatic = function() {
-    var scale = d3.scale.linear(),
-        orient = d3_svg_axisDefaultOrient,
-        tickMajorSize = 6,
-        tickMinorSize = 6,
-        tickEndSize = 6,
-        tickPadding = 3,
-        tickArguments_ = [10],
-        tickValues = null,
-        tickFormat_, tickSubdivide = 0;
-    var d3_svg_axisDefaultOrient = "bottom",
-        d3_svg_axisOrients = {
-            top: 1,
-            right: 1,
-            bottom: 1,
-            left: 1
-        };
-
-    function d3_scaleExtent(domain) {
-        var start = domain[0],
-            stop = domain[domain.length - 1];
-        return start < stop ? [start, stop] : [stop, start];
-    }
-
-    function d3_scaleRange(scale) {
-        return scale.rangeExtent ? scale.rangeExtent() : d3_scaleExtent(scale.range());
-    }
-
-    function d3_svg_axisX(selection, x) {
-        selection.attr("transform", function(d) {
-            return "translate(" + x(d) + ",0)";
-        });
-    }
-
-    function d3_svg_axisY(selection, y) {
-        selection.attr("transform", function(d) {
-            return "translate(0," + y(d) + ")";
-        });
-    }
-
-    function d3_svg_axisSubdivide(scale, ticks, m) {
-        subticks = [];
-        if (m && ticks.length > 1) {
-            var extent = d3_scaleExtent(scale.domain()),
-                subticks, i = -1,
-                n = ticks.length,
-                d = (ticks[1] - ticks[0]) / ++m,
-                j, v;
-            while (++i < n) {
-                for (j = m; --j > 0;) {
-                    if ((v = +ticks[i] - j * d) >= extent[0]) {
-                        subticks.push(v);
-                    }
-                }
-            }
-            for (--i, j = 0; ++j < m && (v = +ticks[i] + j * d) < extent[1];) {
-                subticks.push(v);
-            }
-        }
-        return subticks;
-    }
-
-    function axis(g) {
-        g.each(function() {
-            var g = d3.select(this);
-            var ticks = tickValues == null ? scale.ticks ? scale.ticks.apply(scale, tickArguments_) : scale.domain() : tickValues,
-                tickFormat = tickFormat_ == null ? scale.tickFormat ? scale.tickFormat.apply(scale, tickArguments_) : String : tickFormat_;
-            var subticks = d3_svg_axisSubdivide(scale, ticks, tickSubdivide),
-                subtick = g.selectAll(".tick.minor").data(subticks, String),
-                subtickEnter = subtick.enter().insert("line", ".tick").attr("class", "tick minor").style("opacity", 1),
-                subtickExit = subtick.exit().remove(),
-                subtickUpdate = subtick.style("opacity", 1);
-            var tick = g.selectAll(".tick.major").data(ticks, String),
-                tickEnter = tick.enter().insert("g", "path").attr("class", "tick major").style("opacity", 1),
-                tickExit = tick.exit().remove(),
-                tickUpdate = tick.style("opacity", 1),
-                tickTransform;
-            var range = d3_scaleRange(scale),
-                path = g.selectAll(".domain").data([0]),
-                pathUpdate = (path.enter().append("path").attr("class", "domain"), path);
-            var scale1 = scale.copy();
-
-            tickEnter.append("line");
-            tickEnter.append("text");
-
-            var lineEnter = tickEnter.select("line"),
-                lineUpdate = tickUpdate.select("line"),
-                text = tick.select("text").text(tickFormat),
-                textEnter = tickEnter.select("text"),
-                textUpdate = tickUpdate.select("text");
-
-            switch (orient) {
-                case "bottom":
-                    {
-                        tickTransform = d3_svg_axisX;
-
-                        subtickEnter.attr("y2", tickMinorSize);
-                        subtickUpdate.attr("x2", 0).attr("y2", tickMinorSize);
-
-                        lineEnter.attr("y2", tickMajorSize);
-                        textEnter.attr("y", Math.max(tickMajorSize, 0) + tickPadding);
-
-                        lineUpdate.attr("x2", 0).attr("y2", tickMajorSize);
-                        textUpdate.attr("x", 0).attr("y", Math.max(tickMajorSize, 0) + tickPadding);
-
-                        text.attr("dy", ".71em").style("text-anchor", "middle");
-
-                        pathUpdate.attr("d", "M" + range[0] + "," + tickEndSize + "V0H" + range[1] + "V" + tickEndSize);
-                        break;
-                    }
-
-                case "top":
-                    {
-                        tickTransform = d3_svg_axisX;
-                        subtickEnter.attr("y2", -tickMinorSize);
-                        subtickUpdate.attr("x2", 0).attr("y2", -tickMinorSize);
-                        lineEnter.attr("y2", -tickMajorSize);
-                        textEnter.attr("y", -(Math.max(tickMajorSize, 0) + tickPadding));
-                        lineUpdate.attr("x2", 0).attr("y2", -tickMajorSize);
-                        textUpdate.attr("x", 0).attr("y", -(Math.max(tickMajorSize, 0) + tickPadding));
-                        text.attr("dy", "0em").style("text-anchor", "middle");
-                        pathUpdate.attr("d", "M" + range[0] + "," + -tickEndSize + "V0H" + range[1] + "V" + -tickEndSize);
-                        break;
-                    }
-
-                case "left":
-                    {
-                        tickTransform = d3_svg_axisY;
-                        subtickEnter.attr("x2", -tickMinorSize);
-                        subtickUpdate.attr("x2", -tickMinorSize).attr("y2", 0);
-                        lineEnter.attr("x2", -tickMajorSize);
-                        textEnter.attr("x", -(Math.max(tickMajorSize, 0) + tickPadding));
-                        lineUpdate.attr("x2", -tickMajorSize).attr("y2", 0);
-                        textUpdate.attr("x", -(Math.max(tickMajorSize, 0) + tickPadding)).attr("y", 0);
-                        text.attr("dy", ".32em").style("text-anchor", "end");
-                        pathUpdate.attr("d", "M" + -tickEndSize + "," + range[0] + "H0V" + range[1] + "H" + -tickEndSize);
-                        break;
-                    }
-
-                case "right":
-                    {
-                        tickTransform = d3_svg_axisY;
-                        subtickEnter.attr("x2", tickMinorSize);
-                        subtickUpdate.attr("x2", tickMinorSize).attr("y2", 0);
-                        lineEnter.attr("x2", tickMajorSize);
-                        textEnter.attr("x", Math.max(tickMajorSize, 0) + tickPadding);
-                        lineUpdate.attr("x2", tickMajorSize).attr("y2", 0);
-                        textUpdate.attr("x", Math.max(tickMajorSize, 0) + tickPadding).attr("y", 0);
-                        text.attr("dy", ".32em").style("text-anchor", "start");
-                        pathUpdate.attr("d", "M" + tickEndSize + "," + range[0] + "H0V" + range[1] + "H" + tickEndSize);
-                        break;
-                    }
-            }
-            if (scale.ticks) {
-                tickEnter.call(tickTransform, scale1);
-                tickUpdate.call(tickTransform, scale1);
-                tickExit.call(tickTransform, scale1);
-                subtickEnter.call(tickTransform, scale1);
-                subtickUpdate.call(tickTransform, scale1);
-                subtickExit.call(tickTransform, scale1);
-            } else {
-                var dx = scale1.rangeBand() / 2,
-                    x = function(d) {
-                        return scale1(d) + dx;
-                    };
-                tickEnter.call(tickTransform, x);
-                tickUpdate.call(tickTransform, x);
-            }
-        });
-    }
-    axis.scale = function(x) {
-        if (!arguments.length) return scale;
-        scale = x;
-        return axis;
-    };
-    axis.orient = function(x) {
-        if (!arguments.length) return orient;
-        orient = x in d3_svg_axisOrients ? x + "" : d3_svg_axisDefaultOrient;
-        return axis;
-    };
-    axis.ticks = function() {
-        if (!arguments.length) return tickArguments_;
-        tickArguments_ = arguments;
-        return axis;
-    };
-    axis.tickValues = function(x) {
-        if (!arguments.length) return tickValues;
-        tickValues = x;
-        return axis;
-    };
-    axis.tickFormat = function(x) {
-        if (!arguments.length) return tickFormat_;
-        tickFormat_ = x;
-        return axis;
-    };
-    axis.tickSize = function(x, y) {
-        if (!arguments.length) return tickMajorSize;
-        var n = arguments.length - 1;
-        tickMajorSize = +x;
-        tickMinorSize = n > 1 ? +y : tickMajorSize;
-        tickEndSize = n > 0 ? +arguments[n] : tickMajorSize;
-        return axis;
-    };
-    axis.tickPadding = function(x) {
-        if (!arguments.length) return tickPadding;
-        tickPadding = +x;
-        return axis;
-    };
-    axis.tickSubdivide = function(x) {
-        if (!arguments.length) return tickSubdivide;
-        tickSubdivide = +x;
-        return axis;
-    };
-    return axis;
-};
-
-
 /*****
  * A no frills tooltip implementation.
  *****/
@@ -1117,7 +887,7 @@ sucrose.models.axis = function() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var scale = d3.scale.linear(),
+  var scale = d3.scaleLinear(),
       axisLabelText = null,
       showMaxMin = true,
       highlightZero = true,
@@ -1138,9 +908,9 @@ sucrose.models.axis = function() {
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       thickness = 0;
 
-  var axis = d3.svg.axisStatic()
+  var axis = d3.axisBottom()
         .scale(scale)
-        .orient('bottom')
+        // .orient('bottom')
         .tickFormat(function(d) { return valueFormat(d); });
 
   // Private Variables
@@ -1714,8 +1484,8 @@ sucrose.models.axis = function() {
   // expose chart's sub-components
   chart.axis = axis;
 
-  d3.rebind(chart, axis, 'orient', 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
-  d3.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands'); //these are also accessible by chart.scale(), but added common ones directly for ease of use
+  fc.rebind(chart, axis, 'orient', 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
+  fc.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands'); //these are also accessible by chart.scale(), but added common ones directly for ease of use
 
   // read only
   chart.width = function(_) {
@@ -1788,7 +1558,7 @@ sucrose.models.axis = function() {
     scale = _;
     axis.scale(scale);
     hasRangeBand = typeof scale.rangeBands === 'function';
-    d3.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands');
+    fc.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands');
     return chart;
   };
 
@@ -4450,9 +4220,9 @@ sucrose.models.bubbleChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  d3.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
-  d3.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
-  d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+  fc.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -5999,8 +5769,8 @@ sucrose.models.funnelChart = function() {
   chart.funnel = funnel;
   chart.legend = legend;
 
-  d3.rebind(chart, funnel, 'id', 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'color', 'fill', 'classes', 'gradient', 'locality');
-  d3.rebind(chart, funnel, 'fmtKey', 'fmtValue', 'fmtCount', 'clipEdge', 'delay', 'wrapLabels', 'minLabelWidth', 'textureFill');
+  fc.rebind(chart, funnel, 'id', 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, funnel, 'fmtKey', 'fmtValue', 'fmtCount', 'clipEdge', 'delay', 'wrapLabels', 'minLabelWidth', 'textureFill');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -6889,8 +6659,8 @@ sucrose.models.gaugeChart = function() {
   chart.gauge = gauge;
   chart.legend = legend;
 
-  d3.rebind(chart, gauge, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
-  d3.rebind(chart, gauge, 'valueFormat', 'values', 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue', 'transitionMs');
+  fc.rebind(chart, gauge, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, gauge, 'valueFormat', 'values', 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue', 'transitionMs');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -8020,7 +7790,7 @@ sucrose.models.line = function() {
   chart.dispatch = scatter.dispatch;
   chart.scatter = scatter;
 
-  d3.rebind(chart, scatter, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
+  fc.rebind(chart, scatter, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
 
   chart.color = function(_) {
     if (!arguments.length) { return color; }
@@ -8803,9 +8573,9 @@ sucrose.models.lineChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  d3.rebind(chart, lines, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
-  d3.rebind(chart, lines, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
-  d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+  fc.rebind(chart, lines, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, lines, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -9434,7 +9204,7 @@ sucrose.models.lineWithFocusChart = function() {
   chart.x2Axis = x2Axis;
   chart.y2Axis = y2Axis;
 
-  d3.rebind(chart, lines, 'defined', 'isArea', 'size', 'xDomain', 'yDomain', 'forceX', 'forceY', 'interactive', 'clipEdge', 'clipVoronoi', 'id');
+  fc.rebind(chart, lines, 'defined', 'isArea', 'size', 'xDomain', 'yDomain', 'forceX', 'forceY', 'interactive', 'clipEdge', 'clipVoronoi', 'id');
 
   chart.x = function(_) {
     if (!arguments.length) return lines.x;
@@ -9550,8 +9320,8 @@ sucrose.models.multiBar = function() {
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = 960,
       height = 500,
-      x = d3.scale.ordinal(),
-      y = d3.scale.linear(),
+      x = d3.scaleOrdinal(),
+      y = d3.scaleLinear(),
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
@@ -11278,9 +11048,9 @@ sucrose.models.multiBarChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  d3.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
-  d3.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
-  d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+  fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -12284,9 +12054,9 @@ sucrose.models.paretoChart = function() {
     chart.xAxis = xAxis;
     chart.yAxis = yAxis;
 
-    d3.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient');
-    d3.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice');
-    d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+    fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient');
+    fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice');
+    fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
     chart.colorData = function(_) {
         var type = arguments[0],
@@ -13751,9 +13521,9 @@ sucrose.models.pieChart = function() {
   chart.pie = pie;
   chart.legend = legend;
 
-  d3.rebind(chart, pie, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
-  d3.rebind(chart, pie, 'valueFormat', 'labelFormat', 'values', 'description', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
-  d3.rebind(chart, pie, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
+  fc.rebind(chart, pie, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
+  fc.rebind(chart, pie, 'valueFormat', 'labelFormat', 'values', 'description', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
+  fc.rebind(chart, pie, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -14456,7 +14226,7 @@ sucrose.models.stackedArea = function () {
   chart.dispatch = dispatch;
   chart.scatter = scatter;
 
-  d3.rebind(chart, scatter, 'interactive', 'size', 'id', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'forceX', 'forceY', 'forceSize', 'clipVoronoi', 'useVoronoi', 'clipRadius', 'locality');
+  fc.rebind(chart, scatter, 'interactive', 'size', 'id', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'forceX', 'forceY', 'forceSize', 'clipVoronoi', 'useVoronoi', 'clipRadius', 'locality');
 
   chart.color = function (_) {
     if (!arguments.length) { return color; }
@@ -15210,9 +14980,9 @@ sucrose.models.stackedAreaChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  d3.rebind(chart, stacked, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
-  d3.rebind(chart, stacked, 'size', 'sizeDomain', 'forceSize', 'offset', 'order', 'style', 'interactive', 'useVoronoi', 'clipVoronoi');
-  d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+  fc.rebind(chart, stacked, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, stacked, 'size', 'sizeDomain', 'forceSize', 'offset', 'order', 'style', 'interactive', 'useVoronoi', 'clipVoronoi');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -16970,7 +16740,7 @@ sucrose.models.treemapChart = function() {
   chart.legend = legend;
   chart.treemap = treemap;
 
-  d3.rebind(chart, treemap, 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'id', 'delay', 'leafClick', 'getSize', 'getName', 'groups', 'color', 'fill', 'classes', 'gradient', 'direction');
+  fc.rebind(chart, treemap, 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'id', 'delay', 'leafClick', 'getSize', 'getName', 'groups', 'color', 'fill', 'classes', 'gradient', 'direction');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }

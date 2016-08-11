@@ -4,7 +4,7 @@ sucrose.models.axis = function() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var scale = d3.scale.linear(),
+  var scale = d3.scaleLinear(),
       axisLabelText = null,
       showMaxMin = true,
       highlightZero = true,
@@ -25,9 +25,9 @@ sucrose.models.axis = function() {
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       thickness = 0;
 
-  var axis = d3.svg.axisStatic()
+  var axis = d3.axisBottom()
         .scale(scale)
-        .orient('bottom')
+        // .orient('bottom')
         .tickFormat(function(d) { return valueFormat(d); });
 
   // Private Variables
@@ -601,8 +601,8 @@ sucrose.models.axis = function() {
   // expose chart's sub-components
   chart.axis = axis;
 
-  d3.rebind(chart, axis, 'orient', 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
-  d3.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands'); //these are also accessible by chart.scale(), but added common ones directly for ease of use
+  fc.rebind(chart, axis, 'orient', 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
+  fc.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands'); //these are also accessible by chart.scale(), but added common ones directly for ease of use
 
   // read only
   chart.width = function(_) {
@@ -675,7 +675,7 @@ sucrose.models.axis = function() {
     scale = _;
     axis.scale(scale);
     hasRangeBand = typeof scale.rangeBands === 'function';
-    d3.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands');
+    fc.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands');
     return chart;
   };
 

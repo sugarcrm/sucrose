@@ -796,9 +796,9 @@ sucrose.models.paretoChart = function() {
     chart.xAxis = xAxis;
     chart.yAxis = yAxis;
 
-    d3.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient');
-    d3.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice');
-    d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+    fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient');
+    fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice');
+    fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
     chart.colorData = function(_) {
         var type = arguments[0],
