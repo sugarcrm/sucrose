@@ -480,19 +480,19 @@ sucrose.models.scatter = function() {
 
   chart.x = function(_) {
     if (!arguments.length) return getX;
-    getX = d3.functor(_);
+    getX = sucrose.functor(_);
     return chart;
   };
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = d3.functor(_);
+    getY = sucrose.functor(_);
     return chart;
   };
 
   chart.size = function(_) {
     if (!arguments.length) return getSize;
-    getSize = d3.functor(_);
+    getSize = sucrose.functor(_);
     return chart;
   };
 

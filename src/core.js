@@ -79,27 +79,17 @@ sucrose.addGraph = function(obj) {
   if (!sucrose.render.active) sucrose.render();
 };
 
-sucrose.identity = function(d) { return d; };
-
 sucrose.strip = function(s) { return s.replace(/(\s|&)/g,''); };
 
-function daysInMonth(month,year) {
-  return (new Date(year, month+1, 0)).getDate();
-}
+sucrose.identity = function(d) { return d; };
 
-function d3_time_range(floor, step, number) {
-  return function(t0, t1, dt) {
-    var time = floor(t0), times = [];
-    if (time < t0) step(time);
-    if (dt > 1) {
-      while (time < t1) {
-        var date = new Date(+time);
-        if ((number(date) % dt === 0)) times.push(date);
-        step(time);
-      }
-    } else {
-      while (time < t1) { times.push(new Date(+time)); step(time); }
-    }
-    return times;
+sucrose.functor = function functor(v) {
+  return typeof v === "function" ? v : function() {
+    return v;
   };
-}
+};
+
+sucrose.daysInMonth = function(month, year) {
+  return (new Date(year, month+1, 0)).getDate();
+};
+

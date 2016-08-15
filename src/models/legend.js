@@ -81,51 +81,51 @@ sucrose.models.legend = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of legend
 
-      var wrap = container.selectAll('g.sc-chart-legend').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sc-chart-legend');
+      var wrap_bind = container.selectAll('g.sc-chart-legend').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-legend');
+      var wrap = container.select('g.sc-chart-legend').merge(wrap_entr);
+      wrap.attr('transform', 'translate(0,0)');
 
-      wrapEnter.append('defs')
-        .append('clipPath').attr('id', 'sc-edge-clip-' + id)
-        .append('rect');
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs').merge(defs_entr);
 
-      var defs = wrap.select('defs');
-      var clip = wrap.select('#sc-edge-clip-' + id + ' rect');
+      var clip_entr = defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
+      var clip = wrap.select('#sc-edge-clip-' + id + ' rect').merge(clip_entr);
 
-      wrapEnter
-        .append('rect').attr('class', 'sc-legend-background');
-      var back = wrap.select('.sc-legend-background');
+      var back_entr = wrap_entr.append('rect').attr('class', 'sc-legend-background');
+      var back = wrap.select('.sc-legend-background').merge(back_entr);
       var backFilter = sucrose.utils.dropShadow('legend_back_' + id, defs, {blur: 2});
 
-      wrapEnter
-        .append('text').attr('class', 'sc-legend-link');
-      var link = wrap.select('.sc-legend-link');
+      var link_entr = wrap_entr.append('text').attr('class', 'sc-legend-link');
+      var link = wrap.select('.sc-legend-link').merge(link_entr);
 
-      wrapEnter
-        .append('g').attr('class', 'sc-legend-mask')
-        .append('g').attr('class', 'sc-legend');
-      var mask = wrap.select('.sc-legend-mask');
-      var g = wrap.select('g.sc-legend');
-      g.attr('transform', 'translate(0,0)');
+      var mask_entr = wrap_entr.append('g').attr('class', 'sc-legend-mask');
+      var mask = wrap.select('.sc-legend-mask').merge(mask_entr);
+      var g_entr = mask_entr.append('g').attr('class', 'sc-legend');
+      var g = wrap.select('.sc-legend').merge(g_entr);
 
-      var sEnter = g.selectAll('.sc-series')
-            .data(sucrose.identity, function(d) { return d.key; });
-      sEnter.exit().remove();
-      var seriesEnter = sEnter.enter()
+
+      var series_bind = g.selectAll('.sc-series').data(sucrose.identity, function(d) { return d.key; });
+      series_bind.exit().remove();
+      var series_entr = series_bind.enter()
         .append('g').attr('class', 'sc-series')
           .on('mouseover', function(d, i) {
-            dispatch.legendMouseover(d, i);  //TODO: Make consistent with other event objects
+            // dispatch.legendMouseover(d, i);  //TODO: Make consistent with other event objects
+            dispatch.call('legendMouseover', this, d);
           })
           .on('mouseout', function(d, i) {
-            dispatch.legendMouseout(d, i);
+            // dispatch.legendMouseout(d, i);
+            dispatch.call('legendMouseout', this, d);
           })
           .on('click', function(d, i) {
             d3.event.preventDefault();
             d3.event.stopPropagation();
-            dispatch.legendClick(d, i);
+            // dispatch.legendClick(d, i);
+            dispatch.call('legendClick', this, d);
           });
-      var series = g.selectAll('.sc-series');
+      var series = g.selectAll('.sc-series').merge(series_entr);
 
-      seriesEnter
+      series_entr
         .append('rect')
           .attr('x', (diameter + textGap) / -2)
           .attr('y', (diameter + lineSpacing) / -2)
@@ -135,31 +135,29 @@ sucrose.models.legend = function() {
           .style('opacity', 0.1);
 
 
-      var circlesEnter = sEnter.selectAll('circle')
-            .data(function(d) { return type === 'line' ? [d, d] : [d]; });
-      circlesEnter.exit().remove();
-      circlesEnter.enter()
+      var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
+      circles_bind.exit().remove();
+      var circles_entr = circles_bind.enter()
         .append('circle')
           .attr('r', radius)
           .attr('stroke', '#fff')
           .style('stroke-width', 2);
+      var circles = series.selectAll('circle').merge(circles_entr);
 
-      if (type === 'line') {
-        var lineEnter = sEnter.selectAll('line')
-              .data(function(d) { return [d]; });
-        lineEnter.exit().remove();
-        lineEnter.enter()
-          .append('line')
-            .attr('x0', 0)
-            .attr('y0', 0)
-            .attr('y1', 0)
-            .style('stroke-width', '4px');
-      }
+      var line_bind = series_entr.selectAll('line').data(type === 'line' ? function(d) { return [d]; } : []);
+      line_bind.exit().remove();
+      var lines_entr = line_bind.enter()
+        .append('line')
+          .attr('x0', 0)
+          .attr('y0', 0)
+          .attr('y1', 0)
+          .style('stroke-width', '4px');
+      var lines = series.selectAll('line').merge(lines_entr);
 
-      seriesEnter.append('text')
+      var texts_entr = series_entr.append('text')
         .attr('dy', inline ? '.36em' : '.71em')
         .attr('dx', 0);
-
+      var texts = series.selectAll('text').merge(texts_entr);
 
       //------------------------------------------------------------
       // Update legend attributes
@@ -190,10 +188,10 @@ sucrose.models.legend = function() {
         .on('click', function(d, i) {
           d3.event.preventDefault();
           d3.event.stopPropagation();
-          dispatch.toggleMenu(d, i);
+          dispatch.call('toggleMenu', this, d, i);
         });
 
-      series.selectAll('circle')
+      circles
         .attr('class', function(d, i) {
           return classes(d, i);
         })
@@ -204,7 +202,7 @@ sucrose.models.legend = function() {
           return color(d, i);
         });
 
-      series.select('line')
+      lines
         .attr('class', function(d, i) {
           return classes(d, i);
         })
@@ -212,7 +210,7 @@ sucrose.models.legend = function() {
           return color(d, i);
         });
 
-      series.select('text')
+      texts
         .text(getKey);
 
       series.classed('disabled', function(d) {
@@ -230,7 +228,7 @@ sucrose.models.legend = function() {
 
         g.style('display', 'inline');
 
-        series.select('text').each(function(d, i) {
+        texts.each(function(d, i) {
           var textWidth = d3.select(this).node().getBoundingClientRect().width;
           keyWidths.push(Math.max(Math.floor(textWidth), (type === 'line' ? 50 : 20)));
         });
@@ -242,7 +240,7 @@ sucrose.models.legend = function() {
 
       legend.getLineHeight = function() {
         g.style('display', 'inline');
-        var lineHeightBB = Math.floor(series.select('text').node().getBoundingClientRect().height);
+        var lineHeightBB = Math.floor(texts.node().getBoundingClientRect().height);
         return lineHeightBB;
       };
 
@@ -435,7 +433,7 @@ sucrose.models.legend = function() {
             })
             .attr('height', lineHeight);
 
-          series.selectAll('circle')
+          circles
             .attr('r', function(d) {
               return d.type === 'dash' ? 0 : radius;
             })
@@ -444,7 +442,7 @@ sucrose.models.legend = function() {
               return 'translate(' + xpos + ',0)';
             });
 
-          series.select('line')
+          lines
             .attr('x1', function(d) {
               return d.type === 'dash' ? radius * 8 : radius * 4;
             })
@@ -457,7 +455,7 @@ sucrose.models.legend = function() {
             })
             .style('stroke-dashoffset', -4);
 
-          series.select('text')
+          texts
             .attr('dy', inline ? '.36em' : '.71em')
             .attr('text-anchor', position)
             .attr('transform', function(d) {
@@ -536,13 +534,13 @@ sucrose.models.legend = function() {
             })
             .attr('height', diameter + lineSpacing);
 
-          series.selectAll('circle')
+          circles
             .attr('r', function(d) {
               return d.type === 'dash' ? 0 : d.type === 'line' ? radius - 2 : radius;
             })
             .attr('transform', '');
 
-          series.select('line')
+          lines
             .attr('x1', 16)
             .attr('transform', 'translate(-8,0)')
             .style('stroke-dasharray', function(d) {
@@ -550,7 +548,7 @@ sucrose.models.legend = function() {
             })
             .style('stroke-dashoffset', 0);
 
-          series.select('text')
+          texts
             .attr('text-anchor', 'start')
             .attr('dy', '.36em')
             .attr('transform', function(d) {
@@ -568,10 +566,10 @@ sucrose.models.legend = function() {
           var assignScrollEvents = function(enable) {
             if (enable) {
 
-              var zoom = d3.behavior.zoom()
+              var zoom = d3.zoom()
                     .on('zoom', panLegend);
-              var drag = d3.behavior.drag()
-                    .origin(function(d) { return d; })
+              var drag = d3.drag()
+                    .subject(function(d) { return d; })
                     .on('drag', panLegend);
 
               back.call(zoom);

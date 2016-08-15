@@ -122,7 +122,7 @@ sucrose.models.treemap = function() {
 
       function display(d) {
 
-        var treemap = d3.layout.treemap()
+        var treemap = d3.treemap()
               .value(getSize)
               .sort(function(a, b) { return getSize(a) - getSize(b); })
               .round(false);

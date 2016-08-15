@@ -109,7 +109,7 @@ sucrose.utils.getColor = function (color) {
 
 // Default color chooser uses the index of an object as before.
 sucrose.utils.defaultColor = function () {
-    var colors = d3.scale.category20().range();
+    var colors = d3.scaleOrdinal(d3.schemeCategory20).range();
     return function (d, i) {
       return d.color || colors[i % colors.length];
     };
@@ -120,7 +120,7 @@ sucrose.utils.defaultColor = function () {
 // looks for a corresponding color from the dictionary,
 sucrose.utils.customTheme = function (dictionary, getKey, defaultColors) {
   getKey = getKey || function (series) { return series.key; }; // use default series.key if getKey is undefined
-  defaultColors = defaultColors || d3.scale.category20().range(); //default color function
+  defaultColors = defaultColors || d3.scaleOrdinal(d3.schemeCategory20).range(); //default color function
 
   var defIndex = defaultColors.length; //current default color (going in reverse)
 
@@ -196,14 +196,14 @@ sucrose.utils.optionsFunc = function(args) {
 };
 
 
-
 //SUGAR ADDITIONS
 
 //gradient color
 sucrose.utils.colorLinearGradient = function (d, i, p, c, defs) {
-  var id = 'lg_gradient_' + i
-    , grad = defs.select('#' + id);
-  if ( grad.empty() ) {
+  var id = 'lg_gradient_' + i;
+  var grad = defs.select('#' + id);
+  if ( grad.empty() )
+  {
     if (p.position === 'middle')
     {
       sucrose.utils.createLinearGradient( id, p, defs, [
@@ -231,9 +231,10 @@ sucrose.utils.colorLinearGradient = function (d, i, p, c, defs) {
 // radius:outer edge of gradient
 // stops: an array of attribute objects
 sucrose.utils.createLinearGradient = function (id, params, defs, stops) {
-  var x2 = params.orientation === 'horizontal' ? '0%' : '100%'
-    , y2 = params.orientation === 'horizontal' ? '100%' : '0%'
-    , grad = defs.append('linearGradient')
+  var x2 = params.orientation === 'horizontal' ? '0%' : '100%';
+  var y2 = params.orientation === 'horizontal' ? '100%' : '0%';
+  var attrs, stop;
+  var grad = defs.append('linearGradient')
         .attr('id', id)
         .attr('x1', '0%')
         .attr('y1', '0%')
@@ -243,8 +244,8 @@ sucrose.utils.createLinearGradient = function (id, params, defs, stops) {
         .attr('spreadMethod', 'pad');
   for (var i=0; i<stops.length; i+=1)
   {
-    var attrs = stops[i]
-      , stop = grad.append('stop');
+    attrs = stops[i];
+    stop = grad.append('stop');
     for (var a in attrs)
     {
       if ( attrs.hasOwnProperty(a) ) {
@@ -255,8 +256,8 @@ sucrose.utils.createLinearGradient = function (id, params, defs, stops) {
 };
 
 sucrose.utils.colorRadialGradient = function (d, i, p, c, defs) {
-  var id = 'rg_gradient_' + i
-    , grad = defs.select('#' + id);
+  var id = 'rg_gradient_' + i;
+  var grad = defs.select('#' + id);
   if ( grad.empty() )
   {
     sucrose.utils.createRadialGradient( id, p, defs, [
@@ -268,6 +269,7 @@ sucrose.utils.colorRadialGradient = function (d, i, p, c, defs) {
 };
 
 sucrose.utils.createRadialGradient = function (id, params, defs, stops) {
+  var attrs, stop;
   var grad = defs.append('radialGradient')
         .attr('id', id)
         .attr('r', params.r)
@@ -275,9 +277,10 @@ sucrose.utils.createRadialGradient = function (id, params, defs, stops) {
         .attr('cy', params.y)
         .attr('gradientUnits', params.u)
         .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1) {
-    var attrs = stops[i]
-      , stop = grad.append('stop');
+  for (var i=0; i<stops.length; i+=1)
+  {
+    attrs = stops[i];
+    stop = grad.append('stop');
     for (var a in attrs)
     {
       if ( attrs.hasOwnProperty(a) ) {
@@ -288,12 +291,12 @@ sucrose.utils.createRadialGradient = function (id, params, defs, stops) {
 };
 
 sucrose.utils.getAbsoluteXY = function (element) {
-  var viewportElement = document.documentElement
-    , box = element.getBoundingClientRect()
-    , scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft
-    , scrollTop = viewportElement.scrollTop + document.body.scrollTop
-    , x = box.left + scrollLeft
-    , y = box.top + scrollTop;
+  var viewportElement = document.documentElement;
+  var box = element.getBoundingClientRect();
+  var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
+  var scrollTop = viewportElement.scrollTop + document.body.scrollTop;
+  var x = box.left + scrollLeft;
+  var y = box.top + scrollTop;
 
   return {'left': x, 'top': y};
 };
@@ -505,17 +508,16 @@ sucrose.utils.numberFormatSI = function(d, p, c, l) {
     }
     p = typeof p === 'undefined' ? 2 : p;
     c = typeof c === 'undefined' ? false : !!c;
-    fmtr = typeof l === 'undefined' ? d3.format : d3.locale(l).numberFormat;
-    d = d3.round(d, p);
+    fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+    // d = d3.round(d, p);
     spec = c ? '$,' : ',';
     if (c && d < 1000 && d !== parseInt(d, 10)) {
         spec += '.2f';
     }
     if (d < 1 && d > -1) {
-        return fmtr(spec)(d);
+        spec += '.2s';
     }
-    si = d3.formatPrefix(d);
-    return fmtr(spec)(d3.round(si.scale(d), p)) + si.symbol;
+    return fmtr(spec)(d);
 };
 
 sucrose.utils.numberFormatRound = function(d, p, c, l) {
@@ -525,9 +527,9 @@ sucrose.utils.numberFormatRound = function(d, p, c, l) {
     }
     c = typeof c === 'undefined' ? false : !!c;
     p = typeof p === 'undefined' ? c ? 2 : 0 : p;
-    fmtr = typeof l === 'undefined' ? d3.format : d3.locale(l).numberFormat;
+    fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
     spec = c ? '$,.' + p + 'f' : ',';
-    return fmtr(spec)(p ? d3.round(d, p) : d);
+    return fmtr(spec)(d);
 };
 
 sucrose.utils.isValidDate = function(d) {
@@ -553,8 +555,8 @@ sucrose.utils.dateFormat = function(d, p, l) {
         // Ensure locality object has all needed properties
         // TODO: this is expensive so consider removing
         locale = sucrose.utils.buildLocality(l);
+        fmtr = d3.formatLocale(locale).format;
         spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
-        fmtr = d3.locale(locale).timeFormat;
         // TODO: if not explicit pattern provided, we should use .multi()
     }
     return fmtr(spec)(date);

@@ -105,7 +105,7 @@ sucrose.models.funnel = function() {
           return series;
         });
 
-        data = d3.layout.stack()
+        data = d3.stack()
                     .offset('zero')
                     .values(function(d) { return d.values; })
                     .y(getH)(data);

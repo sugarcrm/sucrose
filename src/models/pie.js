@@ -68,7 +68,7 @@ sucrose.models.pie = function() {
           container = d3.select(this);
 
       // Setup the Pie chart and choose the data element
-      var pie = d3.layout.pie()
+      var pie = d3.pie()
             .sort(null)
             .value(function(d) { return d.disabled ? 0 : getY(d); });
 
@@ -658,7 +658,7 @@ sucrose.models.pie = function() {
     if (!arguments.length) {
       return getY;
     }
-    getY = d3.functor(_);
+    getY = sucrose.functor(_);
     return chart;
   };
 
@@ -730,7 +730,7 @@ sucrose.models.pie = function() {
     if (!arguments.length) {
       return holeFormat;
     }
-    holeFormat = d3.functor(_);
+    holeFormat = sucrose.functor(_);
     return chart;
   };
 
@@ -834,7 +834,7 @@ sucrose.models.pie = function() {
     if (!arguments.length) {
       return fixedRadius;
     }
-    fixedRadius = d3.functor(_);
+    fixedRadius = sucrose.functor(_);
     return chart;
   };
 

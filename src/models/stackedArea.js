@@ -71,7 +71,7 @@ sucrose.models.stackedArea = function () {
       });
 
 
-      data = d3.layout.stack()
+      data = d3.stack()
         .order(order)
         .offset(offset)
         .values(function (d) { return d.values; })  //TODO: make values customizeable in EVERY model in this fashion

@@ -68,7 +68,7 @@ lib: $(LIB_FILES) clean-lib
 	# copy node module files
 	cp ../node_modules/d3/build/d3.min.js js/d3.min.js
 	cp ../node_modules/topojson/topojson.min.js js/topojson.min.js
-	cp ../node_modules/queue-async/queue.min.js js/queue.min.js
+	cp ../node_modules/d3fc-rebind/build/d3fc-rebind.min.js js/d3fc-rebind.min.js
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
 	cp node_modules/jquerymy/jquerymy.min.js js/jquerymy.min.js
 	# build lib js files

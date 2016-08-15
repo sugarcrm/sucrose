@@ -9,6 +9,7 @@ sucrose.models.axis = function() {
       showMaxMin = true,
       highlightZero = true,
       direction = 'ltr',
+      orient = 'bottom',
       wrapTicks = false,
       staggerTicks = false,
       rotateTicks = 30, //one of (rotateTicks, staggerTicks, wrapTicks)
@@ -17,6 +18,7 @@ sucrose.models.axis = function() {
       hasRangeBand = false,
       textAnchor = null,
       ticks = null,
+      tickPadding = 4,
       valueFormat = function(d) { return d; },
       axisLabelDistance = 8; //The larger this number is, the closer the axis label is to the axis.
 
@@ -25,10 +27,7 @@ sucrose.models.axis = function() {
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       thickness = 0;
 
-  var axis = d3.axisBottom()
-        .scale(scale)
-        // .orient('bottom')
-        .tickFormat(function(d) { return valueFormat(d); });
+  var axis = d3.axisBottom();
 
   // Private Variables
   //------------------------------------------------------------
@@ -48,8 +47,8 @@ sucrose.models.axis = function() {
       // Private
       scale0 = scale0 || axis.scale();
 
-      var vertical = axis.orient() === 'left' || axis.orient() === 'right' ? true : false,
-          reflect = axis.orient() === 'left' || axis.orient() === 'top' ? -1 : 1,
+      var vertical = orient === 'left' || orient === 'right' ? true : false,
+          reflect = orient === 'left' || orient === 'top' ? -1 : 1,
           maxLabelWidth = 0,
           maxLabelHeight = 0,
           tickGap = 6,
@@ -87,47 +86,58 @@ sucrose.models.axis = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-axis').data([data]),
-          gEnter = wrap.enter()
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-axis')
+            .data([data]);
+      var wrap_entr = wrap_bind.enter()
             .append('g').attr('class', 'sucrose sc-wrap sc-axis')
-            .append('g').attr('class', 'sc-axis-inner'),
-          g = wrap.select('.sc-axis-inner');
+            .append('g').attr('class', 'sc-axis-inner');
+      var wrap = container.select('.sc-axis-inner')
+            .merge(wrap_entr);
 
-      g.call(axis);
+      wrap.call(axis);
 
       // Axis ticks
-      var axisTicks = g.selectAll('g.tick');
+      var axisTicks = wrap.selectAll('g.tick');
 
       // Min Max ticks
-      var dataMaxMin = showMaxMin ? d3.extent(scale.domain()) : [];
-      var axisMaxMin = g.selectAll('g.sc-axisMaxMin').data(dataMaxMin);
-      var enterMaxMin = axisMaxMin.enter().append('g').attr('class', 'sc-axisMaxMin');
-      enterMaxMin.append('text')
+      var axisMaxMin_data = showMaxMin ? d3.extent(scale.domain()) : [];
+      var axisMaxMin_bind = wrap.selectAll('g.sc-axisMaxMin').data(axisMaxMin_data);
+      var axisMaxMin_entr = axisMaxMin_bind.enter()
+            .append('g').attr('class', 'sc-axisMaxMin');
+      axisMaxMin_bind.exit().remove();
+      var axisMaxMin = wrap.selectAll('g.sc-axisMaxMin').merge(axisMaxMin_entr);
+
+      axisMaxMin_entr.append('text')
         .style('opacity', 0);
-      enterMaxMin.append('line')
+      axisMaxMin_entr.append('line')
         .style('opacity', 0);
-      axisMaxMin.exit().remove();
 
       if (showMaxMin) {
         axisMaxMin.select('text')
-          .text(function(d, i) {
-            return axis.tickFormat()(d, i, false);
+          .text(function(d, i, selection) {
+            return axis.tickFormat()(d, i, selection, false);
           });
       }
 
-      // Axis and Maxmin tick text
-      var tickText = g.selectAll('g.tick, g.sc-axisMaxMin').select('text')
-            .filter(function(d) { return this.getBoundingClientRect().width; });
-      tickText.each(function(d, i) {
-        tickValueArray.push(d3.select(this).text());
-      });
+      // Get all axes and maxmin tick text for text handling functions
+      var tickText = wrap.selectAll('g.tick, g.sc-axisMaxMin').select('text')
+            .filter(function(d) {
+              return this.getBoundingClientRect().width;
+            })
+            .each(function(d, i) {
+              tickValueArray.push(d3.select(this).text());
+            });
 
       // Axis label
-      var axisLabelData = !!axisLabelText ? [axisLabelText] : [];
-      var axisLabel = wrap.selectAll('text.sc-axislabel').data(axisLabelData);
-      axisLabel.enter().append('text').attr('class', 'sc-axislabel')
-        .text(function(d) { return d; });
-      axisLabel.exit().remove();
+      var axisLabel_data = !!axisLabelText ? [axisLabelText] : [];
+      var axisLabel_bind = wrap.selectAll('text.sc-axislabel').data(axisLabel_data);
+      var axisLabel_entr = axisLabel_bind.enter()
+            .append('text').attr('class', 'sc-axislabel');
+      axisLabel_bind.exit().remove();
+      var axisLabel = wrap.selectAll('text.sc-axislabel').merge(axisLabel_entr);
+
+      axisLabel
+        .text(sucrose.identity);
 
       //------------------------------------------------------------
       // Tick label handling
@@ -137,14 +147,11 @@ sucrose.models.axis = function() {
           rotateSucceeded = false;
 
       if (vertical) {
-
         resetTicks();
 
         tickText
           .style('text-anchor', rtlTextAnchor(textAnchor || (isMirrored() ? 'start' : 'end')));
-
       } else {
-
         //Not needed but keep for now
         // if (reduceXTicks) {
         //   axisTicks.each(function(d, i) {
@@ -227,7 +234,7 @@ sucrose.models.axis = function() {
               collision = (dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap) &&
                           (dim.bottom < minTickDimensions.top || dim.top > maxTickDimensions.bottom);
             } else {
-              collision = dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap;
+              // collision = dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap;
             }
 
             tick.select('text')
@@ -281,7 +288,6 @@ sucrose.models.axis = function() {
             parseInt(this.getBoundingClientRect().width / 1.3, 10) :
             parseInt(this.getBoundingClientRect().height / 1.3, 10);
         });
-
         thickness += labelThickness + axisLabelDistance;
       }
 
@@ -290,9 +296,8 @@ sucrose.models.axis = function() {
 
       //store old scales for use in transitions on update
       scale0 = scale.copy();
-
       margin = {top: marginCalc.top, right: marginCalc.right, bottom: marginCalc.bottom, left: marginCalc.left};
-      margin[axis.orient()] = thickness;
+      margin[orient] = thickness;
 
       //------------------------------------------------------------
       // Private functions
@@ -302,7 +307,7 @@ sucrose.models.axis = function() {
       }
 
       function getPaddingRatio() {
-        return scaleCalc.range().length > 1 ? Math.max(0.25, 1 - d3.round(scaleCalc.rangeBand() / getStepInterval(), 2)) : 0;
+        return scaleCalc.range().length > 1 ? Math.max(0.25, 1 - d3.round(scaleCalc.bandwidth() / getStepInterval(), 2)) : 0;
       }
 
       function getRangeExtent() {
@@ -310,7 +315,7 @@ sucrose.models.axis = function() {
       }
 
       function getBarWidth() {
-        return hasRangeBand ? scaleCalc.rangeBand() : 0;
+        return hasRangeBand ? scaleCalc.bandwidth() : 0;
       }
 
       function getOuterPadding() {
@@ -345,7 +350,7 @@ sucrose.models.axis = function() {
       }
 
       function isMirrored() {
-        return axis.orient() !== 'left' && axis.orient() !== 'bottom';
+        return orient !== 'left' && orient !== 'bottom';
       }
 
       function setThickness(s) {
@@ -397,7 +402,6 @@ sucrose.models.axis = function() {
             d.index = i;
             tickDimensionsHash['key-' + d.key.toString()] = d;
           });
-
         minTickDimensions = tickDimensions[0];
         maxTickDimensions = tickDimensions[tickDimensions.length - 1];
       }
@@ -422,6 +426,7 @@ sucrose.models.axis = function() {
             dMin = null,
             dMax = null;
 
+        // increase margins for min/max
         tickDimensions.forEach(function(d, i) {
           var isMin = dMin === null || d.left <= dMin,
               isMax = dMax === null || d.right >= dMax,
@@ -436,7 +441,6 @@ sucrose.models.axis = function() {
 
           textWidth = normRotation ? d.width - 6 : d.width / 2; // 6 is the cos(textHeight) @ 30
           tickPosition = scaleCalc(d.key) + (hasRangeBand * getBarWidth() / 2);
-
           if (isMin && (!normRotation || isRotatedLeft)) {
             dMin = d.left;
             availableSpace = Math.abs(extent[0] - tickPosition);
@@ -448,12 +452,10 @@ sucrose.models.axis = function() {
             marginCalc.right = Math.max(textWidth - availableSpace, 0);
           }
         });
-
         // modify scale range
         if (!hasRangeBand) { //TODO: can we get rid of this for bar chart?
           var change = margin.right - Math.max(margin.right, marginCalc.right);
               change += margin.left - Math.max(margin.left, marginCalc.left);
-
           var newExtent = [extent[0], extent[1] + change]; // reduce operable width of axis by margins
 
           scaleCalc.range(newExtent);
@@ -462,7 +464,7 @@ sucrose.models.axis = function() {
 
           axis
             .scale(scaleCalc);
-          g.call(axis);
+          wrap.call(axis);
         }
       }
 
@@ -476,7 +478,7 @@ sucrose.models.axis = function() {
         axis
           .scale(scale);
 
-        g.call(axis);
+        wrap.call(axis);
 
         tickText.selectAll('tspan').remove();
         tickText
@@ -493,10 +495,10 @@ sucrose.models.axis = function() {
       }
 
       function handleWrap() {
-        tickSpacing = getTickSpacing();
+        var tickSpacing = getTickSpacing();
 
         tickText.each(function(d, i) {
-          var textContent = axis.tickFormat()(d, i, true),
+          var textContent = axis.tickFormat()(d, i, selection, true),
               textNode = d3.select(this),
               isDate = sucrose.utils.isValidDate(textContent),
               textArray = (textContent && textContent !== '' ? isDate ? textContent : textContent.replace('/', '/ ') : []).split(' '),
@@ -504,6 +506,7 @@ sucrose.models.axis = function() {
               l = textArray.length,
               dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
 
+          // reset the tick text conent
           this.textContent = '';
 
           var textString,
@@ -512,6 +515,7 @@ sucrose.models.axis = function() {
                 .attr('dy', dy + 'em')
                 .attr('x', 0);
 
+          // reset vars
           i += 1;
           dy = 1; // TODO: wrong. fails on reflect with 3 lines of wrap
 
@@ -580,7 +584,7 @@ sucrose.models.axis = function() {
       // Public functions
 
       chart.resizeTickLines = function(dim) {
-        g.selectAll('g.tick, g.sc-axisMaxMin').select('line')
+        wrap.selectAll('g.tick, g.sc-axisMaxMin').select('line')
           .attr(vertical ? 'x2' : 'y2', dim * reflect);
       };
 
@@ -601,7 +605,7 @@ sucrose.models.axis = function() {
   // expose chart's sub-components
   chart.axis = axis;
 
-  fc.rebind(chart, axis, 'orient', 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
+  // fc.rebind(chart, axis, 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
   fc.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands'); //these are also accessible by chart.scale(), but added common ones directly for ease of use
 
   // read only
@@ -636,14 +640,6 @@ sucrose.models.axis = function() {
     return chart;
   };
 
-  chart.valueFormat = function(_) {
-    if (!arguments.length) {
-      return valueFormat;
-    }
-    valueFormat = _;
-    return chart;
-  };
-
   chart.axisLabel = function(_) {
     if (!arguments.length) {
       return axisLabelText;
@@ -665,17 +661,6 @@ sucrose.models.axis = function() {
       return highlightZero;
     }
     highlightZero = _;
-    return chart;
-  };
-
-  chart.scale = function(_) {
-    if (!arguments.length) {
-      return scale;
-    }
-    scale = _;
-    axis.scale(scale);
-    hasRangeBand = typeof scale.rangeBands === 'function';
-    fc.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands');
     return chart;
   };
 
@@ -751,8 +736,87 @@ sucrose.models.axis = function() {
     return chart;
   };
 
-  //============================================================
+  chart.orient = function(_) {
+    if (!arguments.length) {
+      return orient;
+    }
+    orient = _;
+    axis = orient === 'bottom' ? d3.axisBottom() :
+           orient === 'right' ? d3.axisRight() :
+           orient === 'left' ? d3.axisLeft() :
+           orient === 'top' ? d3.axisTop() : d3.axisBottom();
+    return chart;
+  };
 
+  // d3 properties extended
+  chart.scale = function(_) {
+    if (!arguments.length) {
+      return scale;
+    }
+    scale = _;
+    axis.scale(scale);
+    hasRangeBand = typeof scale.padding === 'function';
+    fc.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands');
+    return chart;
+  };
+  chart.valueFormat = function(_) {
+    if (!arguments.length) {
+      return valueFormat;
+    }
+    valueFormat = _;
+    axis.tickFormat(valueFormat);
+    return chart;
+  };
+  chart.tickValues = function(_) {
+    if (!arguments.length) {
+      return tickValues;
+    }
+    tickValues = _;
+    axis.tickValues(_);
+    return chart;
+  };
+  chart.tickSize = function(_) {
+    if (!arguments.length) {
+      return tickSize;
+    }
+    tickSize = _;
+    axis.tickSize(_);
+    return chart;
+  };
+  chart.tickPadding = function(_) {
+    if (!arguments.length) {
+      return tickPadding;
+    }
+    tickPadding = _;
+    axis.tickPadding(_);
+    return chart;
+  };
+  chart.tickFormat = function(_) {
+    if (!arguments.length) {
+      return tickFormat;
+    }
+    tickFormat = _;
+    axis.tickFormat(_);
+    return chart;
+  };
+  chart.tickSizeInner = function(_) {
+    if (!arguments.length) {
+      return tickSizeInner;
+    }
+    tickSizeInner = _;
+    axis.tickSizeInner(_);
+    return chart;
+  };
+  chart.tickSizeOuter = function(_) {
+    if (!arguments.length) {
+      return tickSizeOuter;
+    }
+    tickSizeOuter = _;
+    axis.tickSizeOuter(_);
+    return chart;
+  };
+
+  //============================================================
 
   return chart;
 };

@@ -267,13 +267,13 @@ sucrose.models.table = function () {
 
   chart.x = function (_) {
     if (!arguments.length) return getX;
-    getX = d3.functor(_);
+    getX = sucrose.functor(_);
     return chart;
   };
 
   chart.y = function (_) {
     if (!arguments.length) return getY;
-    getY = d3.functor(_);
+    getY = sucrose.functor(_);
     return chart;
   };
 

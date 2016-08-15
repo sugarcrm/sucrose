@@ -113,7 +113,7 @@ sucrose.models.tree = function() {
       var treeChart = wrap.select('.sc-tree');
 
       // Compute the new tree layout.
-      var tree = d3.layout.tree()
+      var tree = d3.tree()
             .size(null)
             .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
             .separation(function separation(a, b) {
@@ -496,7 +496,7 @@ sucrose.models.tree = function() {
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = d3.functor(_);
+    getY = sucrose.functor(_);
     return chart;
   };
 

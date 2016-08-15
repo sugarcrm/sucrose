@@ -352,7 +352,7 @@ sucrose.models.gauge = function() {
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = d3.functor(_);
+    getY = sucrose.functor(_);
     return chart;
   };
 

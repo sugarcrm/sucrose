@@ -91,10 +91,10 @@ sucrose.models.scroll = function() {
       scroll.assignEvents = function(enable) {
         if (enable) {
 
-          var zoom = d3.behavior.zoom()
+          var zoom = d3.zoom()
                 .on('zoom', panHandler);
-          var drag = d3.behavior.drag()
-                .origin(function(d) { return d; })
+          var drag = d3.drag()
+                .subject(function(d) { return d; })
                 .on('drag', panHandler);
 
           scrollWrap
@@ -421,7 +421,7 @@ sucrose.models.scroll = function() {
     if (!arguments.length) {
       return panHandler;
     }
-    panHandler = d3.functor(_);
+    panHandler = sucrose.functor(_);
     return scroll;
   };
 

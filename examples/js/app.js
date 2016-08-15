@@ -1057,7 +1057,7 @@ function generatePackage(e) {
 
     zip.generateAsync({type:'blob'}).then(
       function (blob) {
-        saveAs(blob, 'sucrose-example.zip');
+        saveAs(blob, 'sucrose-example-' + type + '.zip');
       },
       function (err) {
         console.log(err);

@@ -305,7 +305,7 @@ sucrose.models.line = function() {
 
   chart.isArea = function(_) {
     if (!arguments.length) { return isArea; }
-    isArea = d3.functor(_);
+    isArea = sucrose.functor(_);
     return chart;
   };
 
