@@ -80,7 +80,7 @@ sucrose.models.table = function () {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('table').data([data]);
+      var wrap_bind = container.selectAll('table').data([data]);
       var tableEnter = wrap.enter().append('table').attr('class', 'sucrose');
 
       //------------------------------------------------------------

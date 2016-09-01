@@ -11,9 +11,9 @@ sucrose.models.scatter = function() {
       fill = color,
       classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
       id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
-      x = d3.scale.linear(),
-      y = d3.scale.linear(),
-      z = d3.scale.linear(), //linear because d3.svg.shape.size is treated as area
+      x = d3.scaleLinear(),
+      y = d3.scaleLinear(),
+      z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
       getX = function(d) { return d.x; }, // accessor to get the x value
       getY = function(d) { return d.y; }, // accessor to get the y value
       getSize = function(d) { return d.size || 1; }, // accessor to get the point size
@@ -172,19 +172,20 @@ sucrose.models.scatter = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-scatter sc-chart-' + id);
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-scatter sc-chart-' + id);
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         return sucrose.utils.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
-      gEnter.append('g').attr('class', 'sc-groups');
-      gEnter.append('g').attr('class', 'sc-point-paths');
+      g_entr.append('g').attr('class', 'sc-groups');
+      g_entr.append('g').attr('class', 'sc-point-paths');
 
       wrap
         .classed('sc-single-point', singlePoint)
@@ -193,7 +194,7 @@ sucrose.models.scatter = function() {
       //------------------------------------------------------------
 
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
 
@@ -303,20 +304,23 @@ sucrose.models.scatter = function() {
 
 
           pointPaths
-              .on('click', function(d) {
-                if (needsUpdate) return 0;
-                dispatch.elementClick(buildEventObject(d3.event, d, d.point, d.series));
-              })
               .on('mouseover', function(d) {
                 if (needsUpdate) return 0;
-                dispatch.elementMouseover(buildEventObject(d3.event, d, d.point, d.series));
+                var eo = buildEventObject(d3.event, d, d.point, d.series);
+                dispatch.call('elementMouseover', this, eo);
               })
               .on('mousemove', function(d, i) {
-                dispatch.elementMousemove(d3.event);
+                var e = d3.event;
+                dispatch.call('elementMousemove', this, e);
               })
               .on('mouseout', function(d, i) {
                 if (needsUpdate) return 0;
-                dispatch.elementMouseout(buildEventObject(d3.event, d, d.point, d.series));
+                dispatch.call('elementMouseout', this);
+              })
+              .on('click', function(d) {
+                if (needsUpdate) return 0;
+                var eo = buildEventObject(d3.event, d, d.point, d.series);
+                dispatch.call('elementClick', this, eo);
               });
         } else {
           // add event handlers to points instead voronoi paths
@@ -324,20 +328,23 @@ sucrose.models.scatter = function() {
             .selectAll('.sc-point')
               //.data(dataWithPoints)
               .style('pointer-events', 'auto') // recativate events, disabled by css
-              .on('click', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.elementClick(buildEventObject(d3.event, d, i, d.series));
-              })
               .on('mouseover', function(d, i) {
                 if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.elementMouseover(buildEventObject(d3.event, d, i, d.series));
+                var eo = buildEventObject(d3.event, d, i, d.series);
+                dispatch.call('elementMouseover', this, eo);
               })
               .on('mousemove', function(d, i) {
-                dispatch.elementMousemove(d3.event);
+                var e = d3.event;
+                dispatch.call('elementMousemove', this, e);
               })
               .on('mouseout', function(d, i) {
                 if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.elementMouseout(buildEventObject(d3.event, d, d.point, d.series));
+                dispatch.call('elementMouseout', this);
+              })
+              .on('click', function(d, i) {
+                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
+                var eo = buildEventObject(d3.event, d, i, d.series);
+                dispatch.call('elementClick', this, eo);
               });
         }
 

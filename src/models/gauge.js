@@ -38,7 +38,7 @@ sucrose.models.gauge = function() {
 
   //============================================================
 
-  //colorScale = d3.scale.linear().domain([0, .5, 1].map(d3.interpolate(min, max))).range(["green", "yellow", "red"]);
+  //colorScale = d3.scaleLinear().domain([0, .5, 1].map(d3.interpolate(min, max))).range(["green", "yellow", "red"]);
 
   function chart(selection)
   {
@@ -54,7 +54,7 @@ sucrose.models.gauge = function() {
           , radius =  Math.min( (availableWidth/2), availableHeight ) / (  (100+labelInset)/100  )
           , container = d3.select(this)
           , range = maxAngle - minAngle
-          , scale = d3.scale.linear().range([0,1]).domain([minValue, maxValue])
+          , scale = d3.scaleLinear().range([0,1]).domain([minValue, maxValue])
           , previousTick = 0
           , arcData = data.map( function(d,i){
               var rtn = {
@@ -76,28 +76,30 @@ sucrose.models.gauge = function() {
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
 
-        var wrap = container.selectAll('g.sc-wrap.sc-gauge').data([data]);
-        var wrapEnter = wrap.enter().append('g').attr('class','sucrose sc-wrap sc-gauge');
-        var defsEnter = wrapEnter.append('defs');
-        var gEnter = wrapEnter.append('g');
-        var g = wrap.select('g');
+        var wrap_bind = container.selectAll('g.sc-wrap.sc-gauge').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class','sucrose sc-wrap sc-gauge');
+        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var defs_entr = wrap_entr.append('defs');
+        var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart-wrap').merge(g_entr);
+
 
         //set up the gradient constructor function
         chart.gradient = function(d,i) {
           return sucrose.utils.colorRadialGradient( d, id+'-'+i, {x:0, y:0, r:radius, s:ringWidth/100, u:'userSpaceOnUse'}, color(d,i), wrap.select('defs') );
         };
 
-        gEnter.append('g').attr('class', 'sc-arc-group');
-        gEnter.append('g').attr('class', 'sc-labels');
-        gEnter.append('g').attr('class', 'sc-pointer');
-        gEnter.append('g').attr('class', 'sc-odometer');
+        g_entr.append('g').attr('class', 'sc-arc-group');
+        g_entr.append('g').attr('class', 'sc-labels');
+        g_entr.append('g').attr('class', 'sc-pointer');
+        g_entr.append('g').attr('class', 'sc-odometer');
 
         wrap.attr('transform', 'translate('+ (margin.left/2 + margin.right/2 + prop(labelInset)) +','+ (margin.top + prop(labelInset)) +')');
         //g.select('.sc-arc-gauge').attr('transform', 'translate('+ availableWidth/2 +','+ availableHeight/2 +')');
 
         //------------------------------------------------------------
 
-        // defsEnter.append('clipPath')
+        // defs_entr.append('clipPath')
         //     .attr('id', 'sc-edge-clip-' + id)
         //   .append('rect');
         // wrap.select('#sc-edge-clip-' + id + ' rect')
@@ -107,7 +109,7 @@ sucrose.models.gauge = function() {
 
         //------------------------------------------------------------
         // Gauge arcs
-        var arc = d3.svg.arc()
+        var arc = d3.arc()
           .innerRadius( prop(ringWidth) )
           .outerRadius( radius )
           .startAngle(function(d, i) {
@@ -129,41 +131,41 @@ sucrose.models.gauge = function() {
             .attr('d', arc)
             .on('mouseover', function(d, i) {
               d3.select(this).classed('hover', true);
-              dispatch.elementMouseover({
-                  point: d,
-                  pointIndex: i,
-                  e: d3.event,
-                  id: id
-              });
+              var eo = {
+                point: d,
+                pointIndex: i,
+                e: d3.event,
+                id: id
+              };
+              dispatch.call('elementMouseover', this, eo);
             })
             .on('mouseout', function(d, i) {
               d3.select(this).classed('hover', false);
-              dispatch.elementMouseout({
-                  point: d,
-                  index: i,
-                  id: id
-              });
+              dispatch.call('elementMouseout', this);
             })
             .on('mousemove', function(d, i) {
-              dispatch.elementMousemove(d3.event);
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
             })
             .on('click', function(d, i) {
-              dispatch.elementClick({
+              var eo = {
                   point: d,
                   index: i,
                   e: d3.event,
                   id: id
-              });
+              };
               d3.event.stopPropagation();
+              dispatch.call('elementClick', this, eo);
             })
             .on('dblclick', function(d, i) {
-              dispatch.elementDblClick({
+              var eo = {
                   point: d,
                   index: i,
                   e: d3.event,
                   id: id
-              });
+              };
               d3.event.stopPropagation();
+              dispatch.call('elementDblClick', this, eo);
             });
 
         ag.selectAll('.sc-arc-path').transition().duration(10)
@@ -207,12 +209,12 @@ sucrose.models.gauge = function() {
               .attr('transform', centerTx);
 
           pg.selectAll('path').transition().duration(120)
-            .attr('d', d3.svg.line().interpolate('monotone'));
+            .attr('d', d3.line().interpolate('monotone'));
 
           var pointer = pg.selectAll('path')
               .data([pointerData])
             .enter().append('path')
-              .attr('d', d3.svg.line().interpolate('monotone')/*function(d) { return pointerLine(d) +'Z';}*/ )
+              .attr('d', d3.line().interpolate('monotone')/*function(d) { return pointerLine(d) +'Z';}*/ )
               .attr('transform', 'rotate('+ minAngle +')');
 
           setGaugePointer(pointerValue);

@@ -36,7 +36,7 @@ sucrose.models.funnelChart = function() {
   var funnel = sucrose.models.funnel(),
       legend = sucrose.models.legend()
         .align('center'),
-      yScale = d3.scale.linear();
+      yScale = d3.scaleLinear();
 
   var showTooltip = function(eo, offsetElement, properties) {
     var key = eo.series.key,
@@ -172,11 +172,13 @@ sucrose.models.funnelChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-funnelChart').data([funnelData]),
-          gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-funnelChart').append('g'),
-          g = wrap.select('g').attr('class', 'sc-chartWrap');
+      var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([funnelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-funnel-chart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      gEnter.append('rect').attr('class', 'sc-background')
+      g_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
         .attr('fill', '#FFF');
@@ -185,12 +187,14 @@ sucrose.models.funnelChart = function() {
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom);
 
-      gEnter.append('g').attr('class', 'sc-titleWrap');
-      var titleWrap = g.select('.sc-titleWrap');
-      gEnter.append('g').attr('class', 'sc-funnelWrap');
-      var funnelWrap = g.select('.sc-funnelWrap');
-      gEnter.append('g').attr('class', 'sc-legendWrap');
-      var legendWrap = g.select('.sc-legendWrap');
+      var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
+
+      var funnel_entr = g_entr.append('g').attr('class', 'sc-funnel-wrap');
+      var funnel_wrap = g.select('.sc-funnel-wrap').merge(funnel_entr);
+
+      var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -198,21 +202,21 @@ sucrose.models.funnelChart = function() {
       // Title & Legend
 
       var titleBBox = {width: 0, height: 0};
-      titleWrap.select('.sc-title').remove();
+      title_wrap.select('.sc-title').remove();
 
       if (showTitle && properties.title) {
-        titleWrap
+        title_wrap
           .append('text')
             .attr('class', 'sc-title')
             .attr('x', direction === 'rtl' ? availableWidth : 0)
             .attr('y', 0)
             .attr('dy', '.75em')
             .attr('text-anchor', 'start')
-            .text(properties.title)
             .attr('stroke', 'none')
-            .attr('fill', 'black');
+            .attr('fill', 'black')
+            .text(properties.title);
 
-        titleBBox = sucrose.utils.getTextBBox(g.select('.sc-title'));
+        titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
 
         innerMargin.top += titleBBox.height + 12;
       }
@@ -223,13 +227,13 @@ sucrose.models.funnelChart = function() {
           .strings(chart.strings().legend)
           .align('center')
           .height(availableHeight - innerMargin.top);
-        legendWrap
+        legend_wrap
           .datum(data)
           .call(legend);
         legend
           .arrange(availableWidth);
 
-        var legendLinkBBox = sucrose.utils.getTextBBox(legendWrap.select('.sc-legend-link')),
+        var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
             legendSpace = availableWidth - titleBBox.width - 6,
             legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
             xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -240,7 +244,7 @@ sucrose.models.funnelChart = function() {
           ypos = - legend.margin().top;
         }
 
-        legendWrap
+        legend_wrap
           .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
         innerMargin.top += legendTop ? 0 : legend.height() - 12;
@@ -256,7 +260,7 @@ sucrose.models.funnelChart = function() {
         .width(innerWidth)
         .height(innerHeight);
 
-      funnelWrap
+      funnel_wrap
         .datum(funnelData)
         .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
           .call(funnel);
@@ -364,12 +368,12 @@ sucrose.models.funnelChart = function() {
 
       dispatch.on('chartClick', function() {
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
       funnel.dispatch.on('elementClick', function(eo) {
-        dispatch.chartClick();
+        dispatch.call('chartClick', this);
         seriesClick(data, eo, chart);
       });
 
@@ -383,15 +387,15 @@ sucrose.models.funnelChart = function() {
   //------------------------------------------------------------
 
   funnel.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   funnel.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   funnel.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
 

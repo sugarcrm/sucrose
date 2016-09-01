@@ -23,15 +23,15 @@ sucrose.models.pie = function() {
       donut = false,
       hole = false,
       holeFormat = function(holeWrap, data) {
-        var wrap = holeWrap.selectAll('.sc-hole-container').data(data),
-            wrapEnter = wrap.enter().append('g').attr('class', 'sc-hole-container');
-        wrapEnter.append('text')
+        var hole_bind = holeWrap.selectAll('.sc-hole-container').data(data),
+            hole_entr = hole_bind.enter().append('g').attr('class', 'sc-hole-container');
+        hole_entr.append('text')
           .text(data)
           .attr('class', 'sc-pie-hole-value')
           .attr('dy', '.35em')
           .attr('text-anchor', 'middle')
           .style('font-size', '50px');
-        wrap.exit().remove();
+        hole_bind.exit().remove();
       },
       labelSunbeamLayout = false,
       leaderLength = 20,
@@ -87,11 +87,12 @@ sucrose.models.pie = function() {
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
-      var wrap = container.selectAll('.sc-wrap.sc-pie').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-pie sc-chart-' + id);
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('.sc-wrap.sc-pie').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pie sc-chart-' + id);
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
@@ -99,9 +100,9 @@ sucrose.models.pie = function() {
         return sucrose.utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
 
-      gEnter.append('g').attr('class', 'sc-pie');
+      g_entr.append('g').attr('class', 'sc-pie');
       var pieWrap = g.select('.sc-pie');
-      gEnter.append('g').attr('class', 'sc-holeWrap');
+      g_entr.append('g').attr('class', 'sc-holeWrap');
       var holeWrap = g.select('.sc-holeWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -110,7 +111,7 @@ sucrose.models.pie = function() {
       //------------------------------------------------------------
 
       if (textureFill) {
-        var mask = sucrose.utils.createTexture(defsEnter, id, -availableWidth / 2, -availableHeight / 2);
+        var mask = sucrose.utils.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
 
       //------------------------------------------------------------
@@ -137,24 +138,25 @@ sucrose.models.pie = function() {
             .on('mouseover', function(d, i) {
               d3.select(this).classed('hover', true);
               var eo = buildEventObject(d3.event, d, i);
-              dispatch.elementMouseover(eo);
+              dispatch.call('elementMouseover', this, eo);
             })
             .on('mousemove', function(d, i) {
-              dispatch.elementMousemove(d3.event);
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
               d3.select(this).classed('hover', false);
-              dispatch.elementMouseout();
+              dispatch.call('elementMouseout', this);
             })
             .on('click', function(d, i) {
               d3.event.stopPropagation();
               var eo = buildEventObject(d3.event, d, i);
-              dispatch.elementClick(eo);
+              dispatch.call('elementClick', this, eo);
             })
             .on('dblclick', function(d, i) {
               d3.event.stopPropagation();
               var eo = buildEventObject(d3.event, d, i);
-              dispatch.elementDblClick(eo);
+              dispatch.call('elementDblClick', this, eo);
             });
 
           ae.append('path')
@@ -246,13 +248,13 @@ sucrose.models.pie = function() {
         .attr('x', -pieRadius / 2)
         .attr('y', -pieRadius / 2);
 
-      var pieArc = d3.svg.arc()
+      var pieArc = d3.arc()
             .innerRadius(donut ? pieRadius * donutRatio : 0)
             .outerRadius(pieRadius)
             .startAngle(startAngle)
             .endAngle(endAngle);
 
-      var labelArc = d3.svg.arc()
+      var labelArc = d3.arc()
             .innerRadius(0)
             .outerRadius(pieRadius)
             .startAngle(startAngle)
@@ -379,7 +381,7 @@ sucrose.models.pie = function() {
                 // any defensive code around an array with 1 element, it expects 2+ els
                 return '0,0 0,0';
               }
-              var outerArc = d3.svg.arc()
+              var outerArc = d3.arc()
                     .innerRadius(pieRadius)
                     .outerRadius(pieRadius)
                     .startAngle(startAngle)

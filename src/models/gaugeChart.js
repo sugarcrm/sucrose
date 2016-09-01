@@ -96,11 +96,13 @@ sucrose.models.gaugeChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-gaugeChart').data([data]),
-          gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-gaugeChart').append('g'),
-          g = wrap.select('g').attr('class', 'sc-chartWrap');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-gaugeChart').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-gaugeChart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-      gEnter.append('rect').attr('class', 'sc-background')
+      g_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
         .attr('fill', '#FFF');
@@ -109,11 +111,11 @@ sucrose.models.gaugeChart = function() {
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom);
 
-      gEnter.append('g').attr('class', 'sc-titleWrap');
+      g_entr.append('g').attr('class', 'sc-titleWrap');
       var titleWrap = g.select('.sc-titleWrap');
-      gEnter.append('g').attr('class', 'sc-gaugeWrap');
+      g_entr.append('g').attr('class', 'sc-gaugeWrap');
       var gaugeWrap = g.select('.sc-gaugeWrap');
-      gEnter.append('g').attr('class', 'sc-legendWrap');
+      g_entr.append('g').attr('class', 'sc-legendWrap');
       var legendWrap = g.select('.sc-legendWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -215,7 +217,7 @@ sucrose.models.gaugeChart = function() {
 
       dispatch.on('chartClick', function() {
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -229,15 +231,15 @@ sucrose.models.gaugeChart = function() {
   //------------------------------------------------------------
 
   gauge.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   gauge.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   gauge.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================

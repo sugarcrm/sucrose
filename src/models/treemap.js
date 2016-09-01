@@ -60,11 +60,11 @@ sucrose.models.treemap = function() {
           container = d3.select(this),
           transitioning;
 
-      x = d3.scale.linear()
+      x = d3.scaleLinear()
             .domain([0, data.dx])
             .range([0, availableWidth]);
 
-      y = d3.scale.linear()
+      y = d3.scaleLinear()
             .domain([0, data.dy])
             .range([0, availableHeight]);
 
@@ -77,11 +77,12 @@ sucrose.models.treemap = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-treemap').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
@@ -94,7 +95,7 @@ sucrose.models.treemap = function() {
       //------------------------------------------------------------
       // Clip Path
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
       wrap.select('#sc-edge-clip-' + id + ' rect')
@@ -106,7 +107,7 @@ sucrose.models.treemap = function() {
       //------------------------------------------------------------
       // Main Chart
 
-      var grandparent = gEnter.append('g').attr('class', 'sc-grandparent');
+      var grandparent = g_entr.append('g').attr('class', 'sc-grandparent');
 
       grandparent.append('rect')
         //.attr('y', -margin.top)
@@ -131,7 +132,7 @@ sucrose.models.treemap = function() {
 
         grandparent.datum(d.parent).on('click', transition).select('text').text(name(d));
 
-        var g1 = gEnter.insert('g', '.sc-grandparent')
+        var g1 = g_entr.insert('g', '.sc-grandparent')
           .attr('class', 'sc-depth')
           .attr('height', availableHeight)
           .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -149,19 +150,21 @@ sucrose.models.treemap = function() {
 
         g.on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            dispatch.elementMouseover({
+            var eo = {
               point: d,
               pointIndex: i,
               id: id,
               e: d3.event
-            });
+            };
+            dispatch.call('elementMouseover', this, eo);
           })
           .on('mousemove', function(d, i) {
-            dispatch.elementMousemove(d3.event);
+            var e = d3.event;
+            dispatch.call('elementMousemove', this, e);
           })
           .on('mouseout', function(d, i) {
             d3.select(this).classed('hover', false);
-            dispatch.elementMouseout();
+            dispatch.call('elementMouseout', this);
           });
 
         var child_rects = g.selectAll('.sc-child').data(function(d) {
@@ -176,18 +179,19 @@ sucrose.models.treemap = function() {
         child_rects
           .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            dispatch.elementMouseover({
+            var eo = {
                 label: groupBy(d),
                 value: getSize(d),
                 point: d,
                 pointIndex: i,
                 e: d3.event,
                 id: id
-            });
+            };
+            dispatch.call('elementMouseover', this, eo);
           })
           .on('mouseout', function(d, i) {
             d3.select(this).classed('hover', false);
-            dispatch.elementMouseout();
+            dispatch.call('elementMouseout', this);
           });
 
         g.append('rect')
@@ -200,7 +204,7 @@ sucrose.models.treemap = function() {
           .call(text);
 
         function transition(d) {
-          dispatch.elementMouseout();
+          dispatch.call('elementMouseout', this);
           if (transitioning || !d) { return; }
           transitioning = true;
 

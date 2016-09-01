@@ -2578,10 +2578,10 @@ sucrose.models.scroll = function() {
 
   //============================================================
 
-  function scroll(g, gEnter, scrollWrap, xAxis) {
+  function scroll(g, g_enter, scrollWrap, xAxis) {
 
       var defs = g.select('defs'),
-          defsEnter = gEnter.select('defs'),
+          defs_enter = g_enter.select('defs'),
           scrollMask,
           scrollTarget,
           xAxisWrap = scrollWrap.select('.sc-x.sc-axis'),
@@ -2763,30 +2763,30 @@ sucrose.models.scroll = function() {
 
       /* Background gradients */
       scroll.gradients = function(enable) {
-        defsEnter
+        defs_enter
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-back-gradient-prev-' + id);
-        var bgpEnter = defsEnter.select('#sc-back-gradient-prev-' + id);
+        var bgpEnter = defs_enter.select('#sc-back-gradient-prev-' + id);
 
-        defsEnter
+        defs_enter
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-back-gradient-more-' + id);
-        var bgmEnter = defsEnter.select('#sc-back-gradient-more-' + id);
+        var bgmEnter = defs_enter.select('#sc-back-gradient-more-' + id);
 
         /* Foreground gradients */
-        defsEnter
+        defs_enter
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-fore-gradient-prev-' + id);
-        var fgpEnter = defsEnter.select('#sc-fore-gradient-prev-' + id);
+        var fgpEnter = defs_enter.select('#sc-fore-gradient-prev-' + id);
 
-        defsEnter
+        defs_enter
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-fore-gradient-more-' + id);
-        var fgmEnter = defsEnter.select('#sc-fore-gradient-more-' + id);
+        var fgmEnter = defs_enter.select('#sc-fore-gradient-more-' + id);
 
         defs.selectAll('.sc-scroll-gradient')
           .attr('gradientUnits', 'objectBoundingBox')
@@ -2839,7 +2839,7 @@ sucrose.models.scroll = function() {
       };
 
       scroll.mask = function(enable) {
-        defsEnter.append('clipPath')
+        defs_enter.append('clipPath')
           .attr('class', 'sc-scroll-mask')
           .attr('id', 'sc-edge-clip-' + id)
           .append('rect');
@@ -2850,7 +2850,7 @@ sucrose.models.scroll = function() {
       };
 
       scroll.scrollTarget = function(enable) {
-        gEnter.select('.sc-scroll-background')
+        g_entr.select('.sc-scroll-background')
           .append('rect')
           .attr('class', 'sc-scroll-target')
           //.attr('fill', '#FFF');
@@ -2861,7 +2861,7 @@ sucrose.models.scroll = function() {
 
       /* Background shadow rectangles */
       scroll.backShadows = function(enable) {
-        var shadowWrap = gEnter.select('.sc-scroll-background')
+        var shadowWrap = g_entr.select('.sc-scroll-background')
               .append('g')
               .attr('class', 'sc-back-shadow-wrap');
 
@@ -2891,7 +2891,7 @@ sucrose.models.scroll = function() {
 
       /* Foreground shadow rectangles */
       scroll.foreShadows = function(enable) {
-        var shadowWrap = gEnter.select('.sc-scroll-background')
+        var shadowWrap = g_entr.select('.sc-scroll-background')
               .insert('g')
               .attr('class', 'sc-fore-shadow-wrap');
 
@@ -3011,9 +3011,9 @@ sucrose.models.scatter = function() {
       fill = color,
       classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
       id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
-      x = d3.scale.linear(),
-      y = d3.scale.linear(),
-      z = d3.scale.linear(), //linear because d3.svg.shape.size is treated as area
+      x = d3.scaleLinear(),
+      y = d3.scaleLinear(),
+      z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
       getX = function(d) { return d.x; }, // accessor to get the x value
       getY = function(d) { return d.y; }, // accessor to get the y value
       getSize = function(d) { return d.size || 1; }, // accessor to get the point size
@@ -3172,19 +3172,20 @@ sucrose.models.scatter = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-scatter sc-chart-' + id);
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-scatter sc-chart-' + id);
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         return sucrose.utils.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
-      gEnter.append('g').attr('class', 'sc-groups');
-      gEnter.append('g').attr('class', 'sc-point-paths');
+      g_entr.append('g').attr('class', 'sc-groups');
+      g_entr.append('g').attr('class', 'sc-point-paths');
 
       wrap
         .classed('sc-single-point', singlePoint)
@@ -3193,7 +3194,7 @@ sucrose.models.scatter = function() {
       //------------------------------------------------------------
 
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
 
@@ -3303,20 +3304,23 @@ sucrose.models.scatter = function() {
 
 
           pointPaths
-              .on('click', function(d) {
-                if (needsUpdate) return 0;
-                dispatch.elementClick(buildEventObject(d3.event, d, d.point, d.series));
-              })
               .on('mouseover', function(d) {
                 if (needsUpdate) return 0;
-                dispatch.elementMouseover(buildEventObject(d3.event, d, d.point, d.series));
+                var eo = buildEventObject(d3.event, d, d.point, d.series);
+                dispatch.call('elementMouseover', this, eo);
               })
               .on('mousemove', function(d, i) {
-                dispatch.elementMousemove(d3.event);
+                var e = d3.event;
+                dispatch.call('elementMousemove', this, e);
               })
               .on('mouseout', function(d, i) {
                 if (needsUpdate) return 0;
-                dispatch.elementMouseout(buildEventObject(d3.event, d, d.point, d.series));
+                dispatch.call('elementMouseout', this);
+              })
+              .on('click', function(d) {
+                if (needsUpdate) return 0;
+                var eo = buildEventObject(d3.event, d, d.point, d.series);
+                dispatch.call('elementClick', this, eo);
               });
         } else {
           // add event handlers to points instead voronoi paths
@@ -3324,20 +3328,23 @@ sucrose.models.scatter = function() {
             .selectAll('.sc-point')
               //.data(dataWithPoints)
               .style('pointer-events', 'auto') // recativate events, disabled by css
-              .on('click', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.elementClick(buildEventObject(d3.event, d, i, d.series));
-              })
               .on('mouseover', function(d, i) {
                 if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.elementMouseover(buildEventObject(d3.event, d, i, d.series));
+                var eo = buildEventObject(d3.event, d, i, d.series);
+                dispatch.call('elementMouseover', this, eo);
               })
               .on('mousemove', function(d, i) {
-                dispatch.elementMousemove(d3.event);
+                var e = d3.event;
+                dispatch.call('elementMousemove', this, e);
               })
               .on('mouseout', function(d, i) {
                 if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.elementMouseout(buildEventObject(d3.event, d, d.point, d.series));
+                dispatch.call('elementMouseout', this);
+              })
+              .on('click', function(d, i) {
+                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
+                var eo = buildEventObject(d3.event, d, i, d.series);
+                dispatch.call('elementClick', this, eo);
               });
         }
 
@@ -3697,7 +3704,7 @@ sucrose.models.bubbleChart = function() {
       seriesLength = 0,
       reduceYTicks = false, // if false a tick will show for every data point
       bubbleClick = function(e) { return; },
-      format = d3.time.format('%Y-%m-%d'),
+      format = d3.timeFormat('%Y-%m-%d'),
       tooltip = null,
       tooltips = true,
       tooltipContent = function(key, x, y, e, graph) {
@@ -3735,20 +3742,8 @@ sucrose.models.bubbleChart = function() {
         .size(function(d) { return d.y; })
         .sizeRange([256, 1024])
         .singlePoint(true),
-      xAxis = sucrose.models.axis()
-        .orient('bottom')
-        .valueFormat(xValueFormat)
-        .tickSize(0)
-        .tickPadding(4)
-        .highlightZero(false)
-        .showMaxMin(false)
-        .ticks(d3.time.months, 1),
-      yAxis = sucrose.models.axis()
-        .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(7)
-        .highlightZero(false)
-        .showMaxMin(false),
+      xAxis = sucrose.models.axis(),
+      yAxis = sucrose.models.axis(),
       legend = sucrose.models.legend()
         .align('center')
         .key(function(d) { return d.key + '%'; });
@@ -3874,7 +3869,7 @@ sucrose.models.bubbleChart = function() {
             gOffset = gHeight * 0.25,
             gDomain = [0, 1],
             gRange = [0, 1],
-            gScale = d3.scale.linear().domain(gDomain).range(gRange),
+            gScale = d3.scaleLinear().domain(gDomain).range(gRange),
             yValues = [],
             total = 0;
 
@@ -3964,9 +3959,21 @@ sucrose.models.bubbleChart = function() {
       y = scatter.yScale();
 
       xAxis
+        .orient('bottom')
+        .valueFormat(xValueFormat)
+        .tickSize(0)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false)
+        .ticks(d3.time.months, 1)
         .scale(x)
         .tickValues(getTimeTicks(xD));
       yAxis
+        .orient('left')
+        .valueFormat(yValueFormat)
+        .tickPadding(7)
+        .highlightZero(false)
+        .showMaxMin(false)
         .scale(y)
         .ticks(yValues.length)
         .tickValues(yValues.map(function(d, i) {
@@ -3996,11 +4003,13 @@ sucrose.models.bubbleChart = function() {
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
 
-        var wrap = container.selectAll('g.sc-wrap.sc-bubbleChart').data([filteredData]),
-            gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-bubbleChart').append('g'),
-            g = wrap.select('g').attr('class', 'sc-chartWrap');
+        var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([filteredData]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-bubble-chart');
+        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-        gEnter.append('rect').attr('class', 'sc-background')
+        g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
           .attr('fill', '#FFF');
@@ -4009,26 +4018,30 @@ sucrose.models.bubbleChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        gEnter.append('g').attr('class', 'sc-titleWrap');
-        var titleWrap = g.select('.sc-titleWrap');
-        gEnter.append('g').attr('class', 'sc-x sc-axis');
-        var xAxisWrap = g.select('.sc-x.sc-axis');
-        gEnter.append('g').attr('class', 'sc-y sc-axis');
-        var yAxisWrap = g.select('.sc-y.sc-axis');
-        gEnter.append('g').attr('class', 'sc-bubblesWrap');
-        var bubblesWrap = g.select('.sc-bubblesWrap');
-        gEnter.append('g').attr('class', 'sc-legendWrap');
-        var legendWrap = g.select('.sc-legendWrap');
+        var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
+
+        var xAxis_entr = g_entr.append('g').attr('class', 'sc-x sc-axis');
+        var xAxis_wrap = g.select('.sc-x.sc-axis').merge(xAxis_entr);
+
+        var yAxis_entr = g_entr.append('g').attr('class', 'sc-y sc-axis');
+        var yAxis_wrap = g.select('.sc-y.sc-axis').merge(yAxis_entr);
+
+        var bubbles_entr = g_entr.append('g').attr('class', 'sc-bubbles-wrap');
+        var bubbles_wrap = g.select('.sc-bubbles-wrap').merge(bubbles_entr);
+
+        var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
         //------------------------------------------------------------
         // Title & Legend
 
-        titleWrap.select('.sc-title').remove();
+        title_wrap.select('.sc-title').remove();
 
         if (showTitle) {
-          titleWrap
+          title_wrap
             .append('text')
               .attr('class', 'sc-title')
               .attr('x', direction === 'rtl' ? availableWidth : 0)
@@ -4039,7 +4052,7 @@ sucrose.models.bubbleChart = function() {
               .attr('stroke', 'none')
               .attr('fill', 'black');
 
-          titleBBox = sucrose.utils.getTextBBox(g.select('.sc-title'));
+          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -4049,14 +4062,14 @@ sucrose.models.bubbleChart = function() {
             .strings(chart.strings().legend)
             .align('center')
             .height(availableHeight - headerHeight);
-          legendWrap
+          legend_wrap
             .datum(filteredData)
             .call(legend);
 
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = sucrose.utils.getTextBBox(legendWrap.select('.sc-legend-link')),
+          var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -4066,7 +4079,7 @@ sucrose.models.bubbleChart = function() {
           } else if (!showTitle) {
             ypos = - legend.margin().top;
           }
-          legendWrap
+          legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
           headerHeight += legendTop ? 12 : legend.height();
@@ -4085,7 +4098,7 @@ sucrose.models.bubbleChart = function() {
           .xDomain(xD)
           .yDomain(yD);
 
-        bubblesWrap
+        bubbles_wrap
           .datum(filteredData.filter(function(d) {
             return !d.disabled;
           }))
@@ -4121,7 +4134,7 @@ sucrose.models.bubbleChart = function() {
             var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
             return sucrose.utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
           });
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
         yAxisMargin = yAxis.margin();
@@ -4135,7 +4148,7 @@ sucrose.models.bubbleChart = function() {
           .tickFormat(function(d) {
             return xAxis.valueFormat()(d, null, xIsDatetime);
           });
-        xAxisWrap
+        xAxis_wrap
           .call(xAxis);
         // reset inner dimensions
         xAxisMargin = xAxis.margin();
@@ -4146,11 +4159,11 @@ sucrose.models.bubbleChart = function() {
         yAxis
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
 
         // final call to lines based on new dimensions
-        bubblesWrap
+        bubbles_wrap
           .transition().duration(chart.delay())
             .call(scatter);
 
@@ -4161,15 +4174,15 @@ sucrose.models.bubbleChart = function() {
 
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxisWrap
+        xAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
         trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
         trans += innerMargin.top;
-        yAxisWrap
+        yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        bubblesWrap
+        bubbles_wrap
           .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
 
       };
@@ -4231,14 +4244,14 @@ sucrose.models.bubbleChart = function() {
       });
 
       dispatch.on('chartClick', function() {
-        dispatch.tooltipHide();
+        dispatch.call('tooltipHide', this);
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
       scatter.dispatch.on('elementClick', function(eo) {
-        dispatch.chartClick();
+        dispatch.call('chartClick', this);
         bubbleClick(eo);
       });
 
@@ -4252,15 +4265,15 @@ sucrose.models.bubbleChart = function() {
   //------------------------------------------------------------
 
   scatter.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   scatter.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   scatter.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================
@@ -4477,7 +4490,7 @@ sucrose.models.funnel = function() {
       width = 960,
       height = 500,
       r = 0.3, // ratio of width to height (or slope)
-      y = d3.scale.linear(),
+      y = d3.scaleLinear(),
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
@@ -4546,9 +4559,10 @@ sucrose.models.funnel = function() {
 
       function calcScales() {
         var funnelArea = areaTrapezoid(calculatedHeight, calculatedWidth),
-            funnelBase = calculatedWidth - 2 * r * calculatedHeight,
             funnelShift = 0,
-            funnelMinHeight = 24;
+            funnelMinHeight = 24,
+            _base = calculatedWidth - 2 * r * calculatedHeight,
+            _bottom = calculatedHeight;
 
         //------------------------------------------------------------
         // Adjust points to compensate for parallax of slice
@@ -4556,37 +4570,42 @@ sucrose.models.funnel = function() {
 
         data.map(function(series, i) {
           series.values = series.values.map(function(point) {
-            point.height = 0;
+            point._height = 0;
+
             if (funnelTotal > 0) {
-              point.height = heightTrapezoid(funnelArea * point.value / funnelTotal, funnelBase);
+              point._height = heightTrapezoid(funnelArea * point.value / funnelTotal, _base);
             }
-            if (point.height < funnelMinHeight / 2) {
-              funnelShift += point.height - funnelMinHeight / 2;
-              point.height = funnelMinHeight / 2;
-            } else if (funnelShift < 0 && point.height + funnelShift > funnelMinHeight / 2) {
-              point.height += funnelShift;
+
+            if (point._height < funnelMinHeight / 2) {
+              funnelShift += point._height - funnelMinHeight / 2;
+              point._height = funnelMinHeight / 2;
+            } else if (funnelShift < 0 && point._height + funnelShift > funnelMinHeight / 2) {
+              point._height += funnelShift;
               funnelShift = 0;
             }
-            funnelBase += 2 * r * point.height;
+
+            point._base = _base;
+            point._bottom = _bottom;
+            point._top = point._bottom - point._height;
+
+            _base += 2 * r * point._height;
+            _bottom -= point._height;
+
             return point;
           });
           return series;
         });
 
-        data = d3.stack()
-                    .offset('zero')
-                    .values(function(d) { return d.values; })
-                    .y(getH)(data);
-
         // Remap and flatten the data for use in calculating the scales' domains
-        var seriesData = (yDomain) ? [] : // if we know yDomain, no need to calculate
+        //TODO: this is no longer needed
+        var seriesData = yDomain || // if we know yDomain, no need to calculate
               d3.extent(d3.merge(data.map(function(d) {
                 return d.values.map(function(d, i) {
-                  return getH(d, i) + d.y0;
+                  return d._top;
                 });
               })).concat(forceY));
 
-        y .domain(yDomain || seriesData)
+        y .domain(seriesData)
           .range([calculatedHeight, 0]);
       }
 
@@ -4596,24 +4615,25 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-funnel').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-funnel');
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-funnel').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-funnel');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
         return sucrose.utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
-      gEnter.append('g').attr('class', 'sc-groups');
+      g_entr.append('g').attr('class', 'sc-groups');
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
       // Clip path
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
         .attr('id', 'sc-edge-clip-' + id)
           .append('rect');
       wrap.select('#sc-edge-clip-' + id + ' rect')
@@ -4625,16 +4645,16 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
 
       if (textureFill) {
-        var mask = sucrose.utils.createTexture(defsEnter, id);
+        var mask = sucrose.utils.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      var groupsEnter = wrap.select('.sc-groups').selectAll('.sc-group')
+      var groups_entr = wrap.select('.sc-groups').selectAll('.sc-group')
             .data(data, function(d) { return d.series; });
 
-      groupsEnter.exit().transition().duration(durationMs)
+      groups_entr.exit().transition().duration(durationMs)
         .selectAll('g.sc-slice')
         .delay(function(d, i) { return i * delay / data[0].values.length; })
           .attr('points', function(d) {
@@ -4644,7 +4664,7 @@ sucrose.models.funnel = function() {
           .style('fill-opacity', 1e-6)
           .remove();
 
-      groupsEnter.exit().transition().duration(durationMs)
+      groups_entr.exit().transition().duration(durationMs)
         .selectAll('g.sc-label-value')
         .delay(function(d, i) { return i * delay / data[0].values.length; })
           .attr('y', 0)
@@ -4653,14 +4673,15 @@ sucrose.models.funnel = function() {
           .style('fill-opacity', 1e-6)
           .remove();
 
-      groupsEnter.exit().remove();
-      groupsEnter.enter().append('g').attr('class', 'sc-group');
+      groups_entr.exit().remove();
+      groups_entr.enter().append('g').attr('class', 'sc-group');
 
-      var groups = wrap.select('.sc-groups').selectAll('.sc-group');
+      var groups = wrap.select('.sc-groups').selectAll('.sc-group')
+            .merge(groups_entr);
 
-      groups
-        .style('stroke-opacity', 1e-6)
-        .style('fill-opacity', 1e-6);
+      // groups
+      //   .style('stroke-opacity', 1e-6)
+      //   .style('fill-opacity', 1e-6);
 
       groups
         .attr('class', classes)
@@ -4668,7 +4689,8 @@ sucrose.models.funnel = function() {
         .classed('hover', function(d) { return d.hover; })
         .classed('sc-active', function(d) { return d.active === 'active'; })
         .classed('sc-inactive', function(d) { return d.active === 'inactive'; })
-        .style({'stroke': '#FFFFFF', 'stroke-width': 2});
+        .style('stroke', '#FFFFFF')
+        .style('stroke-width', 2);
 
       groups.transition().duration(durationMs)
           .style('stroke-opacity', 1)
@@ -4678,13 +4700,14 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append polygons for funnel
 
-      var sliceJoin = groupsEnter.selectAll('g.sc-slice')
+      var slice_bind = groups.selectAll('g.sc-slice')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
-      sliceJoin.exit().remove();
-      var sliceEnter = sliceJoin.enter().append('g').attr('class', 'sc-slice');
-      var slices = groups.selectAll('g.sc-slice');
+      slice_bind.exit().remove();
+      var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
+      var slices = groups.selectAll('g.sc-slice')
+            .merge(slice_entr);
 
-      sliceEnter.append('polygon')
+      slice_entr.append('polygon')
         .attr('class', 'sc-base');
       slices.selectAll('.sc-base')
         .attr('points', function(d) {
@@ -4693,7 +4716,7 @@ sucrose.models.funnel = function() {
 
       if (textureFill) {
         // For on click active bars
-        sliceEnter.append('polygon')
+        slice_entr.append('polygon')
           .attr('class', 'sc-texture');
         slices.selectAll('.sc-texture')
           .attr('points', function(d) {
@@ -4706,24 +4729,25 @@ sucrose.models.funnel = function() {
         .on('mouseover', function(d, i) {
           d3.select(this).classed('hover', true);
           var eo = buildEventObject(d3.event, d, i);
-          dispatch.elementMouseover(eo);
+          dispatch.call('elementMouseover', this, eo);
         })
         .on('mousemove', function(d, i) {
-          dispatch.elementMousemove(d3.event);
+          var e = d3.event;
+          dispatch.call('elementMousemove', this, e);
         })
         .on('mouseout', function(d, i) {
           d3.select(this).classed('hover', false);
-          dispatch.elementMouseout();
+          dispatch.call('elementMouseout', this);
         })
         .on('click', function(d, i) {
           d3.event.stopPropagation();
           var eo = buildEventObject(d3.event, d, i);
-          dispatch.elementClick(eo);
+          dispatch.call('elementClick', this, eo);
         })
         .on('dblclick', function(d, i) {
           d3.event.stopPropagation();
           var eo = buildEventObject(d3.event, d, i);
-          dispatch.elementDblClick(eo);
+          dispatch.call('elementDblClick', this, eo);
         });
 
 
@@ -4742,11 +4766,12 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append containers for labels
 
-      var labelsEnter = groupsEnter.selectAll('.sc-label-value')
+      var labels_entr = groups.selectAll('.sc-label-value')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
-      labelsEnter.exit().remove();
-      labelsEnter.enter().append('g').attr('class', 'sc-label-value');
-      var labels = groups.selectAll('g.sc-label-value');
+      labels_entr.exit().remove();
+      labels_entr.enter().append('g').attr('class', 'sc-label-value');
+      var labels = groups.selectAll('g.sc-label-value')
+            .merge(labels_entr);
 
       labels
         .attr('transform', 'translate(' + calculatedCenter + ',0)');
@@ -4849,7 +4874,8 @@ sucrose.models.funnel = function() {
           .call(positionValue);
 
         sideLabels.select('.sc-value')
-          .style({'text-anchor': 'start', 'fill': '#555'});
+          .style('text-anchor', 'start')
+          .style('fill', '#555');
 
         sideLabels
           .call(calcSideLabelDimensions);
@@ -4859,7 +4885,7 @@ sucrose.models.funnel = function() {
 
         var d0 = 0;
 
-        sideLabels.reverse().each(function(d, i) {
+        sideLabels.each(function(d, i) {
             if (!d0) {
               d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
               d0 = d.labelBottom;
@@ -4871,7 +4897,7 @@ sucrose.models.funnel = function() {
             d0 = d.labelBottom;
           });
 
-        sideLabels.reverse();
+        // sideLabels.reverse();
 
         // And then...
         // Bottom to top
@@ -4960,18 +4986,19 @@ sucrose.models.funnel = function() {
       sideLabels
         .append('polyline')
           .attr('class', 'sc-label-leader')
-          .style({'fill-opacity': 0, 'stroke': '#999', 'stroke-width': 1, 'stroke-opacity': 0.5});
+          .style('fill-opacity', 0)
+          .style('stroke', '#999')
+          .style('stroke-width', 1)
+          .style('stroke-opacity', 0.5);
 
-      sideLabels.reverse();
       sideLabels.selectAll('polyline')
         .call(pointsLeader);
-      sideLabels.reverse();
 
       //------------------------------------------------------------
       // Utility functions
 
       // TODO: use scales instead of ratio algebra
-      // var funnelScale = d3.scale.linear()
+      // var funnelScale = d3.scaleLinear()
       //       .domain([w / 2, minimum])
       //       .range([0, maxy1*thenscalethistopreventminimumfrompassing]);
 
@@ -5024,7 +5051,7 @@ sucrose.models.funnel = function() {
         // this is also now as funnelOffset (maybe)
         var twenty = Math.max(availableWidth - availableHeight / 1.1, minLabelWidth),
             // bottom of slice
-            sliceBottom = y(d.y0),
+            sliceBottom = d._bottom,
             // x component of slope F at y
             base = sliceBottom * r,
             // total width at bottom of slice
@@ -5055,8 +5082,9 @@ sucrose.models.funnel = function() {
         // (h + b/r/2)(h + b/r/2) = v/r + b/r/2*b/r/2;
         // h + b/r/2 = Math.sqrt(v/r + b/r/2*b/r/2);
         // h  = Math.abs(Math.sqrt(v/r + b/r/2*b/r/2)) - b/r/2;
-        var y0 = y(d.y0),
-            y1 = y(d.y0 + d.y),
+
+        var y0 = d._bottom,
+            y1 = d._top,
             w0 = w / 2 - r * y0,
             w1 = w / 2 - r * y1,
             c = calculatedCenter;
@@ -5100,13 +5128,13 @@ sucrose.models.funnel = function() {
 
       function calcFunnelWidthAtSliceMidpoint(d) {
         var b = calculatedWidth,
-            v = y(d.y0 + d.y1 / 2); // mid point of slice
+            v = d._bottom - d._height / 2; // mid point of slice
         return b - v * r * 2;
       }
 
       function calcSideWidth(d, offset) {
         var b = Math.max((availableWidth - calculatedWidth) / 2, offset),
-            v = y(d.y0 + d.y1); // top of slice
+            v = d._top; // top of slice
         return b + v * r;
       }
 
@@ -5117,12 +5145,10 @@ sucrose.models.funnel = function() {
       function calcFunnelLabelDimensions(lbls) {
         lbls.each(function(d) {
           var bbox = calcLabelBBox(this);
-
           d.labelHeight = bbox.height;
           d.labelWidth = bbox.width;
-          d.labelTop = y(d.y0 + d.y / 2) - d.labelHeight / 2;
+          d.labelTop = (d._bottom - d._height / 2) - d.labelHeight / 2;
           d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
-          d.y1 = d.y - d.labelHeight;
           d.tooWide = d.labelWidth > calcFunnelWidthAtSliceMidpoint(d);
           d.tooTall = d.labelHeight > d.height - 4;
         });
@@ -5133,7 +5159,7 @@ sucrose.models.funnel = function() {
           var bbox = calcLabelBBox(this);
           d.labelHeight = bbox.height;
           d.labelWidth = bbox.width;
-          d.labelTop = y(d.y0 + d.y);
+          d.labelTop = d._bottom - d._height; //?d._top?
           d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
         });
       }
@@ -5141,7 +5167,7 @@ sucrose.models.funnel = function() {
       function pointsLeader(polylines, i) {
         var c = polylines.length;
         polylines.each(function(d, i, j) {
-          d.y1 = 0;
+          d._top = 0;
           var // previous label
               p = j ? d3.select(polylines[j - 1][i]).data()[0] : null,
               // next label
@@ -5149,7 +5175,7 @@ sucrose.models.funnel = function() {
               // label height
               h = Math.round(d.labelHeight) + 0.5,
               // slice bottom
-              t = Math.round(y(d.y0) - d.labelTop) - 0.5,
+              t = Math.round(d._bottom - d.labelTop) - 0.5,
               // previous width
               wp = p ? p.labelWidth - (d.labelBottom - p.labelBottom) * r : 0,
               // current width
@@ -5177,7 +5203,7 @@ sucrose.models.funnel = function() {
         lbls.each(function(d) {
 
           var // bottom of slice
-              sliceBottom = y(d.y0),
+              sliceBottom = d._bottom,
               // is slice below or above label bottom
               scalar = d.labelBottom >= sliceBottom ? 1 : 0,
               // the width of the angled leader
@@ -5235,15 +5261,16 @@ sucrose.models.funnel = function() {
           .attr('direction', function() {
             return fmtDirection(txt.text());
           })
-          .style({'pointer-events': 'none', 'text-anchor': anchor, 'fill': fill});
+          .style('pointer-events', 'none')
+          .style('text-anchor', anchor)
+          .style('fill', fill);
       }
 
       function positionValue(lbls) {
         lbls.each(function(d) {
-          var lbl = d3.select(this),
-              cnt = lbl.selectAll('.sc-label')[0].length + 1,
-              dy = (.85 + cnt - 1) + 'em';
-
+          var lbl = d3.select(this);
+          var cnt = lbl.selectAll('.sc-label').size() + 1;
+          var dy = (.85 + cnt - 1) + 'em';
           lbl.select('.sc-value')
             .attr('dy', dy);
         });
@@ -5455,7 +5482,7 @@ sucrose.models.funnelChart = function() {
   var funnel = sucrose.models.funnel(),
       legend = sucrose.models.legend()
         .align('center'),
-      yScale = d3.scale.linear();
+      yScale = d3.scaleLinear();
 
   var showTooltip = function(eo, offsetElement, properties) {
     var key = eo.series.key,
@@ -5591,11 +5618,13 @@ sucrose.models.funnelChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-funnelChart').data([funnelData]),
-          gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-funnelChart').append('g'),
-          g = wrap.select('g').attr('class', 'sc-chartWrap');
+      var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([funnelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-funnel-chart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      gEnter.append('rect').attr('class', 'sc-background')
+      g_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
         .attr('fill', '#FFF');
@@ -5604,12 +5633,14 @@ sucrose.models.funnelChart = function() {
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom);
 
-      gEnter.append('g').attr('class', 'sc-titleWrap');
-      var titleWrap = g.select('.sc-titleWrap');
-      gEnter.append('g').attr('class', 'sc-funnelWrap');
-      var funnelWrap = g.select('.sc-funnelWrap');
-      gEnter.append('g').attr('class', 'sc-legendWrap');
-      var legendWrap = g.select('.sc-legendWrap');
+      var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
+
+      var funnel_entr = g_entr.append('g').attr('class', 'sc-funnel-wrap');
+      var funnel_wrap = g.select('.sc-funnel-wrap').merge(funnel_entr);
+
+      var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -5617,21 +5648,21 @@ sucrose.models.funnelChart = function() {
       // Title & Legend
 
       var titleBBox = {width: 0, height: 0};
-      titleWrap.select('.sc-title').remove();
+      title_wrap.select('.sc-title').remove();
 
       if (showTitle && properties.title) {
-        titleWrap
+        title_wrap
           .append('text')
             .attr('class', 'sc-title')
             .attr('x', direction === 'rtl' ? availableWidth : 0)
             .attr('y', 0)
             .attr('dy', '.75em')
             .attr('text-anchor', 'start')
-            .text(properties.title)
             .attr('stroke', 'none')
-            .attr('fill', 'black');
+            .attr('fill', 'black')
+            .text(properties.title);
 
-        titleBBox = sucrose.utils.getTextBBox(g.select('.sc-title'));
+        titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
 
         innerMargin.top += titleBBox.height + 12;
       }
@@ -5642,13 +5673,13 @@ sucrose.models.funnelChart = function() {
           .strings(chart.strings().legend)
           .align('center')
           .height(availableHeight - innerMargin.top);
-        legendWrap
+        legend_wrap
           .datum(data)
           .call(legend);
         legend
           .arrange(availableWidth);
 
-        var legendLinkBBox = sucrose.utils.getTextBBox(legendWrap.select('.sc-legend-link')),
+        var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
             legendSpace = availableWidth - titleBBox.width - 6,
             legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
             xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -5659,7 +5690,7 @@ sucrose.models.funnelChart = function() {
           ypos = - legend.margin().top;
         }
 
-        legendWrap
+        legend_wrap
           .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
         innerMargin.top += legendTop ? 0 : legend.height() - 12;
@@ -5675,7 +5706,7 @@ sucrose.models.funnelChart = function() {
         .width(innerWidth)
         .height(innerHeight);
 
-      funnelWrap
+      funnel_wrap
         .datum(funnelData)
         .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
           .call(funnel);
@@ -5783,12 +5814,12 @@ sucrose.models.funnelChart = function() {
 
       dispatch.on('chartClick', function() {
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
       funnel.dispatch.on('elementClick', function(eo) {
-        dispatch.chartClick();
+        dispatch.call('chartClick', this);
         seriesClick(data, eo, chart);
       });
 
@@ -5802,15 +5833,15 @@ sucrose.models.funnelChart = function() {
   //------------------------------------------------------------
 
   funnel.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   funnel.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   funnel.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
 
@@ -6038,7 +6069,7 @@ sucrose.models.gauge = function() {
 
   //============================================================
 
-  //colorScale = d3.scale.linear().domain([0, .5, 1].map(d3.interpolate(min, max))).range(["green", "yellow", "red"]);
+  //colorScale = d3.scaleLinear().domain([0, .5, 1].map(d3.interpolate(min, max))).range(["green", "yellow", "red"]);
 
   function chart(selection)
   {
@@ -6054,7 +6085,7 @@ sucrose.models.gauge = function() {
           , radius =  Math.min( (availableWidth/2), availableHeight ) / (  (100+labelInset)/100  )
           , container = d3.select(this)
           , range = maxAngle - minAngle
-          , scale = d3.scale.linear().range([0,1]).domain([minValue, maxValue])
+          , scale = d3.scaleLinear().range([0,1]).domain([minValue, maxValue])
           , previousTick = 0
           , arcData = data.map( function(d,i){
               var rtn = {
@@ -6076,28 +6107,30 @@ sucrose.models.gauge = function() {
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
 
-        var wrap = container.selectAll('g.sc-wrap.sc-gauge').data([data]);
-        var wrapEnter = wrap.enter().append('g').attr('class','sucrose sc-wrap sc-gauge');
-        var defsEnter = wrapEnter.append('defs');
-        var gEnter = wrapEnter.append('g');
-        var g = wrap.select('g');
+        var wrap_bind = container.selectAll('g.sc-wrap.sc-gauge').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class','sucrose sc-wrap sc-gauge');
+        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var defs_entr = wrap_entr.append('defs');
+        var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart-wrap').merge(g_entr);
+
 
         //set up the gradient constructor function
         chart.gradient = function(d,i) {
           return sucrose.utils.colorRadialGradient( d, id+'-'+i, {x:0, y:0, r:radius, s:ringWidth/100, u:'userSpaceOnUse'}, color(d,i), wrap.select('defs') );
         };
 
-        gEnter.append('g').attr('class', 'sc-arc-group');
-        gEnter.append('g').attr('class', 'sc-labels');
-        gEnter.append('g').attr('class', 'sc-pointer');
-        gEnter.append('g').attr('class', 'sc-odometer');
+        g_entr.append('g').attr('class', 'sc-arc-group');
+        g_entr.append('g').attr('class', 'sc-labels');
+        g_entr.append('g').attr('class', 'sc-pointer');
+        g_entr.append('g').attr('class', 'sc-odometer');
 
         wrap.attr('transform', 'translate('+ (margin.left/2 + margin.right/2 + prop(labelInset)) +','+ (margin.top + prop(labelInset)) +')');
         //g.select('.sc-arc-gauge').attr('transform', 'translate('+ availableWidth/2 +','+ availableHeight/2 +')');
 
         //------------------------------------------------------------
 
-        // defsEnter.append('clipPath')
+        // defs_entr.append('clipPath')
         //     .attr('id', 'sc-edge-clip-' + id)
         //   .append('rect');
         // wrap.select('#sc-edge-clip-' + id + ' rect')
@@ -6107,7 +6140,7 @@ sucrose.models.gauge = function() {
 
         //------------------------------------------------------------
         // Gauge arcs
-        var arc = d3.svg.arc()
+        var arc = d3.arc()
           .innerRadius( prop(ringWidth) )
           .outerRadius( radius )
           .startAngle(function(d, i) {
@@ -6129,41 +6162,41 @@ sucrose.models.gauge = function() {
             .attr('d', arc)
             .on('mouseover', function(d, i) {
               d3.select(this).classed('hover', true);
-              dispatch.elementMouseover({
-                  point: d,
-                  pointIndex: i,
-                  e: d3.event,
-                  id: id
-              });
+              var eo = {
+                point: d,
+                pointIndex: i,
+                e: d3.event,
+                id: id
+              };
+              dispatch.call('elementMouseover', this, eo);
             })
             .on('mouseout', function(d, i) {
               d3.select(this).classed('hover', false);
-              dispatch.elementMouseout({
-                  point: d,
-                  index: i,
-                  id: id
-              });
+              dispatch.call('elementMouseout', this);
             })
             .on('mousemove', function(d, i) {
-              dispatch.elementMousemove(d3.event);
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
             })
             .on('click', function(d, i) {
-              dispatch.elementClick({
+              var eo = {
                   point: d,
                   index: i,
                   e: d3.event,
                   id: id
-              });
+              };
               d3.event.stopPropagation();
+              dispatch.call('elementClick', this, eo);
             })
             .on('dblclick', function(d, i) {
-              dispatch.elementDblClick({
+              var eo = {
                   point: d,
                   index: i,
                   e: d3.event,
                   id: id
-              });
+              };
               d3.event.stopPropagation();
+              dispatch.call('elementDblClick', this, eo);
             });
 
         ag.selectAll('.sc-arc-path').transition().duration(10)
@@ -6207,12 +6240,12 @@ sucrose.models.gauge = function() {
               .attr('transform', centerTx);
 
           pg.selectAll('path').transition().duration(120)
-            .attr('d', d3.svg.line().interpolate('monotone'));
+            .attr('d', d3.line().interpolate('monotone'));
 
           var pointer = pg.selectAll('path')
               .data([pointerData])
             .enter().append('path')
-              .attr('d', d3.svg.line().interpolate('monotone')/*function(d) { return pointerLine(d) +'Z';}*/ )
+              .attr('d', d3.line().interpolate('monotone')/*function(d) { return pointerLine(d) +'Z';}*/ )
               .attr('transform', 'rotate('+ minAngle +')');
 
           setGaugePointer(pointerValue);
@@ -6560,11 +6593,13 @@ sucrose.models.gaugeChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-gaugeChart').data([data]),
-          gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-gaugeChart').append('g'),
-          g = wrap.select('g').attr('class', 'sc-chartWrap');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-gaugeChart').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-gaugeChart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-      gEnter.append('rect').attr('class', 'sc-background')
+      g_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
         .attr('fill', '#FFF');
@@ -6573,11 +6608,11 @@ sucrose.models.gaugeChart = function() {
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom);
 
-      gEnter.append('g').attr('class', 'sc-titleWrap');
+      g_entr.append('g').attr('class', 'sc-titleWrap');
       var titleWrap = g.select('.sc-titleWrap');
-      gEnter.append('g').attr('class', 'sc-gaugeWrap');
+      g_entr.append('g').attr('class', 'sc-gaugeWrap');
       var gaugeWrap = g.select('.sc-gaugeWrap');
-      gEnter.append('g').attr('class', 'sc-legendWrap');
+      g_entr.append('g').attr('class', 'sc-legendWrap');
       var legendWrap = g.select('.sc-legendWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -6679,7 +6714,7 @@ sucrose.models.gaugeChart = function() {
 
       dispatch.on('chartClick', function() {
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -6693,15 +6728,15 @@ sucrose.models.gaugeChart = function() {
   //------------------------------------------------------------
 
   gauge.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   gauge.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   gauge.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================
@@ -7027,23 +7062,24 @@ sucrose.models.globeChart = function() {
       //------------------------------------------------------------
       // Setup svgs and skeleton of chart
 
-      var wrap = container.selectAll('.sucrose.sc-wrap').data([1]);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-globeChart').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-globeChart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-      var gEnter = wrap.enter().append('g')
-            .attr('class', 'sucrose sc-wrap sc-globeChart')
-            .attr('id', 'sc-chart-' + id)
-              .append('g')
-              .attr('class', 'sc-chartWrap');
-
-      gEnter.append('defs');
+      g_entr.append('defs');
       var defs = wrap.select('defs');
 
-      gEnter.append('svg:rect')
+
+
+
+      g_entr.append('svg:rect')
         .attr('class', 'sc-chartBackground')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
       var backg = wrap.select('.sc-chartBackground');
 
-      var globeEnter = gEnter.append('g')
+      var globeEnter = g_entr.append('g')
             .attr('class', 'sc-globe');
       var globeChart = wrap.select('.sc-globe');
 
@@ -7060,7 +7096,7 @@ sucrose.models.globeChart = function() {
       }
 
       // zoom and pan
-      var zoom = d3.behavior.zoom();
+      var zoom = d3.zoom();
       zoom
         .on('zoom', function () {
           var scale = calcScale(d3.event.scale);
@@ -7191,10 +7227,10 @@ sucrose.models.globeChart = function() {
           .on('click', loadCountry)
           .on('mouseover', function (d, i, j) {
             var eo = buildEventObject(d3.event, d, i, j);
-            dispatch.tooltipShow(eo);
+            dispatch.call('tooltipShow', this, eo);
           })
           .on('mouseout', function () {
-            dispatch.tooltipHide();
+            dispatch.call('tooltipHide', this);
           })
           .on('mousemove', function(d, i, j) {
             dispatch.tooltipMove(d3.event);
@@ -7410,10 +7446,10 @@ sucrose.models.globeChart = function() {
 
       // dispatch.on('chartClick', function() {
       //     if (controls.enabled()) {
-      //       controls.dispatch.closeMenu();
+      //       controls.dispatch.call('closeMenu', this);
       //     }
       //     if (legend.enabled()) {
-      //       legend.dispatch.closeMenu();
+      //       legend.dispatch.call('closeMenu', this);
       //     }
       //   });
 
@@ -7674,19 +7710,20 @@ sucrose.models.line = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-line').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-line');
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-line').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
         return sucrose.utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
-      gEnter.append('g').attr('class', 'sc-groups');
-      gEnter.append('g').attr('class', 'sc-scatterWrap');
+      g_entr.append('g').attr('class', 'sc-groups');
+      g_entr.append('g').attr('class', 'sc-scatterWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -7702,7 +7739,7 @@ sucrose.models.line = function() {
       scatterWrap.call(scatter);
 
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + scatter.id())
         .append('rect');
 
@@ -7739,7 +7776,7 @@ sucrose.models.line = function() {
       areaPaths.enter().append('path')
           .attr('class', 'sc-area')
           .attr('d', function(d) {
-            return d3.svg.area()
+            return d3.area()
                 .interpolate(interpolate)
                 .defined(defined)
                 .x(function(d, i) { return x0(getX(d, i)); })
@@ -7752,7 +7789,7 @@ sucrose.models.line = function() {
 
       d3.transition(groups.exit().selectAll('path.sc-area'))
           .attr('d', function(d) {
-            return d3.svg.area()
+            return d3.area()
                 .interpolate(interpolate)
                 .defined(defined)
                 .x(function(d, i) { return x0(getX(d, i)); })
@@ -7763,7 +7800,7 @@ sucrose.models.line = function() {
           });
       d3.transition(areaPaths)
           .attr('d', function(d) {
-            return d3.svg.area()
+            return d3.area()
                 .interpolate(interpolate)
                 .defined(defined)
                 .x(function(d, i) { return x(getX(d, i)); })
@@ -7803,7 +7840,7 @@ sucrose.models.line = function() {
       linePaths.enter().append('path')
           .attr('class', 'sc-line')
           .attr('d',
-            d3.svg.line()
+            d3.line()
               .interpolate(interpolate)
               .defined(defined)
               .x(function(d, i) { return x0(getX(d, i)); })
@@ -7811,7 +7848,7 @@ sucrose.models.line = function() {
           );
       d3.transition(groups.exit().selectAll('path.sc-line'))
           .attr('d',
-            d3.svg.line()
+            d3.line()
               .interpolate(interpolate)
               .defined(defined)
               .x(function(d, i) { return x0(getX(d, i)); })
@@ -7819,7 +7856,7 @@ sucrose.models.line = function() {
           );
       d3.transition(linePaths)
           .attr('d',
-            d3.svg.line()
+            d3.line()
               .interpolate(interpolate)
               .defined(defined)
               .x(function(d, i) { return x(getX(d, i)); })
@@ -7977,16 +8014,8 @@ sucrose.models.lineChart = function() {
 
   var lines = sucrose.models.line()
         .clipEdge(true),
-      xAxis = sucrose.models.axis()
-        .orient('bottom')
-        .valueFormat(xValueFormat)
-        .tickPadding(4)
-        .highlightZero(false)
-        .showMaxMin(false),
-      yAxis = sucrose.models.axis()
-        .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(4),
+      xAxis = sucrose.models.axis(),
+      yAxis = sucrose.models.axis(),
       legend = sucrose.models.legend()
         .align('right'),
       controls = sucrose.models.legend()
@@ -8160,7 +8189,7 @@ sucrose.models.lineChart = function() {
         .padDataOuter(-1)
         .singlePoint(singlePoint)
         // set x-scale as time instead of linear
-        .xScale(xIsDatetime && !xTickLabels.length ? d3.time.scale() : d3.scale.linear());
+        .xScale(xIsDatetime && !xTickLabels.length ? d3.scaleTime() : d3.scaleLinear());
 
       if (singlePoint) {
 
@@ -8198,10 +8227,18 @@ sucrose.models.lineChart = function() {
           ]);
 
         xAxis
+          .orient('bottom')
+          .valueFormat(xValueFormat)
+          .tickPadding(4)
+          .highlightZero(false)
+          .showMaxMin(false)
           .ticks(xValues.length)
           .tickValues(xValues)
           .showMaxMin(false);
         yAxis
+          .orient('left')
+          .valueFormat(yValueFormat)
+          .tickPadding(4)
           .ticks(singlePoint ? 5 : null) //TODO: why 5?
           .showMaxMin(false)
           .highlightZero(false);
@@ -8216,6 +8253,9 @@ sucrose.models.lineChart = function() {
           .tickValues(null)
           .showMaxMin(xIsDatetime);
         yAxis
+          .orient('left')
+          .valueFormat(yValueFormat)
+          .tickPadding(4)
           .ticks(null)
           .showMaxMin(true)
           .highlightZero(true);
@@ -8254,11 +8294,13 @@ sucrose.models.lineChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var wrap = container.selectAll('g.sc-wrap.sc-lineChart').data([lineData]),
-            gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineChart').append('g'),
-            g = wrap.select('g').attr('class', 'sc-chartWrap');
+        var wrap_bind = container.selectAll('g.sc-wrap.sc-lineChart').data([lineData]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineChart');
+        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-        gEnter.append('rect').attr('class', 'sc-background')
+        g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
           .attr('fill', '#FFF');
@@ -8267,17 +8309,17 @@ sucrose.models.lineChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        gEnter.append('g').attr('class', 'sc-titleWrap');
+        g_entr.append('g').attr('class', 'sc-titleWrap');
         var titleWrap = g.select('.sc-titleWrap');
-        gEnter.append('g').attr('class', 'sc-x sc-axis');
+        g_entr.append('g').attr('class', 'sc-x sc-axis');
         var xAxisWrap = g.select('.sc-x.sc-axis');
-        gEnter.append('g').attr('class', 'sc-y sc-axis');
+        g_entr.append('g').attr('class', 'sc-y sc-axis');
         var yAxisWrap = g.select('.sc-y.sc-axis');
-        gEnter.append('g').attr('class', 'sc-linesWrap');
+        g_entr.append('g').attr('class', 'sc-linesWrap');
         var linesWrap = g.select('.sc-linesWrap');
-        gEnter.append('g').attr('class', 'sc-controlsWrap');
+        g_entr.append('g').attr('class', 'sc-controlsWrap');
         var controlsWrap = g.select('.sc-controlsWrap');
-        gEnter.append('g').attr('class', 'sc-legendWrap');
+        g_entr.append('g').attr('class', 'sc-legendWrap');
         var legendWrap = g.select('.sc-legendWrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -8587,10 +8629,10 @@ sucrose.models.lineChart = function() {
 
       dispatch.on('chartClick', function() {
         if (controls.enabled()) {
-          controls.dispatch.closeMenu();
+          controls.dispatch.call('closeMenu', this);
         }
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -8604,15 +8646,15 @@ sucrose.models.lineChart = function() {
   //------------------------------------------------------------
 
   lines.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   lines.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   lines.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================
@@ -8930,18 +8972,20 @@ sucrose.models.lineWithFocusChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-lineWithFocusChart').data([data]);
-      var gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart').append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-lineWithFocusChart').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-      gEnter.append('g').attr('class', 'sc-legendWrap');
+      g_entr.append('g').attr('class', 'sc-legendWrap');
 
-      var focusEnter = gEnter.append('g').attr('class', 'sc-focus');
+      var focusEnter = g_entr.append('g').attr('class', 'sc-focus');
       focusEnter.append('g').attr('class', 'sc-x sc-axis');
       focusEnter.append('g').attr('class', 'sc-y sc-axis');
       focusEnter.append('g').attr('class', 'sc-linesWrap');
 
-      var contextEnter = gEnter.append('g').attr('class', 'sc-context');
+      var contextEnter = g_entr.append('g').attr('class', 'sc-context');
       contextEnter.append('g').attr('class', 'sc-x sc-axis');
       contextEnter.append('g').attr('class', 'sc-y sc-axis');
       contextEnter.append('g').attr('class', 'sc-linesWrap');
@@ -9064,16 +9108,16 @@ sucrose.models.lineWithFocusChart = function() {
       var brushBG = g.select('.sc-brushBackground').selectAll('g')
           .data([brushExtent || brush.extent()])
 
-      var brushBGenter = brushBG.enter()
+      var brushBg_entr = brushBG.enter()
           .append('g');
 
-      brushBGenter.append('rect')
+      brushBg_entr.append('rect')
           .attr('class', 'left')
           .attr('x', 0)
           .attr('y', 0)
           .attr('height', availableHeight2);
 
-      brushBGenter.append('rect')
+      brushBg_entr.append('rect')
           .attr('class', 'right')
           .attr('x', 0)
           .attr('y', 0)
@@ -9636,7 +9680,7 @@ sucrose.models.multiBar = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
+      var wrap_bind = container.selectAll('.sucrose.sc-wrap.sc-multibar').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-multibar');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
 
@@ -10691,8 +10735,8 @@ sucrose.models.multiBarChart = function() {
         var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
         var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-' + className);
         var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart_wrap');
-        var g = container.select('g.sc-chart_wrap').merge(g_entr);
+        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
         /* Clipping box for scroll */
         g_entr.append('defs');
@@ -10700,8 +10744,8 @@ sucrose.models.multiBarChart = function() {
         /* Container for scroll elements */
         g_entr.append('g').attr('class', 'sc-scroll-background');
 
-        var title_entr = g_entr.append('g').attr('class', 'sc-title_wrap');
-        var title_wrap = g.select('.sc-title_wrap').merge(title_entr);
+        var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
 
         var yAxis_entr = g_entr.append('g').attr('class', 'sc-y sc-axis');
         var yAxis_wrap = g.select('.sc-y.sc-axis').merge(yAxis_entr);
@@ -10710,18 +10754,16 @@ sucrose.models.multiBarChart = function() {
         var scroll_entr = g_entr.append('g').attr('class', 'sc-scroll-wrap');
         var scroll_wrap = g.select('.sc-scroll-wrap');
 
-        var xAxis_entr = g_entr.select('.sc-scroll-wrap').append('g')
-              .attr('class', 'sc-x sc-axis');
+        var xAxis_entr = g_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-x sc-axis');
         var xAxis_wrap = g.select('.sc-x.sc-axis').merge(xAxis_entr);
 
-        var bars_entr = g_entr.select('.sc-scroll-wrap').append('g')
-              .attr('class', 'sc-bars_wrap');
-        var bars_wrap = g.select('.sc-bars_wrap').merge(bars_entr);
+        var bars_entr = g_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-bars-wrap');
+        var bars_wrap = g.select('.sc-bars-wrap').merge(bars_entr);
 
-        var controls_entr = g_entr.append('g').attr('class', 'sc-controls_wrap');
-        var controls_wrap = g.select('.sc-controls_wrap').merge(controls_entr);
-        var legend_entr = g_entr.append('g').attr('class', 'sc-legend_wrap');
-        var legend_wrap = g.select('.sc-legend_wrap').merge(legend_entr);
+        var controls_entr = g_entr.append('g').attr('class', 'sc-controls-wrap');
+        var controls_wrap = g.select('.sc-controls-wrap').merge(controls_entr);
+        var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -10741,6 +10783,7 @@ sucrose.models.multiBarChart = function() {
               .attr('stroke', 'none')
               .attr('fill', 'black')
               .text(properties.title);
+console.log(title_wrap.select('.sc-title'))
 
           titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
@@ -11397,19 +11440,8 @@ sucrose.models.paretoChart = function() {
             .useVoronoi(false)
             .color('data')
             .nice(false),
-        xAxis = sucrose.models.axis()
-            .valueFormat(xValueFormat)
-            .orient('bottom')
-            .tickSize(0)
-            .tickPadding(4)
-            .wrapTicks(true)
-            .highlightZero(false)
-            .showMaxMin(false),
-        yAxis = sucrose.models.axis()
-            .valueFormat(yValueFormat)
-            .orient('left')
-            .tickPadding(7)
-            .showMaxMin(true),
+        xAxis = sucrose.models.axis(),
+        yAxis = sucrose.models.axis(),
         barLegend = sucrose.models.legend()
             .align('left')
             .position('middle'),
@@ -11624,6 +11656,13 @@ sucrose.models.paretoChart = function() {
             y = multibar.yScale();
 
             xAxis
+                .valueFormat(xValueFormat)
+                .orient('bottom')
+                .tickSize(0)
+                .tickPadding(4)
+                .wrapTicks(true)
+                .highlightZero(false)
+                .showMaxMin(false)
                 .tickFormat(function(d, i, noEllipsis) {
                   // Set xAxis to use trimmed array rather than data
                   var label = xAxis.valueFormat()(i, groupLabels, xIsDatetime);
@@ -11634,6 +11673,10 @@ sucrose.models.paretoChart = function() {
                 })
                 .scale(x);
             yAxis
+                .valueFormat(yValueFormat)
+                .orient('left')
+                .tickPadding(7)
+                .showMaxMin(true)
                 .tickFormat(function(d, i) {
                   return yAxis.valueFormat()(d, yIsCurrency);
                 })
@@ -11642,36 +11685,38 @@ sucrose.models.paretoChart = function() {
             //------------------------------------------------------------
             // Setup containers and skeleton of chart
 
-            var wrap = container.selectAll('g.sc-wrap.sc-multiBarWithLegend').data([data]),
-                gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-multiBarWithLegend').append('g'),
-                g = wrap.select('g').attr('class', 'sc-chartWrap');
+            var wrap_bind = container.selectAll('g.sc-wrap.sc-multiBarWithLegend').data([data]);
+            var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-multiBarWithLegend');
+            var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+            var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+            var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-            gEnter.append('rect').attr('class', 'sc-background')
+            g_entr.append('rect').attr('class', 'sc-background')
                 .attr('x', -margin.left)
                 .attr('y', -margin.top)
                 .attr('width', availableWidth + margin.left + margin.right)
                 .attr('height', availableHeight + margin.top + margin.bottom)
                 .attr('fill', '#FFF');
 
-            gEnter.append('g').attr('class', 'sc-titleWrap');
+            g_entr.append('g').attr('class', 'sc-titleWrap');
             var titleWrap = g.select('.sc-titleWrap');
-            gEnter.append('g').attr('class', 'sc-x sc-axis');
+            g_entr.append('g').attr('class', 'sc-x sc-axis');
             var xAxisWrap = g.select('.sc-x.sc-axis');
-            gEnter.append('g').attr('class', 'sc-y sc-axis');
+            g_entr.append('g').attr('class', 'sc-y sc-axis');
             var yAxisWrap = g.select('.sc-y.sc-axis');
-            gEnter.append('g').attr('class', 'sc-barsWrap');
+            g_entr.append('g').attr('class', 'sc-barsWrap');
             var barsWrap = g.select('.sc-barsWrap');
-            gEnter.append('g').attr('class', 'sc-quotaWrap');
+            g_entr.append('g').attr('class', 'sc-quotaWrap');
             var quotaWrap = g.select('.sc-quotaWrap');
 
-            gEnter.append('g').attr('class', 'sc-linesWrap1');
+            g_entr.append('g').attr('class', 'sc-linesWrap1');
             var linesWrap1 = g.select('.sc-linesWrap1');
-            gEnter.append('g').attr('class', 'sc-linesWrap2');
+            g_entr.append('g').attr('class', 'sc-linesWrap2');
             var linesWrap2 = g.select('.sc-linesWrap2');
 
-            gEnter.append('g').attr('class', 'sc-legendWrap sc-barLegend');
+            g_entr.append('g').attr('class', 'sc-legendWrap sc-barLegend');
             var barLegendWrap = g.select('.sc-legendWrap.sc-barLegend');
-            gEnter.append('g').attr('class', 'sc-legendWrap sc-lineLegend');
+            g_entr.append('g').attr('class', 'sc-legendWrap sc-lineLegend');
             var lineLegendWrap = g.select('.sc-legendWrap.sc-lineLegend');
 
             wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -12016,7 +12061,7 @@ sucrose.models.paretoChart = function() {
                     }
                 })
                 .on('mouseout', function() {
-                    dispatch.tooltipHide();
+                    dispatch.call('tooltipHide', this);
                 })
                 .on('mousemove', function() {
                     dispatch.tooltipMove(d3.event);
@@ -12077,7 +12122,7 @@ sucrose.models.paretoChart = function() {
             });
 
             multibar.dispatch.on('elementClick', function(eo) {
-                dispatch.chartClick();
+                dispatch.call('chartClick', this);
                 barClick(data, eo, chart, container);
             });
 
@@ -12091,27 +12136,27 @@ sucrose.models.paretoChart = function() {
     //------------------------------------------------------------
 
     lines2.dispatch.on('elementMouseover.tooltip', function(eo) {
-        dispatch.tooltipShow(eo);
+        dispatch.call('tooltipShow', this, eo);
     });
 
     lines2.dispatch.on('elementMousemove', function(e) {
-        dispatch.tooltipMove(e);
+        dispatch.call('tooltipMove', this, e);
     });
 
     lines2.dispatch.on('elementMouseout.tooltip', function() {
-        dispatch.tooltipHide();
+        dispatch.call('tooltipHide', this);
     });
 
     multibar.dispatch.on('elementMouseover.tooltip', function(eo) {
-        dispatch.tooltipShow(eo);
+        dispatch.call('tooltipShow', this, eo);
     });
 
     multibar.dispatch.on('elementMousemove', function(e) {
-        dispatch.tooltipMove(e);
+        dispatch.call('tooltipMove', this, e);
     });
 
     multibar.dispatch.on('elementMouseout.tooltip', function() {
-        dispatch.tooltipHide();
+        dispatch.call('tooltipHide', this);
     });
 
 
@@ -12403,15 +12448,15 @@ sucrose.models.pie = function() {
       donut = false,
       hole = false,
       holeFormat = function(holeWrap, data) {
-        var wrap = holeWrap.selectAll('.sc-hole-container').data(data),
-            wrapEnter = wrap.enter().append('g').attr('class', 'sc-hole-container');
-        wrapEnter.append('text')
+        var hole_bind = holeWrap.selectAll('.sc-hole-container').data(data),
+            hole_entr = hole_bind.enter().append('g').attr('class', 'sc-hole-container');
+        hole_entr.append('text')
           .text(data)
           .attr('class', 'sc-pie-hole-value')
           .attr('dy', '.35em')
           .attr('text-anchor', 'middle')
           .style('font-size', '50px');
-        wrap.exit().remove();
+        hole_bind.exit().remove();
       },
       labelSunbeamLayout = false,
       leaderLength = 20,
@@ -12467,11 +12512,12 @@ sucrose.models.pie = function() {
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
-      var wrap = container.selectAll('.sc-wrap.sc-pie').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-pie sc-chart-' + id);
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('.sc-wrap.sc-pie').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pie sc-chart-' + id);
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
@@ -12479,9 +12525,9 @@ sucrose.models.pie = function() {
         return sucrose.utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
 
-      gEnter.append('g').attr('class', 'sc-pie');
+      g_entr.append('g').attr('class', 'sc-pie');
       var pieWrap = g.select('.sc-pie');
-      gEnter.append('g').attr('class', 'sc-holeWrap');
+      g_entr.append('g').attr('class', 'sc-holeWrap');
       var holeWrap = g.select('.sc-holeWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -12490,7 +12536,7 @@ sucrose.models.pie = function() {
       //------------------------------------------------------------
 
       if (textureFill) {
-        var mask = sucrose.utils.createTexture(defsEnter, id, -availableWidth / 2, -availableHeight / 2);
+        var mask = sucrose.utils.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
 
       //------------------------------------------------------------
@@ -12517,24 +12563,25 @@ sucrose.models.pie = function() {
             .on('mouseover', function(d, i) {
               d3.select(this).classed('hover', true);
               var eo = buildEventObject(d3.event, d, i);
-              dispatch.elementMouseover(eo);
+              dispatch.call('elementMouseover', this, eo);
             })
             .on('mousemove', function(d, i) {
-              dispatch.elementMousemove(d3.event);
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
               d3.select(this).classed('hover', false);
-              dispatch.elementMouseout();
+              dispatch.call('elementMouseout', this);
             })
             .on('click', function(d, i) {
               d3.event.stopPropagation();
               var eo = buildEventObject(d3.event, d, i);
-              dispatch.elementClick(eo);
+              dispatch.call('elementClick', this, eo);
             })
             .on('dblclick', function(d, i) {
               d3.event.stopPropagation();
               var eo = buildEventObject(d3.event, d, i);
-              dispatch.elementDblClick(eo);
+              dispatch.call('elementDblClick', this, eo);
             });
 
           ae.append('path')
@@ -12626,13 +12673,13 @@ sucrose.models.pie = function() {
         .attr('x', -pieRadius / 2)
         .attr('y', -pieRadius / 2);
 
-      var pieArc = d3.svg.arc()
+      var pieArc = d3.arc()
             .innerRadius(donut ? pieRadius * donutRatio : 0)
             .outerRadius(pieRadius)
             .startAngle(startAngle)
             .endAngle(endAngle);
 
-      var labelArc = d3.svg.arc()
+      var labelArc = d3.arc()
             .innerRadius(0)
             .outerRadius(pieRadius)
             .startAngle(startAngle)
@@ -12759,7 +12806,7 @@ sucrose.models.pie = function() {
                 // any defensive code around an array with 1 element, it expects 2+ els
                 return '0,0 0,0';
               }
-              var outerArc = d3.svg.arc()
+              var outerArc = d3.arc()
                     .innerRadius(pieRadius)
                     .outerRadius(pieRadius)
                     .startAngle(startAngle)
@@ -13387,11 +13434,13 @@ sucrose.models.pieChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-pieChart').data([pieData]),
-          gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-pieChart').append('g'),
-          g = wrap.select('g').attr('class', 'sc-chartWrap');
+      var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([pieData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pie-chart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      gEnter.append('rect').attr('class', 'sc-background')
+      g_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
         .attr('fill', '#FFF');
@@ -13400,12 +13449,12 @@ sucrose.models.pieChart = function() {
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom);
 
-      gEnter.append('g').attr('class', 'sc-titleWrap');
-      var titleWrap = g.select('.sc-titleWrap');
-      gEnter.append('g').attr('class', 'sc-pieWrap');
-      var pieWrap = g.select('.sc-pieWrap');
-      gEnter.append('g').attr('class', 'sc-legendWrap');
-      var legendWrap = g.select('.sc-legendWrap');
+      g_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = g.select('.sc-title-wrap');
+      g_entr.append('g').attr('class', 'sc-pie-wrap');
+      var pie_wrap = g.select('.sc-pie-wrap');
+      g_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = g.select('.sc-legend-wrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -13413,10 +13462,10 @@ sucrose.models.pieChart = function() {
       // Title & Legend
 
       var titleBBox = {width: 0, height: 0};
-      titleWrap.select('.sc-title').remove();
+      title_wrap.select('.sc-title').remove();
 
       if (showTitle && properties.title) {
-        titleWrap
+        title_wrap
           .append('text')
             .attr('class', 'sc-title')
             .attr('x', direction === 'rtl' ? availableWidth : 0)
@@ -13438,13 +13487,13 @@ sucrose.models.pieChart = function() {
           .strings(chart.strings().legend)
           .align('center')
           .height(availableHeight - innerMargin.top);
-        legendWrap
+        legend_wrap
           .datum(pieData)
           .call(legend);
         legend
           .arrange(availableWidth);
 
-        var legendLinkBBox = sucrose.utils.getTextBBox(legendWrap.select('.sc-legend-link')),
+        var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
             legendSpace = availableWidth - titleBBox.width - 6,
             legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
             xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -13455,7 +13504,7 @@ sucrose.models.pieChart = function() {
           ypos = - legend.margin().top;
         }
 
-        legendWrap
+        legend_wrap
           .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
         innerMargin.top += legendTop ? 0 : legend.height() - 12;
@@ -13472,7 +13521,7 @@ sucrose.models.pieChart = function() {
         .width(innerWidth)
         .height(innerHeight);
 
-      pieWrap
+      pie_wrap
         .datum(pieData.filter(function(d) { return !d.disabled; }))
         .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
         .transition().duration(durationMs)
@@ -13557,12 +13606,12 @@ sucrose.models.pieChart = function() {
 
       dispatch.on('chartClick', function() {
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
       pie.dispatch.on('elementClick', function(eo) {
-        dispatch.chartClick();
+        dispatch.call('chartClick', this);
         seriesClick(data, eo, chart);
       });
 
@@ -13576,15 +13625,15 @@ sucrose.models.pieChart = function() {
   //------------------------------------------------------------
 
   pie.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   pie.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   pie.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================
@@ -14152,19 +14201,20 @@ sucrose.models.stackedArea = function () {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedarea');
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedarea');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function (d, i, p) {
         return sucrose.utils.colorLinearGradient( d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs') );
       };
 
-      gEnter.append('g').attr('class', 'sc-areaWrap');
-      gEnter.append('g').attr('class', 'sc-scatterWrap');
+      g_entr.append('g').attr('class', 'sc-areaWrap');
+      g_entr.append('g').attr('class', 'sc-scatterWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -14185,7 +14235,7 @@ sucrose.models.stackedArea = function () {
       scatterWrap.call(scatter);
 
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + chart.id())
         .append('rect');
 
@@ -14196,13 +14246,13 @@ sucrose.models.stackedArea = function () {
       g   .attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + chart.id() + ')' : '');
 
 
-      var area = d3.svg.area()
+      var area = d3.area()
           .x(function (d, i)  { return x(getX(d, i)); })
           .y0(function (d) { return y(d.display.y0); })
           .y1(function (d) { return y(d.display.y + d.display.y0); })
           .interpolate(interpolate);
 
-      var zeroArea = d3.svg.area()
+      var zeroArea = d3.area()
           .x(function (d, i) { return x(getX(d, i)); })
           .y0(function (d) { return y(d.display.y0); })
           .y1(function (d) { return y(d.display.y0); });
@@ -14472,16 +14522,8 @@ sucrose.models.stackedAreaChart = function() {
 
   var stacked = sucrose.models.stackedArea()
         .clipEdge(true),
-      xAxis = sucrose.models.axis()
-        .orient('bottom')
-        .valueFormat(xValueFormat)
-        .tickPadding(4)
-        .highlightZero(false)
-        .showMaxMin(false),
-      yAxis = sucrose.models.axis()
-        .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(4),
+      xAxis = sucrose.models.axis(),
+      yAxis = sucrose.models.axis(),
       legend = sucrose.models.legend()
         .align('right'),
       controls = sucrose.models.legend()
@@ -14646,8 +14688,16 @@ sucrose.models.stackedAreaChart = function() {
       y = stacked.yScale();
 
       xAxis
+        .orient('bottom')
+        .valueFormat(xValueFormat)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false)
         .scale(x);
       yAxis
+        .orient('left')
+        .valueFormat(yValueFormat)
+        .tickPadding(4)
         .scale(y);
 
       //------------------------------------------------------------
@@ -14674,11 +14724,13 @@ sucrose.models.stackedAreaChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var wrap = container.selectAll('g.sc-wrap.sc-stackedAreaChart').data([data]),
-            gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedAreaChart').append('g'),
-            g = wrap.select('g').attr('class', 'sc-chartWrap');
+        var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedAreaChart').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedAreaChart');
+        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-        gEnter.append('rect').attr('class', 'sc-background')
+        g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
           .attr('fill', '#FFF');
@@ -14687,17 +14739,17 @@ sucrose.models.stackedAreaChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        gEnter.append('g').attr('class', 'sc-titleWrap');
+        g_entr.append('g').attr('class', 'sc-titleWrap');
         var titleWrap = g.select('.sc-titleWrap');
-        gEnter.append('g').attr('class', 'sc-x sc-axis');
+        g_entr.append('g').attr('class', 'sc-x sc-axis');
         var xAxisWrap = g.select('.sc-x.sc-axis');
-        gEnter.append('g').attr('class', 'sc-y sc-axis');
+        g_entr.append('g').attr('class', 'sc-y sc-axis');
         var yAxisWrap = g.select('.sc-y.sc-axis');
-        gEnter.append('g').attr('class', 'sc-stackedWrap');
+        g_entr.append('g').attr('class', 'sc-stackedWrap');
         var stackedWrap = g.select('.sc-stackedWrap');
-        gEnter.append('g').attr('class', 'sc-controlsWrap');
+        g_entr.append('g').attr('class', 'sc-controlsWrap');
         var controlsWrap = g.select('.sc-controlsWrap');
-        gEnter.append('g').attr('class', 'sc-legendWrap');
+        g_entr.append('g').attr('class', 'sc-legendWrap');
         var legendWrap = g.select('.sc-legendWrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -15006,10 +15058,10 @@ sucrose.models.stackedAreaChart = function() {
 
       dispatch.on('chartClick', function() {
         if (controls.enabled()) {
-          controls.dispatch.closeMenu();
+          controls.dispatch.call('closeMenu', this);
         }
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -15023,23 +15075,23 @@ sucrose.models.stackedAreaChart = function() {
   //------------------------------------------------------------
 
   stacked.dispatch.on('areaMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   stacked.dispatch.on('areaMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   stacked.dispatch.on('areaMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   stacked.dispatch.on('tooltipShow', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   stacked.dispatch.on('tooltipHide', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
 
@@ -15304,7 +15356,7 @@ sucrose.models.table = function () {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('table').data([data]);
+      var wrap_bind = container.selectAll('table').data([data]);
       var tableEnter = wrap.enter().append('table').attr('class', 'sucrose');
 
       //------------------------------------------------------------
@@ -15593,7 +15645,7 @@ sucrose.models.tree = function() {
 
       var zoom = null;
       chart.setZoom = function() {
-        zoom = d3.behavior.zoom()
+        zoom = d3.zoom()
                     .scaleExtent([zoomExtents.min, zoomExtents.max])
                     .on('zoom', function() {
                       treeWrapper.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
@@ -15612,17 +15664,19 @@ sucrose.models.tree = function() {
           };
       var container = d3.select(svg.node().parentNode);
 
-      var wrap = svg.selectAll('.sc-wrap').data([1]);
-      var wrapEnter = wrap.enter().append('g')
+      var wrap_bind = svg.selectAll('.sc-wrap').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g')
             .attr('class', 'sucrose sc-wrap sc-treeChart')
             .attr('id', 'sc-chart-' + id);
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+
       wrap.call(zoom);
 
-      wrapEnter.append('defs');
-      var defs = wrap.select('defs');
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs').merge(defs_entr);
       var nodeShadow = sucrose.utils.dropShadow('node_back_' + id, defs, {blur: 2});
 
-      wrapEnter.append('svg:rect')
+      wrap_entr.append('svg:rect')
             .attr('class', 'sc-chartBackground')
             .attr('width', availableSize.width)
             .attr('height', availableSize.height)
@@ -15630,11 +15684,11 @@ sucrose.models.tree = function() {
             .style('fill', 'transparent');
       var backg = wrap.select('.sc-chartBackground');
 
-      var gEnter = wrapEnter.append('g')
+      var g_entr = wrap_entr.append('g')
             .attr('class', 'sc-chartWrap');
       var treeWrapper = wrap.select('.sc-chartWrap');
 
-      gEnter.append('g')
+      g_entr.append('g')
             .attr('class', 'sc-tree');
       var treeChart = wrap.select('.sc-tree');
 
@@ -16189,11 +16243,11 @@ sucrose.models.treemap = function() {
           container = d3.select(this),
           transitioning;
 
-      x = d3.scale.linear()
+      x = d3.scaleLinear()
             .domain([0, data.dx])
             .range([0, availableWidth]);
 
-      y = d3.scale.linear()
+      y = d3.scaleLinear()
             .domain([0, data.dy])
             .range([0, availableHeight]);
 
@@ -16206,11 +16260,12 @@ sucrose.models.treemap = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-treemap').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
@@ -16223,7 +16278,7 @@ sucrose.models.treemap = function() {
       //------------------------------------------------------------
       // Clip Path
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
       wrap.select('#sc-edge-clip-' + id + ' rect')
@@ -16235,7 +16290,7 @@ sucrose.models.treemap = function() {
       //------------------------------------------------------------
       // Main Chart
 
-      var grandparent = gEnter.append('g').attr('class', 'sc-grandparent');
+      var grandparent = g_entr.append('g').attr('class', 'sc-grandparent');
 
       grandparent.append('rect')
         //.attr('y', -margin.top)
@@ -16260,7 +16315,7 @@ sucrose.models.treemap = function() {
 
         grandparent.datum(d.parent).on('click', transition).select('text').text(name(d));
 
-        var g1 = gEnter.insert('g', '.sc-grandparent')
+        var g1 = g_entr.insert('g', '.sc-grandparent')
           .attr('class', 'sc-depth')
           .attr('height', availableHeight)
           .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -16278,19 +16333,21 @@ sucrose.models.treemap = function() {
 
         g.on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            dispatch.elementMouseover({
+            var eo = {
               point: d,
               pointIndex: i,
               id: id,
               e: d3.event
-            });
+            };
+            dispatch.call('elementMouseover', this, eo);
           })
           .on('mousemove', function(d, i) {
-            dispatch.elementMousemove(d3.event);
+            var e = d3.event;
+            dispatch.call('elementMousemove', this, e);
           })
           .on('mouseout', function(d, i) {
             d3.select(this).classed('hover', false);
-            dispatch.elementMouseout();
+            dispatch.call('elementMouseout', this);
           });
 
         var child_rects = g.selectAll('.sc-child').data(function(d) {
@@ -16305,18 +16362,19 @@ sucrose.models.treemap = function() {
         child_rects
           .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            dispatch.elementMouseover({
+            var eo = {
                 label: groupBy(d),
                 value: getSize(d),
                 point: d,
                 pointIndex: i,
                 e: d3.event,
                 id: id
-            });
+            };
+            dispatch.call('elementMouseover', this, eo);
           })
           .on('mouseout', function(d, i) {
             d3.select(this).classed('hover', false);
-            dispatch.elementMouseout();
+            dispatch.call('elementMouseout', this);
           });
 
         g.append('rect')
@@ -16329,7 +16387,7 @@ sucrose.models.treemap = function() {
           .call(text);
 
         function transition(d) {
-          dispatch.elementMouseout();
+          dispatch.call('elementMouseout', this);
           if (transitioning || !d) { return; }
           transitioning = true;
 
@@ -16634,18 +16692,20 @@ sucrose.models.treemapChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-treemapWithLegend').data(data);
-      var gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemapWithLegend').append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemapWithLegend').data(data);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemapWithLegend');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-      gEnter.append('rect').attr('class', 'sc-background')
+      g_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom)
         .attr('fill', '#FFF');
 
-      gEnter.append('g').attr('class', 'sc-treemapWrap');
+      g_entr.append('g').attr('class', 'sc-treemapWrap');
 
       //------------------------------------------------------------
 
@@ -16657,7 +16717,7 @@ sucrose.models.treemapChart = function() {
           legendHeight = 0;
 
       if (showLegend) {
-        gEnter.append('g').attr('class', 'sc-legendWrap');
+        g_entr.append('g').attr('class', 'sc-legendWrap');
 
         legend
           .id('legend_' + chart.id())
@@ -16681,7 +16741,7 @@ sucrose.models.treemapChart = function() {
       }
 
       if (showTitle && properties.title) {
-        gEnter.append('g').attr('class', 'sc-titleWrap');
+        g_entr.append('g').attr('class', 'sc-titleWrap');
 
         g.select('.sc-title').remove();
 
@@ -16795,15 +16855,15 @@ sucrose.models.treemapChart = function() {
   //------------------------------------------------------------
 
   treemap.dispatch.on('elementMouseover', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   treemap.dispatch.on('elementMousemove', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   treemap.dispatch.on('elementMouseout', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================

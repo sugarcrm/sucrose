@@ -166,23 +166,24 @@ sucrose.models.globeChart = function() {
       //------------------------------------------------------------
       // Setup svgs and skeleton of chart
 
-      var wrap = container.selectAll('.sucrose.sc-wrap').data([1]);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-globeChart').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-globeChart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-      var gEnter = wrap.enter().append('g')
-            .attr('class', 'sucrose sc-wrap sc-globeChart')
-            .attr('id', 'sc-chart-' + id)
-              .append('g')
-              .attr('class', 'sc-chartWrap');
-
-      gEnter.append('defs');
+      g_entr.append('defs');
       var defs = wrap.select('defs');
 
-      gEnter.append('svg:rect')
+
+
+
+      g_entr.append('svg:rect')
         .attr('class', 'sc-chartBackground')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
       var backg = wrap.select('.sc-chartBackground');
 
-      var globeEnter = gEnter.append('g')
+      var globeEnter = g_entr.append('g')
             .attr('class', 'sc-globe');
       var globeChart = wrap.select('.sc-globe');
 
@@ -199,7 +200,7 @@ sucrose.models.globeChart = function() {
       }
 
       // zoom and pan
-      var zoom = d3.behavior.zoom();
+      var zoom = d3.zoom();
       zoom
         .on('zoom', function () {
           var scale = calcScale(d3.event.scale);
@@ -330,10 +331,10 @@ sucrose.models.globeChart = function() {
           .on('click', loadCountry)
           .on('mouseover', function (d, i, j) {
             var eo = buildEventObject(d3.event, d, i, j);
-            dispatch.tooltipShow(eo);
+            dispatch.call('tooltipShow', this, eo);
           })
           .on('mouseout', function () {
-            dispatch.tooltipHide();
+            dispatch.call('tooltipHide', this);
           })
           .on('mousemove', function(d, i, j) {
             dispatch.tooltipMove(d3.event);
@@ -549,10 +550,10 @@ sucrose.models.globeChart = function() {
 
       // dispatch.on('chartClick', function() {
       //     if (controls.enabled()) {
-      //       controls.dispatch.closeMenu();
+      //       controls.dispatch.call('closeMenu', this);
       //     }
       //     if (legend.enabled()) {
-      //       legend.dispatch.closeMenu();
+      //       legend.dispatch.call('closeMenu', this);
       //     }
       //   });
 

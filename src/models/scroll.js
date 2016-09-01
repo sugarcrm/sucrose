@@ -17,10 +17,10 @@ sucrose.models.scroll = function() {
 
   //============================================================
 
-  function scroll(g, gEnter, scrollWrap, xAxis) {
+  function scroll(g, g_enter, scrollWrap, xAxis) {
 
       var defs = g.select('defs'),
-          defsEnter = gEnter.select('defs'),
+          defs_enter = g_enter.select('defs'),
           scrollMask,
           scrollTarget,
           xAxisWrap = scrollWrap.select('.sc-x.sc-axis'),
@@ -202,30 +202,30 @@ sucrose.models.scroll = function() {
 
       /* Background gradients */
       scroll.gradients = function(enable) {
-        defsEnter
+        defs_enter
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-back-gradient-prev-' + id);
-        var bgpEnter = defsEnter.select('#sc-back-gradient-prev-' + id);
+        var bgpEnter = defs_enter.select('#sc-back-gradient-prev-' + id);
 
-        defsEnter
+        defs_enter
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-back-gradient-more-' + id);
-        var bgmEnter = defsEnter.select('#sc-back-gradient-more-' + id);
+        var bgmEnter = defs_enter.select('#sc-back-gradient-more-' + id);
 
         /* Foreground gradients */
-        defsEnter
+        defs_enter
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-fore-gradient-prev-' + id);
-        var fgpEnter = defsEnter.select('#sc-fore-gradient-prev-' + id);
+        var fgpEnter = defs_enter.select('#sc-fore-gradient-prev-' + id);
 
-        defsEnter
+        defs_enter
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-fore-gradient-more-' + id);
-        var fgmEnter = defsEnter.select('#sc-fore-gradient-more-' + id);
+        var fgmEnter = defs_enter.select('#sc-fore-gradient-more-' + id);
 
         defs.selectAll('.sc-scroll-gradient')
           .attr('gradientUnits', 'objectBoundingBox')
@@ -278,7 +278,7 @@ sucrose.models.scroll = function() {
       };
 
       scroll.mask = function(enable) {
-        defsEnter.append('clipPath')
+        defs_enter.append('clipPath')
           .attr('class', 'sc-scroll-mask')
           .attr('id', 'sc-edge-clip-' + id)
           .append('rect');
@@ -289,7 +289,7 @@ sucrose.models.scroll = function() {
       };
 
       scroll.scrollTarget = function(enable) {
-        gEnter.select('.sc-scroll-background')
+        g_entr.select('.sc-scroll-background')
           .append('rect')
           .attr('class', 'sc-scroll-target')
           //.attr('fill', '#FFF');
@@ -300,7 +300,7 @@ sucrose.models.scroll = function() {
 
       /* Background shadow rectangles */
       scroll.backShadows = function(enable) {
-        var shadowWrap = gEnter.select('.sc-scroll-background')
+        var shadowWrap = g_entr.select('.sc-scroll-background')
               .append('g')
               .attr('class', 'sc-back-shadow-wrap');
 
@@ -330,7 +330,7 @@ sucrose.models.scroll = function() {
 
       /* Foreground shadow rectangles */
       scroll.foreShadows = function(enable) {
-        var shadowWrap = gEnter.select('.sc-scroll-background')
+        var shadowWrap = g_entr.select('.sc-scroll-background')
               .insert('g')
               .attr('class', 'sc-fore-shadow-wrap');
 

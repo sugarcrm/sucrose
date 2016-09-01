@@ -9,8 +9,8 @@ sucrose.models.sparkline = function() {
     , width = 400
     , height = 32
     , animate = true
-    , x = d3.scale.linear()
-    , y = d3.scale.linear()
+    , x = d3.scaleLinear()
+    , y = d3.scaleLinear()
     , getX = function(d) { return d.x }
     , getY = function(d) { return d.y }
     , color = sucrose.utils.getColor(['#000'])
@@ -43,11 +43,12 @@ sucrose.models.sparkline = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-sparkline').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparkline');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
-
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-sparkline').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparkline');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
+      
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
       //------------------------------------------------------------
@@ -59,7 +60,7 @@ sucrose.models.sparkline = function() {
       paths.exit().remove();
       paths
           .style('stroke', function(d,i) { return d.color || color(d, i) })
-          .attr('d', d3.svg.line()
+          .attr('d', d3.line()
             .x(function(d,i) { return x(getX(d,i)) })
             .y(function(d,i) { return y(getY(d,i)) })
           );

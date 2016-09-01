@@ -54,19 +54,20 @@ sucrose.models.line = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-line').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-line');
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-line').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
         return sucrose.utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
-      gEnter.append('g').attr('class', 'sc-groups');
-      gEnter.append('g').attr('class', 'sc-scatterWrap');
+      g_entr.append('g').attr('class', 'sc-groups');
+      g_entr.append('g').attr('class', 'sc-scatterWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -82,7 +83,7 @@ sucrose.models.line = function() {
       scatterWrap.call(scatter);
 
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + scatter.id())
         .append('rect');
 
@@ -119,7 +120,7 @@ sucrose.models.line = function() {
       areaPaths.enter().append('path')
           .attr('class', 'sc-area')
           .attr('d', function(d) {
-            return d3.svg.area()
+            return d3.area()
                 .interpolate(interpolate)
                 .defined(defined)
                 .x(function(d, i) { return x0(getX(d, i)); })
@@ -132,7 +133,7 @@ sucrose.models.line = function() {
 
       d3.transition(groups.exit().selectAll('path.sc-area'))
           .attr('d', function(d) {
-            return d3.svg.area()
+            return d3.area()
                 .interpolate(interpolate)
                 .defined(defined)
                 .x(function(d, i) { return x0(getX(d, i)); })
@@ -143,7 +144,7 @@ sucrose.models.line = function() {
           });
       d3.transition(areaPaths)
           .attr('d', function(d) {
-            return d3.svg.area()
+            return d3.area()
                 .interpolate(interpolate)
                 .defined(defined)
                 .x(function(d, i) { return x(getX(d, i)); })
@@ -183,7 +184,7 @@ sucrose.models.line = function() {
       linePaths.enter().append('path')
           .attr('class', 'sc-line')
           .attr('d',
-            d3.svg.line()
+            d3.line()
               .interpolate(interpolate)
               .defined(defined)
               .x(function(d, i) { return x0(getX(d, i)); })
@@ -191,7 +192,7 @@ sucrose.models.line = function() {
           );
       d3.transition(groups.exit().selectAll('path.sc-line'))
           .attr('d',
-            d3.svg.line()
+            d3.line()
               .interpolate(interpolate)
               .defined(defined)
               .x(function(d, i) { return x0(getX(d, i)); })
@@ -199,7 +200,7 @@ sucrose.models.line = function() {
           );
       d3.transition(linePaths)
           .attr('d',
-            d3.svg.line()
+            d3.line()
               .interpolate(interpolate)
               .defined(defined)
               .x(function(d, i) { return x(getX(d, i)); })

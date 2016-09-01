@@ -97,18 +97,20 @@ sucrose.models.treemapChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-treemapWithLegend').data(data);
-      var gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemapWithLegend').append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemapWithLegend').data(data);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemapWithLegend');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-      gEnter.append('rect').attr('class', 'sc-background')
+      g_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom)
         .attr('fill', '#FFF');
 
-      gEnter.append('g').attr('class', 'sc-treemapWrap');
+      g_entr.append('g').attr('class', 'sc-treemapWrap');
 
       //------------------------------------------------------------
 
@@ -120,7 +122,7 @@ sucrose.models.treemapChart = function() {
           legendHeight = 0;
 
       if (showLegend) {
-        gEnter.append('g').attr('class', 'sc-legendWrap');
+        g_entr.append('g').attr('class', 'sc-legendWrap');
 
         legend
           .id('legend_' + chart.id())
@@ -144,7 +146,7 @@ sucrose.models.treemapChart = function() {
       }
 
       if (showTitle && properties.title) {
-        gEnter.append('g').attr('class', 'sc-titleWrap');
+        g_entr.append('g').attr('class', 'sc-titleWrap');
 
         g.select('.sc-title').remove();
 
@@ -258,15 +260,15 @@ sucrose.models.treemapChart = function() {
   //------------------------------------------------------------
 
   treemap.dispatch.on('elementMouseover', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   treemap.dispatch.on('elementMousemove', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   treemap.dispatch.on('elementMouseout', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================

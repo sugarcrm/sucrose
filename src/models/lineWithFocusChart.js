@@ -128,18 +128,20 @@ sucrose.models.lineWithFocusChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-lineWithFocusChart').data([data]);
-      var gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart').append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-lineWithFocusChart').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-      gEnter.append('g').attr('class', 'sc-legendWrap');
+      g_entr.append('g').attr('class', 'sc-legendWrap');
 
-      var focusEnter = gEnter.append('g').attr('class', 'sc-focus');
+      var focusEnter = g_entr.append('g').attr('class', 'sc-focus');
       focusEnter.append('g').attr('class', 'sc-x sc-axis');
       focusEnter.append('g').attr('class', 'sc-y sc-axis');
       focusEnter.append('g').attr('class', 'sc-linesWrap');
 
-      var contextEnter = gEnter.append('g').attr('class', 'sc-context');
+      var contextEnter = g_entr.append('g').attr('class', 'sc-context');
       contextEnter.append('g').attr('class', 'sc-x sc-axis');
       contextEnter.append('g').attr('class', 'sc-y sc-axis');
       contextEnter.append('g').attr('class', 'sc-linesWrap');
@@ -262,16 +264,16 @@ sucrose.models.lineWithFocusChart = function() {
       var brushBG = g.select('.sc-brushBackground').selectAll('g')
           .data([brushExtent || brush.extent()])
 
-      var brushBGenter = brushBG.enter()
+      var brushBg_entr = brushBG.enter()
           .append('g');
 
-      brushBGenter.append('rect')
+      brushBg_entr.append('rect')
           .attr('class', 'left')
           .attr('x', 0)
           .attr('y', 0)
           .attr('height', availableHeight2);
 
-      brushBGenter.append('rect')
+      brushBg_entr.append('rect')
           .attr('class', 'right')
           .attr('x', 0)
           .attr('y', 0)

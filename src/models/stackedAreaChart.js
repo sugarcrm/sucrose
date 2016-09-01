@@ -39,16 +39,8 @@ sucrose.models.stackedAreaChart = function() {
 
   var stacked = sucrose.models.stackedArea()
         .clipEdge(true),
-      xAxis = sucrose.models.axis()
-        .orient('bottom')
-        .valueFormat(xValueFormat)
-        .tickPadding(4)
-        .highlightZero(false)
-        .showMaxMin(false),
-      yAxis = sucrose.models.axis()
-        .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(4),
+      xAxis = sucrose.models.axis(),
+      yAxis = sucrose.models.axis(),
       legend = sucrose.models.legend()
         .align('right'),
       controls = sucrose.models.legend()
@@ -213,8 +205,16 @@ sucrose.models.stackedAreaChart = function() {
       y = stacked.yScale();
 
       xAxis
+        .orient('bottom')
+        .valueFormat(xValueFormat)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false)
         .scale(x);
       yAxis
+        .orient('left')
+        .valueFormat(yValueFormat)
+        .tickPadding(4)
         .scale(y);
 
       //------------------------------------------------------------
@@ -241,11 +241,13 @@ sucrose.models.stackedAreaChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var wrap = container.selectAll('g.sc-wrap.sc-stackedAreaChart').data([data]),
-            gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedAreaChart').append('g'),
-            g = wrap.select('g').attr('class', 'sc-chartWrap');
+        var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedAreaChart').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedAreaChart');
+        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-        gEnter.append('rect').attr('class', 'sc-background')
+        g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
           .attr('fill', '#FFF');
@@ -254,17 +256,17 @@ sucrose.models.stackedAreaChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        gEnter.append('g').attr('class', 'sc-titleWrap');
+        g_entr.append('g').attr('class', 'sc-titleWrap');
         var titleWrap = g.select('.sc-titleWrap');
-        gEnter.append('g').attr('class', 'sc-x sc-axis');
+        g_entr.append('g').attr('class', 'sc-x sc-axis');
         var xAxisWrap = g.select('.sc-x.sc-axis');
-        gEnter.append('g').attr('class', 'sc-y sc-axis');
+        g_entr.append('g').attr('class', 'sc-y sc-axis');
         var yAxisWrap = g.select('.sc-y.sc-axis');
-        gEnter.append('g').attr('class', 'sc-stackedWrap');
+        g_entr.append('g').attr('class', 'sc-stackedWrap');
         var stackedWrap = g.select('.sc-stackedWrap');
-        gEnter.append('g').attr('class', 'sc-controlsWrap');
+        g_entr.append('g').attr('class', 'sc-controlsWrap');
         var controlsWrap = g.select('.sc-controlsWrap');
-        gEnter.append('g').attr('class', 'sc-legendWrap');
+        g_entr.append('g').attr('class', 'sc-legendWrap');
         var legendWrap = g.select('.sc-legendWrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -573,10 +575,10 @@ sucrose.models.stackedAreaChart = function() {
 
       dispatch.on('chartClick', function() {
         if (controls.enabled()) {
-          controls.dispatch.closeMenu();
+          controls.dispatch.call('closeMenu', this);
         }
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -590,23 +592,23 @@ sucrose.models.stackedAreaChart = function() {
   //------------------------------------------------------------
 
   stacked.dispatch.on('areaMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   stacked.dispatch.on('areaMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   stacked.dispatch.on('areaMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   stacked.dispatch.on('tooltipShow', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   stacked.dispatch.on('tooltipHide', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
 

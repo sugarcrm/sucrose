@@ -77,14 +77,15 @@ sucrose.models.sparklinePlus = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-sparklineplus').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparklineplus');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
-
-      gEnter.append('g').attr('class', 'sc-sparklineWrap');
-      gEnter.append('g').attr('class', 'sc-valueWrap');
-      gEnter.append('g').attr('class', 'sc-hoverArea');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-sparklineplus').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparklineplus');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
+      
+      g_entr.append('g').attr('class', 'sc-sparklineWrap');
+      g_entr.append('g').attr('class', 'sc-valueWrap');
+      g_entr.append('g').attr('class', 'sc-hoverArea');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -124,7 +125,7 @@ sucrose.models.sparklinePlus = function() {
 
 
 
-      gEnter.select('.sc-hoverArea').append('rect')
+      g_entr.select('.sc-hoverArea').append('rect')
           .on('mousemove', sparklineHover)
           .on('click', function() { paused = !paused })
           .on('mouseout', function() { index = []; updateValueLine(); });

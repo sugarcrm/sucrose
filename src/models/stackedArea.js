@@ -88,19 +88,20 @@ sucrose.models.stackedArea = function () {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedarea');
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedarea');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function (d, i, p) {
         return sucrose.utils.colorLinearGradient( d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs') );
       };
 
-      gEnter.append('g').attr('class', 'sc-areaWrap');
-      gEnter.append('g').attr('class', 'sc-scatterWrap');
+      g_entr.append('g').attr('class', 'sc-areaWrap');
+      g_entr.append('g').attr('class', 'sc-scatterWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -121,7 +122,7 @@ sucrose.models.stackedArea = function () {
       scatterWrap.call(scatter);
 
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + chart.id())
         .append('rect');
 
@@ -132,13 +133,13 @@ sucrose.models.stackedArea = function () {
       g   .attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + chart.id() + ')' : '');
 
 
-      var area = d3.svg.area()
+      var area = d3.area()
           .x(function (d, i)  { return x(getX(d, i)); })
           .y0(function (d) { return y(d.display.y0); })
           .y1(function (d) { return y(d.display.y + d.display.y0); })
           .interpolate(interpolate);
 
-      var zeroArea = d3.svg.area()
+      var zeroArea = d3.area()
           .x(function (d, i) { return x(getX(d, i)); })
           .y0(function (d) { return y(d.display.y0); })
           .y1(function (d) { return y(d.display.y0); });

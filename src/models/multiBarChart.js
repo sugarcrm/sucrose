@@ -385,8 +385,8 @@ sucrose.models.multiBarChart = function() {
         var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
         var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-' + className);
         var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart_wrap');
-        var g = container.select('g.sc-chart_wrap').merge(g_entr);
+        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
         /* Clipping box for scroll */
         g_entr.append('defs');
@@ -394,8 +394,8 @@ sucrose.models.multiBarChart = function() {
         /* Container for scroll elements */
         g_entr.append('g').attr('class', 'sc-scroll-background');
 
-        var title_entr = g_entr.append('g').attr('class', 'sc-title_wrap');
-        var title_wrap = g.select('.sc-title_wrap').merge(title_entr);
+        var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
 
         var yAxis_entr = g_entr.append('g').attr('class', 'sc-y sc-axis');
         var yAxis_wrap = g.select('.sc-y.sc-axis').merge(yAxis_entr);
@@ -404,18 +404,16 @@ sucrose.models.multiBarChart = function() {
         var scroll_entr = g_entr.append('g').attr('class', 'sc-scroll-wrap');
         var scroll_wrap = g.select('.sc-scroll-wrap');
 
-        var xAxis_entr = g_entr.select('.sc-scroll-wrap').append('g')
-              .attr('class', 'sc-x sc-axis');
+        var xAxis_entr = g_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-x sc-axis');
         var xAxis_wrap = g.select('.sc-x.sc-axis').merge(xAxis_entr);
 
-        var bars_entr = g_entr.select('.sc-scroll-wrap').append('g')
-              .attr('class', 'sc-bars_wrap');
-        var bars_wrap = g.select('.sc-bars_wrap').merge(bars_entr);
+        var bars_entr = g_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-bars-wrap');
+        var bars_wrap = g.select('.sc-bars-wrap').merge(bars_entr);
 
-        var controls_entr = g_entr.append('g').attr('class', 'sc-controls_wrap');
-        var controls_wrap = g.select('.sc-controls_wrap').merge(controls_entr);
-        var legend_entr = g_entr.append('g').attr('class', 'sc-legend_wrap');
-        var legend_wrap = g.select('.sc-legend_wrap').merge(legend_entr);
+        var controls_entr = g_entr.append('g').attr('class', 'sc-controls-wrap');
+        var controls_wrap = g.select('.sc-controls-wrap').merge(controls_entr);
+        var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -435,6 +433,7 @@ sucrose.models.multiBarChart = function() {
               .attr('stroke', 'none')
               .attr('fill', 'black')
               .text(properties.title);
+console.log(title_wrap.select('.sc-title'))
 
           titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;

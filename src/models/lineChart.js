@@ -41,16 +41,8 @@ sucrose.models.lineChart = function() {
 
   var lines = sucrose.models.line()
         .clipEdge(true),
-      xAxis = sucrose.models.axis()
-        .orient('bottom')
-        .valueFormat(xValueFormat)
-        .tickPadding(4)
-        .highlightZero(false)
-        .showMaxMin(false),
-      yAxis = sucrose.models.axis()
-        .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(4),
+      xAxis = sucrose.models.axis(),
+      yAxis = sucrose.models.axis(),
       legend = sucrose.models.legend()
         .align('right'),
       controls = sucrose.models.legend()
@@ -224,7 +216,7 @@ sucrose.models.lineChart = function() {
         .padDataOuter(-1)
         .singlePoint(singlePoint)
         // set x-scale as time instead of linear
-        .xScale(xIsDatetime && !xTickLabels.length ? d3.time.scale() : d3.scale.linear());
+        .xScale(xIsDatetime && !xTickLabels.length ? d3.scaleTime() : d3.scaleLinear());
 
       if (singlePoint) {
 
@@ -262,10 +254,18 @@ sucrose.models.lineChart = function() {
           ]);
 
         xAxis
+          .orient('bottom')
+          .valueFormat(xValueFormat)
+          .tickPadding(4)
+          .highlightZero(false)
+          .showMaxMin(false)
           .ticks(xValues.length)
           .tickValues(xValues)
           .showMaxMin(false);
         yAxis
+          .orient('left')
+          .valueFormat(yValueFormat)
+          .tickPadding(4)
           .ticks(singlePoint ? 5 : null) //TODO: why 5?
           .showMaxMin(false)
           .highlightZero(false);
@@ -280,6 +280,9 @@ sucrose.models.lineChart = function() {
           .tickValues(null)
           .showMaxMin(xIsDatetime);
         yAxis
+          .orient('left')
+          .valueFormat(yValueFormat)
+          .tickPadding(4)
           .ticks(null)
           .showMaxMin(true)
           .highlightZero(true);
@@ -318,11 +321,13 @@ sucrose.models.lineChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var wrap = container.selectAll('g.sc-wrap.sc-lineChart').data([lineData]),
-            gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineChart').append('g'),
-            g = wrap.select('g').attr('class', 'sc-chartWrap');
+        var wrap_bind = container.selectAll('g.sc-wrap.sc-lineChart').data([lineData]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineChart');
+        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-        gEnter.append('rect').attr('class', 'sc-background')
+        g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
           .attr('fill', '#FFF');
@@ -331,17 +336,17 @@ sucrose.models.lineChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        gEnter.append('g').attr('class', 'sc-titleWrap');
+        g_entr.append('g').attr('class', 'sc-titleWrap');
         var titleWrap = g.select('.sc-titleWrap');
-        gEnter.append('g').attr('class', 'sc-x sc-axis');
+        g_entr.append('g').attr('class', 'sc-x sc-axis');
         var xAxisWrap = g.select('.sc-x.sc-axis');
-        gEnter.append('g').attr('class', 'sc-y sc-axis');
+        g_entr.append('g').attr('class', 'sc-y sc-axis');
         var yAxisWrap = g.select('.sc-y.sc-axis');
-        gEnter.append('g').attr('class', 'sc-linesWrap');
+        g_entr.append('g').attr('class', 'sc-linesWrap');
         var linesWrap = g.select('.sc-linesWrap');
-        gEnter.append('g').attr('class', 'sc-controlsWrap');
+        g_entr.append('g').attr('class', 'sc-controlsWrap');
         var controlsWrap = g.select('.sc-controlsWrap');
-        gEnter.append('g').attr('class', 'sc-legendWrap');
+        g_entr.append('g').attr('class', 'sc-legendWrap');
         var legendWrap = g.select('.sc-legendWrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -651,10 +656,10 @@ sucrose.models.lineChart = function() {
 
       dispatch.on('chartClick', function() {
         if (controls.enabled()) {
-          controls.dispatch.closeMenu();
+          controls.dispatch.call('closeMenu', this);
         }
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -668,15 +673,15 @@ sucrose.models.lineChart = function() {
   //------------------------------------------------------------
 
   lines.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   lines.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   lines.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================

@@ -56,7 +56,7 @@ npm-prod:
 
 dependencies: clean-dependencies
 	cp node_modules/d3/build/d3.min.js d3.min.js
-	cp node_modules/topojson/topojson.min.js topojson.min.js
+	cp node_modules/topojson/build/topojson.min.js topojson.min.js
 	cp node_modules/d3fc-rebind/build/d3fc-rebind.min.js d3fc-rebind.min.js
 
 clean-dependencies:
@@ -110,6 +110,8 @@ examples: npm-prod
 
 examples-dev: npm-dev
 	cd examples && make install-dev
-
+examples-js: js
+	cd examples && make sucrose
+	
 reset:
 	git clean -dfx

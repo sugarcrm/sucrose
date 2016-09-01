@@ -269,7 +269,7 @@ sucrose.models.multiBar = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
+      var wrap_bind = container.selectAll('.sucrose.sc-wrap.sc-multibar').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-multibar');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
 

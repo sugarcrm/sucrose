@@ -67,7 +67,7 @@ sucrose.models.tree = function() {
 
       var zoom = null;
       chart.setZoom = function() {
-        zoom = d3.behavior.zoom()
+        zoom = d3.zoom()
                     .scaleExtent([zoomExtents.min, zoomExtents.max])
                     .on('zoom', function() {
                       treeWrapper.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
@@ -86,17 +86,19 @@ sucrose.models.tree = function() {
           };
       var container = d3.select(svg.node().parentNode);
 
-      var wrap = svg.selectAll('.sc-wrap').data([1]);
-      var wrapEnter = wrap.enter().append('g')
+      var wrap_bind = svg.selectAll('.sc-wrap').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g')
             .attr('class', 'sucrose sc-wrap sc-treeChart')
             .attr('id', 'sc-chart-' + id);
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+
       wrap.call(zoom);
 
-      wrapEnter.append('defs');
-      var defs = wrap.select('defs');
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs').merge(defs_entr);
       var nodeShadow = sucrose.utils.dropShadow('node_back_' + id, defs, {blur: 2});
 
-      wrapEnter.append('svg:rect')
+      wrap_entr.append('svg:rect')
             .attr('class', 'sc-chartBackground')
             .attr('width', availableSize.width)
             .attr('height', availableSize.height)
@@ -104,11 +106,11 @@ sucrose.models.tree = function() {
             .style('fill', 'transparent');
       var backg = wrap.select('.sc-chartBackground');
 
-      var gEnter = wrapEnter.append('g')
+      var g_entr = wrap_entr.append('g')
             .attr('class', 'sc-chartWrap');
       var treeWrapper = wrap.select('.sc-chartWrap');
 
-      gEnter.append('g')
+      g_entr.append('g')
             .attr('class', 'sc-tree');
       var treeChart = wrap.select('.sc-tree');
 

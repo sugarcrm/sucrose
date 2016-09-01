@@ -64,19 +64,8 @@ sucrose.models.paretoChart = function() {
             .useVoronoi(false)
             .color('data')
             .nice(false),
-        xAxis = sucrose.models.axis()
-            .valueFormat(xValueFormat)
-            .orient('bottom')
-            .tickSize(0)
-            .tickPadding(4)
-            .wrapTicks(true)
-            .highlightZero(false)
-            .showMaxMin(false),
-        yAxis = sucrose.models.axis()
-            .valueFormat(yValueFormat)
-            .orient('left')
-            .tickPadding(7)
-            .showMaxMin(true),
+        xAxis = sucrose.models.axis(),
+        yAxis = sucrose.models.axis(),
         barLegend = sucrose.models.legend()
             .align('left')
             .position('middle'),
@@ -291,6 +280,13 @@ sucrose.models.paretoChart = function() {
             y = multibar.yScale();
 
             xAxis
+                .valueFormat(xValueFormat)
+                .orient('bottom')
+                .tickSize(0)
+                .tickPadding(4)
+                .wrapTicks(true)
+                .highlightZero(false)
+                .showMaxMin(false)
                 .tickFormat(function(d, i, noEllipsis) {
                   // Set xAxis to use trimmed array rather than data
                   var label = xAxis.valueFormat()(i, groupLabels, xIsDatetime);
@@ -301,6 +297,10 @@ sucrose.models.paretoChart = function() {
                 })
                 .scale(x);
             yAxis
+                .valueFormat(yValueFormat)
+                .orient('left')
+                .tickPadding(7)
+                .showMaxMin(true)
                 .tickFormat(function(d, i) {
                   return yAxis.valueFormat()(d, yIsCurrency);
                 })
@@ -309,36 +309,38 @@ sucrose.models.paretoChart = function() {
             //------------------------------------------------------------
             // Setup containers and skeleton of chart
 
-            var wrap = container.selectAll('g.sc-wrap.sc-multiBarWithLegend').data([data]),
-                gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-multiBarWithLegend').append('g'),
-                g = wrap.select('g').attr('class', 'sc-chartWrap');
+            var wrap_bind = container.selectAll('g.sc-wrap.sc-multiBarWithLegend').data([data]);
+            var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-multiBarWithLegend');
+            var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+            var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+            var g = container.select('g.sc-chart_wrap').merge(g_entr);
 
-            gEnter.append('rect').attr('class', 'sc-background')
+            g_entr.append('rect').attr('class', 'sc-background')
                 .attr('x', -margin.left)
                 .attr('y', -margin.top)
                 .attr('width', availableWidth + margin.left + margin.right)
                 .attr('height', availableHeight + margin.top + margin.bottom)
                 .attr('fill', '#FFF');
 
-            gEnter.append('g').attr('class', 'sc-titleWrap');
+            g_entr.append('g').attr('class', 'sc-titleWrap');
             var titleWrap = g.select('.sc-titleWrap');
-            gEnter.append('g').attr('class', 'sc-x sc-axis');
+            g_entr.append('g').attr('class', 'sc-x sc-axis');
             var xAxisWrap = g.select('.sc-x.sc-axis');
-            gEnter.append('g').attr('class', 'sc-y sc-axis');
+            g_entr.append('g').attr('class', 'sc-y sc-axis');
             var yAxisWrap = g.select('.sc-y.sc-axis');
-            gEnter.append('g').attr('class', 'sc-barsWrap');
+            g_entr.append('g').attr('class', 'sc-barsWrap');
             var barsWrap = g.select('.sc-barsWrap');
-            gEnter.append('g').attr('class', 'sc-quotaWrap');
+            g_entr.append('g').attr('class', 'sc-quotaWrap');
             var quotaWrap = g.select('.sc-quotaWrap');
 
-            gEnter.append('g').attr('class', 'sc-linesWrap1');
+            g_entr.append('g').attr('class', 'sc-linesWrap1');
             var linesWrap1 = g.select('.sc-linesWrap1');
-            gEnter.append('g').attr('class', 'sc-linesWrap2');
+            g_entr.append('g').attr('class', 'sc-linesWrap2');
             var linesWrap2 = g.select('.sc-linesWrap2');
 
-            gEnter.append('g').attr('class', 'sc-legendWrap sc-barLegend');
+            g_entr.append('g').attr('class', 'sc-legendWrap sc-barLegend');
             var barLegendWrap = g.select('.sc-legendWrap.sc-barLegend');
-            gEnter.append('g').attr('class', 'sc-legendWrap sc-lineLegend');
+            g_entr.append('g').attr('class', 'sc-legendWrap sc-lineLegend');
             var lineLegendWrap = g.select('.sc-legendWrap.sc-lineLegend');
 
             wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -683,7 +685,7 @@ sucrose.models.paretoChart = function() {
                     }
                 })
                 .on('mouseout', function() {
-                    dispatch.tooltipHide();
+                    dispatch.call('tooltipHide', this);
                 })
                 .on('mousemove', function() {
                     dispatch.tooltipMove(d3.event);
@@ -744,7 +746,7 @@ sucrose.models.paretoChart = function() {
             });
 
             multibar.dispatch.on('elementClick', function(eo) {
-                dispatch.chartClick();
+                dispatch.call('chartClick', this);
                 barClick(data, eo, chart, container);
             });
 
@@ -758,27 +760,27 @@ sucrose.models.paretoChart = function() {
     //------------------------------------------------------------
 
     lines2.dispatch.on('elementMouseover.tooltip', function(eo) {
-        dispatch.tooltipShow(eo);
+        dispatch.call('tooltipShow', this, eo);
     });
 
     lines2.dispatch.on('elementMousemove', function(e) {
-        dispatch.tooltipMove(e);
+        dispatch.call('tooltipMove', this, e);
     });
 
     lines2.dispatch.on('elementMouseout.tooltip', function() {
-        dispatch.tooltipHide();
+        dispatch.call('tooltipHide', this);
     });
 
     multibar.dispatch.on('elementMouseover.tooltip', function(eo) {
-        dispatch.tooltipShow(eo);
+        dispatch.call('tooltipShow', this, eo);
     });
 
     multibar.dispatch.on('elementMousemove', function(e) {
-        dispatch.tooltipMove(e);
+        dispatch.call('tooltipMove', this, e);
     });
 
     multibar.dispatch.on('elementMouseout.tooltip', function() {
-        dispatch.tooltipHide();
+        dispatch.call('tooltipHide', this);
     });
 
 

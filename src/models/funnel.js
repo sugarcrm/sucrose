@@ -9,7 +9,7 @@ sucrose.models.funnel = function() {
       width = 960,
       height = 500,
       r = 0.3, // ratio of width to height (or slope)
-      y = d3.scale.linear(),
+      y = d3.scaleLinear(),
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
@@ -78,9 +78,10 @@ sucrose.models.funnel = function() {
 
       function calcScales() {
         var funnelArea = areaTrapezoid(calculatedHeight, calculatedWidth),
-            funnelBase = calculatedWidth - 2 * r * calculatedHeight,
             funnelShift = 0,
-            funnelMinHeight = 24;
+            funnelMinHeight = 24,
+            _base = calculatedWidth - 2 * r * calculatedHeight,
+            _bottom = calculatedHeight;
 
         //------------------------------------------------------------
         // Adjust points to compensate for parallax of slice
@@ -88,37 +89,42 @@ sucrose.models.funnel = function() {
 
         data.map(function(series, i) {
           series.values = series.values.map(function(point) {
-            point.height = 0;
+            point._height = 0;
+
             if (funnelTotal > 0) {
-              point.height = heightTrapezoid(funnelArea * point.value / funnelTotal, funnelBase);
+              point._height = heightTrapezoid(funnelArea * point.value / funnelTotal, _base);
             }
-            if (point.height < funnelMinHeight / 2) {
-              funnelShift += point.height - funnelMinHeight / 2;
-              point.height = funnelMinHeight / 2;
-            } else if (funnelShift < 0 && point.height + funnelShift > funnelMinHeight / 2) {
-              point.height += funnelShift;
+
+            if (point._height < funnelMinHeight / 2) {
+              funnelShift += point._height - funnelMinHeight / 2;
+              point._height = funnelMinHeight / 2;
+            } else if (funnelShift < 0 && point._height + funnelShift > funnelMinHeight / 2) {
+              point._height += funnelShift;
               funnelShift = 0;
             }
-            funnelBase += 2 * r * point.height;
+
+            point._base = _base;
+            point._bottom = _bottom;
+            point._top = point._bottom - point._height;
+
+            _base += 2 * r * point._height;
+            _bottom -= point._height;
+
             return point;
           });
           return series;
         });
 
-        data = d3.stack()
-                    .offset('zero')
-                    .values(function(d) { return d.values; })
-                    .y(getH)(data);
-
         // Remap and flatten the data for use in calculating the scales' domains
-        var seriesData = (yDomain) ? [] : // if we know yDomain, no need to calculate
+        //TODO: this is no longer needed
+        var seriesData = yDomain || // if we know yDomain, no need to calculate
               d3.extent(d3.merge(data.map(function(d) {
                 return d.values.map(function(d, i) {
-                  return getH(d, i) + d.y0;
+                  return d._top;
                 });
               })).concat(forceY));
 
-        y .domain(yDomain || seriesData)
+        y .domain(seriesData)
           .range([calculatedHeight, 0]);
       }
 
@@ -128,24 +134,25 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-funnel').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-funnel');
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-funnel').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-funnel');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
         return sucrose.utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
-      gEnter.append('g').attr('class', 'sc-groups');
+      g_entr.append('g').attr('class', 'sc-groups');
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
       // Clip path
 
-      defsEnter.append('clipPath')
+      defs_entr.append('clipPath')
         .attr('id', 'sc-edge-clip-' + id)
           .append('rect');
       wrap.select('#sc-edge-clip-' + id + ' rect')
@@ -157,16 +164,16 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
 
       if (textureFill) {
-        var mask = sucrose.utils.createTexture(defsEnter, id);
+        var mask = sucrose.utils.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      var groupsEnter = wrap.select('.sc-groups').selectAll('.sc-group')
+      var groups_entr = wrap.select('.sc-groups').selectAll('.sc-group')
             .data(data, function(d) { return d.series; });
 
-      groupsEnter.exit().transition().duration(durationMs)
+      groups_entr.exit().transition().duration(durationMs)
         .selectAll('g.sc-slice')
         .delay(function(d, i) { return i * delay / data[0].values.length; })
           .attr('points', function(d) {
@@ -176,7 +183,7 @@ sucrose.models.funnel = function() {
           .style('fill-opacity', 1e-6)
           .remove();
 
-      groupsEnter.exit().transition().duration(durationMs)
+      groups_entr.exit().transition().duration(durationMs)
         .selectAll('g.sc-label-value')
         .delay(function(d, i) { return i * delay / data[0].values.length; })
           .attr('y', 0)
@@ -185,14 +192,15 @@ sucrose.models.funnel = function() {
           .style('fill-opacity', 1e-6)
           .remove();
 
-      groupsEnter.exit().remove();
-      groupsEnter.enter().append('g').attr('class', 'sc-group');
+      groups_entr.exit().remove();
+      groups_entr.enter().append('g').attr('class', 'sc-group');
 
-      var groups = wrap.select('.sc-groups').selectAll('.sc-group');
+      var groups = wrap.select('.sc-groups').selectAll('.sc-group')
+            .merge(groups_entr);
 
-      groups
-        .style('stroke-opacity', 1e-6)
-        .style('fill-opacity', 1e-6);
+      // groups
+      //   .style('stroke-opacity', 1e-6)
+      //   .style('fill-opacity', 1e-6);
 
       groups
         .attr('class', classes)
@@ -200,7 +208,8 @@ sucrose.models.funnel = function() {
         .classed('hover', function(d) { return d.hover; })
         .classed('sc-active', function(d) { return d.active === 'active'; })
         .classed('sc-inactive', function(d) { return d.active === 'inactive'; })
-        .style({'stroke': '#FFFFFF', 'stroke-width': 2});
+        .style('stroke', '#FFFFFF')
+        .style('stroke-width', 2);
 
       groups.transition().duration(durationMs)
           .style('stroke-opacity', 1)
@@ -210,13 +219,14 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append polygons for funnel
 
-      var sliceJoin = groupsEnter.selectAll('g.sc-slice')
+      var slice_bind = groups.selectAll('g.sc-slice')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
-      sliceJoin.exit().remove();
-      var sliceEnter = sliceJoin.enter().append('g').attr('class', 'sc-slice');
-      var slices = groups.selectAll('g.sc-slice');
+      slice_bind.exit().remove();
+      var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
+      var slices = groups.selectAll('g.sc-slice')
+            .merge(slice_entr);
 
-      sliceEnter.append('polygon')
+      slice_entr.append('polygon')
         .attr('class', 'sc-base');
       slices.selectAll('.sc-base')
         .attr('points', function(d) {
@@ -225,7 +235,7 @@ sucrose.models.funnel = function() {
 
       if (textureFill) {
         // For on click active bars
-        sliceEnter.append('polygon')
+        slice_entr.append('polygon')
           .attr('class', 'sc-texture');
         slices.selectAll('.sc-texture')
           .attr('points', function(d) {
@@ -238,24 +248,25 @@ sucrose.models.funnel = function() {
         .on('mouseover', function(d, i) {
           d3.select(this).classed('hover', true);
           var eo = buildEventObject(d3.event, d, i);
-          dispatch.elementMouseover(eo);
+          dispatch.call('elementMouseover', this, eo);
         })
         .on('mousemove', function(d, i) {
-          dispatch.elementMousemove(d3.event);
+          var e = d3.event;
+          dispatch.call('elementMousemove', this, e);
         })
         .on('mouseout', function(d, i) {
           d3.select(this).classed('hover', false);
-          dispatch.elementMouseout();
+          dispatch.call('elementMouseout', this);
         })
         .on('click', function(d, i) {
           d3.event.stopPropagation();
           var eo = buildEventObject(d3.event, d, i);
-          dispatch.elementClick(eo);
+          dispatch.call('elementClick', this, eo);
         })
         .on('dblclick', function(d, i) {
           d3.event.stopPropagation();
           var eo = buildEventObject(d3.event, d, i);
-          dispatch.elementDblClick(eo);
+          dispatch.call('elementDblClick', this, eo);
         });
 
 
@@ -274,11 +285,12 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append containers for labels
 
-      var labelsEnter = groupsEnter.selectAll('.sc-label-value')
+      var labels_entr = groups.selectAll('.sc-label-value')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
-      labelsEnter.exit().remove();
-      labelsEnter.enter().append('g').attr('class', 'sc-label-value');
-      var labels = groups.selectAll('g.sc-label-value');
+      labels_entr.exit().remove();
+      labels_entr.enter().append('g').attr('class', 'sc-label-value');
+      var labels = groups.selectAll('g.sc-label-value')
+            .merge(labels_entr);
 
       labels
         .attr('transform', 'translate(' + calculatedCenter + ',0)');
@@ -381,7 +393,8 @@ sucrose.models.funnel = function() {
           .call(positionValue);
 
         sideLabels.select('.sc-value')
-          .style({'text-anchor': 'start', 'fill': '#555'});
+          .style('text-anchor', 'start')
+          .style('fill', '#555');
 
         sideLabels
           .call(calcSideLabelDimensions);
@@ -391,7 +404,7 @@ sucrose.models.funnel = function() {
 
         var d0 = 0;
 
-        sideLabels.reverse().each(function(d, i) {
+        sideLabels.each(function(d, i) {
             if (!d0) {
               d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
               d0 = d.labelBottom;
@@ -403,7 +416,7 @@ sucrose.models.funnel = function() {
             d0 = d.labelBottom;
           });
 
-        sideLabels.reverse();
+        // sideLabels.reverse();
 
         // And then...
         // Bottom to top
@@ -492,18 +505,19 @@ sucrose.models.funnel = function() {
       sideLabels
         .append('polyline')
           .attr('class', 'sc-label-leader')
-          .style({'fill-opacity': 0, 'stroke': '#999', 'stroke-width': 1, 'stroke-opacity': 0.5});
+          .style('fill-opacity', 0)
+          .style('stroke', '#999')
+          .style('stroke-width', 1)
+          .style('stroke-opacity', 0.5);
 
-      sideLabels.reverse();
       sideLabels.selectAll('polyline')
         .call(pointsLeader);
-      sideLabels.reverse();
 
       //------------------------------------------------------------
       // Utility functions
 
       // TODO: use scales instead of ratio algebra
-      // var funnelScale = d3.scale.linear()
+      // var funnelScale = d3.scaleLinear()
       //       .domain([w / 2, minimum])
       //       .range([0, maxy1*thenscalethistopreventminimumfrompassing]);
 
@@ -556,7 +570,7 @@ sucrose.models.funnel = function() {
         // this is also now as funnelOffset (maybe)
         var twenty = Math.max(availableWidth - availableHeight / 1.1, minLabelWidth),
             // bottom of slice
-            sliceBottom = y(d.y0),
+            sliceBottom = d._bottom,
             // x component of slope F at y
             base = sliceBottom * r,
             // total width at bottom of slice
@@ -587,8 +601,9 @@ sucrose.models.funnel = function() {
         // (h + b/r/2)(h + b/r/2) = v/r + b/r/2*b/r/2;
         // h + b/r/2 = Math.sqrt(v/r + b/r/2*b/r/2);
         // h  = Math.abs(Math.sqrt(v/r + b/r/2*b/r/2)) - b/r/2;
-        var y0 = y(d.y0),
-            y1 = y(d.y0 + d.y),
+
+        var y0 = d._bottom,
+            y1 = d._top,
             w0 = w / 2 - r * y0,
             w1 = w / 2 - r * y1,
             c = calculatedCenter;
@@ -632,13 +647,13 @@ sucrose.models.funnel = function() {
 
       function calcFunnelWidthAtSliceMidpoint(d) {
         var b = calculatedWidth,
-            v = y(d.y0 + d.y1 / 2); // mid point of slice
+            v = d._bottom - d._height / 2; // mid point of slice
         return b - v * r * 2;
       }
 
       function calcSideWidth(d, offset) {
         var b = Math.max((availableWidth - calculatedWidth) / 2, offset),
-            v = y(d.y0 + d.y1); // top of slice
+            v = d._top; // top of slice
         return b + v * r;
       }
 
@@ -649,12 +664,10 @@ sucrose.models.funnel = function() {
       function calcFunnelLabelDimensions(lbls) {
         lbls.each(function(d) {
           var bbox = calcLabelBBox(this);
-
           d.labelHeight = bbox.height;
           d.labelWidth = bbox.width;
-          d.labelTop = y(d.y0 + d.y / 2) - d.labelHeight / 2;
+          d.labelTop = (d._bottom - d._height / 2) - d.labelHeight / 2;
           d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
-          d.y1 = d.y - d.labelHeight;
           d.tooWide = d.labelWidth > calcFunnelWidthAtSliceMidpoint(d);
           d.tooTall = d.labelHeight > d.height - 4;
         });
@@ -665,7 +678,7 @@ sucrose.models.funnel = function() {
           var bbox = calcLabelBBox(this);
           d.labelHeight = bbox.height;
           d.labelWidth = bbox.width;
-          d.labelTop = y(d.y0 + d.y);
+          d.labelTop = d._bottom - d._height; //?d._top?
           d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
         });
       }
@@ -673,7 +686,7 @@ sucrose.models.funnel = function() {
       function pointsLeader(polylines, i) {
         var c = polylines.length;
         polylines.each(function(d, i, j) {
-          d.y1 = 0;
+          d._top = 0;
           var // previous label
               p = j ? d3.select(polylines[j - 1][i]).data()[0] : null,
               // next label
@@ -681,7 +694,7 @@ sucrose.models.funnel = function() {
               // label height
               h = Math.round(d.labelHeight) + 0.5,
               // slice bottom
-              t = Math.round(y(d.y0) - d.labelTop) - 0.5,
+              t = Math.round(d._bottom - d.labelTop) - 0.5,
               // previous width
               wp = p ? p.labelWidth - (d.labelBottom - p.labelBottom) * r : 0,
               // current width
@@ -709,7 +722,7 @@ sucrose.models.funnel = function() {
         lbls.each(function(d) {
 
           var // bottom of slice
-              sliceBottom = y(d.y0),
+              sliceBottom = d._bottom,
               // is slice below or above label bottom
               scalar = d.labelBottom >= sliceBottom ? 1 : 0,
               // the width of the angled leader
@@ -767,15 +780,16 @@ sucrose.models.funnel = function() {
           .attr('direction', function() {
             return fmtDirection(txt.text());
           })
-          .style({'pointer-events': 'none', 'text-anchor': anchor, 'fill': fill});
+          .style('pointer-events', 'none')
+          .style('text-anchor', anchor)
+          .style('fill', fill);
       }
 
       function positionValue(lbls) {
         lbls.each(function(d) {
-          var lbl = d3.select(this),
-              cnt = lbl.selectAll('.sc-label')[0].length + 1,
-              dy = (.85 + cnt - 1) + 'em';
-
+          var lbl = d3.select(this);
+          var cnt = lbl.selectAll('.sc-label').size() + 1;
+          var dy = (.85 + cnt - 1) + 'em';
           lbl.select('.sc-value')
             .attr('dy', dy);
         });

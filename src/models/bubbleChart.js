@@ -23,7 +23,7 @@ sucrose.models.bubbleChart = function() {
       seriesLength = 0,
       reduceYTicks = false, // if false a tick will show for every data point
       bubbleClick = function(e) { return; },
-      format = d3.time.format('%Y-%m-%d'),
+      format = d3.timeFormat('%Y-%m-%d'),
       tooltip = null,
       tooltips = true,
       tooltipContent = function(key, x, y, e, graph) {
@@ -61,20 +61,8 @@ sucrose.models.bubbleChart = function() {
         .size(function(d) { return d.y; })
         .sizeRange([256, 1024])
         .singlePoint(true),
-      xAxis = sucrose.models.axis()
-        .orient('bottom')
-        .valueFormat(xValueFormat)
-        .tickSize(0)
-        .tickPadding(4)
-        .highlightZero(false)
-        .showMaxMin(false)
-        .ticks(d3.time.months, 1),
-      yAxis = sucrose.models.axis()
-        .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(7)
-        .highlightZero(false)
-        .showMaxMin(false),
+      xAxis = sucrose.models.axis(),
+      yAxis = sucrose.models.axis(),
       legend = sucrose.models.legend()
         .align('center')
         .key(function(d) { return d.key + '%'; });
@@ -200,7 +188,7 @@ sucrose.models.bubbleChart = function() {
             gOffset = gHeight * 0.25,
             gDomain = [0, 1],
             gRange = [0, 1],
-            gScale = d3.scale.linear().domain(gDomain).range(gRange),
+            gScale = d3.scaleLinear().domain(gDomain).range(gRange),
             yValues = [],
             total = 0;
 
@@ -290,9 +278,21 @@ sucrose.models.bubbleChart = function() {
       y = scatter.yScale();
 
       xAxis
+        .orient('bottom')
+        .valueFormat(xValueFormat)
+        .tickSize(0)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false)
+        .ticks(d3.time.months, 1)
         .scale(x)
         .tickValues(getTimeTicks(xD));
       yAxis
+        .orient('left')
+        .valueFormat(yValueFormat)
+        .tickPadding(7)
+        .highlightZero(false)
+        .showMaxMin(false)
         .scale(y)
         .ticks(yValues.length)
         .tickValues(yValues.map(function(d, i) {
@@ -322,11 +322,13 @@ sucrose.models.bubbleChart = function() {
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
 
-        var wrap = container.selectAll('g.sc-wrap.sc-bubbleChart').data([filteredData]),
-            gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-bubbleChart').append('g'),
-            g = wrap.select('g').attr('class', 'sc-chartWrap');
+        var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([filteredData]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-bubble-chart');
+        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+        var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-        gEnter.append('rect').attr('class', 'sc-background')
+        g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
           .attr('fill', '#FFF');
@@ -335,26 +337,30 @@ sucrose.models.bubbleChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        gEnter.append('g').attr('class', 'sc-titleWrap');
-        var titleWrap = g.select('.sc-titleWrap');
-        gEnter.append('g').attr('class', 'sc-x sc-axis');
-        var xAxisWrap = g.select('.sc-x.sc-axis');
-        gEnter.append('g').attr('class', 'sc-y sc-axis');
-        var yAxisWrap = g.select('.sc-y.sc-axis');
-        gEnter.append('g').attr('class', 'sc-bubblesWrap');
-        var bubblesWrap = g.select('.sc-bubblesWrap');
-        gEnter.append('g').attr('class', 'sc-legendWrap');
-        var legendWrap = g.select('.sc-legendWrap');
+        var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
+
+        var xAxis_entr = g_entr.append('g').attr('class', 'sc-x sc-axis');
+        var xAxis_wrap = g.select('.sc-x.sc-axis').merge(xAxis_entr);
+
+        var yAxis_entr = g_entr.append('g').attr('class', 'sc-y sc-axis');
+        var yAxis_wrap = g.select('.sc-y.sc-axis').merge(yAxis_entr);
+
+        var bubbles_entr = g_entr.append('g').attr('class', 'sc-bubbles-wrap');
+        var bubbles_wrap = g.select('.sc-bubbles-wrap').merge(bubbles_entr);
+
+        var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
         //------------------------------------------------------------
         // Title & Legend
 
-        titleWrap.select('.sc-title').remove();
+        title_wrap.select('.sc-title').remove();
 
         if (showTitle) {
-          titleWrap
+          title_wrap
             .append('text')
               .attr('class', 'sc-title')
               .attr('x', direction === 'rtl' ? availableWidth : 0)
@@ -365,7 +371,7 @@ sucrose.models.bubbleChart = function() {
               .attr('stroke', 'none')
               .attr('fill', 'black');
 
-          titleBBox = sucrose.utils.getTextBBox(g.select('.sc-title'));
+          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -375,14 +381,14 @@ sucrose.models.bubbleChart = function() {
             .strings(chart.strings().legend)
             .align('center')
             .height(availableHeight - headerHeight);
-          legendWrap
+          legend_wrap
             .datum(filteredData)
             .call(legend);
 
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = sucrose.utils.getTextBBox(legendWrap.select('.sc-legend-link')),
+          var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -392,7 +398,7 @@ sucrose.models.bubbleChart = function() {
           } else if (!showTitle) {
             ypos = - legend.margin().top;
           }
-          legendWrap
+          legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
           headerHeight += legendTop ? 12 : legend.height();
@@ -411,7 +417,7 @@ sucrose.models.bubbleChart = function() {
           .xDomain(xD)
           .yDomain(yD);
 
-        bubblesWrap
+        bubbles_wrap
           .datum(filteredData.filter(function(d) {
             return !d.disabled;
           }))
@@ -447,7 +453,7 @@ sucrose.models.bubbleChart = function() {
             var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
             return sucrose.utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
           });
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
         yAxisMargin = yAxis.margin();
@@ -461,7 +467,7 @@ sucrose.models.bubbleChart = function() {
           .tickFormat(function(d) {
             return xAxis.valueFormat()(d, null, xIsDatetime);
           });
-        xAxisWrap
+        xAxis_wrap
           .call(xAxis);
         // reset inner dimensions
         xAxisMargin = xAxis.margin();
@@ -472,11 +478,11 @@ sucrose.models.bubbleChart = function() {
         yAxis
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
 
         // final call to lines based on new dimensions
-        bubblesWrap
+        bubbles_wrap
           .transition().duration(chart.delay())
             .call(scatter);
 
@@ -487,15 +493,15 @@ sucrose.models.bubbleChart = function() {
 
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxisWrap
+        xAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
         trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
         trans += innerMargin.top;
-        yAxisWrap
+        yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        bubblesWrap
+        bubbles_wrap
           .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
 
       };
@@ -557,14 +563,14 @@ sucrose.models.bubbleChart = function() {
       });
 
       dispatch.on('chartClick', function() {
-        dispatch.tooltipHide();
+        dispatch.call('tooltipHide', this);
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
       scatter.dispatch.on('elementClick', function(eo) {
-        dispatch.chartClick();
+        dispatch.call('chartClick', this);
         bubbleClick(eo);
       });
 
@@ -578,15 +584,15 @@ sucrose.models.bubbleChart = function() {
   //------------------------------------------------------------
 
   scatter.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+    dispatch.call('tooltipShow', this, eo);
   });
 
   scatter.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+    dispatch.call('tooltipMove', this, e);
   });
 
   scatter.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================
