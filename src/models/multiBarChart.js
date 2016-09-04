@@ -433,7 +433,6 @@ sucrose.models.multiBarChart = function() {
               .attr('stroke', 'none')
               .attr('fill', 'black')
               .text(properties.title);
-console.log(title_wrap.select('.sc-title'))
 
           titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;

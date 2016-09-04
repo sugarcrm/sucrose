@@ -4560,7 +4560,7 @@ sucrose.models.funnel = function() {
       function calcScales() {
         var funnelArea = areaTrapezoid(calculatedHeight, calculatedWidth),
             funnelShift = 0,
-            funnelMinHeight = 24,
+            funnelMinHeight = 8 / 2,
             _base = calculatedWidth - 2 * r * calculatedHeight,
             _bottom = calculatedHeight;
 
@@ -4568,21 +4568,20 @@ sucrose.models.funnel = function() {
         // Adjust points to compensate for parallax of slice
         // by increasing height relative to area of funnel
 
+        // runs from bottom to top
         data.map(function(series, i) {
           series.values = series.values.map(function(point) {
             point._height = 0;
-
             if (funnelTotal > 0) {
               point._height = heightTrapezoid(funnelArea * point.value / funnelTotal, _base);
             }
-
-            if (point._height < funnelMinHeight / 2) {
-              funnelShift += point._height - funnelMinHeight / 2;
-              point._height = funnelMinHeight / 2;
-            } else if (funnelShift < 0 && point._height + funnelShift > funnelMinHeight / 2) {
-              point._height += funnelShift;
-              funnelShift = 0;
-            }
+            // if (point._height < funnelMinHeight) {
+            //   funnelShift += point._height - funnelMinHeight;
+            //   point._height = funnelMinHeight;
+            // } else if (funnelShift < 0 && point._height + funnelShift > funnelMinHeight) {
+            //   point._height += funnelShift;
+            //   funnelShift = 0;
+            // }
 
             point._base = _base;
             point._bottom = _bottom;
@@ -4753,14 +4752,14 @@ sucrose.models.funnel = function() {
 
       function buildEventObject(e, d, i) {
         return {
-            value: getV(d, i),
-            point: d,
-            id: id,
-            series: data[d.index],
-            pointIndex: i,
-            seriesIndex: d.series,
-            e: e
-          };
+          value: getV(d, i),
+          point: d,
+          id: id,
+          series: data[d.index],
+          pointIndex: i,
+          seriesIndex: d.series,
+          e: e
+        };
       }
 
       //------------------------------------------------------------
@@ -4830,13 +4829,9 @@ sucrose.models.funnel = function() {
             });
 
         labels
-          .call(positionValue);
-
-        // Position labels and identify side labels
-        labels
-          .call(calcFunnelLabelDimensions);
-
-        labels
+          .call(positionValue)
+          // Position labels and identify side labels
+          .call(calcFunnelLabelDimensions)
           .call(positionLabelBox);
 
         labels
@@ -4881,43 +4876,48 @@ sucrose.models.funnel = function() {
           .call(calcSideLabelDimensions);
 
         // Reflow side label vertical position to prevent overlap
-        // Top to bottom
-
         var d0 = 0;
 
-        sideLabels.each(function(d, i) {
+        // Top to bottom
+        for (var groups = sideLabels.nodes(), j = groups.length - 1; j >= 0; --j) {
+          var d = d3.select(groups[j]).data()[0];
+          if (d) {
             if (!d0) {
               d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
               d0 = d.labelBottom;
-              return;
+              continue;
             }
 
             d.labelTop = Math.max(d0, d.labelTop);
             d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
             d0 = d.labelBottom;
-          });
-
-        // sideLabels.reverse();
+          }
+        }
 
         // And then...
-        // Bottom to top
         if (d0 && d0 - labelSpace > d3.max(y.range())) {
 
           d0 = 0;
 
-          sideLabels.each(function(d, i) {
+          // Bottom to top
+          for (var groups = sideLabels.nodes(), j = 0, m = groups.length; j < m; ++j) {
+            var d = d3.select(groups[j]).data()[0];
+            if (d) {
               if (!d0) {
-                d.labelBottom = d3.max(y.range()) - 1;
+                d.labelBottom = calculatedHeight - 1;
                 d.labelTop = d.labelBottom - d.labelHeight;
                 d0 = d.labelTop;
-                return;
+                continue;
               }
 
               d.labelBottom = Math.min(d0, d.labelBottom);
               d.labelTop = d.labelBottom - d.labelHeight - labelSpace;
               d0 = d.labelTop;
-            });
+            }
+          }
 
+          // ok, FINALLY, so if we are above the top of the funnel,
+          // we need to lower them all back down
           if (d0 < 0) {
             sideLabels.each(function(d, i) {
                 d.labelTop -= d0;
@@ -5145,12 +5145,13 @@ sucrose.models.funnel = function() {
       function calcFunnelLabelDimensions(lbls) {
         lbls.each(function(d) {
           var bbox = calcLabelBBox(this);
+
           d.labelHeight = bbox.height;
           d.labelWidth = bbox.width;
           d.labelTop = (d._bottom - d._height / 2) - d.labelHeight / 2;
           d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
           d.tooWide = d.labelWidth > calcFunnelWidthAtSliceMidpoint(d);
-          d.tooTall = d.labelHeight > d.height - 4;
+          d.tooTall = d.labelHeight > d._height - 4;
         });
       }
 
@@ -5159,19 +5160,22 @@ sucrose.models.funnel = function() {
           var bbox = calcLabelBBox(this);
           d.labelHeight = bbox.height;
           d.labelWidth = bbox.width;
-          d.labelTop = d._bottom - d._height; //?d._top?
+          d.labelTop = d._top;
           d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
         });
       }
 
-      function pointsLeader(polylines, i) {
-        var c = polylines.length;
-        polylines.each(function(d, i, j) {
-          d._top = 0;
+      function pointsLeader(polylines) {
+        // Mess with this function at your peril.
+        var c = polylines.size();
+        // run top to bottom
+        for (var groups = polylines.nodes(), i = groups.length - 1; i >= 0; --i) {
+          var node = d3.select(groups[i]);
+          var d = node.data()[0];
           var // previous label
-              p = j ? d3.select(polylines[j - 1][i]).data()[0] : null,
+              p = i < c - 1 ? d3.select(groups[i + 1]).data()[0] : null,
               // next label
-              n = j < c - 1 ? d3.select(polylines[j + 1][i]).data()[0] : null,
+              n = i ? d3.select(groups[i - 1]).data()[0] : null,
               // label height
               h = Math.round(d.labelHeight) + 0.5,
               // slice bottom
@@ -5185,15 +5189,17 @@ sucrose.models.funnel = function() {
               // final width
               w = Math.round(Math.max(wp, wc, wn)) + labelGap,
               // funnel edge
-              f = Math.round(calcSideWidth(d, funnelOffset)) - labelOffset - labelGap,
-              // polyline points
-              p = 0 + ',' + h + ' ' +
+              f = Math.round(calcSideWidth(d, funnelOffset)) - labelOffset - labelGap;
+          // polyline points
+          var points = 0 + ',' + h + ' ' +
                  w + ',' + h + ' ' +
                  (w + Math.abs(h - t) * r) + ',' + t + ' ' +
                  f + ',' + t;
+          // this will be overridding the label width in data
+          // referenced above as p.labelWidth
           d.labelWidth = w;
-          d3.select(this).attr('points', p);
-        });
+          node.attr('points', points);
+        }
       }
 
       function calcOffsets(lbls) {
@@ -5201,7 +5207,6 @@ sucrose.models.funnel = function() {
             offset = 0;
 
         lbls.each(function(d) {
-
           var // bottom of slice
               sliceBottom = d._bottom,
               // is slice below or above label bottom
@@ -5213,7 +5218,6 @@ sucrose.models.funnel = function() {
               base = sliceBottom * r,
               // this is the distance from end of label plus spacing to F
               iOffset = d.labelWidth + leaderSlope + labelGap * 3 - base;
-
           // if this label sticks out past F
           if (iOffset >= offset) {
             // this is the minimum distance for F
@@ -10783,7 +10787,6 @@ sucrose.models.multiBarChart = function() {
               .attr('stroke', 'none')
               .attr('fill', 'black')
               .text(properties.title);
-console.log(title_wrap.select('.sc-title'))
 
           titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;

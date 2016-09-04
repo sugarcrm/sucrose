@@ -331,7 +331,7 @@ sucrose.models.funnelChart = function() {
         }
 
         state.disabled = data.map(function(d) { return !!d.disabled; });
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(durationMs).call(chart);
       });

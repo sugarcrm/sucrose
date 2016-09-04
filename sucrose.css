@@ -64,6 +64,10 @@ svg.sc-chart .sc-label-value text,
 svg.sc-chart text.sc-label-value {
   font-size: 13px;
 }
+svg.sc-chart .sc-label-value text.sc-label {
+  font-size: 11px;
+}
+
 svg.sc-chart .sc-label-box {
   fill: transparent;
 }
