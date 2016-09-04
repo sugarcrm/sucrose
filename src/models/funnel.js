@@ -223,7 +223,8 @@ sucrose.models.funnel = function() {
       var slice_bind = groups.selectAll('g.sc-slice')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
       slice_bind.exit().remove();
-      var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
+      var slice_entr = slice_bind.enter().append('g')
+            .attr('class', 'sc-slice');
       var slices = groups.selectAll('g.sc-slice')
             .merge(slice_entr);
 
@@ -245,7 +246,7 @@ sucrose.models.funnel = function() {
           .style('mask', 'url(' + mask + ')');
       }
 
-      slices
+      slice_entr
         .on('mouseover', function(d, i) {
           d3.select(this).classed('hover', true);
           var eo = buildEventObject(d3.event, d, i);
@@ -285,10 +286,11 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append containers for labels
 
-      var labels_entr = groups.selectAll('.sc-label-value')
+      var labels_bind = groups.selectAll('.sc-label-value')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
-      labels_entr.exit().remove();
-      labels_entr.enter().append('g').attr('class', 'sc-label-value');
+      labels_bind.exit().remove();
+      var labels_entr = labels_bind.enter().append('g')
+            .attr('class', 'sc-label-value');
       var labels = groups.selectAll('g.sc-label-value')
             .merge(labels_entr);
 
