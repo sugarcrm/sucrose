@@ -193,10 +193,12 @@ sucrose.models.scatter = function() {
 
       //------------------------------------------------------------
 
-
       defs_entr.append('clipPath')
-          .attr('id', 'sc-edge-clip-' + id)
+        .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-points-clip-' + id)
+        .attr('class', 'sc-point-clips');
 
       wrap.select('#sc-edge-clip-' + id + ' rect')
           .attr('width', availableWidth)
@@ -205,11 +207,15 @@ sucrose.models.scatter = function() {
       g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
 
+      var t = d3.transition('scatter')
+          .duration(400)
+          .ease(d3.easeLinear);
+
       function updateInteractiveLayer() {
 
-        if (!interactive) return false;
-
-        var eventElements;
+        if (!interactive) {
+          return false;
+        }
 
         function buildEventObject(e, d, i, j) {
           var seriesData = data[j];
@@ -248,24 +254,18 @@ sucrose.models.scatter = function() {
           );
 
           if (clipVoronoi) {
-            var pointClipsEnter = wrap.select('defs').selectAll('.sc-point-clips')
-                .data([id])
-              .enter();
-
-            pointClipsEnter.append('clipPath')
-                  .attr('class', 'sc-point-clips')
-                  .attr('id', 'sc-points-clip-' + id);
-
-            var pointClips = wrap.select('#sc-points-clip-' + id).selectAll('circle')
-                .data(vertices);
-            pointClips.enter().append('circle');
-            pointClips.exit().remove();
-            pointClips
-                .attr('cx', function(d) { return d[0] })
-                .attr('cy', function(d) { return d[1] })
-                .attr('r', function(d, i) {
-                  return circleRadius(d[4], i);
-                });
+            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle')
+                  .data(vertices);
+            var clips_entr = clips_bind.enter().append('circle');
+            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle')
+                  .merge(clips_entr);
+            clips
+              .attr('cx', function(d) { return d[0] })
+              .attr('cy', function(d) { return d[1] })
+              .attr('r', function(d, i) {
+                return circleRadius(d[4], i);
+              });
+            clips_bind.exit().remove();
 
             wrap.select('.sc-point-paths')
                 .attr('clip-path', 'url(#sc-points-clip-' + id + ')');
@@ -279,50 +279,50 @@ sucrose.models.scatter = function() {
             vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null]);
           }
 
-          var bounds = d3.geom.polygon([
-              [-10, -10],
-              [-10, height + 10],
-              [width + 10, height + 10],
-              [width + 10, -10]
-          ]);
+          var voronoi = d3.voronoi()
+                .extent([[-10, -10], [width + 10, height + 10]])
+                .polygons(vertices)
+                .map(function(d, i) {
+                  return {
+                    'data': d,
+                    'series': vertices[i][2],
+                    'point': vertices[i][3]
+                  };
+                })
+                .filter(function(d) { return d.series !== null; });
 
-          var voronoi = d3.geom.voronoi(vertices).map(function(d, i) {
-              return {
-                'data': bounds.clip(d),
-                'series': vertices[i][2],
-                'point': vertices[i][3]
-              };
-            }).filter(function(d) { return d.series !== null; });
+          var paths_bind = wrap.select('.sc-point-paths').selectAll('path')
+                .data(voronoi);
+          var paths_entr = paths_bind.enter().append('path')
+                .attr('class', function(d, i) { return 'sc-path-' + i; });
+          var paths = wrap.select('.sc-point-paths').selectAll('path')
+                .merge(paths_entr);
+          paths
+            .attr('d', function(d) { return d ? 'M' + d.data.join('L') + 'Z' : null; });
+          paths_bind.exit().remove();
 
-          var pointPaths = wrap.select('.sc-point-paths').selectAll('path')
-              .data(voronoi);
-          pointPaths.enter().append('path')
-              .attr('class', function(d, i) { return 'sc-path-' + i; });
-          pointPaths.exit().remove();
-          pointPaths
-              .attr('d', function(d) { return 'M' + d.data.join('L') + 'Z'; });
+          paths
+            .on('mouseover', function(d) {
+              if (needsUpdate) return 0;
+              var eo = buildEventObject(d3.event, d, d.point, d.series);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate) return 0;
+              dispatch.call('elementMouseout', this);
+            })
+            .on('click', function(d) {
+              if (needsUpdate) return 0;
+              var eo = buildEventObject(d3.event, d, d.point, d.series);
+              dispatch.call('elementClick', this, eo);
+            });
 
-
-          pointPaths
-              .on('mouseover', function(d) {
-                if (needsUpdate) return 0;
-                var eo = buildEventObject(d3.event, d, d.point, d.series);
-                dispatch.call('elementMouseover', this, eo);
-              })
-              .on('mousemove', function(d, i) {
-                var e = d3.event;
-                dispatch.call('elementMousemove', this, e);
-              })
-              .on('mouseout', function(d, i) {
-                if (needsUpdate) return 0;
-                dispatch.call('elementMouseout', this);
-              })
-              .on('click', function(d) {
-                if (needsUpdate) return 0;
-                var eo = buildEventObject(d3.event, d, d.point, d.series);
-                dispatch.call('elementClick', this, eo);
-              });
         } else {
+
           // add event handlers to points instead voronoi paths
           wrap.select('.sc-groups').selectAll('.sc-group')
             .selectAll('.sc-point')
@@ -346,6 +346,7 @@ sucrose.models.scatter = function() {
                 var eo = buildEventObject(d3.event, d, i, d.series);
                 dispatch.call('elementClick', this, eo);
               });
+
         }
 
         needsUpdate = false;
@@ -353,73 +354,99 @@ sucrose.models.scatter = function() {
 
       needsUpdate = true;
 
+      var groups_bind = wrap.select('.sc-groups').selectAll('.sc-group')
+            .data(function(d) { return d; }, function(d) { return d.series; });
+      var groups_entr = groups_bind.enter().append('g')
+            .attr('class', 'sc-group')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
       var groups = wrap.select('.sc-groups').selectAll('.sc-group')
-          .data(function(d) { return d; }, function(d) { return d.key; });
-      groups.enter().append('g')
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6);
-      d3.transition(groups.exit())
+            .merge(groups_entr);
+
+      groups
+        .attr('class', function(d, i) { return classes(d, d.series); })
+        .attr('fill', function(d, i) { return fill(d, d.series); })
+        .attr('stroke', function(d, i) { return fill(d, d.series); })
+        .classed('hover', function(d) { return d.hover; });
+      groups
+        .transition(t)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 0.5);
+      groups_bind.exit()
+        .transition(t)
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
           .remove();
-      groups
-          .attr('class', function(d, i) { return classes(d, d.series); })
-          .attr('fill', function(d, i) { return fill(d, d.series); })
-          .attr('stroke', function(d, i) { return fill(d, d.series); })
-          .classed('hover', function(d) { return d.hover; });
-      d3.transition(groups)
-          .style('stroke-opacity', 1)
-          .style('fill-opacity', 0.5);
-
 
       if (onlyCircles) {
 
-        var points = groups.selectAll('circle.sc-point')
-            .data(function(d) { return d.values; });
-        points.enter().append('circle')
-            .attr('cx', function(d, i) { return x0(getX(d, i)); })
-            .attr('cy', function(d, i) { return y0(getY(d, i)); })
-            .attr('r', circleRadius);
-        points.exit().remove();
-        d3.transition(groups.exit().selectAll('path.sc-point'))
+        var points_bind = groups.selectAll('circle.sc-point')
+              .data(function(d) { return d.values; });
+        var points_entr = points_bind.enter().append('circle')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('r', circleRadius);
+        var points = groups.selectAll('.sc-point')
+              .merge(points_entr);
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('cx', function(d, i) { return x(getX(d, i)); })
+          .attr('cy', function(d, i) { return y(0); });
+        points
+          .transition(t)
             .attr('cx', function(d, i) { return x(getX(d, i)); })
             .attr('cy', function(d, i) { return y(getY(d, i)); })
+            .on('end', function(d) {
+              d3.select(this).classed('sc-enter', false);
+            });
+
+        groups_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(0); })
             .remove();
-        points.attr('class', function(d, i) { return 'sc-point sc-point-' + i; });
-        d3.transition(points)
-            .attr('cx', function(d, i) { return x(getX(d, i)); })
-            .attr('cy', function(d, i) { return y(getY(d, i)); })
-            .attr('r', circleRadius);
 
       } else {
 
-        var points = groups.selectAll('path.sc-point')
-            .data(function(d) { return d.values; });
-        points.enter().append('path')
+        var points_bind = groups.selectAll('path.sc-point')
+              .data(function(d) { return d.values; });
+        var points_enter = points_bind.enter().append('path')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('d',
+                d3.svg.symbol()
+                  .type(getShape)
+                  .size(symbolSize)
+              );
+        var points = groups.selectAll('.sc-point')
+              .merge(points_entr)
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('transform', function(d, i) {
+            return 'translate(' + x0(getX(d, i)) + ',' + y(0) + ')';
+          })
+        points
+          .transition(t)
             .attr('transform', function(d, i) {
-              return 'translate(' + x0(getX(d, i)) + ',' + y0(getY(d, i)) + ')';
+              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
             })
             .attr('d',
               d3.svg.symbol()
                 .type(getShape)
                 .size(symbolSize)
             );
-        points.exit().remove();
-        d3.transition(groups.exit().selectAll('path.sc-point'))
+
+        groups_bind.exit()
+          .transition(t).selectAll('.sc-point')
             .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
+              return 'translate(' + x(getX(d, i)) + ',' + y(0) + ')';
             })
             .remove();
-        points.attr('class', function(d, i) { return 'sc-point sc-point-' + i; });
-        d3.transition(points)
-            .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
-            })
-            .attr('d',
-              d3.svg.symbol()
-                .type(getShape)
-                .size(symbolSize)
-            );
+
       }
 
 
@@ -443,17 +470,17 @@ sucrose.models.scatter = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  dispatch.on('elementMouseover.point', function(d) {
-    if (interactive)
-      d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-          .classed('hover', true);
-  });
+  // dispatch.on('elementMouseover.point', function(d) {
+  //   if (interactive)
+  //     d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
+  //         .classed('hover', true);
+  // });
 
-  dispatch.on('elementMouseout.point', function(d) {
-    if (interactive)
-      d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-          .classed('hover', false);
-  });
+  // dispatch.on('elementMouseout.point', function(d) {
+  //   if (interactive)
+  //     d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
+  //         .classed('hover', false);
+  // });
 
   //============================================================
 

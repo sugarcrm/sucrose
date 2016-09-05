@@ -527,7 +527,7 @@ sucrose.models.bubbleChart = function() {
 
         state.disabled = filteredData.map(function(d) { return !!d.disabled; });
 
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().call(chart.render);
       });

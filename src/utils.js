@@ -555,7 +555,7 @@ sucrose.utils.dateFormat = function(d, p, l) {
         // Ensure locality object has all needed properties
         // TODO: this is expensive so consider removing
         locale = sucrose.utils.buildLocality(l);
-        fmtr = d3.formatLocale(locale).format;
+        fmtr = d3.timeFormatLocale(locale).format;
         spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
         // TODO: if not explicit pattern provided, we should use .multi()
     }

@@ -483,7 +483,7 @@ sucrose.models.stackedAreaChart = function() {
         }
 
         state.disabled = data.map(function (d) { return !!d.disabled; });
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(chart.delay()).call(chart);
       });
@@ -500,7 +500,7 @@ sucrose.models.stackedAreaChart = function() {
         }
 
         state.disabled = data.map(function (d) { return !!d.disabled; });
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(chart.delay()).call(chart);
       });
@@ -533,7 +533,7 @@ sucrose.models.stackedAreaChart = function() {
         }
 
         state.style = stacked.style();
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(chart.delay()).call(chart);
       });

@@ -684,11 +684,12 @@ sucrose.models.paretoChart = function() {
                         showQuotaTooltip(eo, that.parentNode);
                     }
                 })
+                .on('mousemove', function() {
+                    var e = d3.event;
+                    dispatch.call('tooltipMove', this, e);
+                })
                 .on('mouseout', function() {
                     dispatch.call('tooltipHide', this);
-                })
-                .on('mousemove', function() {
-                    dispatch.tooltipMove(d3.event);
                 });
 
             barLegend.dispatch.on('legendClick', function(d, i) {

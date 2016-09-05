@@ -222,10 +222,10 @@ sucrose.models.stackedArea = function () {
 
   scatter.dispatch.on('elementMouseover.tooltip', function (e) {
     e.pos = [e.pos[0] + margin.left, e.pos[1] + margin.top];
-    dispatch.tooltipShow(e);
+    dispatch.call('tooltipShow', this, e);
   });
   scatter.dispatch.on('elementMouseout.tooltip', function (e) {
-    dispatch.tooltipHide(e);
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================

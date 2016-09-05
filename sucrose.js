@@ -53,7 +53,7 @@ sucrose.render = function render(step) {
   step = step || 1; // number of graphs to generate in each timeout loop
 
   sucrose.render.active = true;
-  sucrose.dispatch.render_start();
+  sucrose.dispatch.call('render_start', this);
 
   setTimeout(function() {
     var chart, graph;
@@ -67,7 +67,7 @@ sucrose.render = function render(step) {
     sucrose.render.queue.splice(0, i);
 
     if (sucrose.render.queue.length) setTimeout(arguments.callee, 0);
-    else { sucrose.render.active = false; sucrose.dispatch.render_end(); }
+    else { sucrose.render.active = false; sucrose.dispatch.call('render_end', this); }
   }, 0);
 };
 
@@ -817,7 +817,7 @@ sucrose.utils.dateFormat = function(d, p, l) {
         // Ensure locality object has all needed properties
         // TODO: this is expensive so consider removing
         locale = sucrose.utils.buildLocality(l);
-        fmtr = d3.formatLocale(locale).format;
+        fmtr = d3.timeFormatLocale(locale).format;
         spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
         // TODO: if not explicit pattern provided, we should use .multi()
     }
@@ -3193,10 +3193,12 @@ sucrose.models.scatter = function() {
 
       //------------------------------------------------------------
 
-
       defs_entr.append('clipPath')
-          .attr('id', 'sc-edge-clip-' + id)
+        .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-points-clip-' + id)
+        .attr('class', 'sc-point-clips');
 
       wrap.select('#sc-edge-clip-' + id + ' rect')
           .attr('width', availableWidth)
@@ -3205,11 +3207,15 @@ sucrose.models.scatter = function() {
       g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
 
+      var t = d3.transition('scatter')
+          .duration(400)
+          .ease(d3.easeLinear);
+
       function updateInteractiveLayer() {
 
-        if (!interactive) return false;
-
-        var eventElements;
+        if (!interactive) {
+          return false;
+        }
 
         function buildEventObject(e, d, i, j) {
           var seriesData = data[j];
@@ -3248,24 +3254,18 @@ sucrose.models.scatter = function() {
           );
 
           if (clipVoronoi) {
-            var pointClipsEnter = wrap.select('defs').selectAll('.sc-point-clips')
-                .data([id])
-              .enter();
-
-            pointClipsEnter.append('clipPath')
-                  .attr('class', 'sc-point-clips')
-                  .attr('id', 'sc-points-clip-' + id);
-
-            var pointClips = wrap.select('#sc-points-clip-' + id).selectAll('circle')
-                .data(vertices);
-            pointClips.enter().append('circle');
-            pointClips.exit().remove();
-            pointClips
-                .attr('cx', function(d) { return d[0] })
-                .attr('cy', function(d) { return d[1] })
-                .attr('r', function(d, i) {
-                  return circleRadius(d[4], i);
-                });
+            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle')
+                  .data(vertices);
+            var clips_entr = clips_bind.enter().append('circle');
+            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle')
+                  .merge(clips_entr);
+            clips
+              .attr('cx', function(d) { return d[0] })
+              .attr('cy', function(d) { return d[1] })
+              .attr('r', function(d, i) {
+                return circleRadius(d[4], i);
+              });
+            clips_bind.exit().remove();
 
             wrap.select('.sc-point-paths')
                 .attr('clip-path', 'url(#sc-points-clip-' + id + ')');
@@ -3279,50 +3279,50 @@ sucrose.models.scatter = function() {
             vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null]);
           }
 
-          var bounds = d3.geom.polygon([
-              [-10, -10],
-              [-10, height + 10],
-              [width + 10, height + 10],
-              [width + 10, -10]
-          ]);
+          var voronoi = d3.voronoi()
+                .extent([[-10, -10], [width + 10, height + 10]])
+                .polygons(vertices)
+                .map(function(d, i) {
+                  return {
+                    'data': d,
+                    'series': vertices[i][2],
+                    'point': vertices[i][3]
+                  };
+                })
+                .filter(function(d) { return d.series !== null; });
 
-          var voronoi = d3.geom.voronoi(vertices).map(function(d, i) {
-              return {
-                'data': bounds.clip(d),
-                'series': vertices[i][2],
-                'point': vertices[i][3]
-              };
-            }).filter(function(d) { return d.series !== null; });
+          var paths_bind = wrap.select('.sc-point-paths').selectAll('path')
+                .data(voronoi);
+          var paths_entr = paths_bind.enter().append('path')
+                .attr('class', function(d, i) { return 'sc-path-' + i; });
+          var paths = wrap.select('.sc-point-paths').selectAll('path')
+                .merge(paths_entr);
+          paths
+            .attr('d', function(d) { return d ? 'M' + d.data.join('L') + 'Z' : null; });
+          paths_bind.exit().remove();
 
-          var pointPaths = wrap.select('.sc-point-paths').selectAll('path')
-              .data(voronoi);
-          pointPaths.enter().append('path')
-              .attr('class', function(d, i) { return 'sc-path-' + i; });
-          pointPaths.exit().remove();
-          pointPaths
-              .attr('d', function(d) { return 'M' + d.data.join('L') + 'Z'; });
+          paths
+            .on('mouseover', function(d) {
+              if (needsUpdate) return 0;
+              var eo = buildEventObject(d3.event, d, d.point, d.series);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate) return 0;
+              dispatch.call('elementMouseout', this);
+            })
+            .on('click', function(d) {
+              if (needsUpdate) return 0;
+              var eo = buildEventObject(d3.event, d, d.point, d.series);
+              dispatch.call('elementClick', this, eo);
+            });
 
-
-          pointPaths
-              .on('mouseover', function(d) {
-                if (needsUpdate) return 0;
-                var eo = buildEventObject(d3.event, d, d.point, d.series);
-                dispatch.call('elementMouseover', this, eo);
-              })
-              .on('mousemove', function(d, i) {
-                var e = d3.event;
-                dispatch.call('elementMousemove', this, e);
-              })
-              .on('mouseout', function(d, i) {
-                if (needsUpdate) return 0;
-                dispatch.call('elementMouseout', this);
-              })
-              .on('click', function(d) {
-                if (needsUpdate) return 0;
-                var eo = buildEventObject(d3.event, d, d.point, d.series);
-                dispatch.call('elementClick', this, eo);
-              });
         } else {
+
           // add event handlers to points instead voronoi paths
           wrap.select('.sc-groups').selectAll('.sc-group')
             .selectAll('.sc-point')
@@ -3346,6 +3346,7 @@ sucrose.models.scatter = function() {
                 var eo = buildEventObject(d3.event, d, i, d.series);
                 dispatch.call('elementClick', this, eo);
               });
+
         }
 
         needsUpdate = false;
@@ -3353,73 +3354,99 @@ sucrose.models.scatter = function() {
 
       needsUpdate = true;
 
+      var groups_bind = wrap.select('.sc-groups').selectAll('.sc-group')
+            .data(function(d) { return d; }, function(d) { return d.series; });
+      var groups_entr = groups_bind.enter().append('g')
+            .attr('class', 'sc-group')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
       var groups = wrap.select('.sc-groups').selectAll('.sc-group')
-          .data(function(d) { return d; }, function(d) { return d.key; });
-      groups.enter().append('g')
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6);
-      d3.transition(groups.exit())
+            .merge(groups_entr);
+
+      groups
+        .attr('class', function(d, i) { return classes(d, d.series); })
+        .attr('fill', function(d, i) { return fill(d, d.series); })
+        .attr('stroke', function(d, i) { return fill(d, d.series); })
+        .classed('hover', function(d) { return d.hover; });
+      groups
+        .transition(t)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 0.5);
+      groups_bind.exit()
+        .transition(t)
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
           .remove();
-      groups
-          .attr('class', function(d, i) { return classes(d, d.series); })
-          .attr('fill', function(d, i) { return fill(d, d.series); })
-          .attr('stroke', function(d, i) { return fill(d, d.series); })
-          .classed('hover', function(d) { return d.hover; });
-      d3.transition(groups)
-          .style('stroke-opacity', 1)
-          .style('fill-opacity', 0.5);
-
 
       if (onlyCircles) {
 
-        var points = groups.selectAll('circle.sc-point')
-            .data(function(d) { return d.values; });
-        points.enter().append('circle')
-            .attr('cx', function(d, i) { return x0(getX(d, i)); })
-            .attr('cy', function(d, i) { return y0(getY(d, i)); })
-            .attr('r', circleRadius);
-        points.exit().remove();
-        d3.transition(groups.exit().selectAll('path.sc-point'))
+        var points_bind = groups.selectAll('circle.sc-point')
+              .data(function(d) { return d.values; });
+        var points_entr = points_bind.enter().append('circle')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('r', circleRadius);
+        var points = groups.selectAll('.sc-point')
+              .merge(points_entr);
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('cx', function(d, i) { return x(getX(d, i)); })
+          .attr('cy', function(d, i) { return y(0); });
+        points
+          .transition(t)
             .attr('cx', function(d, i) { return x(getX(d, i)); })
             .attr('cy', function(d, i) { return y(getY(d, i)); })
+            .on('end', function(d) {
+              d3.select(this).classed('sc-enter', false);
+            });
+
+        groups_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(0); })
             .remove();
-        points.attr('class', function(d, i) { return 'sc-point sc-point-' + i; });
-        d3.transition(points)
-            .attr('cx', function(d, i) { return x(getX(d, i)); })
-            .attr('cy', function(d, i) { return y(getY(d, i)); })
-            .attr('r', circleRadius);
 
       } else {
 
-        var points = groups.selectAll('path.sc-point')
-            .data(function(d) { return d.values; });
-        points.enter().append('path')
+        var points_bind = groups.selectAll('path.sc-point')
+              .data(function(d) { return d.values; });
+        var points_enter = points_bind.enter().append('path')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('d',
+                d3.svg.symbol()
+                  .type(getShape)
+                  .size(symbolSize)
+              );
+        var points = groups.selectAll('.sc-point')
+              .merge(points_entr)
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('transform', function(d, i) {
+            return 'translate(' + x0(getX(d, i)) + ',' + y(0) + ')';
+          })
+        points
+          .transition(t)
             .attr('transform', function(d, i) {
-              return 'translate(' + x0(getX(d, i)) + ',' + y0(getY(d, i)) + ')';
+              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
             })
             .attr('d',
               d3.svg.symbol()
                 .type(getShape)
                 .size(symbolSize)
             );
-        points.exit().remove();
-        d3.transition(groups.exit().selectAll('path.sc-point'))
+
+        groups_bind.exit()
+          .transition(t).selectAll('.sc-point')
             .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
+              return 'translate(' + x(getX(d, i)) + ',' + y(0) + ')';
             })
             .remove();
-        points.attr('class', function(d, i) { return 'sc-point sc-point-' + i; });
-        d3.transition(points)
-            .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
-            })
-            .attr('d',
-              d3.svg.symbol()
-                .type(getShape)
-                .size(symbolSize)
-            );
+
       }
 
 
@@ -3443,17 +3470,17 @@ sucrose.models.scatter = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  dispatch.on('elementMouseover.point', function(d) {
-    if (interactive)
-      d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-          .classed('hover', true);
-  });
+  // dispatch.on('elementMouseover.point', function(d) {
+  //   if (interactive)
+  //     d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
+  //         .classed('hover', true);
+  // });
 
-  dispatch.on('elementMouseout.point', function(d) {
-    if (interactive)
-      d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-          .classed('hover', false);
-  });
+  // dispatch.on('elementMouseout.point', function(d) {
+  //   if (interactive)
+  //     d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
+  //         .classed('hover', false);
+  // });
 
   //============================================================
 
@@ -4208,7 +4235,7 @@ sucrose.models.bubbleChart = function() {
 
         state.disabled = filteredData.map(function(d) { return !!d.disabled; });
 
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().call(chart.render);
       });
@@ -4560,7 +4587,7 @@ sucrose.models.funnel = function() {
       function calcScales() {
         var funnelArea = areaTrapezoid(calculatedHeight, calculatedWidth),
             funnelShift = 0,
-            funnelMinHeight = 8 / 2,
+            funnelMinHeight = 4,
             _base = calculatedWidth - 2 * r * calculatedHeight,
             _bottom = calculatedHeight;
 
@@ -4572,16 +4599,19 @@ sucrose.models.funnel = function() {
         data.map(function(series, i) {
           series.values = series.values.map(function(point) {
             point._height = 0;
+
             if (funnelTotal > 0) {
               point._height = heightTrapezoid(funnelArea * point.value / funnelTotal, _base);
             }
-            // if (point._height < funnelMinHeight) {
-            //   funnelShift += point._height - funnelMinHeight;
-            //   point._height = funnelMinHeight;
-            // } else if (funnelShift < 0 && point._height + funnelShift > funnelMinHeight) {
-            //   point._height += funnelShift;
-            //   funnelShift = 0;
-            // }
+
+            //TODO: not working
+            if (point._height < funnelMinHeight) {
+              funnelShift += point._height - funnelMinHeight;
+              point._height = funnelMinHeight;
+            } else if (funnelShift < 0 && point._height + funnelShift > funnelMinHeight) {
+              point._height += funnelShift;
+              funnelShift = 0;
+            }
 
             point._base = _base;
             point._bottom = _bottom;
@@ -4619,7 +4649,7 @@ sucrose.models.funnel = function() {
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
+      var g = wrap.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
@@ -4636,10 +4666,10 @@ sucrose.models.funnel = function() {
         .attr('id', 'sc-edge-clip-' + id)
           .append('rect');
       wrap.select('#sc-edge-clip-' + id + ' rect')
-        .attr('width', availableWidth + 1)
-        .attr('height', availableHeight + 1);
+        .attr('width', availableWidth + 4)
+        .attr('height', availableHeight + 4)
+        .attr('transform', 'translate(-2,-2)');
       g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
-
 
       //------------------------------------------------------------
 
@@ -4695,14 +4725,14 @@ sucrose.models.funnel = function() {
           .style('stroke-opacity', 1)
           .style('fill-opacity', 1);
 
-
       //------------------------------------------------------------
       // Append polygons for funnel
 
       var slice_bind = groups.selectAll('g.sc-slice')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
       slice_bind.exit().remove();
-      var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
+      var slice_entr = slice_bind.enter().append('g')
+            .attr('class', 'sc-slice');
       var slices = groups.selectAll('g.sc-slice')
             .merge(slice_entr);
 
@@ -4724,7 +4754,7 @@ sucrose.models.funnel = function() {
           .style('mask', 'url(' + mask + ')');
       }
 
-      slices
+      slice_entr
         .on('mouseover', function(d, i) {
           d3.select(this).classed('hover', true);
           var eo = buildEventObject(d3.event, d, i);
@@ -4749,7 +4779,6 @@ sucrose.models.funnel = function() {
           dispatch.call('elementDblClick', this, eo);
         });
 
-
       function buildEventObject(e, d, i) {
         return {
           value: getV(d, i),
@@ -4765,10 +4794,11 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append containers for labels
 
-      var labels_entr = groups.selectAll('.sc-label-value')
+      var labels_bind = groups.selectAll('.sc-label-value')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
-      labels_entr.exit().remove();
-      labels_entr.enter().append('g').attr('class', 'sc-label-value');
+      labels_bind.exit().remove();
+      var labels_entr = labels_bind.enter().append('g')
+            .attr('class', 'sc-label-value');
       var labels = groups.selectAll('g.sc-label-value')
             .merge(labels_entr);
 
@@ -5158,6 +5188,7 @@ sucrose.models.funnel = function() {
       function calcSideLabelDimensions(lbls) {
         lbls.each(function(d) {
           var bbox = calcLabelBBox(this);
+
           d.labelHeight = bbox.height;
           d.labelWidth = bbox.width;
           d.labelTop = d._top;
@@ -5168,6 +5199,7 @@ sucrose.models.funnel = function() {
       function pointsLeader(polylines) {
         // Mess with this function at your peril.
         var c = polylines.size();
+
         // run top to bottom
         for (var groups = polylines.nodes(), i = groups.length - 1; i >= 0; --i) {
           var node = d3.select(groups[i]);
@@ -5190,11 +5222,13 @@ sucrose.models.funnel = function() {
               w = Math.round(Math.max(wp, wc, wn)) + labelGap,
               // funnel edge
               f = Math.round(calcSideWidth(d, funnelOffset)) - labelOffset - labelGap;
+
           // polyline points
           var points = 0 + ',' + h + ' ' +
                  w + ',' + h + ' ' +
                  (w + Math.abs(h - t) * r) + ',' + t + ' ' +
                  f + ',' + t;
+
           // this will be overridding the label width in data
           // referenced above as p.labelWidth
           d.labelWidth = w;
@@ -5781,7 +5815,7 @@ sucrose.models.funnelChart = function() {
         }
 
         state.disabled = data.map(function(d) { return !!d.disabled; });
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(durationMs).call(chart);
       });
@@ -7233,11 +7267,12 @@ sucrose.models.globeChart = function() {
             var eo = buildEventObject(d3.event, d, i, j);
             dispatch.call('tooltipShow', this, eo);
           })
+          .on('mousemove', function(d, i, j) {
+            var e = d3.event;
+            dispatch.call('tooltipMove', this, e);
+          })
           .on('mouseout', function () {
             dispatch.call('tooltipHide', this);
-          })
-          .on('mousemove', function(d, i, j) {
-            dispatch.tooltipMove(d3.event);
           });
 
         function buildEventObject(e, d, i, j) {
@@ -7683,9 +7718,6 @@ sucrose.models.line = function() {
 
 
   //============================================================
-
-
-  //============================================================
   // Private Variables
   //------------------------------------------------------------
 
@@ -7700,16 +7732,28 @@ sucrose.models.line = function() {
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
 
+      var curve =
+            interpolate === 'linear' ? d3.curveLinear :
+            interpolate === 'cardinal' ? d3.curveCardinal :
+            interpolate === 'monotone' ? d3.curveMonotoneX :
+            interpolate === 'basis' ? d3.curveBasis : d3.natural;
+
+      var t = d3.transition('scatter')
+          .duration(400)
+          .ease(d3.easeLinear);
+
+      //set up the gradient constructor function
+      chart.gradient = function(d, i, p) {
+        return sucrose.utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+      };
+
       //------------------------------------------------------------
       // Setup Scales
 
       x = scatter.xScale();
       y = scatter.yScale();
-
-      x0 = x0 || x;
-      y0 = y0 || y;
-
-      //------------------------------------------------------------
+      // x0 = x.copy();
+      // y0 = y.copy();
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
@@ -7718,160 +7762,188 @@ sucrose.models.line = function() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
-      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      //set up the gradient constructor function
-      chart.gradient = function(d, i, p) {
-        return sucrose.utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
-      };
-
       g_entr.append('g').attr('class', 'sc-groups');
-      g_entr.append('g').attr('class', 'sc-scatterWrap');
+      g_entr.append('g').attr('class', 'sc-scatter-wrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
 
+      var scatter_wrap = wrap.select('.sc-scatter-wrap');
       scatter
         .width(availableWidth)
         .height(availableHeight);
-
-      var scatterWrap = wrap.select('.sc-scatterWrap');
-          //.datum(data); // Data automatically trickles down from the wrap
-
-      scatterWrap.call(scatter);
-
+      scatter_wrap.call(scatter);
 
       defs_entr.append('clipPath')
-          .attr('id', 'sc-edge-clip-' + scatter.id())
-        .append('rect');
+        .attr('id', 'sc-edge-clip-' + scatter.id())
+          .append('rect');
 
       wrap.select('#sc-edge-clip-' + scatter.id() + ' rect')
           .attr('width', availableWidth)
           .attr('height', availableHeight);
 
       g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
-      scatterWrap
-          .attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
+      scatter_wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
 
+      //------------------------------------------------------------
+      // Groups
 
+      var groups_bind = wrap.select('.sc-groups').selectAll('.sc-group')
+            .data(function(d) { return d; }, function(d) { return d.series; });
+      var groups_entr = groups_bind.enter().append('g')
+            .attr('class', 'sc-group')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
       var groups = wrap.select('.sc-groups').selectAll('.sc-group')
-          .data(function(d) { return d; }, function(d) { return d.key; });
-      groups.enter().append('g')
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6);
-      d3.transition(groups.exit())
+            .merge(groups_entr);
+
+      groups
+        .classed('hover', function(d) { return d.hover; })
+        .attr('class', classes)
+        .attr('fill', color)
+        .attr('stroke', color);
+      groups
+        .transition(t)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 0.5);
+      groups_bind.exit()
+        .transition(t)
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
           .remove();
-      groups
-          .classed('hover', function(d) { return d.hover; })
-          .attr('class', classes)
-          .attr('fill', color)
-          .attr('stroke', color);
-      d3.transition(groups)
-          .style('stroke-opacity', 1)
-          .style('fill-opacity', 0.5);
 
+      //------------------------------------------------------------
+      // Areas
 
-      var areaPaths = groups.selectAll('path.sc-area')
-          .data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
-      areaPaths.enter().append('path')
-          .attr('class', 'sc-area')
+      var areas_bind = groups.selectAll('path.sc-area')
+            .data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
+      var areas_entr = areas_bind.enter().append('path')
+            .attr('class', 'sc-area sc-enter');
+      var areas = groups.selectAll('.sc-area')
+            .merge(areas_entr);
+
+      areas
+        .filter(function(d) {
+          return d3.select(this).classed('sc-enter');
+        })
+        .attr('d', function(d) {
+          return d3.area()
+              .curve(curve)
+              .defined(defined)
+              .x(function(d, i) { return x(getX(d, i)); })
+              .y0(function(d, i) { return y(0); })
+              .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
+              .apply(this, [d.values]);
+        });
+      areas
+        .transition(t)
           .attr('d', function(d) {
             return d3.area()
-                .interpolate(interpolate)
-                .defined(defined)
-                .x(function(d, i) { return x0(getX(d, i)); })
-                .y0(function(d, i) { return y0(getY(d, i)); })
-                .y1(function(d, i) { return y0(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
-                //.y1(function(d,i) { return y0(0) }) //assuming 0 is within y domain.. may need to tweak this
-                .apply(this, [d.values]);
-          });
-      areaPaths.exit().remove();
-
-      d3.transition(groups.exit().selectAll('path.sc-area'))
-          .attr('d', function(d) {
-            return d3.area()
-                .interpolate(interpolate)
-                .defined(defined)
-                .x(function(d, i) { return x0(getX(d, i)); })
-                .y0(function(d, i) { return y0(getY(d, i)); })
-                .y1(function(d, i) { return y0(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
-                //.y1(function(d,i) { return y0(0) }) //assuming 0 is within y domain.. may need to tweak this
-                .apply(this, [d.values]);
-          });
-      d3.transition(areaPaths)
-          .attr('d', function(d) {
-            return d3.area()
-                .interpolate(interpolate)
+                .curve(curve)
                 .defined(defined)
                 .x(function(d, i) { return x(getX(d, i)); })
                 .y0(function(d, i) { return y(getY(d, i)); })
-                .y1(function(d, i) { return y0(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
+                .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
+                .apply(this, [d.values]);
+          })
+          .on('end', function(d) {
+            d3.select(this).classed('sc-enter', false);
+          });
+      // we need this exit remove call here to support
+      // toggle between lines and areas
+      areas_bind.exit().remove();
+
+      groups_bind.exit()
+        .transition(t).selectAll('.sc-area')
+          .attr('d', function(d) {
+            return d3.area()
+                .curve(curve)
+                .defined(defined)
+                .x(function(d, i) { return x(getX(d, i)); })
+                .y0(function(d, i) { return y(0); })
+                .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
                 //.y1(function(d,i) { return y0(0) }) //assuming 0 is within y domain.. may need to tweak this
                 .apply(this, [d.values]);
-          });
+          })
+          .remove();
 
-      var linePaths = groups.selectAll('path.sc-line')
-          .data(function(d) {
-            // if there are no values, return null
-            if (!d.values || !d.values.length) {
-              return [null];
+      //------------------------------------------------------------
+      // Lines
+      function lineData(d) {
+        // if there are no values, return null
+        if (!d.values || !d.values.length) {
+          return [null];
+        }
+        // if there is more than one point, return all values
+        if (d.values.length > 1) {
+          return [d.values];
+        }
+        // if there is only one single point in data array
+        // extend it horizontally in both directions
+        var values = x.domain().map(function(x, i) {
+            // if data point is array, then it should be returned as an array
+            // the getX and getY methods handle the internal mechanics of positioning
+            if (Array.isArray(d.values[0])) {
+              return [x, d.values[0][1]];
+            } else {
+              // sometimes the line data point is an object
+              // so the values should be returned as an array of objects
+              var newValue = JSON.parse(JSON.stringify(d.values[0]));
+              newValue.x = x;
+              return newValue;
             }
-            // if there is more than one point, return all values
-            if (d.values.length > 1) {
-              return [d.values];
-            }
-            // if there is only one single point in data array
-            // extend it horizontally in both directions
-            var values = x.domain().map(function(x, i) {
-                // if data point is array, then it should be returned as an array
-                // the getX and getY methods handle the internal mechanics of positioning
-                if (Array.isArray(d.values[0])) {
-                  return [x, d.values[0][1]];
-                } else {
-                  // sometimes the line data point is an object
-                  // so the values should be returned as an array of objects
-                  var newValue = JSON.parse(JSON.stringify(d.values[0]));
-                  newValue.x = x;
-                  return newValue;
-                }
-              });
-            return [values];
           });
-      linePaths.enter().append('path')
-          .attr('class', 'sc-line')
+        return [values];
+      }
+
+      var lines_bind = groups.selectAll('path.sc-line')
+            .data(lineData, function(d) { return d.series; });
+      var lines_entr = lines_bind.enter().append('path')
+            .attr('class', 'sc-line sc-enter');
+      var lines = groups.selectAll('.sc-line')
+            .merge(lines_entr);
+
+      lines
+        .filter(function(d) {
+          return d3.select(this).classed('sc-enter');
+        })
+        .attr('d',
+          d3.line()
+            .curve(curve)
+            .defined(defined)
+            .x(function(d, i) { return x(getX(d, i)); })
+            .y(function(d, i) { return y(0); })
+        );
+      lines
+        .transition(t)
           .attr('d',
             d3.line()
-              .interpolate(interpolate)
-              .defined(defined)
-              .x(function(d, i) { return x0(getX(d, i)); })
-              .y(function(d, i) { return y0(getY(d, i)); })
-          );
-      d3.transition(groups.exit().selectAll('path.sc-line'))
-          .attr('d',
-            d3.line()
-              .interpolate(interpolate)
-              .defined(defined)
-              .x(function(d, i) { return x0(getX(d, i)); })
-              .y(function(d, i) { return y0(getY(d, i)); })
-          );
-      d3.transition(linePaths)
-          .attr('d',
-            d3.line()
-              .interpolate(interpolate)
+              .curve(curve)
               .defined(defined)
               .x(function(d, i) { return x(getX(d, i)); })
               .y(function(d, i) { return y(getY(d, i)); })
-          );
-
+          )
+          .on('end', function(d) {
+            d3.select(this).classed('sc-enter', false);
+          });
+      groups_bind.exit()
+        .transition(t).selectAll('.sc-line')
+          .attr('d',
+            d3.line()
+              .curve(curve)
+              .defined(defined)
+              .x(function(d, i) { return x(getX(d, i)); })
+              .y(function(d, i) { return y(0); })
+          )
+          .remove();
 
       //store old scales for use in transitions on update
-      x0 = x.copy();
-      y0 = y.copy();
-
+      // x0 = x.copy();
+      // y0 = y.copy();
     });
 
     return chart;
@@ -8007,15 +8079,6 @@ sucrose.models.lineChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var xValueFormat = function(d, labels, isDate) {
-          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
-            d : labels[parseInt(d, 10)] || d;
-          return isDate ? sucrose.utils.dateFormat(val, 'yMMMM', chart.locality()) : val;
-        };
-  var yValueFormat = function(d, isCurrency) {
-          return sucrose.utils.numberFormatSI(d, 2, isCurrency, chart.locality());
-        };
-
   var lines = sucrose.models.line()
         .clipEdge(true),
       xAxis = sucrose.models.axis(),
@@ -8061,6 +8124,19 @@ sucrose.models.lineChart = function() {
           isArrayData = true,
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var xValueFormat = function(d, i, selection, noEllipsis) {
+            var label = xIsDatetime ?
+                          sucrose.utils.dateFormat(d, '%x', chart.locality()) :
+                          isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
+                            d :
+                            xTickLabels[parseInt(d, 10)];
+            return label;
+          };
+
+      var yValueFormat = function(d) {
+            return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+          };
 
       chart.container = this;
 
@@ -8108,8 +8184,10 @@ sucrose.models.lineChart = function() {
 
       isArrayData = Array.isArray(data[0].values[0]);
       if (isArrayData) {
-        lines.x(function(d) { return d[0]; });
-        lines.y(function(d) { return d[1]; });
+        lines.x(function(d) {
+          return d ? d[0] : 0;
+        });
+        lines.y(function(d) { return d ? d[1] : 0; });
       } else {
         lines.x(function(d) { return d.x; });
         lines.y(function(d) { return d.y; });
@@ -8189,8 +8267,9 @@ sucrose.models.lineChart = function() {
         }) === 1;
 
       lines
-        .padData(singlePoint ? false : true)
-        .padDataOuter(-1)
+        //TODO: we need to reconsider use of padData
+        // .padData(singlePoint ? false : true)
+        // .padDataOuter(-1)
         .singlePoint(singlePoint)
         // set x-scale as time instead of linear
         .xScale(xIsDatetime && !xTickLabels.length ? d3.scaleTime() : d3.scaleLinear());
@@ -8232,8 +8311,6 @@ sucrose.models.lineChart = function() {
 
         xAxis
           .orient('bottom')
-          .valueFormat(xValueFormat)
-          .tickPadding(4)
           .highlightZero(false)
           .showMaxMin(false)
           .ticks(xValues.length)
@@ -8241,8 +8318,6 @@ sucrose.models.lineChart = function() {
           .showMaxMin(false);
         yAxis
           .orient('left')
-          .valueFormat(yValueFormat)
-          .tickPadding(4)
           .ticks(singlePoint ? 5 : null) //TODO: why 5?
           .showMaxMin(false)
           .highlightZero(false);
@@ -8250,16 +8325,15 @@ sucrose.models.lineChart = function() {
       } else {
 
         lines
-          .xDomain(null)
+          .xDomain(null)  //?why null?
           .yDomain(null);
         xAxis
+          .orient('bottom')
           .ticks(null)
           .tickValues(null)
           .showMaxMin(xIsDatetime);
         yAxis
           .orient('left')
-          .valueFormat(yValueFormat)
-          .tickPadding(4)
           .ticks(null)
           .showMaxMin(true)
           .highlightZero(true);
@@ -8270,9 +8344,13 @@ sucrose.models.lineChart = function() {
       y = lines.yScale();
 
       xAxis
-        .scale(x);
+        .scale(x)
+        .tickPadding(6)
+        .valueFormat(xValueFormat);
       yAxis
-        .scale(y);
+        .scale(y)
+        .tickPadding(6)
+        .valueFormat(yValueFormat);
 
       //------------------------------------------------------------
       // Main chart draw
@@ -8299,10 +8377,10 @@ sucrose.models.lineChart = function() {
             trans = '';
 
         var wrap_bind = container.selectAll('g.sc-wrap.sc-lineChart').data([lineData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineChart');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line-chart');
         var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
         var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-        var g = container.select('g.sc-chart_wrap').merge(g_entr);
+        var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
         g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
@@ -8313,28 +8391,31 @@ sucrose.models.lineChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        g_entr.append('g').attr('class', 'sc-titleWrap');
-        var titleWrap = g.select('.sc-titleWrap');
-        g_entr.append('g').attr('class', 'sc-x sc-axis');
-        var xAxisWrap = g.select('.sc-x.sc-axis');
-        g_entr.append('g').attr('class', 'sc-y sc-axis');
-        var yAxisWrap = g.select('.sc-y.sc-axis');
-        g_entr.append('g').attr('class', 'sc-linesWrap');
-        var linesWrap = g.select('.sc-linesWrap');
-        g_entr.append('g').attr('class', 'sc-controlsWrap');
-        var controlsWrap = g.select('.sc-controlsWrap');
-        g_entr.append('g').attr('class', 'sc-legendWrap');
-        var legendWrap = g.select('.sc-legendWrap');
+        var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
+
+        var xAxis_entr = g_entr.append('g').attr('class', 'sc-x sc-axis');
+        var xAxis_wrap = g.select('.sc-x.sc-axis').merge(xAxis_entr);
+        var yAxis_entr = g_entr.append('g').attr('class', 'sc-y sc-axis');
+        var yAxis_wrap = g.select('.sc-y.sc-axis').merge(yAxis_entr);
+
+        var lines_entr = g_entr.append('g').attr('class', 'sc-lines-wrap');
+        var lines_wrap = g.select('.sc-lines-wrap').merge(lines_entr);
+
+        var controls_entr = g_entr.append('g').attr('class', 'sc-controls-wrap');
+        var controls_wrap = g.select('.sc-controls-wrap').merge(controls_entr);
+        var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        titleWrap.select('.sc-title').remove();
+        title_wrap.select('.sc-title').remove();
 
         if (showTitle) {
-          titleWrap
+          title_wrap
             .append('text')
               .attr('class', 'sc-title')
               .attr('x', direction === 'rtl' ? availableWidth : 0)
@@ -8355,7 +8436,7 @@ sucrose.models.lineChart = function() {
             .strings(chart.strings().controls)
             .align('left')
             .height(availableHeight - headerHeight);
-          controlsWrap
+          controls_wrap
             .datum(controlsData)
             .call(controls);
 
@@ -8368,7 +8449,7 @@ sucrose.models.lineChart = function() {
             .strings(chart.strings().legend)
             .align('right')
             .height(availableHeight - headerHeight);
-          legendWrap
+          legend_wrap
             .datum(data)
             .call(legend);
 
@@ -8394,13 +8475,13 @@ sucrose.models.lineChart = function() {
         if (showControls) {
           var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
               ypos = showTitle ? titleBBox.height : - legend.margin().top;
-          controlsWrap
+          controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
         }
 
         if (showLegend) {
-          var legendLinkBBox = sucrose.utils.getTextBBox(legendWrap.select('.sc-legend-link')),
+          var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -8410,7 +8491,7 @@ sucrose.models.lineChart = function() {
           } else if (!showTitle) {
             ypos = - legend.margin().top;
           }
-          legendWrap
+          legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           legendHeight = legendTop ? 12 : legend.height();
         }
@@ -8431,7 +8512,7 @@ sucrose.models.lineChart = function() {
           .size(pointSize) // default size set to 3
           .sizeRange([pointSize, pointSize])
           .sizeDomain([pointSize, pointSize]); //set to speed up calculation, needs to be unset if there is a custom size accessor
-        linesWrap
+        lines_wrap
           .datum(lineData)
           .call(lines);
 
@@ -8454,6 +8535,8 @@ sucrose.models.lineChart = function() {
           innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
           lines.width(innerWidth).height(innerHeight);
+          // This resets the scales for the whole chart
+          // unfortunately we can't call this without until line instance is called
           lines.scatter.resetDimensions(innerWidth, innerHeight);
         }
 
@@ -8463,7 +8546,7 @@ sucrose.models.lineChart = function() {
           .tickFormat(function(d, i) {
             return yAxis.valueFormat()(d, yIsCurrency);
           });
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
         yAxisMargin = yAxis.margin();
@@ -8471,10 +8554,6 @@ sucrose.models.lineChart = function() {
         setInnerDimensions();
 
         // X-Axis
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxisWrap
-          .attr('transform', 'translate(' + trans + ')');
         // resize ticks based on new dimensions
         xAxis
           .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
@@ -8482,26 +8561,38 @@ sucrose.models.lineChart = function() {
           .tickFormat(function(d, i, noEllipsis) {
             return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
           });
-
-        xAxisWrap
+        xAxis_wrap
           .call(xAxis);
         xAxisMargin = xAxis.margin();
         setInnerMargins();
         setInnerDimensions();
-        xAxis
-          .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
+        // xAxis
+        //   .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
 
-        // recall y-axis to set final size based on new dimensions
+        // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
           .tickSize(-innerWidth + (lines.padData() ? pointRadius : 0), 0)
           .margin(innerMargin);
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
 
+        xAxis
+          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
+          .margin(innerMargin);
+        xAxis_wrap
+          .call(xAxis);
+
+        lines
+          .width(innerWidth)
+          .height(innerHeight);
+        lines_wrap
+          .datum(lineData)
+          .call(lines);
+
         // final call to lines based on new dimensions
-        linesWrap
-          .transition().duration(durationMs)
-            .call(lines);
+        // lines_wrap
+        //   .transition().duration(durationMs)
+        //     .call(lines);
 
         //------------------------------------------------------------
         // Final repositioning
@@ -8510,15 +8601,15 @@ sucrose.models.lineChart = function() {
 
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxisWrap
+        xAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
         trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
         trans += innerMargin.top;
-        yAxisWrap
+        yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        linesWrap
+        lines_wrap
           .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
 
       };
@@ -8543,7 +8634,7 @@ sucrose.models.lineChart = function() {
         }
 
         state.disabled = data.map(function(d) { return !!d.disabled; });
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(durationMs).call(chart);
       });
@@ -8586,7 +8677,7 @@ sucrose.models.lineChart = function() {
 
         state.interpolate = lines.interpolate();
         state.isArea = lines.isArea();
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(durationMs).call(chart);
       });
@@ -9234,9 +9325,7 @@ sucrose.models.lineWithFocusChart = function() {
         brushExtent = brush.empty() ? null : brush.extent();
         extent = brush.empty() ? x2.domain() : brush.extent();
 
-
-        dispatch.brush({extent: extent, brush: brush});
-
+        dispatch.call('brush', this, {extent: extent, brush: brush});
 
         updateBrushBG();
 
@@ -9277,12 +9366,12 @@ sucrose.models.lineWithFocusChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  lines.dispatch.on('elementMouseover.tooltip', function(e) {
-    dispatch.tooltipShow(e);
+  lines.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
   });
 
   lines.dispatch.on('elementMouseout.tooltip', function(e) {
-    dispatch.tooltipHide(e);
+    dispatch.call('tooltipHide', this);
   });
 
   dispatch.on('tooltipHide', function() {
@@ -10998,7 +11087,7 @@ sucrose.models.multiBarChart = function() {
 
           var diff = (vertical ? innerWidth : innerHeight) - minDimension,
               panMultibar = function() {
-                // dispatch.tooltipHide(d3.event);
+                dispatch.call('tooltipHide', this);
                 scrollOffset = scroll.pan(diff);
                 xAxis_wrap.select('.sc-axislabel')
                   .attr('x', (vertical ? innerWidth - scrollOffset * 2 : scrollOffset * 2 - innerHeight) / 2);
@@ -12063,11 +12152,12 @@ sucrose.models.paretoChart = function() {
                         showQuotaTooltip(eo, that.parentNode);
                     }
                 })
+                .on('mousemove', function() {
+                    var e = d3.event;
+                    dispatch.call('tooltipMove', this, e);
+                })
                 .on('mouseout', function() {
                     dispatch.call('tooltipHide', this);
-                })
-                .on('mousemove', function() {
-                    dispatch.tooltipMove(d3.event);
                 });
 
             barLegend.dispatch.on('legendClick', function(d, i) {
@@ -12450,8 +12540,8 @@ sucrose.models.pie = function() {
       labelThreshold = 0.01, //if slice percentage is under this, don't show label
       donut = false,
       hole = false,
-      holeFormat = function(holeWrap, data) {
-        var hole_bind = holeWrap.selectAll('.sc-hole-container').data(data),
+      holeFormat = function(hole_wrap, data) {
+        var hole_bind = hole_wrap.selectAll('.sc-hole-container').data(data),
             hole_entr = hole_bind.enter().append('g').attr('class', 'sc-hole-container');
         hole_entr.append('text')
           .text(data)
@@ -12519,7 +12609,7 @@ sucrose.models.pie = function() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pie sc-chart-' + id);
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
-      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
@@ -12528,13 +12618,13 @@ sucrose.models.pie = function() {
         return sucrose.utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
 
-      g_entr.append('g').attr('class', 'sc-pie');
-      var pieWrap = g.select('.sc-pie');
-      g_entr.append('g').attr('class', 'sc-holeWrap');
-      var holeWrap = g.select('.sc-holeWrap');
+      var pie_enter = g_entr.append('g').attr('class', 'sc-pie');
+      var pie_wrap = g.select('.sc-pie').merge(pie_enter);
+      var hole_enter = g_entr.append('g').attr('class', 'sc-hole-wrap');
+      var hole_wrap = g.select('.sc-hole-wrap').merge(hole_enter);
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-      pieWrap.attr('transform', 'translate(' + (availableWidth / 2) + ',' + (availableHeight / 2) + ')');
+      pie_wrap.attr('transform', 'translate(' + (availableWidth / 2) + ',' + (availableHeight / 2) + ')');
 
       //------------------------------------------------------------
 
@@ -12554,69 +12644,72 @@ sucrose.models.pie = function() {
           });
         });
 
-      var slices = wrap.select('.sc-pie').selectAll('.sc-slice')
+      var slices_bind = pie_wrap.selectAll('.sc-slice')
             .data(pie);
+      slices_bind.exit().remove();
+      var slices_entr = slices_bind.enter().append('g')
+            .attr('class', 'sc-slice');
+      var slices = pie_wrap.selectAll('.sc-slice')
+            .merge(slices_entr);
 
-      slices.exit().remove();
+      slices_entr
+        .style('stroke', '#ffffff')
+        .style('stroke-width', 2)
+        .style('stroke-opacity', 0)
+        .on('mouseover', function(d, i) {
+          d3.select(this).classed('hover', true);
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementMouseover', this, eo);
+        })
+        .on('mousemove', function(d, i) {
+          var e = d3.event;
+          dispatch.call('elementMousemove', this, e);
+        })
+        .on('mouseout', function(d, i) {
+          d3.select(this).classed('hover', false);
+          dispatch.call('elementMouseout', this);
+        })
+        .on('click', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementClick', this, eo);
+        })
+        .on('dblclick', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementDblClick', this, eo);
+        });
 
-      var ae = slices.enter().append('g')
-            .style('stroke', '#ffffff')
-            .style('stroke-width', 2)
-            .style('stroke-opacity', 0)
-            .on('mouseover', function(d, i) {
-              d3.select(this).classed('hover', true);
-              var eo = buildEventObject(d3.event, d, i);
-              dispatch.call('elementMouseover', this, eo);
+      slices_entr.append('path')
+          .attr('class', 'sc-base')
+          .each(function(d, i) {
+            this._current = d;
+          });
+
+      if (textureFill) {
+        slices_entr.append('path')
+            .attr('class', 'sc-texture')
+            .each(function(d, i) {
+              this._current = d;
             })
-            .on('mousemove', function(d, i) {
-              var e = d3.event;
-              dispatch.call('elementMousemove', this, e);
-            })
-            .on('mouseout', function(d, i) {
-              d3.select(this).classed('hover', false);
-              dispatch.call('elementMouseout', this);
-            })
-            .on('click', function(d, i) {
-              d3.event.stopPropagation();
-              var eo = buildEventObject(d3.event, d, i);
-              dispatch.call('elementClick', this, eo);
-            })
-            .on('dblclick', function(d, i) {
-              d3.event.stopPropagation();
-              var eo = buildEventObject(d3.event, d, i);
-              dispatch.call('elementDblClick', this, eo);
-            });
+            .style('mask', 'url(' + mask + ')');
+      }
 
-          ae.append('path')
-              .attr('class', 'sc-base')
-              .each(function(d, i) {
-                this._current = d;
-              });
+      slices_entr.append('g')
+          .attr('transform', 'translate(0,0)')
+          .attr('class', 'sc-label');
 
-          if (textureFill) {
-            ae.append('path')
-                .attr('class', 'sc-texture')
-                .each(function(d, i) {
-                  this._current = d;
-                })
-                .style('mask', 'url(' + mask + ')');
-          }
+      slices_entr.select('.sc-label')
+          .append('rect')
+          .style('fill-opacity', 0)
+          .style('stroke-opacity', 0);
+      slices_entr.select('.sc-label')
+          .append('text')
+          .style('fill-opacity', 0);
 
-          ae.append('g')
-              .attr('transform', 'translate(0,0)')
-              .attr('class', 'sc-label');
-
-          ae.select('.sc-label')
-              .append('rect')
-              .style('fill-opacity', 0)
-              .style('stroke-opacity', 0);
-          ae.select('.sc-label')
-              .append('text')
-              .style('fill-opacity', 0);
-
-          ae.append('polyline')
-              .attr('class', 'sc-label-leader')
-              .style('stroke-opacity', 0);
+      slices_entr.append('polyline')
+          .attr('class', 'sc-label-leader')
+          .style('stroke-opacity', 0);
 
 
       // UPDATE
@@ -12631,13 +12724,14 @@ sucrose.models.pie = function() {
           horizontalShift = 0,
           horizontalReduction = leaderLength + textOffset;
 
+      // side effect :: resets extWidths, extHeights
       slices.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
 
       // Donut Hole Text
-      holeWrap.call(holeFormat, hole ? [hole] : []);
+      hole_wrap.call(holeFormat, hole ? [hole] : []);
 
       if (hole) {
-        var heightHoleHalf = holeWrap.node().getBoundingClientRect().height * 0.30,
+        var heightHoleHalf = hole_wrap.node().getBoundingClientRect().height * 0.30,
             heightPieHalf = Math.abs(maxHeightRadius * d3.min(extHeights)),
             holeOffset = Math.round(heightHoleHalf - heightPieHalf);
 
@@ -12668,11 +12762,11 @@ sucrose.models.pie = function() {
 
       offsetVertical += verticalShift / 2;
 
-      pieWrap
+      pie_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
-      holeWrap
+      hole_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
-      pieWrap.select(mask)
+      pie_wrap.select(mask)
         .attr('x', -pieRadius / 2)
         .attr('y', -pieRadius / 2);
 
@@ -12952,8 +13046,8 @@ sucrose.models.pie = function() {
           }
 
           var theta = (startAngle(d) + endAngle(d)) / 2,
-              sin = d3.round(Math.sin(theta), 5),
-              cos = d3.round(Math.cos(theta), 5),
+              sin = Math.sin(theta),
+              cos = Math.cos(theta),
               bW = maxWidthRadius - horizontalReduction - labelLengths[i],
               bH = maxHeightRadius - verticalReduction,
               rW = sin ? bW / sin : bW, //don't divide by zero, fool
@@ -13572,7 +13666,7 @@ sucrose.models.pieChart = function() {
         }
 
         state.disabled = data.map(function(d) { return !!d.disabled; });
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(durationMs).call(chart);
       });
@@ -14338,10 +14432,10 @@ sucrose.models.stackedArea = function () {
 
   scatter.dispatch.on('elementMouseover.tooltip', function (e) {
     e.pos = [e.pos[0] + margin.left, e.pos[1] + margin.top];
-    dispatch.tooltipShow(e);
+    dispatch.call('tooltipShow', this, e);
   });
   scatter.dispatch.on('elementMouseout.tooltip', function (e) {
-    dispatch.tooltipHide(e);
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================
@@ -14969,7 +15063,7 @@ sucrose.models.stackedAreaChart = function() {
         }
 
         state.disabled = data.map(function (d) { return !!d.disabled; });
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(chart.delay()).call(chart);
       });
@@ -14986,7 +15080,7 @@ sucrose.models.stackedAreaChart = function() {
         }
 
         state.disabled = data.map(function (d) { return !!d.disabled; });
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(chart.delay()).call(chart);
       });
@@ -15019,7 +15113,7 @@ sucrose.models.stackedAreaChart = function() {
         }
 
         state.style = stacked.style();
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(chart.delay()).call(chart);
       });

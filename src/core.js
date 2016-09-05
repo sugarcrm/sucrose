@@ -49,7 +49,7 @@ sucrose.render = function render(step) {
   step = step || 1; // number of graphs to generate in each timeout loop
 
   sucrose.render.active = true;
-  sucrose.dispatch.render_start();
+  sucrose.dispatch.call('render_start', this);
 
   setTimeout(function() {
     var chart, graph;
@@ -63,7 +63,7 @@ sucrose.render = function render(step) {
     sucrose.render.queue.splice(0, i);
 
     if (sucrose.render.queue.length) setTimeout(arguments.callee, 0);
-    else { sucrose.render.active = false; sucrose.dispatch.render_end(); }
+    else { sucrose.render.active = false; sucrose.dispatch.call('render_end', this); }
   }, 0);
 };
 

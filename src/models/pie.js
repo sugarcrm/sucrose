@@ -22,8 +22,8 @@ sucrose.models.pie = function() {
       labelThreshold = 0.01, //if slice percentage is under this, don't show label
       donut = false,
       hole = false,
-      holeFormat = function(holeWrap, data) {
-        var hole_bind = holeWrap.selectAll('.sc-hole-container').data(data),
+      holeFormat = function(hole_wrap, data) {
+        var hole_bind = hole_wrap.selectAll('.sc-hole-container').data(data),
             hole_entr = hole_bind.enter().append('g').attr('class', 'sc-hole-container');
         hole_entr.append('text')
           .text(data)
@@ -91,7 +91,7 @@ sucrose.models.pie = function() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pie sc-chart-' + id);
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
-      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
@@ -100,13 +100,13 @@ sucrose.models.pie = function() {
         return sucrose.utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
 
-      g_entr.append('g').attr('class', 'sc-pie');
-      var pieWrap = g.select('.sc-pie');
-      g_entr.append('g').attr('class', 'sc-holeWrap');
-      var holeWrap = g.select('.sc-holeWrap');
+      var pie_enter = g_entr.append('g').attr('class', 'sc-pie');
+      var pie_wrap = g.select('.sc-pie').merge(pie_enter);
+      var hole_enter = g_entr.append('g').attr('class', 'sc-hole-wrap');
+      var hole_wrap = g.select('.sc-hole-wrap').merge(hole_enter);
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-      pieWrap.attr('transform', 'translate(' + (availableWidth / 2) + ',' + (availableHeight / 2) + ')');
+      pie_wrap.attr('transform', 'translate(' + (availableWidth / 2) + ',' + (availableHeight / 2) + ')');
 
       //------------------------------------------------------------
 
@@ -126,69 +126,72 @@ sucrose.models.pie = function() {
           });
         });
 
-      var slices = wrap.select('.sc-pie').selectAll('.sc-slice')
+      var slices_bind = pie_wrap.selectAll('.sc-slice')
             .data(pie);
+      slices_bind.exit().remove();
+      var slices_entr = slices_bind.enter().append('g')
+            .attr('class', 'sc-slice');
+      var slices = pie_wrap.selectAll('.sc-slice')
+            .merge(slices_entr);
 
-      slices.exit().remove();
+      slices_entr
+        .style('stroke', '#ffffff')
+        .style('stroke-width', 2)
+        .style('stroke-opacity', 0)
+        .on('mouseover', function(d, i) {
+          d3.select(this).classed('hover', true);
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementMouseover', this, eo);
+        })
+        .on('mousemove', function(d, i) {
+          var e = d3.event;
+          dispatch.call('elementMousemove', this, e);
+        })
+        .on('mouseout', function(d, i) {
+          d3.select(this).classed('hover', false);
+          dispatch.call('elementMouseout', this);
+        })
+        .on('click', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementClick', this, eo);
+        })
+        .on('dblclick', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementDblClick', this, eo);
+        });
 
-      var ae = slices.enter().append('g')
-            .style('stroke', '#ffffff')
-            .style('stroke-width', 2)
-            .style('stroke-opacity', 0)
-            .on('mouseover', function(d, i) {
-              d3.select(this).classed('hover', true);
-              var eo = buildEventObject(d3.event, d, i);
-              dispatch.call('elementMouseover', this, eo);
+      slices_entr.append('path')
+          .attr('class', 'sc-base')
+          .each(function(d, i) {
+            this._current = d;
+          });
+
+      if (textureFill) {
+        slices_entr.append('path')
+            .attr('class', 'sc-texture')
+            .each(function(d, i) {
+              this._current = d;
             })
-            .on('mousemove', function(d, i) {
-              var e = d3.event;
-              dispatch.call('elementMousemove', this, e);
-            })
-            .on('mouseout', function(d, i) {
-              d3.select(this).classed('hover', false);
-              dispatch.call('elementMouseout', this);
-            })
-            .on('click', function(d, i) {
-              d3.event.stopPropagation();
-              var eo = buildEventObject(d3.event, d, i);
-              dispatch.call('elementClick', this, eo);
-            })
-            .on('dblclick', function(d, i) {
-              d3.event.stopPropagation();
-              var eo = buildEventObject(d3.event, d, i);
-              dispatch.call('elementDblClick', this, eo);
-            });
+            .style('mask', 'url(' + mask + ')');
+      }
 
-          ae.append('path')
-              .attr('class', 'sc-base')
-              .each(function(d, i) {
-                this._current = d;
-              });
+      slices_entr.append('g')
+          .attr('transform', 'translate(0,0)')
+          .attr('class', 'sc-label');
 
-          if (textureFill) {
-            ae.append('path')
-                .attr('class', 'sc-texture')
-                .each(function(d, i) {
-                  this._current = d;
-                })
-                .style('mask', 'url(' + mask + ')');
-          }
+      slices_entr.select('.sc-label')
+          .append('rect')
+          .style('fill-opacity', 0)
+          .style('stroke-opacity', 0);
+      slices_entr.select('.sc-label')
+          .append('text')
+          .style('fill-opacity', 0);
 
-          ae.append('g')
-              .attr('transform', 'translate(0,0)')
-              .attr('class', 'sc-label');
-
-          ae.select('.sc-label')
-              .append('rect')
-              .style('fill-opacity', 0)
-              .style('stroke-opacity', 0);
-          ae.select('.sc-label')
-              .append('text')
-              .style('fill-opacity', 0);
-
-          ae.append('polyline')
-              .attr('class', 'sc-label-leader')
-              .style('stroke-opacity', 0);
+      slices_entr.append('polyline')
+          .attr('class', 'sc-label-leader')
+          .style('stroke-opacity', 0);
 
 
       // UPDATE
@@ -203,13 +206,14 @@ sucrose.models.pie = function() {
           horizontalShift = 0,
           horizontalReduction = leaderLength + textOffset;
 
+      // side effect :: resets extWidths, extHeights
       slices.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
 
       // Donut Hole Text
-      holeWrap.call(holeFormat, hole ? [hole] : []);
+      hole_wrap.call(holeFormat, hole ? [hole] : []);
 
       if (hole) {
-        var heightHoleHalf = holeWrap.node().getBoundingClientRect().height * 0.30,
+        var heightHoleHalf = hole_wrap.node().getBoundingClientRect().height * 0.30,
             heightPieHalf = Math.abs(maxHeightRadius * d3.min(extHeights)),
             holeOffset = Math.round(heightHoleHalf - heightPieHalf);
 
@@ -240,11 +244,11 @@ sucrose.models.pie = function() {
 
       offsetVertical += verticalShift / 2;
 
-      pieWrap
+      pie_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
-      holeWrap
+      hole_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
-      pieWrap.select(mask)
+      pie_wrap.select(mask)
         .attr('x', -pieRadius / 2)
         .attr('y', -pieRadius / 2);
 
@@ -524,8 +528,8 @@ sucrose.models.pie = function() {
           }
 
           var theta = (startAngle(d) + endAngle(d)) / 2,
-              sin = d3.round(Math.sin(theta), 5),
-              cos = d3.round(Math.cos(theta), 5),
+              sin = Math.sin(theta),
+              cos = Math.cos(theta),
               bW = maxWidthRadius - horizontalReduction - labelLengths[i],
               bH = maxHeightRadius - verticalReduction,
               rW = sin ? bW / sin : bW, //don't divide by zero, fool

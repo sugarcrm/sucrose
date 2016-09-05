@@ -333,11 +333,12 @@ sucrose.models.globeChart = function() {
             var eo = buildEventObject(d3.event, d, i, j);
             dispatch.call('tooltipShow', this, eo);
           })
+          .on('mousemove', function(d, i, j) {
+            var e = d3.event;
+            dispatch.call('tooltipMove', this, e);
+          })
           .on('mouseout', function () {
             dispatch.call('tooltipHide', this);
-          })
-          .on('mousemove', function(d, i, j) {
-            dispatch.tooltipMove(d3.event);
           });
 
         function buildEventObject(e, d, i, j) {

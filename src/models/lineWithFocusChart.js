@@ -386,9 +386,7 @@ sucrose.models.lineWithFocusChart = function() {
         brushExtent = brush.empty() ? null : brush.extent();
         extent = brush.empty() ? x2.domain() : brush.extent();
 
-
-        dispatch.brush({extent: extent, brush: brush});
-
+        dispatch.call('brush', this, {extent: extent, brush: brush});
 
         updateBrushBG();
 
@@ -429,12 +427,12 @@ sucrose.models.lineWithFocusChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  lines.dispatch.on('elementMouseover.tooltip', function(e) {
-    dispatch.tooltipShow(e);
+  lines.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
   });
 
   lines.dispatch.on('elementMouseout.tooltip', function(e) {
-    dispatch.tooltipHide(e);
+    dispatch.call('tooltipHide', this);
   });
 
   dispatch.on('tooltipHide', function() {

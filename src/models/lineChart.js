@@ -30,15 +30,6 @@ sucrose.models.lineChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var xValueFormat = function(d, labels, isDate) {
-          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
-            d : labels[parseInt(d, 10)] || d;
-          return isDate ? sucrose.utils.dateFormat(val, 'yMMMM', chart.locality()) : val;
-        };
-  var yValueFormat = function(d, isCurrency) {
-          return sucrose.utils.numberFormatSI(d, 2, isCurrency, chart.locality());
-        };
-
   var lines = sucrose.models.line()
         .clipEdge(true),
       xAxis = sucrose.models.axis(),
@@ -84,6 +75,19 @@ sucrose.models.lineChart = function() {
           isArrayData = true,
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var xValueFormat = function(d, i, selection, noEllipsis) {
+            var label = xIsDatetime ?
+                          sucrose.utils.dateFormat(d, '%x', chart.locality()) :
+                          isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
+                            d :
+                            xTickLabels[parseInt(d, 10)];
+            return label;
+          };
+
+      var yValueFormat = function(d) {
+            return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+          };
 
       chart.container = this;
 
@@ -131,8 +135,10 @@ sucrose.models.lineChart = function() {
 
       isArrayData = Array.isArray(data[0].values[0]);
       if (isArrayData) {
-        lines.x(function(d) { return d[0]; });
-        lines.y(function(d) { return d[1]; });
+        lines.x(function(d) {
+          return d ? d[0] : 0;
+        });
+        lines.y(function(d) { return d ? d[1] : 0; });
       } else {
         lines.x(function(d) { return d.x; });
         lines.y(function(d) { return d.y; });
@@ -212,8 +218,9 @@ sucrose.models.lineChart = function() {
         }) === 1;
 
       lines
-        .padData(singlePoint ? false : true)
-        .padDataOuter(-1)
+        //TODO: we need to reconsider use of padData
+        // .padData(singlePoint ? false : true)
+        // .padDataOuter(-1)
         .singlePoint(singlePoint)
         // set x-scale as time instead of linear
         .xScale(xIsDatetime && !xTickLabels.length ? d3.scaleTime() : d3.scaleLinear());
@@ -255,8 +262,6 @@ sucrose.models.lineChart = function() {
 
         xAxis
           .orient('bottom')
-          .valueFormat(xValueFormat)
-          .tickPadding(4)
           .highlightZero(false)
           .showMaxMin(false)
           .ticks(xValues.length)
@@ -264,8 +269,6 @@ sucrose.models.lineChart = function() {
           .showMaxMin(false);
         yAxis
           .orient('left')
-          .valueFormat(yValueFormat)
-          .tickPadding(4)
           .ticks(singlePoint ? 5 : null) //TODO: why 5?
           .showMaxMin(false)
           .highlightZero(false);
@@ -273,16 +276,15 @@ sucrose.models.lineChart = function() {
       } else {
 
         lines
-          .xDomain(null)
+          .xDomain(null)  //?why null?
           .yDomain(null);
         xAxis
+          .orient('bottom')
           .ticks(null)
           .tickValues(null)
           .showMaxMin(xIsDatetime);
         yAxis
           .orient('left')
-          .valueFormat(yValueFormat)
-          .tickPadding(4)
           .ticks(null)
           .showMaxMin(true)
           .highlightZero(true);
@@ -293,9 +295,13 @@ sucrose.models.lineChart = function() {
       y = lines.yScale();
 
       xAxis
-        .scale(x);
+        .scale(x)
+        .tickPadding(6)
+        .valueFormat(xValueFormat);
       yAxis
-        .scale(y);
+        .scale(y)
+        .tickPadding(6)
+        .valueFormat(yValueFormat);
 
       //------------------------------------------------------------
       // Main chart draw
@@ -322,10 +328,10 @@ sucrose.models.lineChart = function() {
             trans = '';
 
         var wrap_bind = container.selectAll('g.sc-wrap.sc-lineChart').data([lineData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineChart');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line-chart');
         var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
         var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-        var g = container.select('g.sc-chart_wrap').merge(g_entr);
+        var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
         g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
@@ -336,28 +342,31 @@ sucrose.models.lineChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        g_entr.append('g').attr('class', 'sc-titleWrap');
-        var titleWrap = g.select('.sc-titleWrap');
-        g_entr.append('g').attr('class', 'sc-x sc-axis');
-        var xAxisWrap = g.select('.sc-x.sc-axis');
-        g_entr.append('g').attr('class', 'sc-y sc-axis');
-        var yAxisWrap = g.select('.sc-y.sc-axis');
-        g_entr.append('g').attr('class', 'sc-linesWrap');
-        var linesWrap = g.select('.sc-linesWrap');
-        g_entr.append('g').attr('class', 'sc-controlsWrap');
-        var controlsWrap = g.select('.sc-controlsWrap');
-        g_entr.append('g').attr('class', 'sc-legendWrap');
-        var legendWrap = g.select('.sc-legendWrap');
+        var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
+
+        var xAxis_entr = g_entr.append('g').attr('class', 'sc-x sc-axis');
+        var xAxis_wrap = g.select('.sc-x.sc-axis').merge(xAxis_entr);
+        var yAxis_entr = g_entr.append('g').attr('class', 'sc-y sc-axis');
+        var yAxis_wrap = g.select('.sc-y.sc-axis').merge(yAxis_entr);
+
+        var lines_entr = g_entr.append('g').attr('class', 'sc-lines-wrap');
+        var lines_wrap = g.select('.sc-lines-wrap').merge(lines_entr);
+
+        var controls_entr = g_entr.append('g').attr('class', 'sc-controls-wrap');
+        var controls_wrap = g.select('.sc-controls-wrap').merge(controls_entr);
+        var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        titleWrap.select('.sc-title').remove();
+        title_wrap.select('.sc-title').remove();
 
         if (showTitle) {
-          titleWrap
+          title_wrap
             .append('text')
               .attr('class', 'sc-title')
               .attr('x', direction === 'rtl' ? availableWidth : 0)
@@ -378,7 +387,7 @@ sucrose.models.lineChart = function() {
             .strings(chart.strings().controls)
             .align('left')
             .height(availableHeight - headerHeight);
-          controlsWrap
+          controls_wrap
             .datum(controlsData)
             .call(controls);
 
@@ -391,7 +400,7 @@ sucrose.models.lineChart = function() {
             .strings(chart.strings().legend)
             .align('right')
             .height(availableHeight - headerHeight);
-          legendWrap
+          legend_wrap
             .datum(data)
             .call(legend);
 
@@ -417,13 +426,13 @@ sucrose.models.lineChart = function() {
         if (showControls) {
           var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
               ypos = showTitle ? titleBBox.height : - legend.margin().top;
-          controlsWrap
+          controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
         }
 
         if (showLegend) {
-          var legendLinkBBox = sucrose.utils.getTextBBox(legendWrap.select('.sc-legend-link')),
+          var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -433,7 +442,7 @@ sucrose.models.lineChart = function() {
           } else if (!showTitle) {
             ypos = - legend.margin().top;
           }
-          legendWrap
+          legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           legendHeight = legendTop ? 12 : legend.height();
         }
@@ -454,7 +463,7 @@ sucrose.models.lineChart = function() {
           .size(pointSize) // default size set to 3
           .sizeRange([pointSize, pointSize])
           .sizeDomain([pointSize, pointSize]); //set to speed up calculation, needs to be unset if there is a custom size accessor
-        linesWrap
+        lines_wrap
           .datum(lineData)
           .call(lines);
 
@@ -477,6 +486,8 @@ sucrose.models.lineChart = function() {
           innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
           lines.width(innerWidth).height(innerHeight);
+          // This resets the scales for the whole chart
+          // unfortunately we can't call this without until line instance is called
           lines.scatter.resetDimensions(innerWidth, innerHeight);
         }
 
@@ -486,7 +497,7 @@ sucrose.models.lineChart = function() {
           .tickFormat(function(d, i) {
             return yAxis.valueFormat()(d, yIsCurrency);
           });
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
         yAxisMargin = yAxis.margin();
@@ -494,10 +505,6 @@ sucrose.models.lineChart = function() {
         setInnerDimensions();
 
         // X-Axis
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxisWrap
-          .attr('transform', 'translate(' + trans + ')');
         // resize ticks based on new dimensions
         xAxis
           .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
@@ -505,26 +512,38 @@ sucrose.models.lineChart = function() {
           .tickFormat(function(d, i, noEllipsis) {
             return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
           });
-
-        xAxisWrap
+        xAxis_wrap
           .call(xAxis);
         xAxisMargin = xAxis.margin();
         setInnerMargins();
         setInnerDimensions();
-        xAxis
-          .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
+        // xAxis
+        //   .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
 
-        // recall y-axis to set final size based on new dimensions
+        // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
           .tickSize(-innerWidth + (lines.padData() ? pointRadius : 0), 0)
           .margin(innerMargin);
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
 
+        xAxis
+          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
+          .margin(innerMargin);
+        xAxis_wrap
+          .call(xAxis);
+
+        lines
+          .width(innerWidth)
+          .height(innerHeight);
+        lines_wrap
+          .datum(lineData)
+          .call(lines);
+
         // final call to lines based on new dimensions
-        linesWrap
-          .transition().duration(durationMs)
-            .call(lines);
+        // lines_wrap
+        //   .transition().duration(durationMs)
+        //     .call(lines);
 
         //------------------------------------------------------------
         // Final repositioning
@@ -533,15 +552,15 @@ sucrose.models.lineChart = function() {
 
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxisWrap
+        xAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
         trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
         trans += innerMargin.top;
-        yAxisWrap
+        yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        linesWrap
+        lines_wrap
           .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
 
       };
@@ -566,7 +585,7 @@ sucrose.models.lineChart = function() {
         }
 
         state.disabled = data.map(function(d) { return !!d.disabled; });
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(durationMs).call(chart);
       });
@@ -609,7 +628,7 @@ sucrose.models.lineChart = function() {
 
         state.interpolate = lines.interpolate();
         state.isArea = lines.isArea();
-        dispatch.stateChange(state);
+        dispatch.call('stateChange', this, state);
 
         container.transition().duration(durationMs).call(chart);
       });

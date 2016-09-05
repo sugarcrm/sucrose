@@ -644,7 +644,7 @@ sucrose.models.multiBarChart = function() {
 
           var diff = (vertical ? innerWidth : innerHeight) - minDimension,
               panMultibar = function() {
-                // dispatch.tooltipHide(d3.event);
+                dispatch.call('tooltipHide', this);
                 scrollOffset = scroll.pan(diff);
                 xAxis_wrap.select('.sc-axislabel')
                   .attr('x', (vertical ? innerWidth - scrollOffset * 2 : scrollOffset * 2 - innerHeight) / 2);
