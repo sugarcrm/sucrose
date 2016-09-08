@@ -150,14 +150,14 @@ sucrose.models.bubbleChart = function() {
                 d3.merge(
                   data.map(function(d) {
                     return d.values.map(function(d, i) {
-                      return d3.time.format('%Y-%m-%d').parse(getX(d));
+                      return d3.timeParse('%Y-%m-%d')(getX(d));
                     });
                   })
                 )
               );
         var timeRange = [
-          d3.time.month.floor(timeExtent[0]),
-          d3.time.day.offset(d3.time.month.ceil(timeExtent[1]), -1)
+          d3.timeMonth.floor(timeExtent[0]),
+          d3.timeDay.offset(d3.timeMonth.ceil(timeExtent[1]), -1)
         ];
         return timeRange;
       }
@@ -167,10 +167,10 @@ sucrose.models.bubbleChart = function() {
         function daysInMonth(date) {
           return 32 - new Date(date.getFullYear(), date.getMonth(), 32).getDate();
         }
-        var timeRange = d3.time.month.range(timeDomain[0], timeDomain[1]);
+        var timeRange = d3.timeMonth.range(timeDomain[0], timeDomain[1]);
         var timeTicks =
               timeRange.map(function(d) {
-                return d3.time.day.offset(d3.time.month.floor(d), daysInMonth(d) / 2 - 1);
+                return d3.timeDay.offset(d3.timeMonth.floor(d), daysInMonth(d) / 2 - 1);
               });
         return timeTicks;
       }
@@ -284,7 +284,7 @@ sucrose.models.bubbleChart = function() {
         .tickPadding(4)
         .highlightZero(false)
         .showMaxMin(false)
-        .ticks(d3.time.months, 1)
+        .ticks(d3.timeMonths, 1)
         .scale(x)
         .tickValues(getTimeTicks(xD));
       yAxis
@@ -469,6 +469,7 @@ sucrose.models.bubbleChart = function() {
           });
         xAxis_wrap
           .call(xAxis);
+
         // reset inner dimensions
         xAxisMargin = xAxis.margin();
         setInnerMargins();
@@ -480,6 +481,8 @@ sucrose.models.bubbleChart = function() {
           .margin(innerMargin);
         yAxis_wrap
           .call(yAxis);
+        yAxis_wrap.select('path.domain')
+          .attr('d', "M0,0V0.5H0V" + innerHeight);
 
         // final call to lines based on new dimensions
         bubbles_wrap
