@@ -64,10 +64,6 @@ svg.sc-chart .sc-label-value text,
 svg.sc-chart text.sc-label-value {
   font-size: 13px;
 }
-svg.sc-chart .sc-label-value text.sc-label {
-  font-size: 11px;
-}
-
 svg.sc-chart .sc-label-box {
   fill: transparent;
 }
@@ -532,40 +528,32 @@ text.sc-pie-hole-label {
   pointer-events: none;
   fill: #fff;
 }
-.sc-treemap .sc-depth text {
-  fill: #fff;
-}
-.sc-treemap .sc-grandparent text {
-  font-weight: bold;
-  fill: #555;
-}
 .sc-treemap rect {
   stroke: #fff;
 }
-.sc-treemap .sc-children.hover .sc-parent {
-  fill: #fff;
-  opacity: 0.3;
+.sc-treemap .sc-treepath text {
+  font-weight: bold;
+  fill: #555;
 }
-.sc-treemap .sc-parent,
-.sc-treemap .sc-grandparent rect {
-  stroke-width: 3px;
+.sc-treemap .sc-parent text {
+  fill: #fff;
 }
 .sc-treemap .sc-child {
   stroke-width: 1px;
 }
-.sc-treemap .sc-parent {
+.sc-treemap .sc-target {
+  stroke-width: 3px;
   fill: none;
   font-weight: normal;
+  cursor: pointer;
+  pointer-events: all;
 }
-.sc-treemap .sc-grandparent rect {
+.sc-treemap .sc-treepath .sc-target {
   fill: #fff;
 }
-.sc-treemap .sc-children .sc-parent,
-.sc-treemap .sc-grandparent rect {
-  cursor: pointer;
-}
-.sc-treemap .sc-parent {
-  pointer-events: all;
+.sc-treemap .sc-parent.hover .sc-target {
+  fill: #fff;
+  opacity: 0.3;
 }
 /**********
 * Dendrogram

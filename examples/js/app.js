@@ -284,7 +284,7 @@ var sucroseCharts = function () {
     bubble: {
       _format: function format(chart) {
         chart
-          .x(function (d) { return d3.time.format('%Y-%m-%d').parse(d.x); })
+          .x(function (d) { return d3.timeParse('%Y-%m-%d')(d.x); })
           .y(function (d) { return d.y; })
           .groupBy(function (d) {
               return d.assigned_user_name;
@@ -295,7 +295,7 @@ var sucroseCharts = function () {
           .tooltipContent(function (key, x, y, e, graph) {
             return '<p>Assigned: <b>' + e.point.assigned_user_name + '</b></p>' +
                    '<p>Amount: <b>$' + d3.format(',.2d')(e.point.opportunity) + '</b></p>' +
-                   '<p>Close Date: <b>' + d3.time.format('%x')(d3.time.format('%Y-%m-%d').parse(e.point.x)) + '</b></p>' +
+                   '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(e.point.x)) + '</b></p>' +
                    '<p>Probability: <b>' + e.point.probability + '%</b></p>' +
                    '<p>Account: <b>' + e.point.account_name + '</b></p>';
           });
@@ -309,8 +309,7 @@ var sucroseCharts = function () {
           .leafClick(function (d) {
             alert('leaf clicked');
           })
-          .getSize(function (d) { return d.size; });
-          // .getSize(function (d) { return d.value; })
+          .getValue(function (d) { return d.size; });
           // .tooltipContent(function (point) {
           //   var rep = (point.assigned_user_name) ? point.assigned_user_name : (point.className) ? point.parent.name : point.name,
           //       stage = (point.sales_stage) ? point.sales_stage : (point.className) ? point.name : null,
@@ -415,7 +414,7 @@ var sucroseCharts = function () {
           .tickFormat(d3.format(',.2f'));
 
         chart.xAxis
-          .tickFormat(function (d) { return d3.time.format('%x')(new Date(d)); });
+          .tickFormat(function (d) { return d3.timeFormat('%x')(new Date(d)); });
       }
     },
     tree: {

@@ -6638,7 +6638,7 @@ sucrose.models.gaugeChart = function() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-gaugeChart');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart_wrap').merge(g_entr);
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       g_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
@@ -7107,7 +7107,7 @@ sucrose.models.globeChart = function() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-globeChart');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart_wrap').merge(g_entr);
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       g_entr.append('defs');
       var defs = wrap.select('defs');
@@ -9074,7 +9074,7 @@ sucrose.models.lineWithFocusChart = function() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart_wrap').merge(g_entr);
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       g_entr.append('g').attr('class', 'sc-legendWrap');
 
@@ -11784,7 +11784,7 @@ sucrose.models.paretoChart = function() {
             var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-multiBarWithLegend');
             var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
             var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-            var g = container.select('g.sc-chart_wrap').merge(g_entr);
+            var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
             g_entr.append('rect').attr('class', 'sc-background')
                 .attr('x', -margin.left)
@@ -14828,7 +14828,7 @@ sucrose.models.stackedAreaChart = function() {
         var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedAreaChart');
         var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
         var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-        var g = container.select('g.sc-chart_wrap').merge(g_entr);
+        var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
         g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
@@ -16291,147 +16291,238 @@ sucrose.models.treemap = function() {
   var margin = {top: 20, right: 0, bottom: 0, left: 0},
       width = 0,
       height = 0,
-      x, //can be accessed via chart.xScale()
-      y, //can be accessed via chart.yScale()
+      x = d3.scaleLinear(), //can be accessed via chart.xScale()
+      y = d3.scaleLinear(), //can be accessed via chart.yScale()
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID incase user doesn't select one
-      getSize = function(d) { return d.size; }, // accessor to get the size value from a data point
-      groupBy = function(d) { return d.name; }, // accessor to get the name value from a data point
+      getValue = function(d) { return d.size; }, // accessor to get the size value from a data point
+      getKey = function(d) { return d.name; }, // accessor to get the name value from a data point
+      groupBy = function(d) { return getKey(d); }, // accessor to get the name value from a data point
       clipEdge = true, // if true, masks lines within x and y scale
-      groups = [],
+      duration = 500,
       leafClick = function() { return false; },
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, i); },
+      // color = function(d, i) { return sucrose.utils.defaultColor()(d, i); },
+      color = d3.scaleOrdinal().range(
+                d3.schemeCategory20.map(function(c) {
+                  c = d3.rgb(c);
+                  c.opacity = 0.6;
+                  return c;
+                })
+              ),
       fill = color,
       classes = function(d, i) { return 'sc-child'; },
       direction = 'ltr',
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
-
-  //============================================================
 
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  //used to store previous scales
-  var x0,
-      y0;
+  var ROOT,
+      TREE,
+      NODES = [];
+
+  // This is for data sets that don't include a colorIndex
+  // Excludes leaves
+  function reduceGroups(d) {
+    var data = d.data ? d.data : d;
+    var name = groupBy(data);
+    var i, l;
+    if (name && NODES.indexOf(name) === -1) {
+      NODES.push(name);
+      if (data.children) {
+        l = data.children.length;
+        for (i = 0; i < l; i += 1) {
+          reduceGroups(data.children[i]);
+        }
+      }
+    }
+    return NODES;
+  }
 
   //============================================================
-
+  // TODO:
+  // 1. title,
+  // 2. colors,
+  // 3. legend data change remove,
+  // 4. change groupby,
+  // 5. contrasting text
 
   function chart(selection) {
     selection.each(function(chartData) {
-
-      var data = chartData[0];
-
-      //this is for data sets that don't include a colorIndex
-      //excludes leaves
-      function reduceGroups(d) {
-        var i, l;
-        if (d.children && groupBy(d) && groups.indexOf(groupBy(d)) === -1) {
-          groups.push(groupBy(d));
-          l = d.children.length;
-          for (i = 0; i < l; i += 1) {
-            reduceGroups(d.children[i]);
-          }
-        }
-      }
-      reduceGroups(data);
 
       var availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this),
           transitioning;
 
-      x = d3.scaleLinear()
-            .domain([0, data.dx])
-            .range([0, availableWidth]);
+      // Set up the gradient constructor function
+      chart.gradient = function(d, i, p) {
+        var iColor = (d.parent.colorIndex || NODES.indexOf(groupBy(d.parent)) || i);
+        return sucrose.utils.colorLinearGradient(
+          d,
+          id + '-' + i,
+          p,
+          color(d, iColor, NODES.length),
+          wrap.select('defs')
+        );
+      };
 
-      y = d3.scaleLinear()
-            .domain([0, data.dy])
-            .range([0, availableHeight]);
+      // We only need to define TREE and NODES once on initial load
+      // TREE is always available in its initial state and NODES is immutable
+      TREE = TREE ||
+        d3.hierarchy(chartData[0])
+          .sum(function(d) { return getValue(d); })
+          .sort(function(a, b) { return b.height - a.height || b.value - a.value; });
 
-      x0 = x0 || x;
-      y0 = y0 || y;
+      NODES = NODES.length ? NODES : reduceGroups(TREE);
 
-      //------------------------------------------------------------
+      // Recalcuate the treemap layout dimensions
+      d3.treemap()
+        .size([availableWidth, availableHeight])
+        .round(false)
+          (TREE);
 
+      // We store the root on first render
+      // which gets reused on resize
+      // Transition will reset root when called
+      ROOT = ROOT || TREE;
+
+      x.domain([ROOT.x0, ROOT.x1])
+       .range([0, availableWidth]);
+      y.domain([ROOT.y0, ROOT.y1])
+       .range([0, availableHeight]);
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([data]);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([TREE]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
-      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = wrap.select('g.sc-chart-wrap').merge(g_entr);
 
-      //set up the gradient constructor function
-      chart.gradient = function(d, i, p) {
-        var iColor = (d.parent.colorIndex || groups.indexOf(groupBy(d.parent)) || i);
-        return sucrose.utils.colorLinearGradient(d, id + '-' + i, p, color(d, iColor, groups.length), wrap.select('defs'));
-      };
-
-      //wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      // wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
       // Clip Path
 
       defs_entr.append('clipPath')
-          .attr('id', 'sc-edge-clip-' + id)
+        .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
       wrap.select('#sc-edge-clip-' + id + ' rect')
-          .attr('width', width)
-          .attr('height', height);
+        .attr('width', width)
+        .attr('height', height);
       g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
-
       //------------------------------------------------------------
-      // Main Chart
+      // Family Tree Path
 
-      var grandparent = g_entr.append('g').attr('class', 'sc-grandparent');
+      var treepath_bind = g_entr.selectAll('.sc-treepath').data([TREE]);
+      var treepath_enter = treepath_bind.enter().append('g').attr('class', 'sc-treepath');
+      var treepath = g.selectAll('.sc-treepath').merge(treepath_enter);
 
-      grandparent.append('rect')
-        //.attr('y', -margin.top)
-        .attr('width', width)
-        .attr('height', margin.top);
+      treepath_enter.append('rect')
+        .attr('class', 'sc-target')
+        .on('click', transition);
 
-      grandparent.append('text')
+      treepath_enter.append('text')
         .attr('x', direction === 'rtl' ? width - 6 : 6)
         .attr('y', 6)
         .attr('dy', '.75em');
 
-      display(data);
+      treepath.select('.sc-target')
+        .attr('width', width)
+        .attr('height', margin.top);
 
-      function display(d) {
+      //------------------------------------------------------------
+      // Main Chart
 
-        var treemap = d3.treemap()
-              .value(getSize)
-              .sort(function(a, b) { return getSize(a) - getSize(b); })
-              .round(false);
+      var gold = render();
 
-        layout(d);
+      function render() {
 
-        grandparent.datum(d.parent).on('click', transition).select('text').text(name(d));
+        var grandparent_bind = g.selectAll('.sc-grandparent.sc-trans').data([ROOT]);
+        var grandparent_entr = grandparent_bind.enter().append('g').attr('class', 'sc-grandparent sc-trans');
+        var grandparent = g.selectAll('.sc-grandparent.sc-trans').merge(grandparent_entr);
+        // We need to keep the old granparent around until transition ends
+        // grandparent.exit().remove();
 
-        var g1 = g_entr.insert('g', '.sc-grandparent')
-          .attr('class', 'sc-depth')
-          .attr('height', availableHeight)
-          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        grandparent
+          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+          .lower();
 
-        var g = g1.selectAll('g').data(d.children).enter().append('g');
+        // Parent group
+        var parents_bind = grandparent.selectAll('g.sc-parent').data(ROOT.children);
+        var parents_entr = parents_bind.enter().append('g').classed('sc-parent', true);
+        var parents = grandparent.selectAll('.sc-parent').merge(parents_entr);
+        parents_bind.exit().remove();
 
-        // Transition for nodes with children.
-        g.filter(function(d) { return d.children; })
-          .classed('sc-children', true)
+        // Child rectangles
+        var children_bind = parents.selectAll('rect.sc-child').data(function(d) { return d.children || [d]; });
+        var children_entr = children_bind.enter().append('rect').attr('class', 'sc-child');
+        var children = parents.selectAll('.sc-child').merge(children_entr);
+        children_bind.exit().remove();
+
+        children
+          .attr('class', classes)
+          .attr('fill', function(d, i) {
+            // while (d.depth > 1) {
+            //   d = d.parent;
+            // }
+            // return color(groupBy(d));
+            var iColor = (d.parent.colorIndex || NODES.indexOf(getKey(d.parent.data)) || i);
+            return this.getAttribute('fill') || fill(d, iColor, NODES.length);
+          })
+            .call(rect);
+
+        // Parent labels
+        var label_bind = parents.selectAll('text.sc-label').data(function(d) { return [d]; });
+        var label_entr = label_bind.enter().append('text').attr('class', 'sc-label')
+              .attr('dy', '.75em');
+        var label = parents.selectAll('.sc-label').merge(label_entr);
+        label_bind.exit().remove();
+
+        label
+          .text(function(d) {
+              return getKey(d.data);  //groupBy(d);
+           })
+            .call(text);
+
+        // Parent event target
+        var target_bind = parents.selectAll('rect.sc-target').data(function(d) { return [d]; });
+        var target_entr = target_bind.enter().append('rect').attr('class', 'sc-target');
+        var target = parents.selectAll('.sc-target').merge(target_entr);
+        target_bind.exit().remove();
+
+        target
+            .call(rect);
+
+        // Family tree path
+        treepath.selectAll('text')
+          .datum(ROOT)
+            .text(crumbs);
+
+        treepath.selectAll('rect')
+            .data([ROOT.parent]);
+
+        // -------------
+        // Assign Events
+
+        // Assign transition event for parents with children.
+        target
+          .filter(function(d) { return d.children; })
           .on('click', transition);
 
-        // Navigate for nodes without children (leaves).
-        g.filter(function(d) { return !(d.children); })
+        // Assign navigate event for parents without children (leaves).
+        target
+          .filter(function(d) { return !(d.children); })
           .on('click', leafClick);
 
-        g.on('mouseover', function(d, i) {
+        // Tooltips
+        target
+          .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
             var eo = {
               point: d,
@@ -16450,21 +16541,12 @@ sucrose.models.treemap = function() {
             dispatch.call('elementMouseout', this);
           });
 
-        var child_rects = g.selectAll('.sc-child').data(function(d) {
-            return d.children || [d];
-          }).enter().append('rect')
-              .attr('class', classes)
-              .attr('fill', function(d, i) {
-                var iColor = (d.parent.colorIndex || groups.indexOf(groupBy(d.parent)) || i);
-                return this.getAttribute('fill') || fill(d, iColor, groups.length); })
-              .call(rect);
-
-        child_rects
+        children
           .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
             var eo = {
-                label: groupBy(d),
-                value: getSize(d),
+                label: getKey(d),
+                value: getValue(d),
                 point: d,
                 pointIndex: i,
                 e: d3.event,
@@ -16477,89 +16559,96 @@ sucrose.models.treemap = function() {
             dispatch.call('elementMouseout', this);
           });
 
-        g.append('rect')
-          .attr('class', 'sc-parent')
-          .call(rect);
-
-        g.append('text')
-          .attr('dy', '.75em')
-          .text(function(d) { return groupBy(d); })
-          .call(text);
-
-        function transition(d) {
-          dispatch.call('elementMouseout', this);
-          if (transitioning || !d) { return; }
-          transitioning = true;
-
-          var g2 = display(d),
-              t1 = g1.transition().duration(750),
-              t2 = g2.transition().duration(750);
-
-          // Update the domain only after entering new elements.
-          x.domain([d.x, d.x + d.dx]);
-          y.domain([d.y, d.y + d.dy]);
-
-          // Enable anti-aliasing during the transition.
-          container.style('shape-rendering', null);
-
-          // Draw child nodes on top of parent nodes.
-          container.selectAll('.sc-depth').sort(function(a, b) { return a.depth - b.depth; });
-
-          // Fade-in entering text.
-          g2.selectAll('text').style('fill-opacity', 0);
-
-          // Transition to the new view.
-          t1.selectAll('text').call(text).style('fill-opacity', 0);
-          t2.selectAll('text').call(text).style('fill-opacity', 1);
-          t1.selectAll('rect').call(rect);
-          t2.selectAll('rect').call(rect);
-
-          // Remove the old node when the transition is finished.
-          t1.remove().each('end', function() {
-            container.style('shape-rendering', 'crispEdges');
-            transitioning = false;
-          });
-        }
-
-        function layout(d) {
-          if (d.children) {
-            treemap.nodes({children: d.children});
-            d.children.forEach(function(c) {
-              c.x = d.x + c.x * d.dx;
-              c.y = d.y + c.y * d.dy;
-              c.dx *= d.dx;
-              c.dy *= d.dy;
-              c.parent = d;
-              layout(c);
-            });
-          }
-        }
-
-        function text(t) {
-          t.attr('x', function(d) {
-              var xpos = direction === 'rtl' ? x(d.x + d.dx) - x(d.x) - 6 : 6;
-              return x(d.x) + xpos;
-            })
-            .attr('y', function(d) { return y(d.y) + 6; });
-        }
-
-        function rect(r) {
-          r.attr('x', function(d) { return x(d.x); })
-            .attr('y', function(d) { return y(d.y); })
-            .attr('width', function(d) { return x(d.x + d.dx) - x(d.x); })
-            .attr('height', function(d) { return y(d.y + d.dy) - y(d.y); });
-        }
-
-        function name(d) {
-          if (d.parent) {
-            return name(d.parent) + ' / ' + groupBy(d);
-          }
-          return groupBy(d);
-        }
-
-        return g;
+        return grandparent;
       }
 
+      function transition(d) {
+        var direction;
+        var tup;
+        var tdn;
+        var gnew;
+
+        // cleanup tooltips
+        dispatch.call('elementMouseout', this);
+
+        // If we are already transitioning, wait
+        if (transitioning || !d) { return; }
+
+        // Reset the root which will be used by render
+        ROOT = d;
+
+        transitioning = true;
+
+        gold.classed('sc-trans', false);
+
+        direction = d3.select(this).classed('sc-target') ? 'out' : 'in';
+
+        // Create transitions for in and out
+        tup = d3.transition('treemap-out')
+                    .duration(duration)
+                    .ease(d3.easeCubicIn);
+        tdn = d3.transition('treemap-in')
+                    .duration(duration)
+                    .ease(d3.easeCubicIn);
+
+        // render the new treemap
+        gnew = render();
+
+        // Update the domain only after entering new elements
+        x.domain([d.x0, d.x1]);
+        y.domain([d.y0, d.y1]);
+
+        // Enable anti-aliasing during the transition
+        container.style('shape-rendering', null);
+
+        // Fade-in entering text so start at zero
+        gnew.selectAll('text').style('fill-opacity', 0);
+
+        // Select existing text and rectangles with transition
+        // anything called by this selection will be run
+        // continously until transtion completes
+        gnew.selectAll('text').transition(tdn).style('fill-opacity', 1).call(text);
+        gnew.selectAll('rect').transition(tdn).style('fill-opacity', 1).call(rect);
+        gold.selectAll('text').transition(tup).style('fill-opacity', 0).call(text).remove();
+        gold.selectAll('rect').transition(tup).style('fill-opacity', 0).call(rect)
+          .on('end', function(d, i) {
+            transitioning = false;
+            container.style('shape-rendering', 'crispEdges');
+            gold.selectAll('*').interrupt('treemap-out');
+            gold.remove();
+            gold = gnew;
+          });
+      }
+
+      function text(text) {
+        text
+          .attr('x', function(d) {
+            var xpos = direction === 'rtl' ? -1 : 1;
+            return x(d.x0) + 6 * xpos;
+          })
+          .attr('y', function(d) {
+            return y(d.y0) + 6;
+          });
+      }
+
+      function rect(rect) {
+        rect
+          .attr('x', function(d) {
+            return x(d.x0);
+          })
+          .attr('y', function(d) { return y(d.y0); })
+          .attr('width', function(d) {
+            return x(d.x1) - x(d.x0);
+          })
+          .attr('height', function(d) { return y(d.y1) - y(d.y0); });
+      }
+
+      function crumbs(d) {
+        if (d.parent) {
+          return crumbs(d.parent) + ' / ' + getKey(d.data);
+        }
+        return getKey(d.data);
+      }
     });
 
     return chart;
@@ -16656,9 +16745,9 @@ sucrose.models.treemap = function() {
     return chart;
   };
 
-  chart.getSize = function(_) {
-    if (!arguments.length) { return getSize; }
-    getSize = _;
+  chart.getValue = function(_) {
+    if (!arguments.length) { return getValue; }
+    getValue = _;
     return chart;
   };
 
@@ -16669,8 +16758,14 @@ sucrose.models.treemap = function() {
   };
 
   chart.groups = function(_) {
-    if (!arguments.length) { return groups; }
-    groups = _;
+    if (!arguments.length) { return NODES; }
+    NODES = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
     return chart;
   };
 
@@ -16700,7 +16795,7 @@ sucrose.models.treemapChart = function() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var margin = {top: 0, right: 10, bottom: 10, left: 10},
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
       showTitle = false,
@@ -16709,13 +16804,13 @@ sucrose.models.treemapChart = function() {
       tooltip = null,
       tooltips = true,
       tooltipContent = function(point) {
-        var tt = '<p>Value: <b>' + sucrose.utils.numberFormatSI(point.value) + '</b></p>' +
-          '<p>Name: <b>' + point.name + '</b></p>';
+        var tt = '<h3>' + point.data.name + '</h3>' +
+                 '<p>' + sucrose.utils.numberFormatSI(point.value) + '</p>';
         return tt;
       },
       colorData = 'default',
       //create a clone of the d3 array
-      colorArray = d3.scale.category20().range().map( function(d) { return d; }),
+      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map( function(d) { return d; }),
       x, //can be accessed via chart.xScale()
       y, //can be accessed via chart.yScale()
       strings = {
@@ -16784,19 +16879,18 @@ sucrose.models.treemapChart = function() {
       //------------------------------------------------------------
 
       //remove existing colors from default color array, if any
-      if (colorData === 'data') {
-        removeColors(data[0]);
-      }
-
+      // if (colorData === 'data') {
+      //   removeColors(data[0]);
+      // }
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemapWithLegend').data(data);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemapWithLegend');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap-chart').data(data);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap-chart');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart_wrap').merge(g_entr);
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       g_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
@@ -16805,10 +16899,10 @@ sucrose.models.treemapChart = function() {
         .attr('height', availableHeight + margin.top + margin.bottom)
         .attr('fill', '#FFF');
 
-      g_entr.append('g').attr('class', 'sc-treemapWrap');
+      var treemap_enter = g_entr.append('g').attr('class', 'sc-treemap-wrap');
+      var treemap_wrap = g.select('.sc-treemap-wrap').merge(treemap_enter)
 
-      //------------------------------------------------------------
-
+      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
       // Title & Legend
@@ -16841,11 +16935,11 @@ sucrose.models.treemapChart = function() {
       }
 
       if (showTitle && properties.title) {
-        g_entr.append('g').attr('class', 'sc-titleWrap');
+        g_entr.append('g').attr('class', 'sc-title-wrap');
 
         g.select('.sc-title').remove();
 
-        g.select('.sc-titleWrap')
+        g.select('.sc-title-wrap')
           .append('text')
             .attr('class', 'sc-title')
             .attr('x', 0)
@@ -16864,17 +16958,9 @@ sucrose.models.treemapChart = function() {
           availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom;
         }
 
-        g.select('.sc-titleWrap')
+        g.select('.sc-title-wrap')
           .attr('transform', 'translate(0,' + (-margin.top + parseInt(g.select('.sc-title').style('height'), 10)) + ')');
       }
-
-      //------------------------------------------------------------
-
-
-      //------------------------------------------------------------
-
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
 
       //------------------------------------------------------------
       // Main Chart Component(s)
@@ -16883,14 +16969,10 @@ sucrose.models.treemapChart = function() {
         .width(availableWidth)
         .height(availableHeight);
 
-
-      var treemapWrap = g.select('.sc-treemapWrap')
-          .datum(data.filter(function(d) { return !d.disabled; }));
-
-      treemapWrap.transition().call(treemap);
-
-      //------------------------------------------------------------
-
+      treemap_wrap
+        .datum(data.filter(function(d) { return !d.disabled; }))
+        .transition()
+          .call(treemap);
 
 
       //============================================================
@@ -16931,18 +17013,18 @@ sucrose.models.treemapChart = function() {
 
       //============================================================
 
-      function removeColors(d) {
-        var i, l;
-        if (d.color && colorArray.indexOf(d.color) !== -1) {
-          colorArray.splice(colorArray.indexOf(d.color), 1);
-        }
-        if (d.children) {
-          l = d.children.length;
-          for (i = 0; i < l; i += 1) {
-            removeColors(d.children[i]);
-          }
-        }
-      }
+      // function removeColors(d) {
+      //   var i, l;
+      //   if (d.color && colorArray.indexOf(d.color) !== -1) {
+      //     colorArray.splice(colorArray.indexOf(d.color), 1);
+      //   }
+      //   if (d.children) {
+      //     l = d.children.length;
+      //     for (i = 0; i < l; i += 1) {
+      //       removeColors(d.children[i]);
+      //     }
+      //   }
+      // }
 
     });
 
@@ -16975,7 +17057,7 @@ sucrose.models.treemapChart = function() {
   chart.legend = legend;
   chart.treemap = treemap;
 
-  fc.rebind(chart, treemap, 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'id', 'delay', 'leafClick', 'getSize', 'getName', 'groups', 'color', 'fill', 'classes', 'gradient', 'direction');
+  fc.rebind(chart, treemap, 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'id', 'delay', 'leafClick', 'getValue', 'getName', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }

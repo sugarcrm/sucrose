@@ -110,8 +110,9 @@ examples: npm-prod
 
 examples-dev: npm-dev
 	cd examples && make install-dev
-examples-js: js
+
+examples-sucrose: js
 	cd examples && make sucrose
-	
+
 reset:
 	git clean -dfx

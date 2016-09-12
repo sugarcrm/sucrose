@@ -267,8 +267,7 @@ var sucroseCharts = function () {
           .leafClick(function (d) {
             alert('leaf clicked');
           })
-          .getSize(function (d) { return d.size; });
-          // .getSize(function (d) { return d.value; })
+          .getValue(function (d) { return d.size; });
           // .tooltipContent(function (point) {
           //   var rep = (point.assigned_user_name) ? point.assigned_user_name : (point.className) ? point.parent.name : point.name,
           //       stage = (point.sales_stage) ? point.sales_stage : (point.className) ? point.name : null,

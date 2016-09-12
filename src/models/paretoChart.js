@@ -313,7 +313,7 @@ sucrose.models.paretoChart = function() {
             var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-multiBarWithLegend');
             var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
             var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-            var g = container.select('g.sc-chart_wrap').merge(g_entr);
+            var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
             g_entr.append('rect').attr('class', 'sc-background')
                 .attr('x', -margin.left)

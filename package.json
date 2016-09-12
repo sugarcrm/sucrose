@@ -32,7 +32,7 @@
   "devDependencies": {
     "clean-css": "^3.4.8",
     "d3fc-rebind": "^4.0.1",
-    "less": "^2.5.3",
+    "less": "^2.6.0",
     "less-plugin-clean-css": "^1.5.1",
     "uglify-js": "2.6.1"
   },
