@@ -28,6 +28,8 @@ sucrose.models.scatter = function() {
       padData = false, // If true, adds half a data points width to front and back, for lining up a line chart with a bar chart
       padDataOuter = 0.1, //outerPadding to imitate ordinal scale outer padding
       clipEdge = false, // if true, masks points within x and y scale
+      delay = 0,
+      duration = 300,
       useVoronoi = true,
       clipVoronoi = true, // if true, masks each point with a circle... can turn off to slightly increase performance
       circleRadius = function(d, i) {
@@ -136,7 +138,7 @@ sucrose.models.scatter = function() {
           x.range([0, availableWidth]);
           y.range([availableHeight, 0]);
         }
-
+console.log(y.domain())
         if (nice) {
           y.nice();
         }
@@ -208,7 +210,7 @@ sucrose.models.scatter = function() {
 
 
       var t = d3.transition('scatter')
-          .duration(400)
+          .duration(duration)
           .ease(d3.easeLinear);
 
       function updateInteractiveLayer() {
@@ -683,6 +685,14 @@ sucrose.models.scatter = function() {
   chart.singlePoint = function(_) {
     if (!arguments.length) return singlePoint;
     singlePoint = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
     return chart;
   };
 

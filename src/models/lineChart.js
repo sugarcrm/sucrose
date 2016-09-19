@@ -12,7 +12,7 @@ sucrose.models.lineChart = function() {
       showLegend = true,
       direction = 'ltr',
       tooltip = null,
-      durationMs = 0,
+      duration = 0,
       tooltips = true,
       x,
       y,
@@ -92,7 +92,7 @@ sucrose.models.lineChart = function() {
       chart.container = this;
 
       chart.update = function() {
-        container.transition().duration(durationMs).call(chart);
+        container.transition().duration(duration).call(chart);
       };
 
       //------------------------------------------------------------
@@ -135,9 +135,7 @@ sucrose.models.lineChart = function() {
 
       isArrayData = Array.isArray(data[0].values[0]);
       if (isArrayData) {
-        lines.x(function(d) {
-          return d ? d[0] : 0;
-        });
+        lines.x(function(d) { return d ? d[0] : 0; });
         lines.y(function(d) { return d ? d[1] : 0; });
       } else {
         lines.x(function(d) { return d.x; });
@@ -282,7 +280,8 @@ sucrose.models.lineChart = function() {
           .orient('bottom')
           .ticks(null)
           .tickValues(null)
-          .showMaxMin(xIsDatetime);
+          .showMaxMin(xIsDatetime)
+          .highlightZero(false);
         yAxis
           .orient('left')
           .ticks(null)
@@ -327,11 +326,11 @@ sucrose.models.lineChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var wrap_bind = container.selectAll('g.sc-wrap.sc-lineChart').data([lineData]);
+        var wrap_bind = container.selectAll('g.sucrose.sc-wrap').data([lineData]);
         var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line-chart');
         var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
         var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-        var g = container.select('g.sc-chart-wrap').merge(g_entr);
+        var g = container.select('g.sc-chart-wrap');
 
         g_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
@@ -342,21 +341,21 @@ sucrose.models.lineChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
+        g_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = g.select('.sc-title-wrap');
 
-        var xAxis_entr = g_entr.append('g').attr('class', 'sc-x sc-axis');
-        var xAxis_wrap = g.select('.sc-x.sc-axis').merge(xAxis_entr);
-        var yAxis_entr = g_entr.append('g').attr('class', 'sc-y sc-axis');
-        var yAxis_wrap = g.select('.sc-y.sc-axis').merge(yAxis_entr);
+        g_entr.append('g').attr('class', 'sc-x sc-axis');
+        var xAxis_wrap = g.select('.sc-x.sc-axis');
+        g_entr.append('g').attr('class', 'sc-y sc-axis');
+        var yAxis_wrap = g.select('.sc-y.sc-axis');
 
-        var lines_entr = g_entr.append('g').attr('class', 'sc-lines-wrap');
-        var lines_wrap = g.select('.sc-lines-wrap').merge(lines_entr);
+        g_entr.append('g').attr('class', 'sc-lines-wrap');
+        var lines_wrap = g.select('.sc-lines-wrap');
 
-        var controls_entr = g_entr.append('g').attr('class', 'sc-controls-wrap');
-        var controls_wrap = g.select('.sc-controls-wrap').merge(controls_entr);
-        var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
+        g_entr.append('g').attr('class', 'sc-controls-wrap');
+        var controls_wrap = g.select('.sc-controls-wrap');
+        g_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = g.select('.sc-legend-wrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -542,7 +541,7 @@ sucrose.models.lineChart = function() {
 
         // final call to lines based on new dimensions
         // lines_wrap
-        //   .transition().duration(durationMs)
+        //   .transition().duration(duration)
         //     .call(lines);
 
         //------------------------------------------------------------
@@ -587,7 +586,7 @@ sucrose.models.lineChart = function() {
         state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(durationMs).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       controls.dispatch.on('legendClick', function(d, i) {
@@ -630,7 +629,7 @@ sucrose.models.lineChart = function() {
         state.isArea = lines.isArea();
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(durationMs).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -670,7 +669,7 @@ sucrose.models.lineChart = function() {
           state.isArea = eo.isArea;
         }
 
-        container.transition().duration(durationMs).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('chartClick', function() {
@@ -715,7 +714,7 @@ sucrose.models.lineChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, lines, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, lines, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, lines, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -878,9 +877,10 @@ sucrose.models.lineChart = function() {
     return chart;
   };
 
-  chart.delay = function(_) {
-    if (!arguments.length) { return durationMs; }
-    durationMs = _;
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    lines.duration(_);
     return chart;
   };
 

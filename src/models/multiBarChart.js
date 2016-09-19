@@ -4,8 +4,7 @@ sucrose.models.multiBarChart = function() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var vertical = true,
-      margin = {top: 10, right: 10, bottom: 10, left: 10},
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
       showTitle = false,
@@ -14,8 +13,6 @@ sucrose.models.multiBarChart = function() {
       direction = 'ltr',
       tooltip = null,
       tooltips = true,
-      scrollEnabled = true,
-      overflowHandler = function(d) { return; },
       x,
       y,
       state = {},
@@ -25,6 +22,9 @@ sucrose.models.multiBarChart = function() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
+      vertical = true,
+      scrollEnabled = true,
+      overflowHandler = function(d) { return; },
       hideEmptyGroups = true,
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
@@ -47,25 +47,25 @@ sucrose.models.multiBarChart = function() {
       scroll = sucrose.models.scroll();
 
   var tooltipContent = function(eo, graph) {
-    var key = eo.group.label,
-        y = eo.point.y,
-        x = Math.abs(y * 100 / eo.group._height).toFixed(1);
-    return '<h3>' + key + '</h3>' +
-           '<p>' + y + ' on ' + x + '</p>';
-  };
+        var key = eo.group.label,
+            y = eo.point.y,
+            x = Math.abs(y * 100 / eo.group._height).toFixed(1);
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
 
   var showTooltip = function(eo, offsetElement) {
-    var content = tooltipContent(eo, chart),
-        gravity = eo.value < 0 ?
-          vertical ? 'n' : 'e' :
-          vertical ? 's' : 'w';
+        var content = tooltipContent(eo, chart),
+            gravity = eo.value < 0 ?
+              vertical ? 'n' : 'e' :
+              vertical ? 's' : 'w';
 
-    tooltip = sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
-  };
+        tooltip = sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+      };
 
   var seriesClick = function(data, e, chart) {
-    return;
-  };
+        return;
+      };
 
   //============================================================
 
@@ -345,7 +345,8 @@ sucrose.models.multiBarChart = function() {
         .orient(vertical ? 'left' : 'bottom')
         .scale(y)
         .valueFormat(yValueFormat)
-        .tickPadding(4);
+        .tickPadding(4)
+        .showMaxMin(true);
 
       //------------------------------------------------------------
       // Main chart draw
@@ -815,7 +816,7 @@ sucrose.models.multiBarChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'duration', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -879,14 +880,6 @@ sucrose.models.multiBarChart = function() {
         margin[prop] = _[prop];
       }
     }
-    return chart;
-  };
-
-  chart.vertical = function(_) {
-    if (!arguments.length) {
-      return vertical;
-    }
-    vertical = _;
     return chart;
   };
 
@@ -974,6 +967,35 @@ sucrose.models.multiBarChart = function() {
     return chart;
   };
 
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    multibar.direction(_);
+    xAxis.direction(_);
+    yAxis.direction(_);
+    legend.direction(_);
+    controls.direction(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.vertical = function(_) {
+    if (!arguments.length) {
+      return vertical;
+    }
+    vertical = _;
+    return chart;
+  };
+
   chart.allowScroll = function(_) {
     if (!arguments.length) {
       return scrollEnabled;
@@ -990,32 +1012,11 @@ sucrose.models.multiBarChart = function() {
     return chart;
   };
 
-  chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
-    seriesClick = _;
-    return chart;
-  };
-
   chart.hideEmptyGroups = function(_) {
     if (!arguments.length) {
       return hideEmptyGroups;
     }
     hideEmptyGroups = _;
-    return chart;
-  };
-
-  chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
-    direction = _;
-    multibar.direction(_);
-    xAxis.direction(_);
-    yAxis.direction(_);
-    legend.direction(_);
-    controls.direction(_);
     return chart;
   };
 

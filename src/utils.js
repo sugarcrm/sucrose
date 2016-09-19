@@ -501,29 +501,54 @@ sucrose.utils.createTexture = function(defs, id, x, y) {
   return mask;
 };
 
+// sucrose.utils.numberFormatSI = function(d, p, c, l) {
+//     var fmtr, spec, si;
+//     if (isNaN(d)) {
+//         return d;
+//     }
+//     p = typeof p === 'undefined' ? 2 : p;
+//     c = typeof c === 'undefined' ? false : !!c;
+//     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+//     // d = d3.round(d, p);
+//     d = Math.round(d * 10 * p) / 10 * p;
+//     console.log('d: ', d);
+//     spec = c ? '$,' : ',';
+//     if (c && d < 1000 && d !== parseInt(d, 10)) {
+//         spec += '.2f';
+//     }
+//     if (d < 1 && d > -1) {
+//         spec += '.2s';
+//     }
+//     console.log('spec: ', spec);
+//     return fmtr(spec)(d);
+// };
+
 sucrose.utils.numberFormatSI = function(d, p, c, l) {
-    var fmtr, spec, si;
-    if (isNaN(d)) {
+    var fmtr, spec;
+    if (isNaN(d) || d === 0) {
         return d;
     }
     p = typeof p === 'undefined' ? 2 : p;
     c = typeof c === 'undefined' ? false : !!c;
-    fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-    // d = d3.round(d, p);
+    fmtr = typeof l === 'undefined' ? d3.formatPrefix : d3.formatLocale(l).formatPrefix;
+    // d = Math.round(d * 10 * p) / 10 * p;
     spec = c ? '$,' : ',';
+    // spec += '.' + 2 + 'r';
     if (c && d < 1000 && d !== parseInt(d, 10)) {
-        spec += '.2f';
+      spec += '.2f';
+    } else {
+      spec += '.' + p;
     }
-    if (d < 1 && d > -1) {
-        spec += '.2s';
+    if (d > -1 && d < 1) {
+      return fmtr(spec)(d);
     }
-    return fmtr(spec)(d);
+    return fmtr(spec,1.2e6)(d);
 };
 
 sucrose.utils.numberFormatRound = function(d, p, c, l) {
     var fmtr, spec;
     if (isNaN(d)) {
-        return d;
+      return d;
     }
     c = typeof c === 'undefined' ? false : !!c;
     p = typeof p === 'undefined' ? c ? 2 : 0 : p;
@@ -535,7 +560,7 @@ sucrose.utils.numberFormatRound = function(d, p, c, l) {
 sucrose.utils.isValidDate = function(d) {
     var testDate;
     if (!d) {
-        return false;
+      return false;
     }
     testDate = new Date(d);
     return testDate instanceof Date && !isNaN(testDate.valueOf());
@@ -545,19 +570,19 @@ sucrose.utils.dateFormat = function(d, p, l) {
     var date, locale, spec, fmtr;
     date = new Date(d);
     if (!(date instanceof Date) || isNaN(date.valueOf())) {
-        return d;
+      return d;
     }
     if (l && l.hasOwnProperty('timeFormat')) {
-        // Use rebuilt locale
-        spec = p.indexOf('%') !== -1 ? p : '%x';
-        fmtr = l.timeFormat;
+      // Use rebuilt locale
+      spec = p.indexOf('%') !== -1 ? p : '%x';
+      fmtr = l.timeFormat;
     } else {
-        // Ensure locality object has all needed properties
-        // TODO: this is expensive so consider removing
-        locale = sucrose.utils.buildLocality(l);
-        fmtr = d3.timeFormatLocale(locale).format;
-        spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
-        // TODO: if not explicit pattern provided, we should use .multi()
+      // Ensure locality object has all needed properties
+      // TODO: this is expensive so consider removing
+      locale = sucrose.utils.buildLocality(l);
+      fmtr = d3.timeFormatLocale(locale).format;
+      spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
+      // TODO: if not explicit pattern provided, we should use .multi()
     }
     return fmtr(spec)(date);
 };
@@ -566,47 +591,47 @@ sucrose.utils.buildLocality = function(l, d) {
     var locale = l || {},
         deep = !!d,
         unfer = function(a) {
-            return a.join('|').split('|').map(function(b) {
-                return !(b) ? '' : isNaN(b) ? b : +b;
-            });
+          return a.join('|').split('|').map(function(b) {
+            return !(b) ? '' : isNaN(b) ? b : +b;
+          });
         },
         definition = {
-            'decimal': '.',
-            'thousands': ',',
-            'grouping': [3],
-            'currency': ['$', ''],
-            'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
-            'date': '%b %-d, %Y', //%x
-            'time': '%-I:%M:%S', //%X
-            'periods': ['AM', 'PM'],
-            'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-            'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-            'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-            'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            // Custom patterns
-            'full': '%A, %c',
-            'long': '%c',
-            'medium': '%x, %X %p',
-            'short': '%-m/%-d/%y, %-I:%M %p',
-            'yMMMEd': '%a, %x',
-            'yMEd': '%a, %-m/%-d/%Y',
-            'yMMMMd': '%B %-d, %Y',
-            'yMMMd': '%x',
-            'yMd': '%-m/%-d/%Y',
-            'yMMMM': '%B %Y',
-            'yMMM': '%b %Y',
-            'MMMd': '%b %-d',
-            'MMMM': '%B',
-            'MMM': '%b',
-            'y': '%Y'
+          'decimal': '.',
+          'thousands': ',',
+          'grouping': [3],
+          'currency': ['$', ''],
+          'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
+          'date': '%b %-d, %Y', //%x
+          'time': '%-I:%M:%S', //%X
+          'periods': ['AM', 'PM'],
+          'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+          'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+          'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+          'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          // Custom patterns
+          'full': '%A, %c',
+          'long': '%c',
+          'medium': '%x, %X %p',
+          'short': '%-m/%-d/%y, %-I:%M %p',
+          'yMMMEd': '%a, %x',
+          'yMEd': '%a, %-m/%-d/%Y',
+          'yMMMMd': '%B %-d, %Y',
+          'yMMMd': '%x',
+          'yMd': '%-m/%-d/%Y',
+          'yMMMM': '%B %Y',
+          'yMMM': '%b %Y',
+          'MMMd': '%b %-d',
+          'MMMM': '%B',
+          'MMM': '%b',
+          'y': '%Y'
         };
 
     for (var key in locale) {
-        var d;
-        if (l.hasOwnProperty(key)) {
-            d = locale[key];
-            definition[key] = !deep || !Array.isArray(d) ? d : unfer(d);
-        }
+      var d;
+      if (l.hasOwnProperty(key)) {
+        d = locale[key];
+        definition[key] = !deep || !Array.isArray(d) ? d : unfer(d);
+      }
     }
 
     return definition;

@@ -763,29 +763,54 @@ sucrose.utils.createTexture = function(defs, id, x, y) {
   return mask;
 };
 
+// sucrose.utils.numberFormatSI = function(d, p, c, l) {
+//     var fmtr, spec, si;
+//     if (isNaN(d)) {
+//         return d;
+//     }
+//     p = typeof p === 'undefined' ? 2 : p;
+//     c = typeof c === 'undefined' ? false : !!c;
+//     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+//     // d = d3.round(d, p);
+//     d = Math.round(d * 10 * p) / 10 * p;
+//     console.log('d: ', d);
+//     spec = c ? '$,' : ',';
+//     if (c && d < 1000 && d !== parseInt(d, 10)) {
+//         spec += '.2f';
+//     }
+//     if (d < 1 && d > -1) {
+//         spec += '.2s';
+//     }
+//     console.log('spec: ', spec);
+//     return fmtr(spec)(d);
+// };
+
 sucrose.utils.numberFormatSI = function(d, p, c, l) {
-    var fmtr, spec, si;
-    if (isNaN(d)) {
+    var fmtr, spec;
+    if (isNaN(d) || d === 0) {
         return d;
     }
     p = typeof p === 'undefined' ? 2 : p;
     c = typeof c === 'undefined' ? false : !!c;
-    fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-    // d = d3.round(d, p);
+    fmtr = typeof l === 'undefined' ? d3.formatPrefix : d3.formatLocale(l).formatPrefix;
+    // d = Math.round(d * 10 * p) / 10 * p;
     spec = c ? '$,' : ',';
+    // spec += '.' + 2 + 'r';
     if (c && d < 1000 && d !== parseInt(d, 10)) {
-        spec += '.2f';
+      spec += '.2f';
+    } else {
+      spec += '.' + p;
     }
-    if (d < 1 && d > -1) {
-        spec += '.2s';
+    if (d > -1 && d < 1) {
+      return fmtr(spec)(d);
     }
-    return fmtr(spec)(d);
+    return fmtr(spec,1.2e6)(d);
 };
 
 sucrose.utils.numberFormatRound = function(d, p, c, l) {
     var fmtr, spec;
     if (isNaN(d)) {
-        return d;
+      return d;
     }
     c = typeof c === 'undefined' ? false : !!c;
     p = typeof p === 'undefined' ? c ? 2 : 0 : p;
@@ -797,7 +822,7 @@ sucrose.utils.numberFormatRound = function(d, p, c, l) {
 sucrose.utils.isValidDate = function(d) {
     var testDate;
     if (!d) {
-        return false;
+      return false;
     }
     testDate = new Date(d);
     return testDate instanceof Date && !isNaN(testDate.valueOf());
@@ -807,19 +832,19 @@ sucrose.utils.dateFormat = function(d, p, l) {
     var date, locale, spec, fmtr;
     date = new Date(d);
     if (!(date instanceof Date) || isNaN(date.valueOf())) {
-        return d;
+      return d;
     }
     if (l && l.hasOwnProperty('timeFormat')) {
-        // Use rebuilt locale
-        spec = p.indexOf('%') !== -1 ? p : '%x';
-        fmtr = l.timeFormat;
+      // Use rebuilt locale
+      spec = p.indexOf('%') !== -1 ? p : '%x';
+      fmtr = l.timeFormat;
     } else {
-        // Ensure locality object has all needed properties
-        // TODO: this is expensive so consider removing
-        locale = sucrose.utils.buildLocality(l);
-        fmtr = d3.timeFormatLocale(locale).format;
-        spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
-        // TODO: if not explicit pattern provided, we should use .multi()
+      // Ensure locality object has all needed properties
+      // TODO: this is expensive so consider removing
+      locale = sucrose.utils.buildLocality(l);
+      fmtr = d3.timeFormatLocale(locale).format;
+      spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
+      // TODO: if not explicit pattern provided, we should use .multi()
     }
     return fmtr(spec)(date);
 };
@@ -828,47 +853,47 @@ sucrose.utils.buildLocality = function(l, d) {
     var locale = l || {},
         deep = !!d,
         unfer = function(a) {
-            return a.join('|').split('|').map(function(b) {
-                return !(b) ? '' : isNaN(b) ? b : +b;
-            });
+          return a.join('|').split('|').map(function(b) {
+            return !(b) ? '' : isNaN(b) ? b : +b;
+          });
         },
         definition = {
-            'decimal': '.',
-            'thousands': ',',
-            'grouping': [3],
-            'currency': ['$', ''],
-            'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
-            'date': '%b %-d, %Y', //%x
-            'time': '%-I:%M:%S', //%X
-            'periods': ['AM', 'PM'],
-            'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-            'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-            'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-            'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            // Custom patterns
-            'full': '%A, %c',
-            'long': '%c',
-            'medium': '%x, %X %p',
-            'short': '%-m/%-d/%y, %-I:%M %p',
-            'yMMMEd': '%a, %x',
-            'yMEd': '%a, %-m/%-d/%Y',
-            'yMMMMd': '%B %-d, %Y',
-            'yMMMd': '%x',
-            'yMd': '%-m/%-d/%Y',
-            'yMMMM': '%B %Y',
-            'yMMM': '%b %Y',
-            'MMMd': '%b %-d',
-            'MMMM': '%B',
-            'MMM': '%b',
-            'y': '%Y'
+          'decimal': '.',
+          'thousands': ',',
+          'grouping': [3],
+          'currency': ['$', ''],
+          'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
+          'date': '%b %-d, %Y', //%x
+          'time': '%-I:%M:%S', //%X
+          'periods': ['AM', 'PM'],
+          'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+          'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+          'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+          'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          // Custom patterns
+          'full': '%A, %c',
+          'long': '%c',
+          'medium': '%x, %X %p',
+          'short': '%-m/%-d/%y, %-I:%M %p',
+          'yMMMEd': '%a, %x',
+          'yMEd': '%a, %-m/%-d/%Y',
+          'yMMMMd': '%B %-d, %Y',
+          'yMMMd': '%x',
+          'yMd': '%-m/%-d/%Y',
+          'yMMMM': '%B %Y',
+          'yMMM': '%b %Y',
+          'MMMd': '%b %-d',
+          'MMMM': '%B',
+          'MMM': '%b',
+          'y': '%Y'
         };
 
     for (var key in locale) {
-        var d;
-        if (l.hasOwnProperty(key)) {
-            d = locale[key];
-            definition[key] = !deep || !Array.isArray(d) ? d : unfer(d);
-        }
+      var d;
+      if (l.hasOwnProperty(key)) {
+        d = locale[key];
+        definition[key] = !deep || !Array.isArray(d) ? d : unfer(d);
+      }
     }
 
     return definition;
@@ -1807,17 +1832,14 @@ sucrose.models.legend = function() {
       var series_entr = series_bind.enter()
         .append('g').attr('class', 'sc-series')
           .on('mouseover', function(d, i) {
-            // dispatch.legendMouseover(d, i);  //TODO: Make consistent with other event objects
             dispatch.call('legendMouseover', this, d);
           })
           .on('mouseout', function(d, i) {
-            // dispatch.legendMouseout(d, i);
             dispatch.call('legendMouseout', this, d);
           })
           .on('click', function(d, i) {
             d3.event.preventDefault();
             d3.event.stopPropagation();
-            // dispatch.legendClick(d, i);
             dispatch.call('legendClick', this, d);
           });
       var series = g.selectAll('.sc-series').merge(series_entr);
@@ -3028,6 +3050,8 @@ sucrose.models.scatter = function() {
       padData = false, // If true, adds half a data points width to front and back, for lining up a line chart with a bar chart
       padDataOuter = 0.1, //outerPadding to imitate ordinal scale outer padding
       clipEdge = false, // if true, masks points within x and y scale
+      delay = 0,
+      duration = 300,
       useVoronoi = true,
       clipVoronoi = true, // if true, masks each point with a circle... can turn off to slightly increase performance
       circleRadius = function(d, i) {
@@ -3208,7 +3232,7 @@ sucrose.models.scatter = function() {
 
 
       var t = d3.transition('scatter')
-          .duration(400)
+          .duration(duration)
           .ease(d3.easeLinear);
 
       function updateInteractiveLayer() {
@@ -3683,6 +3707,14 @@ sucrose.models.scatter = function() {
   chart.singlePoint = function(_) {
     if (!arguments.length) return singlePoint;
     singlePoint = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
     return chart;
   };
 
@@ -7711,10 +7743,12 @@ sucrose.models.line = function() {
       getY = function(d) { return d.y; }, // accessor to get the y value from a data point
       defined = function(d, i) { return !isNaN(getY(d, i)) && getY(d, i) !== null; }, // allows a line to be not continuous when it is not defined
       isArea = function(d) { return (d && d.area) || false; }, // decides if a line is an area or just a line
-      clipEdge = false, // if true, masks lines within x and y scale
+      interpolate = 'linear', // controls the line interpolation
       x, //can be accessed via chart.xScale()
       y, //can be accessed via chart.yScale()
-      interpolate = 'linear', // controls the line interpolation
+      clipEdge = false, // if true, masks lines within x and y scale
+      delay = 0, // transition
+      duration = 300, // transition
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
       classes = function(d, i) { return 'sc-group sc-series-' + d.series; };
@@ -7724,10 +7758,9 @@ sucrose.models.line = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var x0, y0; //used to store previous scales
+  // var x0, y0; //used to store previous scales
 
   //============================================================
-
 
   function chart(selection) {
     selection.each(function(data) {
@@ -7742,7 +7775,7 @@ sucrose.models.line = function() {
             interpolate === 'basis' ? d3.curveBasis : d3.natural;
 
       var t = d3.transition('scatter')
-          .duration(400)
+          .duration(duration)
           .ease(d3.easeLinear);
 
       //set up the gradient constructor function
@@ -8021,6 +8054,23 @@ sucrose.models.line = function() {
     return chart;
   };
 
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    scatter.duration(_);
+    return chart;
+  };
+
   chart.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
@@ -8064,7 +8114,7 @@ sucrose.models.lineChart = function() {
       showLegend = true,
       direction = 'ltr',
       tooltip = null,
-      durationMs = 0,
+      duration = 0,
       tooltips = true,
       x,
       y,
@@ -8144,7 +8194,7 @@ sucrose.models.lineChart = function() {
       chart.container = this;
 
       chart.update = function() {
-        container.transition().duration(durationMs).call(chart);
+        container.transition().duration(duration).call(chart);
       };
 
       //------------------------------------------------------------
@@ -8187,9 +8237,7 @@ sucrose.models.lineChart = function() {
 
       isArrayData = Array.isArray(data[0].values[0]);
       if (isArrayData) {
-        lines.x(function(d) {
-          return d ? d[0] : 0;
-        });
+        lines.x(function(d) { return d ? d[0] : 0; });
         lines.y(function(d) { return d ? d[1] : 0; });
       } else {
         lines.x(function(d) { return d.x; });
@@ -8379,7 +8427,7 @@ sucrose.models.lineChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var wrap_bind = container.selectAll('g.sc-wrap.sc-lineChart').data([lineData]);
+        var wrap_bind = container.selectAll('g.sucrose.sc-wrap').data([lineData]);
         var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line-chart');
         var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
         var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
@@ -8594,7 +8642,7 @@ sucrose.models.lineChart = function() {
 
         // final call to lines based on new dimensions
         // lines_wrap
-        //   .transition().duration(durationMs)
+        //   .transition().duration(duration)
         //     .call(lines);
 
         //------------------------------------------------------------
@@ -8639,7 +8687,7 @@ sucrose.models.lineChart = function() {
         state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(durationMs).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       controls.dispatch.on('legendClick', function(d, i) {
@@ -8682,7 +8730,7 @@ sucrose.models.lineChart = function() {
         state.isArea = lines.isArea();
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(durationMs).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -8722,7 +8770,7 @@ sucrose.models.lineChart = function() {
           state.isArea = eo.isArea;
         }
 
-        container.transition().duration(durationMs).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('chartClick', function() {
@@ -8767,7 +8815,7 @@ sucrose.models.lineChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, lines, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, lines, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, lines, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -8930,9 +8978,10 @@ sucrose.models.lineChart = function() {
     return chart;
   };
 
-  chart.delay = function(_) {
-    if (!arguments.length) { return durationMs; }
-    durationMs = _;
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    lines.duration(_);
     return chart;
   };
 
@@ -9531,7 +9580,9 @@ sucrose.models.multiBar = function() {
       vertical = true,
       baseDimension = 60,
       direction = 'ltr',
-      delay = 200,
+      clipEdge = false, // if true, masks bars within x and y scale
+      delay = 0, // transition
+      duration = 300, // transition
       xDomain,
       yDomain,
       nice = false,
@@ -9686,19 +9737,10 @@ sucrose.models.multiBar = function() {
             gap = baseDimension * (stacked ? 0.25 : 1),
             outerPadding = Math.max(0.25, (maxX - (groupCount * boundsWidth) - gap) / (2 * boundsWidth));
 
-        if (withLine) {
-          /*TODO: used in reports to keep bars from being too wide
-            breaks pareto chart, so need to update line to adjust x position */
-          x .domain(xDomain)
-            .range([0, maxX])
-            .paddingInner(0.3)
-            .paddingOuter(outerPadding);
-        } else {
-          x .domain(xDomain)
-            .range([0, maxX])
-            .paddingInner(0.25)
-            .paddingOuter(outerPadding);
-        }
+        x .domain(xDomain)
+          .range([0, maxX])
+          .paddingInner(withLine ? 0.3 : 0.25)
+          .paddingOuter(outerPadding);
 
         var yDomain = yDomain || d3.extent(seriesData.map(function(d) {
                 var posOffset = (vertical ? 0 : d.y),
@@ -9893,12 +9935,12 @@ sucrose.models.multiBar = function() {
         .attr('class', function(d, i) {
           return 'sc-bar ' + (getY(d, i) < 0 ? 'negative' : 'positive');
         })
-        .attr('transform', function(d, i, j) {
+        .attr('transform', function(d, i) {
           var trans = stacked ? {
                 x: Math.round(x(getX(d, i))),
                 y: Math.round(y(d.y0))
               } :
-              { x: Math.round(j * barThickness() + x(getX(d, i))),
+              { x: Math.round(d.series * barThickness() + x(getX(d, i))),
                 y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
               };
           return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
@@ -10330,14 +10372,6 @@ sucrose.models.multiBar = function() {
     return chart;
   };
 
-  chart.clipEdge = function(_) {
-    if (!arguments.length) {
-      return clipEdge;
-    }
-    clipEdge = _;
-    return chart;
-  };
-
   chart.barColor = function(_) {
     if (!arguments.length) {
       return barColor;
@@ -10367,6 +10401,22 @@ sucrose.models.multiBar = function() {
       return delay;
     }
     delay = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    return chart;
+  };
+
+  chart.clipEdge = function(_) {
+    if (!arguments.length) {
+      return clipEdge;
+    }
+    clipEdge = _;
     return chart;
   };
 
@@ -10450,8 +10500,7 @@ sucrose.models.multiBarChart = function() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var vertical = true,
-      margin = {top: 10, right: 10, bottom: 10, left: 10},
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
       showTitle = false,
@@ -10460,8 +10509,6 @@ sucrose.models.multiBarChart = function() {
       direction = 'ltr',
       tooltip = null,
       tooltips = true,
-      scrollEnabled = true,
-      overflowHandler = function(d) { return; },
       x,
       y,
       state = {},
@@ -10471,6 +10518,9 @@ sucrose.models.multiBarChart = function() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
+      vertical = true,
+      scrollEnabled = true,
+      overflowHandler = function(d) { return; },
       hideEmptyGroups = true,
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
@@ -10493,25 +10543,25 @@ sucrose.models.multiBarChart = function() {
       scroll = sucrose.models.scroll();
 
   var tooltipContent = function(eo, graph) {
-    var key = eo.group.label,
-        y = eo.point.y,
-        x = Math.abs(y * 100 / eo.group._height).toFixed(1);
-    return '<h3>' + key + '</h3>' +
-           '<p>' + y + ' on ' + x + '</p>';
-  };
+        var key = eo.group.label,
+            y = eo.point.y,
+            x = Math.abs(y * 100 / eo.group._height).toFixed(1);
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
 
   var showTooltip = function(eo, offsetElement) {
-    var content = tooltipContent(eo, chart),
-        gravity = eo.value < 0 ?
-          vertical ? 'n' : 'e' :
-          vertical ? 's' : 'w';
+        var content = tooltipContent(eo, chart),
+            gravity = eo.value < 0 ?
+              vertical ? 'n' : 'e' :
+              vertical ? 's' : 'w';
 
-    tooltip = sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
-  };
+        tooltip = sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+      };
 
   var seriesClick = function(data, e, chart) {
-    return;
-  };
+        return;
+      };
 
   //============================================================
 
@@ -10791,7 +10841,8 @@ sucrose.models.multiBarChart = function() {
         .orient(vertical ? 'left' : 'bottom')
         .scale(y)
         .valueFormat(yValueFormat)
-        .tickPadding(4);
+        .tickPadding(4)
+        .showMaxMin(true);
 
       //------------------------------------------------------------
       // Main chart draw
@@ -11261,7 +11312,7 @@ sucrose.models.multiBarChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'duration', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -11325,14 +11376,6 @@ sucrose.models.multiBarChart = function() {
         margin[prop] = _[prop];
       }
     }
-    return chart;
-  };
-
-  chart.vertical = function(_) {
-    if (!arguments.length) {
-      return vertical;
-    }
-    vertical = _;
     return chart;
   };
 
@@ -11420,6 +11463,35 @@ sucrose.models.multiBarChart = function() {
     return chart;
   };
 
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    multibar.direction(_);
+    xAxis.direction(_);
+    yAxis.direction(_);
+    legend.direction(_);
+    controls.direction(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.vertical = function(_) {
+    if (!arguments.length) {
+      return vertical;
+    }
+    vertical = _;
+    return chart;
+  };
+
   chart.allowScroll = function(_) {
     if (!arguments.length) {
       return scrollEnabled;
@@ -11436,19 +11508,1114 @@ sucrose.models.multiBarChart = function() {
     return chart;
   };
 
-  chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
-    seriesClick = _;
-    return chart;
-  };
-
   chart.hideEmptyGroups = function(_) {
     if (!arguments.length) {
       return hideEmptyGroups;
     }
     hideEmptyGroups = _;
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+sucrose.models.paretoChart = function() {
+  //'use strict';
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      tooltip = null,
+      tooltips = true,
+      x,
+      y,
+      clipEdge = false, // if true, masks lines within x and y scale
+      delay = 0, // transition
+      duration = 300, // transition
+      state = {},
+      strings = {
+        barlegend: {close: 'Hide bar legend', open: 'Show bar legend'},
+        linelegend: {close: 'Hide line legend', open: 'Show line legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      locality = sucrose.utils.buildLocality(),
+      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var multibar = sucrose.models.multiBar()
+      .stacked(true)
+      .clipEdge(false)
+      .withLine(true)
+      .nice(false),
+    lines1 = sucrose.models.line()
+      .color(function(d, i) { return '#FFF'; })
+      .fill(function(d, i) { return '#FFF'; })
+      .useVoronoi(false)
+      .nice(false),
+    lines2 = sucrose.models.line()
+      .useVoronoi(false)
+      .color('data')
+      .nice(false),
+    xAxis = sucrose.models.axis(),
+    yAxis = sucrose.models.axis(),
+    barLegend = sucrose.models.legend()
+      .align('left')
+      .position('middle'),
+    lineLegend = sucrose.models.legend()
+      .align('right')
+      .position('middle');
+
+  var tooltipBar = function(key, x, y, e, graph) {
+    return '<p><b>' + key + '</b></p>' +
+           '<p><b>' + y + '</b></p>' +
+           '<p><b>' + x + '%</b></p>';
+  };
+  var tooltipLine = function(key, x, y, e, graph) {
+    return '<p><p>' + key + ': <b>' + y + '</b></p>';
+  };
+  var tooltipQuota = function(key, x, y, e, graph) {
+    return '<p>' + e.key + ': <b>' + y + '</b></p>';
+  };
+
+  var showTooltip = function(eo, offsetElement, dataGroup) {
+    var key = eo.series.key,
+        per = (eo.point.y * 100 / dataGroup[eo.pointIndex].t).toFixed(1),
+        amt = lines2.y()(eo.point, eo.pointIndex),
+        content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
+
+    tooltip = sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+  };
+
+  var showQuotaTooltip = function(eo, offsetElement) {
+    var content = tooltipQuota(eo.key, 0, eo.val, eo, chart);
+    tooltip = sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+  };
+
+  var seriesClick = function(data, eo, chart, container) {
+    return;
+  };
+
+  var getAbsoluteXY = function(element) {
+    var viewportElement = document.documentElement,
+      box = element.getBoundingClientRect(),
+      scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft,
+      scrollTop = viewportElement.scrollTop + document.body.scrollTop,
+      x = box.left + scrollLeft,
+      y = box.top + scrollTop;
+
+    return {'x': x, 'y': y};
+  };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this);
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null;
+
+      var availableWidth = (width || parseInt(container.style('width'), 10) || 960) - margin.left - margin.right,
+          availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom,
+          innerWidth = availableWidth,
+          innerHeight = availableHeight,
+          innerMargin = {top: 0, right: 0, bottom: 0, left: 0},
+          maxBarLegendWidth = 0,
+          maxLineLegendWidth = 0,
+          widthRatio = 0,
+          headerHeight = 0,
+          pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
+          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var baseDimension = multibar.stacked() ? 72 : 32;
+
+      var xValueFormat = function(d, i, selection, noEllipsis) {
+            // Set axis to use trimmed array rather than data
+            var value = groupLabels && Array.isArray(groupLabels) ?
+                          groupLabels[i] || d:
+                          d;
+            var label = xIsDatetime ?
+                          sucrose.utils.dateFormat(value, '%x', chart.locality()) :
+                          value;
+            var width = Math.max(baseDimension * 2, 75);
+            return !noEllipsis ?
+                      sucrose.utils.stringEllipsify(label, container, width) :
+                      label;
+          };
+
+      var yValueFormat = function(d) {
+            return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+          };
+
+      chart.container = this;
+
+      chart.update = function() {
+        container.transition().call(chart);
+      };
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData (d) {
+        if (d && d.length && d.filter(function(d) { return d.values.length; }).length) {
+          container.selectAll('.sc-noData').remove();
+          return false;
+        }
+
+        container.select('.sucrose.sc-wrap').remove();
+
+        var w = width || parseInt(container.style('width'), 10) || 960,
+            h = height || parseInt(container.style('height'), 10) || 400,
+            noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
+
+        noDataText.enter().append('text')
+          .attr('class', 'sucrose sc-noData')
+          .attr('dy', '-.7em')
+          .style('text-anchor', 'middle');
+
+        noDataText
+          .attr('x', margin.left + w / 2)
+          .attr('y', margin.top + h / 2)
+          .text(function(d) {
+            return d;
+          });
+
+        return true;
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series;
+
+        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+        series.values.map(function(d) {
+          d.active = series.active;
+        });
+
+        // if you have activated a data series, inactivate the rest
+        if (series.active === 'active') {
+          data
+            .filter(function(d) {
+              return d.active !== 'active';
+            })
+            .map(function(d) {
+              d.active = 'inactive';
+              d.values.map(function(d) {
+                d.active = 'inactive';
+              });
+              return d;
+            });
+        }
+
+        // if there are no active data series, activate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data
+            .map(function(d) {
+              d.active = '';
+              d.values.map(function(d) {
+                d.active = '';
+              });
+              container.selectAll('.sc-series').classed('sc-inactive', false);
+              return d;
+            });
+        }
+
+        container.call(chart);
+      };
+
+      var dataBars = data.filter(function(d) {
+            return !d.disabled && (!d.type || d.type === 'bar');
+          });
+
+      var dataLines = data.filter(function(d) {
+            return !d.disabled && d.type === 'line';
+          }).map(function(lineData) {
+            if (!multibar.stacked()) {
+              lineData.values = lineData.valuesOrig.map(function(v, i) {
+                return {'series': v.series, 'x': (v.x + v.series * 0.25 - i * 0.25), 'y': v.y};
+              });
+            } else {
+              lineData.values.map(function(v) {
+                v.y = 0;
+              });
+              dataBars
+                .map(function(v, i) {
+                  v.values.map(function(v, i) {
+                    lineData.values[i].y += v.y;
+                  });
+                });
+              lineData.values.map(function(v, i) {
+                if (i > 0) {
+                  v.y += lineData.values[i - 1].y;
+                }
+              });
+            }
+            return lineData;
+          });
+
+      var dataGroup = properties.groupData,
+          groupLabels = dataGroup.map(function(d) {
+            return [].concat(d.l)[0] || chart.strings().noLabel;
+          }),
+          quotaValue = properties.quota || 0,
+          quotaLabel = properties.quotaLabel || '',
+          targetQuotaValue = properties.targetQuota || 0,
+          targetQuotaLabel = properties.targetQuotaLabel || '';
+
+      dataBars = dataBars.length ? dataBars : [{values: []}];
+      dataLines = dataLines.length ? dataLines : [{values: []}];
+
+      // line legend data
+      var lineLegendData = data.filter(function(d) {
+            return d.type === 'line';
+          });
+      lineLegendData.push({
+        'key': quotaLabel,
+        'type': 'dash',
+        'color': '#444',
+        'series': lineLegendData.length,
+        'values': {'series': lineLegendData.length, 'x': 0, 'y': 0}
+      });
+      if (targetQuotaValue > 0) {
+        lineLegendData.push({
+          'key': targetQuotaLabel,
+          'type': 'dash',
+          'color': '#777',
+          'series': lineLegendData.length,
+          'values': {'series': lineLegendData.length + 1, 'x': 0, 'y': 0}
+        });
+      }
+
+      var seriesX = data.filter(function(d) {
+            return !d.disabled;
+          }).map(function(d) {
+            return d.valuesOrig.map(function(d, i) {
+              return getX(d, i);
+            });
+          });
+
+      var seriesY = data.map(function(d) {
+            return d.valuesOrig.map(function(d, i) {
+              return getY(d, i);
+            });
+          });
+
+      //------------------------------------------------------------
+      // Setup Scales
+
+      x = multibar.xScale();
+      y = multibar.yScale();
+
+      xAxis
+        .orient('bottom')
+        .scale(x)
+        .valueFormat(xValueFormat)
+        .tickSize(0)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false);
+
+      yAxis
+        .orient('left')
+        .scale(y)
+        .valueFormat(yValueFormat)
+        .tickPadding(7)
+        .showMaxMin(true);
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pareto-chart');
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
+
+      g_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('width', availableWidth + margin.left + margin.right)
+        .attr('height', availableHeight + margin.top + margin.bottom)
+        .attr('fill', '#FFF');
+
+      g_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = g.select('.sc-title-wrap');
+      g_entr.append('g').attr('class', 'sc-x sc-axis');
+      var xAxis_wrap = g.select('.sc-x.sc-axis');
+      g_entr.append('g').attr('class', 'sc-y sc-axis');
+      var yAxis_wrap = g.select('.sc-y.sc-axis');
+      g_entr.append('g').attr('class', 'sc-bars-wrap');
+      var bars_wrap = g.select('.sc-bars-wrap');
+      g_entr.append('g').attr('class', 'sc-quota-wrap');
+      var quota_wrap = g.select('.sc-quota-wrap');
+
+      g_entr.append('g').attr('class', 'sc-lines-wrap1');
+      var lines_wrap1 = g.select('.sc-lines-wrap1');
+      g_entr.append('g').attr('class', 'sc-lines-wrap2');
+      var lines_wrap2 = g.select('.sc-lines-wrap2');
+
+      g_entr.append('g').attr('class', 'sc-legend-wrap sc-bar-legend');
+      var barLegend_wrap = g.select('.sc-legend-wrap.sc-bar-legend');
+      g_entr.append('g').attr('class', 'sc-legend-wrap sc-line-legend');
+      var lineLegend_wrap = g.select('.sc-legend-wrap.sc-line-legend');
+
+      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      //------------------------------------------------------------
+      // Title & Legends
+
+      title_wrap.select('.sc-title').remove();
+
+      if (showTitle) {
+        title_wrap
+          .append('text')
+          .attr('class', 'sc-title')
+          .attr('x', direction === 'rtl' ? availableWidth : 0)
+          .attr('y', 0)
+          .attr('dy', '.75em')
+          .attr('text-anchor', 'start')
+          .attr('stroke', 'none')
+          .attr('fill', 'black')
+          .text(properties.title);
+
+        titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
+        headerHeight += titleBBox.height;
+      }
+
+      if (showLegend) {
+
+        // bar series legend
+        barLegend
+          .id('barlegend_' + chart.id())
+          .strings(chart.strings().barlegend)
+          .align('left')
+          .height(availableHeight - innerMargin.top);
+        barLegend_wrap
+          .datum(
+            data.filter(function(d) {
+              return d.type === 'bar';
+            })
+          )
+          .call(barLegend);
+
+        maxBarLegendWidth = barLegend.calculateWidth();
+
+        // line series legend
+        lineLegend
+          .id('linelegend_' + chart.id())
+          .strings(chart.strings().linelegend)
+          .align('right')
+          .height(availableHeight - innerMargin.top);
+        lineLegend_wrap
+          .datum(lineLegendData)
+          .call(lineLegend);
+
+        maxLineLegendWidth = lineLegend.calculateWidth();
+
+        // calculate proportional available space
+        widthRatio = availableWidth / (maxBarLegendWidth + maxLineLegendWidth);
+
+        barLegend
+          .arrange(Math.floor(widthRatio * maxBarLegendWidth));
+
+        lineLegend
+          .arrange(Math.floor(widthRatio * maxLineLegendWidth));
+
+        barLegend_wrap
+          .attr('transform', 'translate(' + (direction === 'rtl' ? availableWidth - barLegend.width() : 0) + ',' + innerMargin.top + ')');
+        lineLegend_wrap
+          .attr('transform', 'translate(' + (direction === 'rtl' ? 0 : availableWidth - lineLegend.width()) + ',' + innerMargin.top + ')');
+      }
+
+      // Recalculate inner margins based on legend size
+      headerHeight += Math.max(barLegend.height(), lineLegend.height()) + 4;
+      innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+
+      //------------------------------------------------------------
+      // Initial call of Main Chart Components
+
+      var limitY = Math.max(d3.max(d3.merge(seriesY)), quotaValue, targetQuotaValue || 0);
+      var forceY = [0, Math.ceil(limitY * 0.1) * 10];
+
+      // Main Bar Chart
+      multibar
+        .width(innerWidth)
+        .height(innerHeight)
+        .forceY(forceY)
+        .id(chart.id());
+      bars_wrap
+        .datum(dataBars)
+        .call(multibar);
+
+      // Main Line Chart
+      lines1
+        .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        .width(innerWidth)
+        .height(innerHeight)
+        .forceY(forceY)
+        .useVoronoi(false)
+        .id('outline_' + chart.id());
+      lines2
+        .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        .width(innerWidth)
+        .height(innerHeight)
+        .forceY(forceY)
+        .useVoronoi(false)
+        .size(pointSize)
+        .sizeRange([pointSize, pointSize])
+        .sizeDomain([pointSize, pointSize])
+        .id('foreground_' + chart.id());
+      lines_wrap1
+        .datum(dataLines)
+        .call(lines1);
+      lines_wrap2
+        .datum(dataLines)
+        .call(lines2);
+
+      // Axes
+      xAxis_wrap
+        .call(xAxis);
+
+      yAxis_wrap
+        .style('opacity', dataBars.length ? 1 : 0)
+        .call(yAxis);
+
+      var xAxisMargin = xAxis.margin();
+      var yAxisMargin = yAxis.margin();
+
+      function setInnerMargins() {
+        innerMargin.left = Math.max(quotaTextWidth, xAxisMargin.left, yAxisMargin.left);
+        innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
+        innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
+        innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+        setInnerDimensions();
+      }
+
+      function setInnerDimensions() {
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        // Recalc chart dimensions and scales based on new inner dimensions
+        multibar.resetDimensions(innerWidth, innerHeight);
+      }
+
+      //------------------------------------------------------------
+      // Quota Line
+
+      quota_wrap.selectAll('line').remove();
+      yAxis_wrap.selectAll('text.sc-quotaValue').remove();
+      yAxis_wrap.selectAll('text.sc-targetQuotaValue').remove();
+
+      var quotaTextWidth = 0,
+        quotaTextHeight = 14;
+
+      // Target Quota Line
+      if (targetQuotaValue > 0) {
+        quota_wrap.append('line')
+          .attr('class', 'sc-quotaLineTarget')
+          .attr('x1', 0)
+          .attr('y1', 0)
+          .attr('x2', innerWidth)
+          .attr('y2', 0)
+          .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')')
+          .style('stroke-dasharray', '8, 8');
+
+        quota_wrap.append('line')
+          .datum({key: targetQuotaLabel, val: targetQuotaValue})
+          .attr('class', 'sc-quotaLineTarget sc-quotaLineBackground')
+          .attr('x1', 0)
+          .attr('y1', 0)
+          .attr('x2', innerWidth)
+          .attr('y2', 0)
+          .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
+
+        // Target Quota line label
+        yAxis_wrap.append('text')
+          .text(yAxis.valueFormat()(targetQuotaValue, true))
+          .attr('class', 'sc-targetQuotaValue')
+          .attr('dy', '.36em')
+          .attr('dx', '0')
+          .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
+          .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
+
+        quotaTextWidth = Math.round(g.select('text.sc-targetQuotaValue').node().getBoundingClientRect().width + yAxis.tickPadding());
+      }
+
+      if (quotaValue > 0) {
+        quota_wrap.append('line')
+          .attr('class', 'sc-quotaLine')
+          .attr('x1', 0)
+          .attr('y1', 0)
+          .attr('x2', innerWidth)
+          .attr('y2', 0)
+          .attr('transform', 'translate(0,' + y(quotaValue) + ')')
+          .style('stroke-dasharray', '8, 8');
+
+        quota_wrap.append('line')
+          .datum({key: quotaLabel, val: quotaValue})
+          .attr('class', 'sc-quotaLine sc-quotaLineBackground')
+          .attr('x1', 0)
+          .attr('y1', 0)
+          .attr('x2', innerWidth)
+          .attr('y2', 0)
+          .attr('transform', 'translate(0,' + y(quotaValue) + ')');
+
+        // Quota line label
+        yAxis_wrap.append('text')
+          .text(yAxis.valueFormat()(quotaValue, true))
+          .attr('class', 'sc-quotaValue')
+          .attr('dy', '.36em')
+          .attr('dx', '0')
+          .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
+          .attr('transform', 'translate(' + -yAxis.tickPadding() + ',' + y(quotaValue) + ')');
+
+        quotaTextWidth = Math.max(quotaTextWidth, Math.round(g.select('text.sc-quotaValue').node().getBoundingClientRect().width + yAxis.tickPadding()));
+      }
+
+      //------------------------------------------------------------
+      // Calculate intial dimensions based on first Axis call
+
+      // Temporarily reset inner dimensions
+      setInnerMargins();
+
+      //------------------------------------------------------------
+      // Recall Main Chart and Axis
+
+      multibar
+        .width(innerWidth)
+        .height(innerHeight);
+      bars_wrap
+        .call(multibar);
+
+      xAxis_wrap
+        .call(xAxis);
+      yAxis_wrap
+        .call(yAxis);
+
+      //------------------------------------------------------------
+      // Recalculate final dimensions based on new Axis size
+
+      xAxisMargin = xAxis.margin();
+      yAxisMargin = yAxis.margin();
+
+      setInnerMargins();
+
+      //------------------------------------------------------------
+      // Recall Main Chart Components based on final dimensions
+
+      var lOffset = x(1) + x.bandwidth() / (multibar.stacked() || dataLines.length === 1 ? 2 : 4);
+      var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
+
+      multibar
+        .width(innerWidth)
+        .height(innerHeight);
+
+      bars_wrap
+        .attr('transform', transform)
+        .call(multibar);
+
+
+      lines1
+        .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        .width(innerWidth)
+        .height(innerHeight);
+      lines2
+        .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        .width(innerWidth)
+        .height(innerHeight);
+
+      lines_wrap1
+        .attr('transform', transform)
+        .call(lines1);
+      lines_wrap2
+        .attr('transform', transform)
+        .call(lines2);
+
+
+      quota_wrap
+        .attr('transform', transform)
+        .selectAll('line')
+          .attr('x2', innerWidth);
+
+      xAxis_wrap
+        .attr('transform', 'translate(' + innerMargin.left + ',' + (xAxis.orient() === 'bottom' ? innerHeight + innerMargin.top : innerMargin.top) + ')')
+        .call(xAxis);
+
+      yAxis
+        .ticks(Math.ceil(innerHeight / 48))
+        .tickSize(-innerWidth, 0);
+
+      yAxis_wrap
+        .attr('transform', 'translate(' + (yAxis.orient() === 'left' ? innerMargin.left : innerMargin.left + innerWidth) + ',' + innerMargin.top + ')')
+        .call(yAxis);
+
+      if (targetQuotaValue > 0) {
+
+        quota_wrap.select('line.sc-quotaLineTarget')
+          .attr('x2', innerWidth)
+          .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
+        yAxis_wrap.select('text.sc-targetQuotaValue')
+          .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
+
+        quotaTextHeight = Math.round(parseInt(g.select('text.sc-targetQuotaValue').node().getBoundingClientRect().height, 10) / 1.15);
+
+        //check if tick lines overlap quota values, if so, hide the values that overlap
+        yAxis_wrap.selectAll('g.tick, g.sc-axisMaxMin')
+          .each(function(d, i) {
+            if (Math.abs(y(d) - y(targetQuotaValue)) <= quotaTextHeight) {
+              d3.select(this).style('opacity', 0);
+            }
+          });
+      }
+
+      if (quotaValue > 0) {
+
+        quota_wrap.select('line.sc-quotaLine')
+          .attr('x2', innerWidth)
+          .attr('transform', 'translate(0,' + y(quotaValue) + ')');
+        yAxis_wrap.select('text.sc-quotaValue')
+          .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(quotaValue) + ')');
+
+        quotaTextHeight = Math.round(parseInt(g.select('text.sc-quotaValue').node().getBoundingClientRect().height, 10) / 1.15);
+
+        //check if tick lines overlap quota values, if so, hide the values that overlap
+        yAxis_wrap.selectAll('g.tick, g.sc-axisMaxMin')
+          .each(function(d, i) {
+            if (Math.abs(y(d) - y(quotaValue)) <= quotaTextHeight) {
+              d3.select(this).style('opacity', 0);
+            }
+          });
+
+        // if there is a quota and an adjusted quota
+        // check to see if the adjusted collides
+        if (targetQuotaValue > 0) {
+          if (Math.abs(y(quotaValue) - y(targetQuotaValue)) <= quotaTextHeight) {
+            yAxis_wrap.select('.sc-targetQuotaValue').style('opacity', 0);
+          }
+        }
+      }
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      quota_wrap.selectAll('line.sc-quotaLineBackground')
+        .on('mouseover', function(d) {
+          if (tooltips) {
+            var eo = {
+                val: d.val,
+                key: d.key,
+                e: d3.event
+            };
+            showQuotaTooltip(eo, that.parentNode);
+          }
+        })
+        .on('mousemove', function() {
+          var e = d3.event;
+          dispatch.call('tooltipMove', this, e);
+        })
+        .on('mouseout', function() {
+          dispatch.call('tooltipHide', this);
+        });
+
+      barLegend.dispatch.on('legendClick', function(d, i) {
+        var selectedSeries = d.series;
+
+        //swap bar disabled
+        d.disabled = !d.disabled;
+        //swap line disabled for same series
+        if (!chart.stacked()) {
+          data.filter(function(d) {
+              return d.series === selectedSeries && d.type === 'line';
+            }).map(function(d) {
+              d.disabled = !d.disabled;
+              return d;
+            });
+        }
+        // if there are no enabled data series, enable them all
+        if (!data.filter(function(d) {
+          return !d.disabled && d.type === 'bar';
+        }).length) {
+          data.map(function(d) {
+            d.disabled = false;
+            g.selectAll('.sc-series').classed('disabled', false);
+            return d;
+          });
+        }
+        container.call(chart);
+      });
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          showTooltip(eo, that.parentNode, dataGroup);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip) {
+          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          data.forEach(function(series, i) {
+          series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        if (typeof eo.stacked !== 'undefined') {
+          multibar.stacked(eo.stacked);
+          state.stacked = eo.stacked;
+        }
+
+        container.transition().call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        if (barLegend.enabled()) {
+          barLegend.dispatch.call('closeMenu', this);
+        }
+        if (lineLegend.enabled()) {
+          lineLegend.dispatch.call('closeMenu', this);
+        }
+      });
+
+      multibar.dispatch.on('elementClick', function(eo) {
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart, container);
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  lines2.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  lines2.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  lines2.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  multibar.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  multibar.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  multibar.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.lines1 = lines1;
+  chart.lines2 = lines2;
+  chart.multibar = multibar;
+  chart.barLegend = barLegend;
+  chart.lineLegend = lineLegend;
+  chart.xAxis = xAxis;
+  chart.yAxis = yAxis;
+
+  fc.rebind(chart, multibar, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'color', 'fill', 'classes', 'gradient');
+  fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+      params = arguments[1] || {};
+    var barColor = function(d, i) {
+      return sucrose.utils.defaultColor()(d, d.series);
+    };
+    var barClasses = function(d, i) {
+      return 'sc-group sc-series-' + d.series;
+    };
+    var lineColor = function(d, i) {
+      var p = params.lineColor ? params.lineColor : {
+        c1: '#1A8221',
+        c2: '#62B464',
+        l: 1
+      };
+      return d.color || d3.interpolateHsl(d3.rgb(p.c1), d3.rgb(p.c2))(d.series / 2);
+    };
+    var lineClasses = function(d, i) {
+      return 'sc-group sc-series-' + d.series;
+    };
+
+    switch (type) {
+      case 'graduated':
+        barColor = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.barColor.c1), d3.rgb(params.barColor.c2))(d.series / params.barColor.l);
+        };
+        break;
+      case 'class':
+        barColor = function() {
+          return 'inherit';
+        };
+        barClasses = function(d, i) {
+          var iClass = (d.series * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+        };
+        lineClasses = function(d, i) {
+          var iClass = (d.series * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+        };
+        break;
+      case 'data':
+        barColor = function(d, i) {
+          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
+        };
+        barClasses = function(d, i) {
+          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+        };
+        lineClasses = function(d, i) {
+          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var barFill = (!params.gradient) ? barColor : function(d, i) {
+      var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
+      return multibar.gradient(d, d.series, p);
+    };
+
+    multibar.color(barColor);
+    multibar.fill(barFill);
+    multibar.classes(barClasses);
+
+    lines2.color(lineColor);
+    lines2.fill(lineColor);
+    lines2.classes(lineClasses);
+
+    barLegend.color(barColor);
+    barLegend.classes(barClasses);
+
+    lineLegend.color(lineColor);
+    lineLegend.classes(lineClasses);
+
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) {
+      return getX;
+    }
+    getX = _;
+    lines.x(_);
+    multibar.x(_);
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) {
+      return getY;
+    }
+    getY = _;
+    lines.y(_);
+    multibar.y(_);
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) {
+      return showTitle;
+    }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showControls = function(_) {
+    if (!arguments.length) {
+      return false;
+    }
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) {
+      return showLegend;
+    }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltipBar = function(_) {
+    if (!arguments.length) {
+      return tooltipBar;
+    }
+    tooltipBar = _;
+    return chart;
+  };
+
+  chart.tooltipLine = function(_) {
+    if (!arguments.length) {
+      return tooltipLine;
+    }
+    tooltipLine = _;
+    return chart;
+  };
+
+  chart.tooltipQuota = function(_) {
+    if (!arguments.length) {
+      return tooltipQuota;
+    }
+    tooltipQuota = _;
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) {
+      return tooltip;
+    }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) {
+      return tooltips;
+    }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) {
+      return tooltipContent;
+    }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.clipEdge = function(_) {
+    if (!arguments.length) {
+      return clipEdge;
+    }
+    clipEdge = _;
+    multibar.clipEdge(_);
+    lines1.clipEdge(_);
+    lines2.clipEdge(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    multibar.delay(_);
+    lines1.delay(_);
+    lines2.delay(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    multibar.duration(_);
+    lines1.duration(_);
+    lines2.duration(_);
+    return chart;
+  };
+
+	chart.state = function(_) {
+	  if (!arguments.length) {
+	    return state;
+	  }
+	  state = _;
+	  return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
     return chart;
   };
 
@@ -11458,1066 +12625,37 @@ sucrose.models.multiBarChart = function() {
     }
     direction = _;
     multibar.direction(_);
-    xAxis.direction(_);
+  	xAxis.direction(_);
     yAxis.direction(_);
-    legend.direction(_);
-    controls.direction(_);
+    barLegend.direction(_);
+    lineLegend.direction(_);
     return chart;
   };
 
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = sucrose.utils.buildLocality(_);
+    multibar.locality(_);
+    lines1.locality(_);
+    return chart;
+  };
   //============================================================
 
   return chart;
-};
-sucrose.models.paretoChart = function() {
-    //'use strict';
-    //============================================================
-    // Public Variables with Default Settings
-    //------------------------------------------------------------
-
-    var margin = {top: 10, right: 10, bottom: 10, left: 10},
-        width = null,
-        height = null,
-        getX = function(d) { return d.x; },
-        getY = function(d) { return d.y; },
-        locality = sucrose.utils.buildLocality(),
-        showTitle = false,
-        showLegend = true,
-        tooltip = null,
-        tooltips = true,
-        direction = 'ltr',
-        tooltipBar = function(key, x, y, e, graph) {
-            return '<p><b>' + key + '</b></p>' +
-                '<p><b>' + y + '</b></p>' +
-                '<p><b>' + x + '%</b></p>';
-        },
-        tooltipLine = function(key, x, y, e, graph) {
-            return '<p><p>' + key + ': <b>' + y + '</b></p>';
-        },
-        tooltipQuota = function(key, x, y, e, graph) {
-            return '<p>' + e.key + ': <b>' + y + '</b></p>';
-        },
-        x,
-        y,
-        strings = {
-            barlegend: {close: 'Hide bar legend', open: 'Show bar legend'},
-            linelegend: {close: 'Hide line legend', open: 'Show line legend'},
-            controls: {close: 'Hide controls', open: 'Show controls'},
-            noData: 'No Data Available.',
-            noLabel: 'undefined'
-        },
-        dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove');
-
-    //============================================================
-    // Private Variables
-    //------------------------------------------------------------
-
-    var xValueFormat = function(d, labels, isDate) {
-            var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
-                d : labels[parseInt(d, 10)] || d;
-            return isDate ? sucrose.utils.dateFormat(val, 'yMMMM', chart.locality()) : val;
-        };
-    var yValueFormat = function(d, isCurrency) {
-            return sucrose.utils.numberFormatSI(d, 2, isCurrency, chart.locality());
-        };
-
-    var multibar = sucrose.models.multiBar()
-            .stacked(true)
-            .clipEdge(false)
-            .withLine(true)
-            .nice(false),
-        lines1 = sucrose.models.line()
-            .color(function(d, i) { return '#FFF'; })
-            .fill(function(d, i) { return '#FFF'; })
-            .useVoronoi(false)
-            .nice(false),
-        lines2 = sucrose.models.line()
-            .useVoronoi(false)
-            .color('data')
-            .nice(false),
-        xAxis = sucrose.models.axis(),
-        yAxis = sucrose.models.axis(),
-        barLegend = sucrose.models.legend()
-            .align('left')
-            .position('middle'),
-        lineLegend = sucrose.models.legend()
-            .align('right')
-            .position('middle');
-
-    var showTooltip = function(eo, offsetElement, dataGroup) {
-        var key = eo.series.key,
-            per = (eo.point.y * 100 / dataGroup[eo.pointIndex].t).toFixed(1),
-            amt = lines2.y()(eo.point, eo.pointIndex),
-            content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
-        tooltip = sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
-    };
-
-    var showQuotaTooltip = function(eo, offsetElement) {
-        var content = tooltipQuota(eo.key, 0, eo.val, eo, chart);
-        tooltip = sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
-    };
-
-    var barClick = function(data, eo, chart, container) {
-        return;
-    };
-
-    var getAbsoluteXY = function(element) {
-        var viewportElement = document.documentElement,
-            box = element.getBoundingClientRect(),
-            scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft,
-            scrollTop = viewportElement.scrollTop + document.body.scrollTop,
-            x = box.left + scrollLeft,
-            y = box.top + scrollTop;
-
-        return {'x': x, 'y': y};
-    };
-
-    //============================================================
-
-    function chart(selection) {
-
-        selection.each(function(chartData) {
-
-            var properties = chartData.properties,
-                data = chartData.data,
-                container = d3.select(this),
-                that = this,
-                availableWidth = (width || parseInt(container.style('width'), 10) || 960) - margin.left - margin.right,
-                availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom,
-                innerWidth = availableWidth,
-                innerHeight = availableHeight,
-                innerMargin = {top: 0, right: 0, bottom: 0, left: 0},
-                maxBarLegendWidth = 0,
-                maxLineLegendWidth = 0,
-                widthRatio = 0,
-                pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
-                xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-                yIsCurrency = chartData.properties.yDataType === 'currency' || false;
-
-            chart.update = function() {
-                container.call(chart);
-            };
-
-            chart.container = this;
-
-            //------------------------------------------------------------
-            // Display No Data message if there's nothing to show.
-
-            if (!data || !data.length || !data.filter(function(d) {
-                return d.values.length;
-            }).length) {
-                var noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
-
-                noDataText.enter().append('text')
-                    .attr('class', 'sucrose sc-noData')
-                    .attr('dy', '-.7em')
-                    .style('text-anchor', 'middle');
-
-                noDataText
-                    .attr('x', margin.left + availableWidth / 2)
-                    .attr('y', margin.top + availableHeight / 2)
-                    .text(function(d) {
-                        return d;
-                    });
-
-                return chart;
-            } else {
-                container.selectAll('.sc-noData').remove();
-            }
-
-            //------------------------------------------------------------
-            // Process data
-
-            chart.dataSeriesActivate = function(eo) {
-                var series = eo.series;
-
-                series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
-                series.values.map(function(d) {
-                    d.active = series.active;
-                });
-
-                // if you have activated a data series, inactivate the rest
-                if (series.active === 'active') {
-                    data
-                        .filter(function(d) {
-                            return d.active !== 'active';
-                        })
-                        .map(function(d) {
-                            d.active = 'inactive';
-                            d.values.map(function(d) {
-                                d.active = 'inactive';
-                            });
-                            return d;
-                        });
-                }
-
-                // if there are no active data series, activate them all
-                if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-                    data
-                        .map(function(d) {
-                            d.active = '';
-                            d.values.map(function(d) {
-                                d.active = '';
-                            });
-                            container.selectAll('.sc-series').classed('sc-inactive', false);
-                            return d;
-                        });
-                }
-
-                container.call(chart);
-            };
-
-            var dataBars = data.filter(function(d) {
-                    return !d.disabled && (!d.type || d.type === 'bar');
-                });
-
-            var dataLines = data.filter(function(d) {
-                    return !d.disabled && d.type === 'line';
-                }).map(function(lineData) {
-                    if (!multibar.stacked()) {
-                        lineData.values = lineData.valuesOrig.map(function(v, i) {
-                            return {'series': v.series, 'x': (v.x + v.series * 0.25 - i * 0.25), 'y': v.y};
-                        });
-                    } else {
-                        lineData.values.map(function(v) {
-                            v.y = 0;
-                        });
-                        dataBars
-                            .map(function(v, i) {
-                                v.values.map(function(v, i) {
-                                    lineData.values[i].y += v.y;
-                                });
-                            });
-                        lineData.values.map(function(v, i) {
-                            if (i > 0) {
-                                v.y += lineData.values[i - 1].y;
-                            }
-                        });
-                    }
-                    return lineData;
-                });
-
-            var dataGroup = properties.groupData,
-                groupLabels = dataGroup.map(function(d) {
-                  return [].concat(d.l)[0] || chart.strings().noLabel;
-                }),
-                quotaValue = properties.quota || 0,
-                quotaLabel = properties.quotaLabel || '',
-                targetQuotaValue = properties.targetQuota || 0,
-                targetQuotaLabel = properties.targetQuotaLabel || '';
-
-            dataBars = dataBars.length ? dataBars : [{values: []}];
-            dataLines = dataLines.length ? dataLines : [{values: []}];
-
-            // line legend data
-            var lineLegendData = data.filter(function(d) {
-                    return d.type === 'line';
-                });
-            lineLegendData.push({
-                'key': quotaLabel,
-                'type': 'dash',
-                'color': '#444',
-                'series': lineLegendData.length,
-                'values': {'series': lineLegendData.length, 'x': 0, 'y': 0}
-            });
-            if (targetQuotaValue > 0) {
-                lineLegendData.push({
-                    'key': targetQuotaLabel,
-                    'type': 'dash',
-                    'color': '#777',
-                    'series': lineLegendData.length,
-                    'values': {'series': lineLegendData.length + 1, 'x': 0, 'y': 0}
-                });
-            }
-
-            var seriesX = data.filter(function(d) {
-                    return !d.disabled;
-                }).map(function(d) {
-                    return d.valuesOrig.map(function(d, i) {
-                        return getX(d, i);
-                    });
-                });
-
-            var seriesY = data.map(function(d) {
-                    return d.valuesOrig.map(function(d, i) {
-                        return getY(d, i);
-                    });
-                });
-
-            //------------------------------------------------------------
-            // Setup Scales
-
-            x = multibar.xScale();
-            y = multibar.yScale();
-
-            xAxis
-                .valueFormat(xValueFormat)
-                .orient('bottom')
-                .tickSize(0)
-                .tickPadding(4)
-                .wrapTicks(true)
-                .highlightZero(false)
-                .showMaxMin(false)
-                .tickFormat(function(d, i, noEllipsis) {
-                  // Set xAxis to use trimmed array rather than data
-                  var label = xAxis.valueFormat()(i, groupLabels, xIsDatetime);
-                  if (!noEllipsis) {
-                    label = sucrose.utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
-                  }
-                  return label;
-                })
-                .scale(x);
-            yAxis
-                .valueFormat(yValueFormat)
-                .orient('left')
-                .tickPadding(7)
-                .showMaxMin(true)
-                .tickFormat(function(d, i) {
-                  return yAxis.valueFormat()(d, yIsCurrency);
-                })
-                .scale(y);
-
-            //------------------------------------------------------------
-            // Setup containers and skeleton of chart
-
-            var wrap_bind = container.selectAll('g.sc-wrap.sc-multiBarWithLegend').data([data]);
-            var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-multiBarWithLegend');
-            var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-            var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-            var g = container.select('g.sc-chart-wrap').merge(g_entr);
-
-            g_entr.append('rect').attr('class', 'sc-background')
-                .attr('x', -margin.left)
-                .attr('y', -margin.top)
-                .attr('width', availableWidth + margin.left + margin.right)
-                .attr('height', availableHeight + margin.top + margin.bottom)
-                .attr('fill', '#FFF');
-
-            g_entr.append('g').attr('class', 'sc-titleWrap');
-            var titleWrap = g.select('.sc-titleWrap');
-            g_entr.append('g').attr('class', 'sc-x sc-axis');
-            var xAxisWrap = g.select('.sc-x.sc-axis');
-            g_entr.append('g').attr('class', 'sc-y sc-axis');
-            var yAxisWrap = g.select('.sc-y.sc-axis');
-            g_entr.append('g').attr('class', 'sc-barsWrap');
-            var barsWrap = g.select('.sc-barsWrap');
-            g_entr.append('g').attr('class', 'sc-quotaWrap');
-            var quotaWrap = g.select('.sc-quotaWrap');
-
-            g_entr.append('g').attr('class', 'sc-linesWrap1');
-            var linesWrap1 = g.select('.sc-linesWrap1');
-            g_entr.append('g').attr('class', 'sc-linesWrap2');
-            var linesWrap2 = g.select('.sc-linesWrap2');
-
-            g_entr.append('g').attr('class', 'sc-legendWrap sc-barLegend');
-            var barLegendWrap = g.select('.sc-legendWrap.sc-barLegend');
-            g_entr.append('g').attr('class', 'sc-legendWrap sc-lineLegend');
-            var lineLegendWrap = g.select('.sc-legendWrap.sc-lineLegend');
-
-            wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-            //------------------------------------------------------------
-            // Title & Legend
-
-            if (showTitle && properties.title) {
-                titleWrap.select('.sc-title').remove();
-
-                titleWrap
-                    .append('text')
-                    .text(properties.title)
-                    .attr('class', 'sc-title')
-                    .attr('x', direction === 'rtl' ? availableWidth : 0)
-                    .attr('y', 0)
-                    .attr('dy', '.75em')
-                    .attr('text-anchor', 'start')
-                    .attr('stroke', 'none')
-                    .attr('fill', 'black');
-
-                innerMargin.top += parseInt(g.select('.sc-title').node().getBoundingClientRect().height / 1.15, 10) +
-                    parseInt(g.select('.sc-title').style('margin-top'), 10) +
-                    parseInt(g.select('.sc-title').style('margin-bottom'), 10);
-            }
-
-            if (showLegend) {
-
-                // bar series legend
-                barLegend
-                    .id('barlegend_' + chart.id())
-                    .strings(chart.strings().barlegend)
-                    .align('left')
-                    .height(availableHeight - innerMargin.top);
-                barLegendWrap
-                    .datum(
-                        data.filter(function(d) {
-                            return d.type === 'bar';
-                        })
-                    )
-                    .call(barLegend);
-
-                maxBarLegendWidth = barLegend.calculateWidth();
-
-                // line series legend
-                lineLegend
-                    .id('linelegend_' + chart.id())
-                    .strings(chart.strings().linelegend)
-                    .align('right')
-                    .height(availableHeight - innerMargin.top);
-                lineLegendWrap
-                    .datum(lineLegendData)
-                    .call(lineLegend);
-
-                maxLineLegendWidth = lineLegend.calculateWidth();
-
-                // calculate proportional available space
-                widthRatio = availableWidth / (maxBarLegendWidth + maxLineLegendWidth);
-
-                barLegend
-                    .arrange(Math.floor(widthRatio * maxBarLegendWidth));
-
-                lineLegend
-                    .arrange(Math.floor(widthRatio * maxLineLegendWidth));
-
-                barLegendWrap
-                    .attr('transform', 'translate(' + (direction === 'rtl' ? availableWidth - barLegend.width() : 0) + ',' + innerMargin.top + ')');
-                lineLegendWrap
-                    .attr('transform', 'translate(' + (direction === 'rtl' ? 0 : availableWidth - lineLegend.width()) + ',' + innerMargin.top + ')');
-            }
-
-            //------------------------------------------------------------
-            // Recalculate inner margins based on legend size
-
-            innerMargin.top += Math.max(barLegend.height(), lineLegend.height()) + 4;
-            innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-
-            //------------------------------------------------------------
-            // Initial call of Main Chart Components
-
-            var lx = x.domain(d3.merge(seriesX)).rangeBands([0, availableWidth - margin.left - margin.right], 0.3),
-                ly = Math.max(d3.max(d3.merge(seriesY)), quotaValue, targetQuotaValue || 0),
-                forceY = Math.ceil(ly * 0.1) * 10,
-                lOffset = lx(1) + lx.rangeBand() / (multibar.stacked() || dataLines.length === 1 ? 2 : 4);
-
-            // Main Bar Chart
-            multibar
-                .width(innerWidth)
-                .height(innerHeight)
-                .forceY([0, forceY])
-                .id(chart.id());
-            barsWrap
-                .datum(dataBars)
-                .call(multibar);
-
-            // Main Line Chart
-            lines1
-                .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
-                .width(innerWidth)
-                .height(innerHeight)
-                .forceY([0, forceY])
-                .useVoronoi(false)
-                .id('outline_' + chart.id());
-            lines2
-                .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
-                .width(innerWidth)
-                .height(innerHeight)
-                .forceY([0, forceY])
-                .useVoronoi(false)
-                .size(pointSize)
-                .sizeRange([pointSize, pointSize])
-                .sizeDomain([pointSize, pointSize])
-                .id('foreground_' + chart.id());
-            linesWrap1
-                .datum(dataLines)
-                .call(lines1);
-            linesWrap2
-                .datum(dataLines)
-                .call(lines2);
-
-            // Axes
-            xAxisWrap
-                .call(xAxis);
-            var xAxisMargin = xAxis.margin();
-
-            yAxisWrap
-                .style('opacity', dataBars.length ? 1 : 0)
-                .call(yAxis);
-            var yAxisMargin = yAxis.margin();
-
-
-            //------------------------------------------------------------
-            // Quota Line
-
-            quotaWrap.selectAll('line').remove();
-            yAxisWrap.selectAll('text.sc-quotaValue').remove();
-            yAxisWrap.selectAll('text.sc-targetQuotaValue').remove();
-
-            var quotaTextWidth = 0,
-                quotaTextHeight = 14;
-
-            // Target Quota Line
-            if (targetQuotaValue > 0) {
-                quotaWrap.append('line')
-                    .attr('class', 'sc-quotaLineTarget')
-                    .attr('x1', 0)
-                    .attr('y1', 0)
-                    .attr('x2', innerWidth)
-                    .attr('y2', 0)
-                    .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')')
-                    .style('stroke-dasharray', '8, 8');
-
-                quotaWrap.append('line')
-                    .datum({key: targetQuotaLabel, val: targetQuotaValue})
-                    .attr('class', 'sc-quotaLineTarget sc-quotaLineBackground')
-                    .attr('x1', 0)
-                    .attr('y1', 0)
-                    .attr('x2', innerWidth)
-                    .attr('y2', 0)
-                    .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
-
-                // Target Quota line label
-                yAxisWrap.append('text')
-                    .text(yAxis.valueFormat()(targetQuotaValue, true))
-                    .attr('class', 'sc-targetQuotaValue')
-                    .attr('dy', '.36em')
-                    .attr('dx', '0')
-                    .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
-                    .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
-
-                quotaTextWidth = Math.round(g.select('text.sc-targetQuotaValue').node().getBoundingClientRect().width + yAxis.tickPadding());
-            }
-
-            if (quotaValue > 0) {
-                quotaWrap.append('line')
-                    .attr('class', 'sc-quotaLine')
-                    .attr('x1', 0)
-                    .attr('y1', 0)
-                    .attr('x2', innerWidth)
-                    .attr('y2', 0)
-                    .attr('transform', 'translate(0,' + y(quotaValue) + ')')
-                    .style('stroke-dasharray', '8, 8');
-
-                quotaWrap.append('line')
-                    .datum({key: quotaLabel, val: quotaValue})
-                    .attr('class', 'sc-quotaLine sc-quotaLineBackground')
-                    .attr('x1', 0)
-                    .attr('y1', 0)
-                    .attr('x2', innerWidth)
-                    .attr('y2', 0)
-                    .attr('transform', 'translate(0,' + y(quotaValue) + ')');
-
-                // Quota line label
-                yAxisWrap.append('text')
-                    .text(yAxis.valueFormat()(quotaValue, true))
-                    .attr('class', 'sc-quotaValue')
-                    .attr('dy', '.36em')
-                    .attr('dx', '0')
-                    .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
-                    .attr('transform', 'translate(' + -yAxis.tickPadding() + ',' + y(quotaValue) + ')');
-
-                quotaTextWidth = Math.max(quotaTextWidth, Math.round(g.select('text.sc-quotaValue').node().getBoundingClientRect().width + yAxis.tickPadding()));
-            }
-
-            //------------------------------------------------------------
-            // Calculate intial dimensions based on first Axis call
-
-            // Temporarily reset inner dimensions
-            innerWidth = availableWidth - innerMargin.left - Math.max(quotaTextWidth, yAxisMargin.left) - innerMargin.right - yAxisMargin.right;
-            innerHeight = availableHeight - innerMargin.top - yAxisMargin.top - innerMargin.bottom - yAxisMargin.bottom;
-
-            //------------------------------------------------------------
-            // Recall Main Chart and Axis
-
-            multibar
-                .width(innerWidth)
-                .height(innerHeight);
-            barsWrap
-                .call(multibar);
-            xAxisWrap
-                .call(xAxis);
-            yAxisWrap
-                .call(yAxis);
-
-            xAxisMargin = xAxis.margin();
-            yAxisMargin = yAxis.margin();
-
-            //------------------------------------------------------------
-            // Recalculate final dimensions based on new Axis size
-
-            // Reset inner margins
-            innerMargin.left += Math.max(quotaTextWidth, xAxisMargin.left, yAxisMargin.left);
-            innerMargin.right += Math.max(xAxisMargin.right, yAxisMargin.right);
-            innerMargin.top += Math.max(xAxisMargin.top, yAxisMargin.top);
-            innerMargin.bottom += Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
-
-            // Reset inner dimensions
-            innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-            innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-
-            //------------------------------------------------------------
-            // Recall Main Chart Components based on final dimensions
-
-            multibar
-                .width(innerWidth)
-                .height(innerHeight);
-
-            barsWrap
-                .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
-                .call(multibar);
-
-            lines1
-                .width(innerWidth)
-                .height(innerHeight);
-            lines2
-                .width(innerWidth)
-                .height(innerHeight);
-
-            linesWrap1
-                .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
-                .call(lines1);
-            linesWrap2
-                .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
-                .call(lines2);
-
-            quotaWrap
-                .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
-                .selectAll('line')
-                    .attr('x2', innerWidth);
-
-            xAxisWrap
-                .attr('transform', 'translate(' + innerMargin.left + ',' + (xAxis.orient() === 'bottom' ? innerHeight + innerMargin.top : innerMargin.top) + ')')
-                .call(xAxis);
-
-            yAxis
-                .ticks(Math.ceil(innerHeight / 48))
-                .tickSize(-innerWidth, 0);
-
-            yAxisWrap
-                .attr('transform', 'translate(' + (yAxis.orient() === 'left' ? innerMargin.left : innerMargin.left + innerWidth) + ',' + innerMargin.top + ')')
-                .call(yAxis);
-
-            if (targetQuotaValue > 0) {
-
-                quotaWrap.select('line.sc-quotaLineTarget')
-                    .attr('x2', innerWidth)
-                    .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
-                yAxisWrap.select('text.sc-targetQuotaValue')
-                    .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
-
-                quotaTextHeight = Math.round(parseInt(g.select('text.sc-targetQuotaValue').node().getBoundingClientRect().height, 10) / 1.15);
-
-                //check if tick lines overlap quota values, if so, hide the values that overlap
-                yAxisWrap.selectAll('g.tick, g.sc-axisMaxMin')
-                    .each(function(d, i) {
-                        if (Math.abs(y(d) - y(targetQuotaValue)) <= quotaTextHeight) {
-                            d3.select(this).style('opacity', 0);
-                        }
-                    });
-            }
-
-            if (quotaValue > 0) {
-
-                quotaWrap.select('line.sc-quotaLine')
-                    .attr('x2', innerWidth)
-                    .attr('transform', 'translate(0,' + y(quotaValue) + ')');
-                yAxisWrap.select('text.sc-quotaValue')
-                    .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(quotaValue) + ')');
-
-                quotaTextHeight = Math.round(parseInt(g.select('text.sc-quotaValue').node().getBoundingClientRect().height, 10) / 1.15);
-
-                //check if tick lines overlap quota values, if so, hide the values that overlap
-                yAxisWrap.selectAll('g.tick, g.sc-axisMaxMin')
-                    .each(function(d, i) {
-                        if (Math.abs(y(d) - y(quotaValue)) <= quotaTextHeight) {
-                            d3.select(this).style('opacity', 0);
-                        }
-                    });
-
-                // if there is a quota and an adjusted quota
-                // check to see if the adjusted collides
-                if (targetQuotaValue > 0) {
-                    if (Math.abs(y(quotaValue) - y(targetQuotaValue)) <= quotaTextHeight) {
-                        yAxisWrap.select('.sc-targetQuotaValue').style('opacity', 0);
-                    }
-                }
-            }
-
-            //============================================================
-            // Event Handling/Dispatching (in chart's scope)
-            //------------------------------------------------------------
-
-            quotaWrap.selectAll('line.sc-quotaLineBackground')
-                .on('mouseover', function(d) {
-                    if (tooltips) {
-                        var eo = {
-                            val: d.val,
-                            key: d.key,
-                            e: d3.event
-                        };
-                        showQuotaTooltip(eo, that.parentNode);
-                    }
-                })
-                .on('mousemove', function() {
-                    var e = d3.event;
-                    dispatch.call('tooltipMove', this, e);
-                })
-                .on('mouseout', function() {
-                    dispatch.call('tooltipHide', this);
-                });
-
-            barLegend.dispatch.on('legendClick', function(d, i) {
-                var selectedSeries = d.series;
-
-                //swap bar disabled
-                d.disabled = !d.disabled;
-                //swap line disabled for same series
-                if (!chart.stacked()) {
-                    data.filter(function(d) {
-                            return d.series === selectedSeries && d.type === 'line';
-                        }).map(function(d) {
-                            d.disabled = !d.disabled;
-                            return d;
-                        });
-                }
-                // if there are no enabled data series, enable them all
-                if (!data.filter(function(d) {
-                    return !d.disabled && d.type === 'bar';
-                }).length) {
-                    data.map(function(d) {
-                        d.disabled = false;
-                        g.selectAll('.sc-series').classed('disabled', false);
-                        return d;
-                    });
-                }
-                container.call(chart);
-            });
-
-            dispatch.on('tooltipShow', function(eo) {
-                if (tooltips) {
-                    showTooltip(eo, that.parentNode, dataGroup);
-                }
-            });
-
-            dispatch.on('tooltipMove', function(e) {
-                if (tooltip) {
-                    sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
-                }
-            });
-
-            dispatch.on('tooltipHide', function() {
-                if (tooltips) {
-                    sucrose.tooltip.cleanup();
-                }
-            });
-
-            dispatch.on('chartClick', function() {
-                if (barLegend.enabled()) {
-                    barLegend.dispatch.closeMenu();
-                }
-                if (lineLegend.enabled()) {
-                    lineLegend.dispatch.closeMenu();
-                }
-            });
-
-            multibar.dispatch.on('elementClick', function(eo) {
-                dispatch.call('chartClick', this);
-                barClick(data, eo, chart, container);
-            });
-
-        });
-
-        return chart;
-    }
-
-    //============================================================
-    // Event Handling/Dispatching (out of chart's scope)
-    //------------------------------------------------------------
-
-    lines2.dispatch.on('elementMouseover.tooltip', function(eo) {
-        dispatch.call('tooltipShow', this, eo);
-    });
-
-    lines2.dispatch.on('elementMousemove', function(e) {
-        dispatch.call('tooltipMove', this, e);
-    });
-
-    lines2.dispatch.on('elementMouseout.tooltip', function() {
-        dispatch.call('tooltipHide', this);
-    });
-
-    multibar.dispatch.on('elementMouseover.tooltip', function(eo) {
-        dispatch.call('tooltipShow', this, eo);
-    });
-
-    multibar.dispatch.on('elementMousemove', function(e) {
-        dispatch.call('tooltipMove', this, e);
-    });
-
-    multibar.dispatch.on('elementMouseout.tooltip', function() {
-        dispatch.call('tooltipHide', this);
-    });
-
-
-    //============================================================
-    // Expose Public Variables
-    //------------------------------------------------------------
-
-    // expose chart's sub-components
-    chart.dispatch = dispatch;
-    chart.lines1 = lines1;
-    chart.lines2 = lines2;
-    chart.multibar = multibar;
-    chart.barLegend = barLegend;
-    chart.lineLegend = lineLegend;
-    chart.xAxis = xAxis;
-    chart.yAxis = yAxis;
-
-    fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient');
-    fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice');
-    fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
-
-    chart.colorData = function(_) {
-        var type = arguments[0],
-            params = arguments[1] || {};
-        var barColor = function(d, i) {
-            return sucrose.utils.defaultColor()(d, d.series);
-        };
-        var barClasses = function(d, i) {
-            return 'sc-group sc-series-' + d.series;
-        };
-        var lineColor = function(d, i) {
-            var p = params.lineColor ? params.lineColor : {
-                c1: '#1A8221',
-                c2: '#62B464',
-                l: 1
-            };
-            return d.color || d3.interpolateHsl(d3.rgb(p.c1), d3.rgb(p.c2))(d.series / 2);
-        };
-        var lineClasses = function(d, i) {
-            return 'sc-group sc-series-' + d.series;
-        };
-
-        switch (type) {
-            case 'graduated':
-                barColor = function(d, i) {
-                    return d3.interpolateHsl(d3.rgb(params.barColor.c1), d3.rgb(params.barColor.c2))(d.series / params.barColor.l);
-                };
-                break;
-            case 'class':
-                barColor = function() {
-                    return 'inherit';
-                };
-                barClasses = function(d, i) {
-                    var iClass = (d.series * (params.step || 1)) % 14;
-                    iClass = (iClass > 9 ? '' : '0') + iClass;
-                    return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
-                };
-                lineClasses = function(d, i) {
-                    var iClass = (d.series * (params.step || 1)) % 14;
-                    iClass = (iClass > 9 ? '' : '0') + iClass;
-                    return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass + ' sc-stroke' + iClass;
-                };
-                break;
-            case 'data':
-                barColor = function(d, i) {
-                    return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
-                };
-                barClasses = function(d, i) {
-                    return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
-                };
-                lineClasses = function(d, i) {
-                    return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
-                };
-                break;
-        }
-
-        var barFill = (!params.gradient) ? barColor : function(d, i) {
-            var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-            return multibar.gradient(d, d.series, p);
-        };
-
-        multibar.color(barColor);
-        multibar.fill(barFill);
-        multibar.classes(barClasses);
-
-        lines2.color(lineColor);
-        lines2.fill(lineColor);
-        lines2.classes(lineClasses);
-
-        barLegend.color(barColor);
-        barLegend.classes(barClasses);
-
-        lineLegend.color(lineColor);
-        lineLegend.classes(lineClasses);
-
-        return chart;
-    };
-
-    chart.x = function(_) {
-        if (!arguments.length) {
-            return getX;
-        }
-        getX = _;
-        lines.x(_);
-        multibar.x(_);
-        return chart;
-    };
-
-    chart.y = function(_) {
-        if (!arguments.length) {
-            return getY;
-        }
-        getY = _;
-        lines.y(_);
-        multibar.y(_);
-        return chart;
-    };
-
-    chart.margin = function(_) {
-        if (!arguments.length) {
-            return margin;
-        }
-        for (var prop in _) {
-            if (_.hasOwnProperty(prop)) {
-                margin[prop] = _[prop];
-            }
-        }
-        return chart;
-    };
-
-    chart.width = function(_) {
-        if (!arguments.length) {
-            return width;
-        }
-        width = _;
-        return chart;
-    };
-
-    chart.height = function(_) {
-        if (!arguments.length) {
-            return height;
-        }
-        height = _;
-        return chart;
-    };
-
-    chart.showTitle = function(_) {
-        if (!arguments.length) {
-            return showTitle;
-        }
-        showTitle = _;
-        return chart;
-    };
-
-    chart.showLegend = function(_) {
-        if (!arguments.length) {
-            return showLegend;
-        }
-        showLegend = _;
-        return chart;
-    };
-
-    chart.showControls = function(_) {
-        if (!arguments.length) {
-            return false;
-        }
-        return chart;
-    };
-
-    chart.tooltipBar = function(_) {
-        if (!arguments.length) {
-            return tooltipBar;
-        }
-        tooltipBar = _;
-        return chart;
-    };
-
-    chart.tooltipLine = function(_) {
-        if (!arguments.length) {
-            return tooltipLine;
-        }
-        tooltipLine = _;
-        return chart;
-    };
-
-    chart.tooltipQuota = function(_) {
-        if (!arguments.length) {
-            return tooltipQuota;
-        }
-        tooltipQuota = _;
-        return chart;
-    };
-
-    chart.tooltip = function(_) {
-        if (!arguments.length) {
-            return tooltip;
-        }
-        tooltip = _;
-        return chart;
-    };
-
-    chart.tooltips = function(_) {
-        if (!arguments.length) {
-            return tooltips;
-        }
-        tooltips = _;
-        return chart;
-    };
-
-    chart.tooltipContent = function(_) {
-        if (!arguments.length) {
-            return tooltipContent;
-        }
-        tooltipContent = _;
-        return chart;
-    };
-
-    chart.barClick = function(_) {
-        if (!arguments.length) {
-            return barClick;
-        }
-        barClick = _;
-        return chart;
-    };
-
-    chart.colorFill = function(_) {
-        return chart;
-    };
-
-    chart.strings = function(_) {
-        if (!arguments.length) {
-            return strings;
-        }
-        for (var prop in _) {
-            if (_.hasOwnProperty(prop)) {
-                strings[prop] = _[prop];
-            }
-        }
-        return chart;
-    };
-
-    chart.direction = function(_) {
-        if (!arguments.length) {
-            return direction;
-        }
-        direction = _;
-        multibar.direction(_);
-        yAxis.direction(_);
-        barLegend.direction(_);
-        lineLegend.direction(_);
-        return chart;
-    };
-
-    chart.locality = function(_) {
-        if (!arguments.length) {
-            return locality;
-        }
-        locality = sucrose.utils.buildLocality(_);
-        multibar.locality(_);
-        lines1.locality(_);
-        return chart;
-    };
-    //============================================================
-
-    return chart;
 };
 sucrose.models.pie = function() {
 
@@ -14361,38 +14499,36 @@ sucrose.models.stackedArea = function () {
       var path = g.select('.sc-areaWrap').selectAll('path.sc-area')
           .data(data);
 
+
+      function buildEventObject(e, d, i) {
+        return {
+            point: d,
+            series: d.key,
+            seriesIndex: d.series,
+            id: id,
+            e: e
+          };
+      }
+
       path.enter().append('path')
           .on('mouseover', function (d, i) {
+            var eo = buildEventObject(d3.event, d, i);
             d3.select(this).classed('hover', true);
-            dispatch.areaMouseover({
-              point: d,
-              series: d.key,
-              seriesIndex: i,
-              e: d3.event
-            });
+            dispatch.call('areaMouseover', this, eo);
             g.select('.sc-chart-' + chart.id() + ' .sc-area-' + i).classed('hover', true);
           })
-          .on('mouseout', function (d, i) {
-            d3.select(this).classed('hover', false);
-            dispatch.areaMouseout({
-              point: d,
-              series: d.key,
-              seriesIndex: i,
-              e: d3.event
-            });
-            g.select('.sc-chart-' + chart.id() + ' .sc-area-' + i).classed('hover', false);
+          .on('mousemove', function(d, i) {
+            var e = d3.event;
+            dispatch.call('elementMousemove', this, e);
           })
-          .on('mousemove', function (d, i) {
-            dispatch.areaMousemove(d3.event);
+          .on('mouseout', function(d, i) {
+            dispatch.call('elementMouseout', this);
           })
           .on('click', function (d, i) {
+            var eo = buildEventObject(d3.event, d, i);
+            d3.event.stopPropagation();
             d3.select(this).classed('hover', false);
-            dispatch.areaClick({
-              point: d,
-              series: d.key,
-              seriesIndex: i,
-              e: d3.event
-            });
+            dispatch.call('areaClick', this, eo);
           });
       //d3.transition(path.exit())
       path.exit()
@@ -14418,7 +14554,7 @@ sucrose.models.stackedArea = function () {
         g.select('.sc-chart-' + chart.id() + ' .sc-area-' + e.seriesIndex).classed('hover', false);
       });
       scatter.dispatch.on('elementClick.area', function (e) {
-        dispatch.areaClick(e);
+        dispatch.call('areaClick', this, e);
       });
 
       //============================================================
@@ -14595,6 +14731,7 @@ sucrose.models.stackedAreaChart = function() {
       showLegend = true,
       direction = 'ltr',
       tooltip = null,
+      duration = 0,
       tooltips = true,
       x,
       y,
@@ -14670,7 +14807,7 @@ sucrose.models.stackedAreaChart = function() {
       chart.container = this;
 
       chart.update = function () {
-        container.transition().duration(chart.delay()).call(chart);
+        container.transition().duration(duration).call(chart);
       };
 
       //------------------------------------------------------------
@@ -14713,8 +14850,8 @@ sucrose.models.stackedAreaChart = function() {
 
       isArrayData = Array.isArray(data[0].values[0]);
       if (isArrayData) {
-        stacked.x(function(d) { return d[0]; });
-        stacked.y(function(d) { return d[1]; });
+        stacked.x(function(d) { return d ? d[0] : 0; });
+        stacked.y(function(d) { return d ? d[1] : 0; });
       } else {
         stacked.x(function(d) { return d.x; });
         stacked.y(function(d) { return d.y; });
@@ -14824,8 +14961,8 @@ sucrose.models.stackedAreaChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedAreaChart').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedAreaChart');
+        var wrap_bind = container.selectAll('g.sucrose.sc-wrap').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedarea-chart');
         var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
         var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
         var g = container.select('g.sc-chart-wrap').merge(g_entr);
@@ -14839,28 +14976,28 @@ sucrose.models.stackedAreaChart = function() {
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        g_entr.append('g').attr('class', 'sc-titleWrap');
-        var titleWrap = g.select('.sc-titleWrap');
+        g_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = g.select('.sc-title-wrap');
         g_entr.append('g').attr('class', 'sc-x sc-axis');
-        var xAxisWrap = g.select('.sc-x.sc-axis');
+        var xAxis_wrap = g.select('.sc-x.sc-axis');
         g_entr.append('g').attr('class', 'sc-y sc-axis');
-        var yAxisWrap = g.select('.sc-y.sc-axis');
-        g_entr.append('g').attr('class', 'sc-stackedWrap');
-        var stackedWrap = g.select('.sc-stackedWrap');
-        g_entr.append('g').attr('class', 'sc-controlsWrap');
-        var controlsWrap = g.select('.sc-controlsWrap');
-        g_entr.append('g').attr('class', 'sc-legendWrap');
-        var legendWrap = g.select('.sc-legendWrap');
+        var yAxis_wrap = g.select('.sc-y.sc-axis');
+        g_entr.append('g').attr('class', 'sc-stacked-wrap');
+        var stacked_wrap = g.select('.sc-stacked-wrap');
+        g_entr.append('g').attr('class', 'sc-controls-wrap');
+        var controls_wrap = g.select('.sc-controls-wrap');
+        g_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = g.select('.sc-legend-wrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        titleWrap.select('.sc-title').remove();
+        title_wrap.select('.sc-title').remove();
 
         if (showTitle) {
-          titleWrap
+          title_wrap
             .append('text')
               .attr('class', 'sc-title')
               .attr('x', direction === 'rtl' ? availableWidth : 0)
@@ -14881,7 +15018,7 @@ sucrose.models.stackedAreaChart = function() {
             .strings(chart.strings().controls)
             .align('left')
             .height(availableHeight - headerHeight);
-          controlsWrap
+          controls_wrap
             .datum(controlsData)
             .call(controls);
 
@@ -14894,7 +15031,7 @@ sucrose.models.stackedAreaChart = function() {
             .strings(chart.strings().legend)
             .align('right')
             .height(availableHeight - headerHeight);
-          legendWrap
+          legend_wrap
             .datum(data)
             .call(legend);
 
@@ -14920,13 +15057,13 @@ sucrose.models.stackedAreaChart = function() {
         if (showControls) {
           var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
               ypos = showTitle ? titleBBox.height : - legend.margin().top;
-          controlsWrap
+          controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
         }
 
         if (showLegend) {
-          var legendLinkBBox = sucrose.utils.getTextBBox(legendWrap.select('.sc-legend-link')),
+          var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -14936,7 +15073,7 @@ sucrose.models.stackedAreaChart = function() {
           } else if (!showTitle) {
             ypos = - legend.margin().top;
           }
-          legendWrap
+          legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           legendHeight = legendTop ? 12 : legend.height();
         }
@@ -14952,7 +15089,7 @@ sucrose.models.stackedAreaChart = function() {
           .width(innerWidth)
           .height(innerHeight)
           .id(chart.id());
-        stackedWrap
+        stacked_wrap
           .datum(lineData)
           .call(stacked);
 
@@ -14984,7 +15121,7 @@ sucrose.models.stackedAreaChart = function() {
           .tickFormat(function(d, i) {
             return yAxis.valueFormat()(d, yIsCurrency);
           });
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
         yAxisMargin = yAxis.margin();
@@ -15003,8 +15140,7 @@ sucrose.models.stackedAreaChart = function() {
           .tickFormat(function(d, i, noEllipsis) {
             return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
           });
-
-        xAxisWrap
+        xAxis_wrap
           .call(xAxis);
         xAxisMargin = xAxis.margin();
         setInnerMargins();
@@ -15016,7 +15152,7 @@ sucrose.models.stackedAreaChart = function() {
         yAxis
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
 
         // final call to stacked based on new dimensions
@@ -15031,15 +15167,15 @@ sucrose.models.stackedAreaChart = function() {
 
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxisWrap
+        xAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
         trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
         trans += innerMargin.top;
-        yAxisWrap
+        yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        stackedWrap
+        lines_wrap
           .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
 
       };
@@ -15085,7 +15221,7 @@ sucrose.models.stackedAreaChart = function() {
         state.disabled = data.map(function (d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(chart.delay()).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       controls.dispatch.on('legendClick', function (d, i) {
@@ -15153,7 +15289,7 @@ sucrose.models.stackedAreaChart = function() {
           state.style = eo.style;
         }
 
-        container.transition().duration(chart.delay()).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('chartClick', function() {
@@ -15193,7 +15329,6 @@ sucrose.models.stackedAreaChart = function() {
   stacked.dispatch.on('tooltipHide', function() {
     dispatch.call('tooltipHide', this);
   });
-
 
   //============================================================
   // Expose Public Variables
@@ -15367,6 +15502,13 @@ sucrose.models.stackedAreaChart = function() {
     xAxis.direction(_);
     legend.direction(_);
     controls.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    stacked.duration(_);
     return chart;
   };
 

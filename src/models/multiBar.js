@@ -24,7 +24,9 @@ sucrose.models.multiBar = function() {
       vertical = true,
       baseDimension = 60,
       direction = 'ltr',
-      delay = 200,
+      clipEdge = false, // if true, masks bars within x and y scale
+      delay = 0, // transition
+      duration = 300, // transition
       xDomain,
       yDomain,
       nice = false,
@@ -179,19 +181,10 @@ sucrose.models.multiBar = function() {
             gap = baseDimension * (stacked ? 0.25 : 1),
             outerPadding = Math.max(0.25, (maxX - (groupCount * boundsWidth) - gap) / (2 * boundsWidth));
 
-        if (withLine) {
-          /*TODO: used in reports to keep bars from being too wide
-            breaks pareto chart, so need to update line to adjust x position */
-          x .domain(xDomain)
-            .range([0, maxX])
-            .paddingInner(0.3)
-            .paddingOuter(outerPadding);
-        } else {
-          x .domain(xDomain)
-            .range([0, maxX])
-            .paddingInner(0.25)
-            .paddingOuter(outerPadding);
-        }
+        x .domain(xDomain)
+          .range([0, maxX])
+          .paddingInner(withLine ? 0.3 : 0.25)
+          .paddingOuter(outerPadding);
 
         var yDomain = yDomain || d3.extent(seriesData.map(function(d) {
                 var posOffset = (vertical ? 0 : d.y),
@@ -386,12 +379,12 @@ sucrose.models.multiBar = function() {
         .attr('class', function(d, i) {
           return 'sc-bar ' + (getY(d, i) < 0 ? 'negative' : 'positive');
         })
-        .attr('transform', function(d, i, j) {
+        .attr('transform', function(d, i) {
           var trans = stacked ? {
                 x: Math.round(x(getX(d, i))),
                 y: Math.round(y(d.y0))
               } :
-              { x: Math.round(j * barThickness() + x(getX(d, i))),
+              { x: Math.round(d.series * barThickness() + x(getX(d, i))),
                 y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
               };
           return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
@@ -823,14 +816,6 @@ sucrose.models.multiBar = function() {
     return chart;
   };
 
-  chart.clipEdge = function(_) {
-    if (!arguments.length) {
-      return clipEdge;
-    }
-    clipEdge = _;
-    return chart;
-  };
-
   chart.barColor = function(_) {
     if (!arguments.length) {
       return barColor;
@@ -860,6 +845,22 @@ sucrose.models.multiBar = function() {
       return delay;
     }
     delay = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    return chart;
+  };
+
+  chart.clipEdge = function(_) {
+    if (!arguments.length) {
+      return clipEdge;
+    }
+    clipEdge = _;
     return chart;
   };
 

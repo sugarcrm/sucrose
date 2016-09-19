@@ -110,17 +110,14 @@ sucrose.models.legend = function() {
       var series_entr = series_bind.enter()
         .append('g').attr('class', 'sc-series')
           .on('mouseover', function(d, i) {
-            // dispatch.legendMouseover(d, i);  //TODO: Make consistent with other event objects
             dispatch.call('legendMouseover', this, d);
           })
           .on('mouseout', function(d, i) {
-            // dispatch.legendMouseout(d, i);
             dispatch.call('legendMouseout', this, d);
           })
           .on('click', function(d, i) {
             d3.event.preventDefault();
             d3.event.stopPropagation();
-            // dispatch.legendClick(d, i);
             dispatch.call('legendClick', this, d);
           });
       var series = g.selectAll('.sc-series').merge(series_entr);

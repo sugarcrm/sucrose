@@ -30,12 +30,12 @@
     <script src="src/models/axis.js"></script>
     <script src="src/models/legend.js"></script>
     <script src="src/models/scatter.js"></script>
-    <script src="src/models/line.js"></script>
-    <script src="src/models/lineChart.js"></script>
+    <script src="src/models/stackedArea.js"></script>
+    <script src="src/models/stackedAreaChart.js"></script>
 
 
     <script>
-var type = 'line';
+var type = 'area';
 var data = {
   "properties": {
     "title": "Test Line Chart",
@@ -2554,7 +2554,7 @@ var config = {
   "colorData": "default",
   "direction": "ltr",
   "height": null,
-  // "id": "chart_",
+  "id": "chart_",
   "locality": {
     "label": "English (US)",
     "decimal": ".",
@@ -2660,10 +2660,9 @@ var config = {
     "noData": "No Data Available.",
     "noLabel": "undefined"
   },
-  "tooltips": true,
+  "tooltips": false,
   "width": null,
-  "useVoronoi": true,
-  "clipEdge": false,
+  "useVoronoi": false,
   "gradient": [
     "0",
     "vertical",
@@ -2677,11 +2676,9 @@ var config = {
     "stagger",
     "rotate"
   ],
-  "showValues": "1",
-  // "controls": "",
   "colorOptions": {}
 };
-var chart = sucrose.models.lineChart();
+var chart = sucrose.models.stackedAreaChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
@@ -2739,20 +2736,20 @@ function configure(chart) {
 
 function format(chart) {
   chart
+    // .x(function (d) { console.log(d); return d[0]; })
+    // .y(function (d) { return d[1]; })
+    //.clipEdge(true)
+    //.style('expand', 'stream', 'stacked')
     .tooltipContent(function (key, x, y, e, graph) {
-      var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
-      var content = '<p>Category: <b>' + key + '</b></p>' +
-                    '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>',
-          dateCheck = new Date(x);
-      if (dateCheck instanceof Date && !isNaN(dateCheck.valueOf())) {
-        content += '<p>Date: <b>' + sucrose.utils.dateFormat(x, '%x', chart.locality()) + '</b></p>';
-      }
-      return content;
+      return '<p>Category: <b>' + key + '</b></p>';
     });
-    // chart.lines.isArea(true)
-    chart.xAxis
-      .highlightZero(false)
-      .reduceXTicks(false);
+
+  // chart.yAxis
+  //   .axisLabel('Expenditures ($)')
+  //   .tickFormat(d3.format(',.2f'));
+
+  // chart.xAxis
+  //   .tickFormat(function (d) { return d3.timeFormat('%x')(new Date(d)); });
 }
 
 window.onload = function () {

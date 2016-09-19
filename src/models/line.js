@@ -13,10 +13,12 @@ sucrose.models.line = function() {
       getY = function(d) { return d.y; }, // accessor to get the y value from a data point
       defined = function(d, i) { return !isNaN(getY(d, i)) && getY(d, i) !== null; }, // allows a line to be not continuous when it is not defined
       isArea = function(d) { return (d && d.area) || false; }, // decides if a line is an area or just a line
-      clipEdge = false, // if true, masks lines within x and y scale
+      interpolate = 'linear', // controls the line interpolation
       x, //can be accessed via chart.xScale()
       y, //can be accessed via chart.yScale()
-      interpolate = 'linear', // controls the line interpolation
+      clipEdge = false, // if true, masks lines within x and y scale
+      delay = 0, // transition
+      duration = 300, // transition
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
       classes = function(d, i) { return 'sc-group sc-series-' + d.series; };
@@ -26,10 +28,9 @@ sucrose.models.line = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var x0, y0; //used to store previous scales
+  // var x0, y0; //used to store previous scales
 
   //============================================================
-
 
   function chart(selection) {
     selection.each(function(data) {
@@ -44,7 +45,7 @@ sucrose.models.line = function() {
             interpolate === 'basis' ? d3.curveBasis : d3.natural;
 
       var t = d3.transition('scatter')
-          .duration(400)
+          .duration(duration)
           .ease(d3.easeLinear);
 
       //set up the gradient constructor function
@@ -71,13 +72,14 @@ sucrose.models.line = function() {
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       g_entr.append('g').attr('class', 'sc-groups');
+      var groups_wrap = wrap.select('.sc-groups');
       g_entr.append('g').attr('class', 'sc-scatter-wrap');
+      var scatter_wrap = wrap.select('.sc-scatter-wrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
 
-      var scatter_wrap = wrap.select('.sc-scatter-wrap');
       scatter
         .width(availableWidth)
         .height(availableHeight);
@@ -97,7 +99,7 @@ sucrose.models.line = function() {
       //------------------------------------------------------------
       // Groups
 
-      var groups_bind = wrap.select('.sc-groups').selectAll('.sc-group')
+      var groups_bind = groups_wrap.selectAll('g.sc-group')
             .data(function(d) { return d; }, function(d) { return d.series; });
       var groups_entr = groups_bind.enter().append('g')
             .attr('class', 'sc-group')
@@ -124,12 +126,9 @@ sucrose.models.line = function() {
       //------------------------------------------------------------
       // Areas
 
-      var areas_bind = groups.selectAll('path.sc-area')
-            .data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
-      var areas_entr = areas_bind.enter().append('path')
-            .attr('class', 'sc-area sc-enter');
-      var areas = groups.selectAll('.sc-area')
-            .merge(areas_entr);
+      var areas_bind = groups.selectAll('path.sc-area').data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
+      var areas_entr = areas_bind.enter().append('path').attr('class', 'sc-area sc-enter');
+      var areas = groups.selectAll('.sc-area').merge(areas_entr);
 
       areas
         .filter(function(d) {
@@ -323,6 +322,23 @@ sucrose.models.line = function() {
     return chart;
   };
 
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    scatter.duration(_);
+    return chart;
+  };
+
   chart.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
@@ -348,7 +364,6 @@ sucrose.models.line = function() {
   };
 
   //============================================================
-
 
   return chart;
 };
