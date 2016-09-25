@@ -151,7 +151,8 @@ var sucroseCharts = function () {
           if (!chart[k]) {
               continue;
           }
-          chart[k](config[k]);
+          v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
+          chart[k](v);
       }
     }
 
@@ -349,7 +350,7 @@ var sucroseCharts = function () {
             var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
             return '<p>' + e.key + ': <b>' + val + '</b></p>';
           })
-          .barClick(function (data, eo, chart, container) {
+          .seriesClick(function (data, eo, chart, container) {
               var d = eo.series,
                   selectedSeries = eo.seriesIndex;
 

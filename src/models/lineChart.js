@@ -326,36 +326,34 @@ sucrose.models.lineChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var wrap_bind = container.selectAll('g.sucrose.sc-wrap').data([lineData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line-chart');
-        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-        var g = container.select('g.sc-chart-wrap');
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([lineData]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-line');
+        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-        g_entr.append('rect').attr('class', 'sc-background')
+        wrap_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
           .attr('fill', '#FFF');
 
-        g.select('.sc-background')
+        wrap.select('.sc-background')
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        g_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = g.select('.sc-title-wrap');
+        wrap_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = wrap.select('.sc-title-wrap');
 
-        g_entr.append('g').attr('class', 'sc-x sc-axis');
-        var xAxis_wrap = g.select('.sc-x.sc-axis');
-        g_entr.append('g').attr('class', 'sc-y sc-axis');
-        var yAxis_wrap = g.select('.sc-y.sc-axis');
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
 
-        g_entr.append('g').attr('class', 'sc-lines-wrap');
-        var lines_wrap = g.select('.sc-lines-wrap');
+        wrap_entr.append('g').attr('class', 'sc-lines-wrap');
+        var lines_wrap = wrap.select('.sc-lines-wrap');
 
-        g_entr.append('g').attr('class', 'sc-controls-wrap');
-        var controls_wrap = g.select('.sc-controls-wrap');
-        g_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = g.select('.sc-legend-wrap');
+        wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+        var controls_wrap = wrap.select('.sc-controls-wrap');
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = wrap.select('.sc-legend-wrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -376,7 +374,7 @@ sucrose.models.lineChart = function() {
               .attr('stroke', 'none')
               .attr('fill', 'black');
 
-          titleBBox = sucrose.utils.getTextBBox(g.select('.sc-title'));
+          titleBBox = sucrose.utils.getTextBBox(wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -559,8 +557,9 @@ sucrose.models.lineChart = function() {
         yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
+        trans = innerMargin.left + ',' + innerMargin.top;
         lines_wrap
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+          .attr('transform', 'translate(' + trans + ')');
 
       };
 

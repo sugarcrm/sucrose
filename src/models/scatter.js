@@ -4,25 +4,42 @@ sucrose.models.scatter = function() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+  var id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
       width = 960,
       height = 500,
+      margin = {top: 0, right: 0, bottom: 0, left: 0},
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); }, // chooses color
       fill = color,
       classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
-      id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
       x = d3.scaleLinear(),
       y = d3.scaleLinear(),
       z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
       getX = function(d) { return d.x; }, // accessor to get the x value
       getY = function(d) { return d.y; }, // accessor to get the y value
-      getSize = function(d) { return d.size || 1; }, // accessor to get the point size
+      getZ = function(d) {
+        return d.size || 1;
+      }, // accessor to get the point size, set by public method .size()
+      forceX = [], // List of numbers to Force into the X scale (ie. 0, or a max / min, etc.)
+      forceY = [], // List of numbers to Force into the Y scale
+      forceZ = [], // List of numbers to Force into the Size scale
+      xDomain = null, // Override x domain (skips the calculation from data)
+      yDomain = null, // Override y domain
+      zDomain = [1, 5], // Override point size domain
+      zRange = [1 * 1 * Math.PI, 5 * 5 * Math.PI],
+      circleRadius = function(d, i) {
+        // a = pi*r^2
+        // a / pi = r^2
+        // sqrt(a / pi) = r
+        // 1 = 1 * pi , 5 = 25 * pi
+        return Math.sqrt(z(getZ(d, i)) / Math.PI);
+      }, // function to get the radius for voronoi point clips
+      symbolSize = function(d, i) {
+        return z(getZ(d, i));
+      },
       getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
       locality = sucrose.utils.buildLocality(),
       onlyCircles = true, // Set to false to use shapes
-      forceX = [], // List of numbers to Force into the X scale (ie. 0, or a max / min, etc.)
-      forceY = [], // List of numbers to Force into the Y scale
-      forceSize = [], // List of numbers to Force into the Size scale
+
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
       pointActive = function(d) { return !d.notActive; }, // any points that return false will be filtered out
       padData = false, // If true, adds half a data points width to front and back, for lining up a line chart with a bar chart
@@ -32,16 +49,6 @@ sucrose.models.scatter = function() {
       duration = 300,
       useVoronoi = true,
       clipVoronoi = true, // if true, masks each point with a circle... can turn off to slightly increase performance
-      circleRadius = function(d, i) {
-        return Math.sqrt(z(getSize(d, i)) / Math.PI);
-      }, // function to get the radius for voronoi point clips
-      symbolSize = function(d, i) {
-        return z(getSize(d, i));
-      },
-      xDomain = null, // Override x domain (skips the calculation from data)
-      yDomain = null, // Override y domain
-      sizeDomain = null, // Override point size domain
-      sizeRange = [16, 256],
       singlePoint = false,
       dispatch = d3.dispatch('elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove'),
       nice = false;
@@ -79,11 +86,11 @@ sucrose.models.scatter = function() {
       // Setup Scales
 
       // remap and flatten the data for use in calculating the scales' domains
-      var seriesData = (xDomain && yDomain && sizeDomain) ? [] : // if we know xDomain and yDomain and sizeDomain, no need to calculate.... if Size is constant remember to set sizeDomain to speed up performance
+      var seriesData = (xDomain && yDomain && zDomain) ? [] : // if we know xDomain and yDomain and zDomain, no need to calculate.... if Size is constant remember to set zDomain to speed up performance
             d3.merge(
               data.map(function(d) {
                 return d.values.map(function(d, i) {
-                  return { x: getX(d, i), y: getY(d, i), size: getSize(d, i) };
+                  return { x: getX(d, i), y: getY(d, i), size: getZ(d, i) };
                 });
               })
             );
@@ -103,7 +110,7 @@ sucrose.models.scatter = function() {
         if (padData && data[0]) {
           if (padDataOuter === -1) {
             // shift range so that largest bubble doesn't cover scales
-            var largestPossible = Math.sqrt(sizeRange[1] / Math.PI);
+            var largestPossible = Math.sqrt(zRange[1] / Math.PI);
             x.range([
               0 + largestPossible,
               availableWidth - largestPossible
@@ -138,13 +145,13 @@ sucrose.models.scatter = function() {
           x.range([0, availableWidth]);
           y.range([availableHeight, 0]);
         }
-console.log(y.domain())
+
         if (nice) {
           y.nice();
         }
 
-        z.domain(sizeDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceSize)))
-         .range(sizeRange);
+        z.range(zRange)
+         .domain(zDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceZ)));
 
         // If scale's domain don't have a range, slightly adjust to make one... so a chart can show a single data point
         if (x.domain()[0] === x.domain()[1] || y.domain()[0] === y.domain()[1]) singlePoint = true;
@@ -329,7 +336,7 @@ console.log(y.domain())
           wrap.select('.sc-groups').selectAll('.sc-group')
             .selectAll('.sc-point')
               //.data(dataWithPoints)
-              .style('pointer-events', 'auto') // recativate events, disabled by css
+              // .style('pointer-events', 'auto') // recativate events, disabled by css
               .on('mouseover', function(d, i) {
                 if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
                 var eo = buildEventObject(d3.event, d, i, d.series);
@@ -394,8 +401,12 @@ console.log(y.domain())
           .filter(function(d) {
             return d3.select(this).classed('sc-enter');
           })
-          .attr('cx', function(d, i) { return x(getX(d, i)); })
-          .attr('cy', function(d, i) { return y(0); });
+          .attr('cx', function(d, i) {
+            return x(getX(d, i));
+          })
+          .attr('cy', function(d, i) {
+            return y(0);
+          });
         points
           .transition(t)
             .attr('cx', function(d, i) { return x(getX(d, i)); })
@@ -493,6 +504,11 @@ console.log(y.domain())
 
   chart.dispatch = dispatch;
 
+  chart.id = function(_) {
+    if (!arguments.length) return id;
+    id = _;
+    return chart;
+  };
   chart.color = function(_) {
     if (!arguments.length) return color;
     color = _;
@@ -526,30 +542,9 @@ console.log(y.domain())
     return chart;
   };
 
-  chart.size = function(_) {
-    if (!arguments.length) return getSize;
-    getSize = sucrose.functor(_);
-    return chart;
-  };
-
-  chart.margin = function(_) {
-    if (!arguments.length) return margin;
-    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
-    return chart;
-  };
-
-  chart.width = function(_) {
-    if (!arguments.length) return width;
-    width = _;
-    return chart;
-  };
-
-  chart.height = function(_) {
-    if (!arguments.length) return height;
-    height = _;
+  chart.z = function(_) {
+    if (!arguments.length) return getZ;
+    getZ = sucrose.functor(_);
     return chart;
   };
 
@@ -583,15 +578,9 @@ console.log(y.domain())
     return chart;
   };
 
-  chart.sizeDomain = function(_) {
-    if (!arguments.length) return sizeDomain;
-    sizeDomain = _;
-    return chart;
-  };
-
-  chart.sizeRange = function(_) {
-    if (!arguments.length) return sizeRange;
-    sizeRange = _;
+  chart.zDomain = function(_) {
+    if (!arguments.length) return zDomain;
+    zDomain = _;
     return chart;
   };
 
@@ -607,9 +596,48 @@ console.log(y.domain())
     return chart;
   };
 
-  chart.forceSize = function(_) {
-    if (!arguments.length) return forceSize;
-    forceSize = _;
+  chart.forceZ = function(_) {
+    if (!arguments.length) return forceZ;
+    forceZ = _;
+    return chart;
+  };
+
+  chart.size = function(_) {
+    if (!arguments.length) return getZ;
+    getZ = sucrose.functor(_);
+    return chart;
+  };
+
+  chart.sizeRange = function(_) {
+    if (!arguments.length) return zRange;
+    zRange = _;
+    return chart;
+  };
+  chart.sizeDomain = function(_) {
+    if (!arguments.length) return sizeDomain;
+    zDomain = _;
+    return chart;
+  };
+
+
+  chart.margin = function(_) {
+    if (!arguments.length) return margin;
+    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) return width;
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) return height;
+    height = _;
     return chart;
   };
 
@@ -673,12 +701,6 @@ console.log(y.domain())
   chart.onlyCircles = function(_) {
     if (!arguments.length) return onlyCircles;
     onlyCircles = _;
-    return chart;
-  };
-
-  chart.id = function(_) {
-    if (!arguments.length) return id;
-    id = _;
     return chart;
   };
 

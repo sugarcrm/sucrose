@@ -102,15 +102,12 @@ sucrose.models.axis = function() {
       // Min Max ticks
       var axisMaxMin_data = showMaxMin ? d3.extent(scale.domain()) : [];
       var axisMaxMin_bind = wrap.selectAll('g.sc-axisMaxMin').data(axisMaxMin_data);
-      var axisMaxMin_entr = axisMaxMin_bind.enter()
-            .append('g').attr('class', 'sc-axisMaxMin');
+      var axisMaxMin_entr = axisMaxMin_bind.enter().append('g').attr('class', 'sc-axisMaxMin');
       axisMaxMin_bind.exit().remove();
       var axisMaxMin = wrap.selectAll('g.sc-axisMaxMin').merge(axisMaxMin_entr);
 
-      axisMaxMin_entr.append('text')
-        .style('opacity', 0);
-      axisMaxMin_entr.append('line')
-        .style('opacity', 0);
+      axisMaxMin_entr.append('text').style('opacity', 0);
+      axisMaxMin_entr.append('line').style('opacity', 0);
 
       if (showMaxMin) {
         axisMaxMin.select('text')
@@ -131,8 +128,7 @@ sucrose.models.axis = function() {
       // Axis label
       var axisLabel_data = !!axisLabelText ? [axisLabelText] : [];
       var axisLabel_bind = wrap.selectAll('text.sc-axislabel').data(axisLabel_data);
-      var axisLabel_entr = axisLabel_bind.enter()
-            .append('text').attr('class', 'sc-axislabel');
+      var axisLabel_entr = axisLabel_bind.enter().append('text').attr('class', 'sc-axislabel');
       axisLabel_bind.exit().remove();
       var axisLabel = wrap.selectAll('text.sc-axislabel').merge(axisLabel_entr);
 
@@ -234,7 +230,7 @@ sucrose.models.axis = function() {
               collision = (dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap) &&
                           (dim.bottom < minTickDimensions.top || dim.top > maxTickDimensions.bottom);
             } else {
-              // collision = dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap;
+              collision = dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap;
             }
 
             tick.select('text')

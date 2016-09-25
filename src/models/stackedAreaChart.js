@@ -11,7 +11,8 @@ sucrose.models.stackedAreaChart = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      tooltip = null,
+      tooltip = false,
+      tooltip0 = null,
       duration = 0,
       tooltips = true,
       x,
@@ -37,25 +38,12 @@ sucrose.models.stackedAreaChart = function() {
         .align('right'),
       controls = sucrose.models.legend()
         .align('left')
-        .color(['#444']);
+        .color(['#444']),
+      guide = sucrose.models.line().duration(0);
 
   var tooltipContent = function(key, x, y, e, graph) {
     return '<h3>' + key + '</h3>' +
            '<p>' + y + ' on ' + x + '</p>';
-  };
-
-  // stacked.scatter
-  //   .pointActive(function (d) {
-  //     return !!Math.round(stacked.y()(d) * 100);
-  //   });
-
-  var showTooltip = function(eo, offsetElement) {
-    var key = eo.series.key,
-        x = lines.x()(eo.point, eo.pointIndex),
-        y = lines.y()(eo.point, eo.pointIndex),
-        content = tooltipContent(key, x, y, eo, chart);
-
-    tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
   };
 
   //============================================================
@@ -208,14 +196,16 @@ sucrose.models.stackedAreaChart = function() {
       ];
 
       //------------------------------------------------------------
-      // Setup Scales
+      // Setup Scales and Axes
+
+      stacked
+        .xDomain(null)  //?why null?
+        .yDomain(null)
+        .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear());
 
       x = stacked.xScale();
       y = stacked.yScale();
 
-      stacked
-        .xDomain(null)  //?why null?
-        .yDomain(null);
       xAxis
         .orient('bottom')
         .ticks(null)
@@ -223,7 +213,7 @@ sucrose.models.stackedAreaChart = function() {
         .showMaxMin(xIsDatetime)
         .highlightZero(false)
         .scale(x)
-        .tickPadding(4)
+        .tickPadding(6)
         .valueFormat(xValueFormat);
       yAxis
         .orient('left')
@@ -231,8 +221,14 @@ sucrose.models.stackedAreaChart = function() {
         .showMaxMin(true)
         .highlightZero(true)
         .scale(y)
-        .tickPadding(4)
+        .tickPadding(6)
         .valueFormat(yValueFormat);
+
+      guide
+        .useVoronoi(false)
+        .xScale(x)
+        .yScale(y);
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -258,36 +254,37 @@ sucrose.models.stackedAreaChart = function() {
             legendHeight = 0,
             trans = '';
 
-        var wrap_bind = container.selectAll('g.sucrose.sc-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-stackedarea-chart');
-        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-        var g = container.select('g.sc-chart-wrap');
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-stackedarea');
+        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-        g_entr.append('rect').attr('class', 'sc-background')
+        wrap_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
           .attr('fill', '#FFF');
 
-        g.select('.sc-background')
+        wrap.select('.sc-background')
           .attr('width', availableWidth + margin.left + margin.right)
           .attr('height', availableHeight + margin.top + margin.bottom);
 
-        g_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = g.select('.sc-title-wrap');
+        wrap_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = wrap.select('.sc-title-wrap');
 
-        g_entr.append('g').attr('class', 'sc-x sc-axis');
-        var xAxis_wrap = g.select('.sc-x.sc-axis');
-        g_entr.append('g').attr('class', 'sc-y sc-axis');
-        var yAxis_wrap = g.select('.sc-y.sc-axis');
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
 
-        g_entr.append('g').attr('class', 'sc-stacked-wrap');
-        var stacked_wrap = g.select('.sc-stacked-wrap');
+        wrap_entr.append('g').attr('class', 'sc-stackedarea-wrap');
+        var stacked_wrap = wrap.select('.sc-stackedarea-wrap');
 
-        g_entr.append('g').attr('class', 'sc-controls-wrap');
-        var controls_wrap = g.select('.sc-controls-wrap');
-        g_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = g.select('.sc-legend-wrap');
+        wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+        var controls_wrap = wrap.select('.sc-controls-wrap');
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = wrap.select('.sc-legend-wrap');
+
+        wrap_entr.append('g').attr('class', 'sc-guide-wrap');
+        var guide_wrap = wrap.select('.sc-guide-wrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -308,7 +305,7 @@ sucrose.models.stackedAreaChart = function() {
               .attr('stroke', 'none')
               .attr('fill', 'black');
 
-          titleBBox = sucrose.utils.getTextBBox(g.select('.sc-title'));
+          titleBBox = sucrose.utils.getTextBBox(wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -334,7 +331,7 @@ sucrose.models.stackedAreaChart = function() {
           legend_wrap
             .datum(data)
             .call(legend);
-console.log(data)
+
           maxLegendWidth = legend.calculateWidth();
         }
 
@@ -415,6 +412,8 @@ console.log(data)
           // This resets the scales for the whole chart
           // unfortunately we can't call this without until line instance is called
           // stacked.scatter.resetDimensions(innerWidth, innerHeight);
+          x.range([0, innerWidth]);
+          y.range([innerHeight, 0]);
         }
 
         // Y-Axis
@@ -465,7 +464,71 @@ console.log(data)
         stacked_wrap
           // .transition().duration(chart.delay())
           .datum(lineData)
-            .call(stacked);
+            .call(stacked)
+
+        // var middleDate = (x.domain()[0].getTime() + (x.domain()[1].getTime() - x.domain()[0].getTime()) / 2);
+
+        guide
+          .width(innerWidth)
+          .height(innerHeight)
+          .size(2)
+          .color(function() { return '#000'; })
+          .xDomain(x.domain()) // don't let scatter recalc domain from data
+          .yDomain(y.domain()); // don't let scatter recalc domain from data
+
+        guide_wrap
+          .datum([{
+            key:'guide',
+            values: [
+              {x: 0, y: 0},
+              {x: 0, y: y.domain()[1]}
+            ]
+          }])
+          .call(guide);
+
+        chart.showTooltip = function(eo, offsetElement) {
+          var key = eo.seriesKey,
+              x = xValueFormat(stacked.x()(eo)),
+              y = yValueFormat(stacked.y()(eo)),
+              content = tooltipContent(key, x, y, eo, chart);
+          return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        };
+
+
+        chart.moveGuide = function(svg, container, eo) {
+          var xpos = eo.data[0][0];
+          var values = [{x: xpos, y: 0}]
+                .concat(eo.data.map(function(d, i) { return {x: xpos, y: d[1]}; }))
+                .concat([{x: xpos, y: y.domain()[1]}]);
+          var guidePos = {
+            clientX: eo.origin.left + x(xpos)
+          };
+
+          guide_wrap
+            .datum([{
+              key:'guide',
+              values: values
+            }])
+            .call(guide);
+
+          if (!tooltip0) {
+            tooltip0 = {};
+            eo.data.forEach(function(d, i) {
+              d.e = eo.e;
+              tooltip0[i] = chart.showTooltip(d, that.parentNode);
+            });
+          }
+
+          eo.data.forEach(function(d, i) {
+            var key = d.seriesKey,
+                xval = xValueFormat(stacked.x()(d)),
+                yval = yValueFormat(stacked.y()(d)),
+                content = tooltipContent(key, xval, yval, d, chart);
+            guidePos.clientY = eo.origin.top + y(d[1]);
+            d3.select(tooltip0[i]).select('.tooltip-inner').html(content)
+            sucrose.tooltip.position(that.parentNode, tooltip0[i], guidePos, 'e');
+          });
+        }
 
         //------------------------------------------------------------
         // Final repositioning
@@ -482,8 +545,11 @@ console.log(data)
         yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
+        trans = innerMargin.left + ',' + innerMargin.top;
         stacked_wrap
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+          .attr('transform', 'translate(' + trans + ')');
+        guide_wrap
+          .attr('transform', 'translate(' + trans + ')');
 
       };
 
@@ -566,19 +632,21 @@ console.log(data)
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          showTooltip(eo, that.parentNode);
+          tooltip = true;
         }
       });
 
-      dispatch.on('tooltipMove', function(e) {
+      dispatch.on('tooltipMove', function(eo) {
         if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+          chart.moveGuide(that.parentNode, container, eo);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
+          tooltip = false;
           sucrose.tooltip.cleanup();
+          tooltip0 = null;
         }
       });
 
@@ -621,19 +689,11 @@ console.log(data)
     dispatch.call('tooltipShow', this, eo);
   });
 
-  stacked.dispatch.on('areaMousemove.tooltip', function(e) {
-    dispatch.call('tooltipMove', this, e);
+  stacked.dispatch.on('areaMousemove.tooltip', function(eo) {
+    dispatch.call('tooltipMove', this, eo);
   });
 
   stacked.dispatch.on('areaMouseout.tooltip', function() {
-    dispatch.call('tooltipHide', this);
-  });
-
-  stacked.dispatch.on('tooltipShow', function(eo) {
-    dispatch.call('tooltipShow', this, eo);
-  });
-
-  stacked.dispatch.on('tooltipHide', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -657,11 +717,10 @@ console.log(data)
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-// console.log(d.series, i)
-          return sucrose.utils.defaultColor()(d, i);
+          return sucrose.utils.defaultColor()(d, d.series || i);
         };
     var classes = function(d, i) {
-          return 'sc-area sc-area-' + d.series;
+          return 'sc-area sc-series-' + (d.series || i);
         };
 
     switch (type) {

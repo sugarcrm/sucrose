@@ -530,19 +530,20 @@ sucrose.utils.numberFormatSI = function(d, p, c, l) {
     }
     p = typeof p === 'undefined' ? 2 : p;
     c = typeof c === 'undefined' ? false : !!c;
-    fmtr = typeof l === 'undefined' ? d3.formatPrefix : d3.formatLocale(l).formatPrefix;
-    // d = Math.round(d * 10 * p) / 10 * p;
+    fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
     spec = c ? '$,' : ',';
     // spec += '.' + 2 + 'r';
     if (c && d < 1000 && d !== parseInt(d, 10)) {
-      spec += '.2f';
+      spec += '.2s';
+    } else if (Math.abs(d) > 1 && Math.abs(d) <= 1000) {
+      d = Math.round(d * 10 * p) / (10 * p);
     } else {
-      spec += '.' + p;
+      spec += '.' + p + 's';
     }
     if (d > -1 && d < 1) {
       return fmtr(spec)(d);
     }
-    return fmtr(spec,1.2e6)(d);
+    return fmtr(spec)(d);
 };
 
 sucrose.utils.numberFormatRound = function(d, p, c, l) {
