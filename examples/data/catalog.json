@@ -1,10 +1,12 @@
 {
     "area": [
-        {"value": "line_data", "label": "Test Line Chart Data #1"}
+        {"value": "line_data", "label": "Test Line Chart Data #1"},
+        {"value": "data_null", "label": "Test Null Data"}
     ],
     "bubble": [
         {"value": "top10_opportunities", "label": "Top 10 Opportunities"},
-        {"value": "bubble_year_data", "label": "Year Data"}
+        {"value": "bubble_year_data", "label": "Year Data"},
+        {"value": "data_null", "label": "Test Null Data"}
     ],
     "funnel": [
         {"value": "funnel_data", "label": "Opportunity Total by Sales Stage"},
@@ -39,13 +41,15 @@
         {"value": "multibar_data_opportunities", "label": "All Opportunities By Lead Source By Outcome"},
         {"value": "multibar_data_long", "label": "Accounts by Type by Industry"},
         {"value": "multibar_data_short", "label": "Apples or Oranges"},
-        {"value": "multibar_data_raw", "label": "Raw Report Data"}
+        {"value": "multibar_data_raw", "label": "Raw Report Data"},
+        {"value": "data_null", "label": "Test Null Data"}
     ],
     "pareto": [
         {"value": "pareto_data_salesrep_probability", "label": "Sales Rep Worksheet by Probability"},
         {"value": "pareto_data_salesrep_stage", "label": "Sales Rep Worksheet by Sales Stage"},
         {"value": "pareto_data_salesrep", "label": "Sales Rep Worksheet"},
-        {"value": "pareto_data_manager", "label": "Manager Worksheet"}
+        {"value": "pareto_data_manager", "label": "Manager Worksheet"},
+        {"value": "data_null", "label": "Test Null Data"}
     ],
     "pie": [
         {"value": "pie_data", "label": "All Opportunities by Lead Source"},
@@ -59,6 +63,7 @@
     ],
     "treemap": [
         {"value": "flare", "label": "Flare Code Lines"},
-        {"value": "treemap_data", "label": "Treemap Data"}
+        {"value": "treemap_data", "label": "Treemap Data"},
+        {"value": "data_null", "label": "Test Null Data"}
     ]
 }

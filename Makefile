@@ -111,7 +111,7 @@ examples: npm-prod
 examples-dev: npm-dev
 	cd examples && make install-dev
 
-examples-sucrose: js
+examples-sucrose: js css
 	cd examples && make sucrose
 
 reset:
