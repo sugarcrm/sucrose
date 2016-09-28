@@ -231,7 +231,7 @@ var sucroseCharts = function () {
               return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
           .fmtCount(function (d) {
-              return d ? ' (' + sucrose.utils.numberFormatSI(d, 2, false, chart.locality()) + ')' : '';
+              return d ? ' (' + sucrose.utils.numberFormatSI(d, 0, false, chart.locality()) + ')' : '';
           })
           .tooltipContent(function (key, x, y, e, graph) {
             var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
@@ -398,24 +398,24 @@ var sucroseCharts = function () {
       }
     },
     area: {
-      tooltips: false,
+      tooltips: true,
       useVoronoi: false,
       _format: function format(chart) {
-        chart
-          .x(function (d) { return d[0]; })
-          .y(function (d) { return d[1]; })
+        // chart
+          // .x(function (d) { return d[0]; })
+          // .y(function (d) { return d[1]; })
           //.clipEdge(true)
           //.style('expand', 'stream', 'stacked')
-          .tooltipContent(function (key, x, y, e, graph) {
-            return '<p>Category: <b>' + key + '</b></p>';
-          });
+          // .tooltipContent(function (key, x, y, e, graph) {
+          //   return '<p>Category: <b>' + key + '</b></p>';
+          // });
 
-        chart.yAxis
-          .axisLabel('Expenditures ($)')
-          .tickFormat(d3.format(',.2f'));
+        // chart.yAxis
+        //   .axisLabel('Expenditures ($)')
+        //   .tickFormat(d3.format(',.2f'));
 
-        chart.xAxis
-          .tickFormat(function (d) { return d3.timeFormat('%x')(new Date(d)); });
+        // chart.xAxis
+        //   .tickFormat(function (d) { return d3.timeFormat('%x')(new Date(d)); });
       }
     },
     tree: {

@@ -12,7 +12,8 @@
         {"value": "funnel_data_long", "label": "Long Label Lengths"},
         {"value": "funnel_data_uniform", "label": "Uniform Data and Labels"},
         {"value": "funnel_data_single", "label": "One Long Single Label"},
-        {"value": "sugar_data_grouped", "label": "Test Grouped Data"}
+        {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
+        {"value": "data_null", "label": "Test Null Data"}
     ],
     "gauge": [
         {"value": "gauge_data", "label": "Closed Won Opportunities"}
@@ -49,9 +50,9 @@
     "pie": [
         {"value": "pie_data", "label": "All Opportunities by Lead Source"},
         {"value": "pie_data_quarters", "label": "Test Quarter Labels"},
-        {"value": "pie_data_null", "label": "Test Empty Data"},
         {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
-        {"value": "pie_data_single", "label": "Test Single Slice Data"}
+        {"value": "pie_data_single", "label": "Test Single Slice Data"},
+        {"value": "data_null", "label": "Test Null Data"}
     ],
     "tree": [
         {"value": "tree_data", "label": "Organization"}
