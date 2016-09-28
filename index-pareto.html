@@ -488,7 +488,7 @@ window.onload = function () {
     d3.select('#chart_').on('click', chart.dispatch.chartClick);
 
     // Rebind window resizer
-    window.addEventListener('resize', chart.update);
+    window.addEventListener('resize', chart.render);
 };
     </script>
   </body>

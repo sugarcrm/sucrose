@@ -44,10 +44,10 @@ sucrose.models.sparklinePlus = function() {
       // Display No Data message if there's nothing to show.
 
       if (!data || !data.length) {
-        var noDataText = container.selectAll('.sc-noData').data([noData]);
+        var noDataText = container.selectAll('.sc-no-data').data([noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -58,7 +58,7 @@ sucrose.models.sparklinePlus = function() {
 
         return chart;
       } else {
-        container.selectAll('.sc-noData').remove();
+        container.selectAll('.sc-no-data').remove();
       }
 
       //------------------------------------------------------------
@@ -82,7 +82,7 @@ sucrose.models.sparklinePlus = function() {
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
-      
+
       g_entr.append('g').attr('class', 'sc-sparklineWrap');
       g_entr.append('g').attr('class', 'sc-valueWrap');
       g_entr.append('g').attr('class', 'sc-hoverArea');

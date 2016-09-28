@@ -536,7 +536,7 @@ sucrose.utils.numberFormatSI = function(d, p, c, l) {
     if (c && d < 1000 && d !== parseInt(d, 10)) {
       spec += '.2s';
     } else if (Math.abs(d) > 1 && Math.abs(d) <= 1000) {
-      d = Math.round(d * 10 * p) / (10 * p);
+      d = p === 0 ? Math.round(d) : Math.round(d * 10 * p) / (10 * p);
     } else {
       spec += '.' + p + 's';
     }

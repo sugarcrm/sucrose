@@ -304,10 +304,10 @@ function format(chart) {
     // .fmtKey(function (d) {
     // })
     .fmtValue(function (d) {
-        return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+      return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
     })
     .fmtCount(function (d) {
-        return d ? ' (' + sucrose.utils.numberFormatSI(d, 2, false, chart.locality()) + ')' : '';
+        return d ? ' (' + sucrose.utils.numberFormatSI(d, 0, false, chart.locality()) + ')' : '';
     })
     .tooltipContent(function (key, x, y, e, graph) {
       var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
@@ -335,7 +335,7 @@ window.onload = function () {
     d3.select('#chart_').on('click', chart.dispatch.chartClick);
 
     // Rebind window resizer
-    window.addEventListener('resize', chart.update);
+    window.addEventListener('resize', chart.render);
 };
     </script>
   </body>

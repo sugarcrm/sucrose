@@ -67,10 +67,10 @@ sucrose.models.gaugeChart = function() {
       // Display No Data message if there's nothing to show.
 
       if (!data || !data.length) {
-        var noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
+        var noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -83,7 +83,7 @@ sucrose.models.gaugeChart = function() {
 
         return chart;
       } else {
-        container.selectAll('.sc-noData').remove();
+        container.selectAll('.sc-no-data').remove();
       }
 
       //------------------------------------------------------------

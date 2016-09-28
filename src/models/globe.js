@@ -129,7 +129,7 @@ sucrose.models.globeChart = function() {
 
       function displayNoData(d) {
         if (d && d.length) {
-          container.selectAll('.sc-noData').remove();
+          container.selectAll('.sc-no-data').remove();
           return false;
         }
 
@@ -137,10 +137,10 @@ sucrose.models.globeChart = function() {
 
         var w = width || parseInt(container.style('width'), 10) || 960,
             h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
+            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 

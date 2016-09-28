@@ -36,45 +36,31 @@
 var type = 'pie';
 var data = {
   "properties": {
-    "title": "All Opportunities by Lead Source",
-    "yDataType": "currency"
+    "title": "Total is 3780.00",
+    "yDataType": "currency",
+    "xDataType": "datetime",
+    "groups": [
+      {"label": "01 Jan 2016 21:30:28 GMT"},
+      {"label": "01 Feb 2016 21:30:28 GMT"},
+      {"label": "01 Mar 2016 21:30:28 GMT"}
+    ]
   },
   "data": [
     {
-      "key": "Undefined",
-      "value": 100
+      "key": "Apples",
+      "values": [
+        {"x": 1, "y": 1234},
+        {"x": 2, "y": 567},
+        {"x": 3, "y": 89}
+      ]
     },
     {
-      "key": "Cold Call",
-      "value": 0
-    },
-    {
-      "key": "Existing Customer",
-      "value": 75
-    },
-    {
-      "key": "Self Generated",
-      "value": 140
-    },
-    {
-      "key": "Walk In",
-      "value": 10
-    },
-    {
-      "key": "Employee",
-      "value": 160
-    },
-    {
-      "key": "Partner",
-      "value": 100
-    },
-    {
-      "key": "Public Relations",
-      "value": 145
-    },
-    {
-      "key": "Other",
-      "value": 9
+      "key": "Oranges",
+      "values": [
+        {"x": 1, "y": 89},
+        {"x": 2, "y": 567},
+        {"x": 3, "y": 1234}
+      ]
     }
   ]
 };
@@ -263,7 +249,7 @@ function configure(chart) {
 
 function format(chart) {
   chart
-    // .y(function(d, i) { return d.value; })
+    // .y(function(d, i) { return d.y; })
     .tooltipContent(function (key, x, y, e, graph) {
       var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
           percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());

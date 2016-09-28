@@ -1,4 +1,3 @@
-
 sucrose.models.funnel = function() {
 
   //============================================================
@@ -10,28 +9,29 @@ sucrose.models.funnel = function() {
       height = 500,
       r = 0.3, // ratio of width to height (or slope)
       y = d3.scaleLinear(),
+      yDomain,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       getH = function(d) { return d.height; },
-      getV = function(d) { return d.value; },
+      getKey = function(d) { return d.key || d.data.key; },
+      getValue = function(d, i) { return d.disabled === true ? 0 : d.value; },
+      fmtKey = function(d) { return getKey(d); },
+      fmtValue = function(d) { return getValue(d); },
+      fmtCount = function(d) { return (' (' + d + ')').replace(' ()', ''); },
       locality = sucrose.utils.buildLocality(),
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
       clipEdge = true,
-      yDomain,
       delay = 0,
       wrapLabels = true,
       minLabelWidth = 75,
       durationMs = 0,
-      fmtKey = function(d) { return d; },
-      fmtValue = function(d) { return d; },
-      fmtCount = function(d) { return (' (' + d + ')').replace(' ()', ''); },
+      direction = 'ltr',
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
-
 
   //============================================================
   // Private Variables
@@ -47,25 +47,19 @@ sucrose.models.funnel = function() {
 
   function chart(selection) {
     selection.each(function(data) {
+
       var availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
-          container = d3.select(this),
+          container = d3.select(this);
 
-          labelGap = 5,
+      var labelGap = 5,
           labelSpace = 5,
           labelOffset = 0,
           funnelTotal = 0,
           funnelOffset = 0;
 
       // Add series index to each data point for reference
-      data.forEach(function(series, i) {
-        series.values.forEach(function(point) {
-          //reset point index because raw data
-          //may have disabled series
-          point.index = i;
-          funnelTotal += parseFloat(point.value);
-        });
-      });
+      funnelTotal = d3.sum(data, function(d) { return d.total; });
 
       //------------------------------------------------------------
       // Setup scales
@@ -273,11 +267,12 @@ sucrose.models.funnel = function() {
 
       function buildEventObject(e, d, i) {
         return {
-          value: getV(d, i),
-          point: d,
           id: id,
-          series: data[d.index],
-          pointIndex: i,
+          key: fmtKey(data[d.series]),
+          value: fmtValue(d, i),
+          point: d,
+          pointIndex: d.index,
+          series: data[d.series],
           seriesIndex: d.series,
           e: e
         };
@@ -323,7 +318,7 @@ sucrose.models.funnel = function() {
         // Append label text and wrap if needed
         labels.append('text')
           .text(function(d) {
-            return fmtKey(data[d.index].key);
+            return fmtKey(data[d.series]);
           })
             .call(fmtLabel, 'sc-label', 0.85, 'middle', fmtFill);
 
@@ -373,7 +368,7 @@ sucrose.models.funnel = function() {
         // Position side labels
         sideLabels.append('text')
           .text(function(d) {
-            return fmtKey(data[d.index].key);
+            return fmtKey(data[d.series]);
           })
             .call(fmtLabel, 'sc-label', 0.85, 'start', '#555');
 
@@ -833,131 +828,138 @@ sucrose.models.funnel = function() {
 
   chart.dispatch = dispatch;
 
+  chart.id = function(_) {
+    if (!arguments.length) {
+      return id;
+    }
+    id = _;
+    return chart;
+  };
+
   chart.color = function(_) {
-    if (!arguments.length) return color;
+    if (!arguments.length) {
+      return color;
+    }
     color = _;
     return chart;
   };
   chart.fill = function(_) {
-    if (!arguments.length) return fill;
+    if (!arguments.length) {
+      return fill;
+    }
     fill = _;
     return chart;
   };
   chart.classes = function(_) {
-    if (!arguments.length) return classes;
+    if (!arguments.length) {
+      return classes;
+    }
     classes = _;
     return chart;
   };
   chart.gradient = function(_) {
-    if (!arguments.length) return gradient;
+    if (!arguments.length) {
+      return gradient;
+    }
     gradient = _;
     return chart;
   };
 
-  chart.x = function(_) {
-    if (!arguments.length) return getX;
-    getX = _;
-    return chart;
-  };
-
-  chart.y = function(_) {
-    if (!arguments.length) return getY;
-    getY = _;
-    return chart;
-  };
-
   chart.margin = function(_) {
-    if (!arguments.length) return margin;
-    margin = _;
+    if (!arguments.length) {
+      return margin;
+    }
+    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
     return chart;
   };
 
   chart.width = function(_) {
-    if (!arguments.length) return width;
+    if (!arguments.length) {
+      return width;
+    }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) return height;
+    if (!arguments.length) {
+      return height;
+    }
     height = _;
     return chart;
   };
 
-  chart.xScale = function(_) {
-    if (!arguments.length) return x;
-    x = _;
+  chart.x = function(_) {
+    if (!arguments.length) {
+      return getX;
+    }
+    getX = _;
     return chart;
   };
 
-  chart.yScale = function(_) {
-    if (!arguments.length) return y;
-    y = _;
+  chart.y = function(_) {
+    if (!arguments.length) {
+      return getY;
+    }
+    getY = sucrose.functor(_);
     return chart;
   };
 
-  chart.yDomain = function(_) {
-    if (!arguments.length) return yDomain;
-    yDomain = _;
+  chart.getKey = function(_) {
+    if (!arguments.length) {
+      return getKey;
+    }
+    getKey = _;
     return chart;
   };
 
-  chart.forceY = function(_) {
-    if (!arguments.length) return forceY;
-    forceY = _;
-    return chart;
-  };
-
-  chart.id = function(_) {
-    if (!arguments.length) return id;
-    id = _;
-    return chart;
-  };
-
-  chart.delay = function(_) {
-    if (!arguments.length) return delay;
-    delay = _;
-    return chart;
-  };
-
-  chart.clipEdge = function(_) {
-    if (!arguments.length) return clipEdge;
-    clipEdge = _;
+  chart.getValue = function(_) {
+    if (!arguments.length) {
+      return getValue;
+    }
+    getValue = _;
     return chart;
   };
 
   chart.fmtKey = function(_) {
-    if (!arguments.length) return fmtKey;
+    if (!arguments.length) {
+      return fmtKey;
+    }
     fmtKey = _;
     return chart;
   };
 
   chart.fmtValue = function(_) {
-    if (!arguments.length) return fmtValue;
+    if (!arguments.length) {
+      return fmtValue;
+    }
     fmtValue = _;
     return chart;
   };
 
   chart.fmtCount = function(_) {
-    if (!arguments.length) return fmtCount;
+    if (!arguments.length) {
+      return fmtCount;
+    }
     fmtCount = _;
     return chart;
   };
 
-  chart.wrapLabels = function(_) {
-    if (!arguments.length) return wrapLabels;
-    wrapLabels = _;
-    return chart;
-  };
-
-  chart.minLabelWidth = function(_) {
-    if (!arguments.length) return minLabelWidth;
-    minLabelWidth = _;
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
     return chart;
   };
 
   chart.textureFill = function(_) {
-    if (!arguments.length) return textureFill;
+    if (!arguments.length) {
+      return textureFill;
+    }
     textureFill = _;
     return chart;
   };
@@ -967,6 +969,70 @@ sucrose.models.funnel = function() {
       return locality;
     }
     locality = sucrose.utils.buildLocality(_);
+    return chart;
+  };
+
+  chart.xScale = function(_) {
+    if (!arguments.length) {
+      return x;
+    }
+    x = _;
+    return chart;
+  };
+
+  chart.yScale = function(_) {
+    if (!arguments.length) {
+      return y;
+    }
+    y = _;
+    return chart;
+  };
+
+  chart.yDomain = function(_) {
+    if (!arguments.length) {
+      return yDomain;
+    }
+    yDomain = _;
+    return chart;
+  };
+
+  chart.forceY = function(_) {
+    if (!arguments.length) {
+      return forceY;
+    }
+    forceY = _;
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    return chart;
+  };
+
+  chart.clipEdge = function(_) {
+    if (!arguments.length) {
+      return clipEdge;
+    }
+    clipEdge = _;
+    return chart;
+  };
+
+  chart.wrapLabels = function(_) {
+    if (!arguments.length) {
+      return wrapLabels;
+    }
+    wrapLabels = _;
+    return chart;
+  };
+
+  chart.minLabelWidth = function(_) {
+    if (!arguments.length) {
+      return minLabelWidth;
+    }
+    minLabelWidth = _;
     return chart;
   };
 

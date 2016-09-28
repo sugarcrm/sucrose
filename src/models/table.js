@@ -53,7 +53,7 @@ sucrose.models.table = function () {
 
       function displayNoData(d) {
         if (d && d.length && d.filter(function (d) { return d.values.length; }).length) {
-          container.selectAll('.sc-noData').remove();
+          container.selectAll('.sc-no-data').remove();
           return false;
         }
 
@@ -61,10 +61,10 @@ sucrose.models.table = function () {
         var parentDimensions = container.node().parentNode.getBoundingClientRect();
         var w = width || parseInt(parentDimensions.width, 10) || 960,
             h = height || parseInt(parentDimensions.height, 10) || 400,
-            noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
+            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('div')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .style({'text-align': 'center', 'position': 'absolute', 'top': (h / 2) + 'px', 'width': w + 'px'})
           .text(function (d) {
             return d;

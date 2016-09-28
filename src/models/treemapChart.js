@@ -13,11 +13,6 @@ sucrose.models.treemapChart = function() {
       direction = 'ltr',
       tooltip = null,
       tooltips = true,
-      tooltipContent = function(point) {
-        var tt = '<h3>' + point.data.name + '</h3>' +
-                 '<p>' + sucrose.utils.numberFormatSI(point.value) + '</p>';
-        return tt;
-      },
       colorData = 'default',
       //create a clone of the d3 array
       colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map( function(d) { return d; }),
@@ -31,21 +26,24 @@ sucrose.models.treemapChart = function() {
       },
       dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
 
-
   var treemap = sucrose.models.treemap(),
       legend = sucrose.models.legend();
-
-  //============================================================
 
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
+  var tooltipContent = function(point) {
+        var tt = '<h3>' + point.data.name + '</h3>' +
+                 '<p>' + sucrose.utils.numberFormatSI(point.value) + '</p>';
+        return tt;
+      };
+
   var showTooltip = function(eo, offsetElement) {
-    var content = tooltipContent(eo.point);
-    tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
-  };
+        var content = tooltipContent(eo.point);
+        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+      };
 
   //============================================================
 
@@ -69,10 +67,10 @@ sucrose.models.treemapChart = function() {
 
       if (!data || !data.length || !data.filter(function(d) { return d && d.children.length; }).length) {
         container.select('.sucrose.sc-wrap').remove();
-        var noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
+        var noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -83,7 +81,7 @@ sucrose.models.treemapChart = function() {
 
         return chart;
       } else {
-        container.selectAll('.sc-noData').remove();
+        container.selectAll('.sc-no-data').remove();
       }
 
       //------------------------------------------------------------
@@ -96,21 +94,21 @@ sucrose.models.treemapChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap-chart').data(data);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap-chart');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data(data);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-treemap-chart');
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      g_entr.append('rect').attr('class', 'sc-background')
+      wrap_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
-        .attr('width', availableWidth + margin.left + margin.right)
-        .attr('height', availableHeight + margin.top + margin.bottom)
         .attr('fill', '#FFF');
 
-      var treemap_enter = g_entr.append('g').attr('class', 'sc-treemap-wrap');
-      var treemap_wrap = g.select('.sc-treemap-wrap').merge(treemap_enter)
+      wrap.select('.sc-background')
+        .attr('width', availableWidth + margin.left + margin.right)
+        .attr('height', availableHeight + margin.top + margin.bottom);
+
+      wrap_entr.append('g').attr('class', 'sc-treemap-wrap');
+      var treemap_wrap = wrap.select('.sc-treemap-wrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -205,7 +203,7 @@ sucrose.models.treemapChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          showTooltip(eo, that.parentNode);
+          tooltip = showTooltip(eo, that.parentNode);
         }
       });
 

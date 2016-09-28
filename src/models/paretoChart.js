@@ -59,45 +59,45 @@ sucrose.models.paretoChart = function() {
       .position('middle');
 
   var tooltipBar = function(key, x, y, e, graph) {
-    return '<p><b>' + key + '</b></p>' +
-           '<p><b>' + y + '</b></p>' +
-           '<p><b>' + x + '%</b></p>';
-  };
+        return '<p><b>' + key + '</b></p>' +
+               '<p><b>' + y + '</b></p>' +
+               '<p><b>' + x + '%</b></p>';
+      };
   var tooltipLine = function(key, x, y, e, graph) {
-    return '<p><p>' + key + ': <b>' + y + '</b></p>';
-  };
+        return '<p><p>' + key + ': <b>' + y + '</b></p>';
+      };
   var tooltipQuota = function(key, x, y, e, graph) {
-    return '<p>' + e.key + ': <b>' + y + '</b></p>';
-  };
+        return '<p>' + e.key + ': <b>' + y + '</b></p>';
+      };
 
   var showTooltip = function(eo, offsetElement, dataGroup) {
-    var key = eo.series.key,
-        per = (eo.point.y * 100 / dataGroup[eo.pointIndex].t).toFixed(1),
-        amt = lines2.y()(eo.point, eo.pointIndex),
-        content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
+        var key = eo.series.key,
+            per = (eo.point.y * 100 / dataGroup[eo.pointIndex].t).toFixed(1),
+            amt = lines2.y()(eo.point, eo.pointIndex),
+            content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
 
-    tooltip = sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
-  };
+        return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+      };
 
   var showQuotaTooltip = function(eo, offsetElement) {
-    var content = tooltipQuota(eo.key, 0, eo.val, eo, chart);
-    tooltip = sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
-  };
+        var content = tooltipQuota(eo.key, 0, eo.val, eo, chart);
+        return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+      };
 
   var seriesClick = function(data, eo, chart, container) {
-    return;
-  };
+        return;
+      };
 
   var getAbsoluteXY = function(element) {
-    var viewportElement = document.documentElement,
-      box = element.getBoundingClientRect(),
-      scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft,
-      scrollTop = viewportElement.scrollTop + document.body.scrollTop,
-      x = box.left + scrollLeft,
-      y = box.top + scrollTop;
+        var viewportElement = document.documentElement,
+          box = element.getBoundingClientRect(),
+          scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft,
+          scrollTop = viewportElement.scrollTop + document.body.scrollTop,
+          x = box.left + scrollLeft,
+          y = box.top + scrollTop;
 
-    return {'x': x, 'y': y};
-  };
+        return {'x': x, 'y': y};
+      };
 
   //============================================================
 
@@ -111,18 +111,19 @@ sucrose.models.paretoChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
-      var availableWidth = (width || parseInt(container.style('width'), 10) || 960) - margin.left - margin.right,
-          availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom,
-          innerWidth = availableWidth,
-          innerHeight = availableHeight,
-          innerMargin = {top: 0, right: 0, bottom: 0, left: 0},
-          maxBarLegendWidth = 0,
+      var maxBarLegendWidth = 0,
           maxLineLegendWidth = 0,
           widthRatio = 0,
           headerHeight = 0,
           pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var availableWidth = (width || parseInt(container.style('width'), 10) || 960) - margin.left - margin.right,
+          availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom,
+          innerWidth = availableWidth,
+          innerHeight = availableHeight,
+          innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
 
       var baseDimension = multibar.stacked() ? 72 : 32;
 
@@ -155,7 +156,7 @@ sucrose.models.paretoChart = function() {
 
       function displayNoData (d) {
         if (d && d.length && d.filter(function(d) { return d.values.length; }).length) {
-          container.selectAll('.sc-noData').remove();
+          container.selectAll('.sc-no-data').remove();
           return false;
         }
 
@@ -163,10 +164,10 @@ sucrose.models.paretoChart = function() {
 
         var w = width || parseInt(container.style('width'), 10) || 960,
             h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
+            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -304,6 +305,9 @@ sucrose.models.paretoChart = function() {
             });
           });
 
+      // set title display option
+      showTitle = showTitle && properties.title;
+
       //------------------------------------------------------------
       // Setup Scales
 
@@ -326,383 +330,403 @@ sucrose.models.paretoChart = function() {
         .tickPadding(7)
         .showMaxMin(true);
 
-      //------------------------------------------------------------
-      // Setup containers and skeleton of chart
-
-      var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pareto-chart');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
-
-      g_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('width', availableWidth + margin.left + margin.right)
-        .attr('height', availableHeight + margin.top + margin.bottom)
-        .attr('fill', '#FFF');
-
-      g_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = g.select('.sc-title-wrap');
-      g_entr.append('g').attr('class', 'sc-x sc-axis');
-      var xAxis_wrap = g.select('.sc-x.sc-axis');
-      g_entr.append('g').attr('class', 'sc-y sc-axis');
-      var yAxis_wrap = g.select('.sc-y.sc-axis');
-      g_entr.append('g').attr('class', 'sc-bars-wrap');
-      var bars_wrap = g.select('.sc-bars-wrap');
-      g_entr.append('g').attr('class', 'sc-quota-wrap');
-      var quota_wrap = g.select('.sc-quota-wrap');
-
-      g_entr.append('g').attr('class', 'sc-lines-wrap1');
-      var lines_wrap1 = g.select('.sc-lines-wrap1');
-      g_entr.append('g').attr('class', 'sc-lines-wrap2');
-      var lines_wrap2 = g.select('.sc-lines-wrap2');
-
-      g_entr.append('g').attr('class', 'sc-legend-wrap sc-bar-legend');
-      var barLegend_wrap = g.select('.sc-legend-wrap.sc-bar-legend');
-      g_entr.append('g').attr('class', 'sc-legend-wrap sc-line-legend');
-      var lineLegend_wrap = g.select('.sc-legend-wrap.sc-line-legend');
-
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
-      // Title & Legends
+      // Main chart draw
 
-      title_wrap.select('.sc-title').remove();
+      chart.render = function() {
 
-      if (showTitle) {
-        title_wrap
-          .append('text')
-          .attr('class', 'sc-title')
-          .attr('x', direction === 'rtl' ? availableWidth : 0)
-          .attr('y', 0)
-          .attr('dy', '.75em')
-          .attr('text-anchor', 'start')
-          .attr('stroke', 'none')
-          .attr('fill', 'black')
-          .text(properties.title);
+        // Chart layout variables
+        var renderWidth = width || parseInt(container.style('width'), 10) || 960,
+            renderHeight = height || parseInt(container.style('height'), 10) || 400,
+            innerMargin = {top: 0, right: 0, bottom: 0, left: 0},
+            innerWidth = availableWidth,
+            innerHeight = availableHeight;
 
-        titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
-        headerHeight += titleBBox.height;
-      }
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
 
-      if (showLegend) {
+        // Header variables
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
+            legendHeight = 0,
+            trans = '';
 
-        // bar series legend
-        barLegend
-          .id('barlegend_' + chart.id())
-          .strings(chart.strings().barlegend)
-          .align('left')
-          .height(availableHeight - innerMargin.top);
-        barLegend_wrap
-          .datum(
-            data.filter(function(d) {
-              return d.type === 'bar';
-            })
-          )
-          .call(barLegend);
+        //------------------------------------------------------------
+        // Setup containers and skeleton of chart
 
-        maxBarLegendWidth = barLegend.calculateWidth();
+        var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pareto-chart');
+        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
 
-        // line series legend
-        lineLegend
-          .id('linelegend_' + chart.id())
-          .strings(chart.strings().linelegend)
-          .align('right')
-          .height(availableHeight - innerMargin.top);
-        lineLegend_wrap
-          .datum(lineLegendData)
-          .call(lineLegend);
+        wrap_entr.append('rect').attr('class', 'sc-background')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('width', availableWidth + margin.left + margin.right)
+          .attr('height', availableHeight + margin.top + margin.bottom)
+          .attr('fill', '#FFF');
 
-        maxLineLegendWidth = lineLegend.calculateWidth();
+        wrap_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = wrap.select('.sc-title-wrap');
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+        wrap_entr.append('g').attr('class', 'sc-bars-wrap');
+        var bars_wrap = wrap.select('.sc-bars-wrap');
+        wrap_entr.append('g').attr('class', 'sc-quota-wrap');
+        var quota_wrap = wrap.select('.sc-quota-wrap');
 
-        // calculate proportional available space
-        widthRatio = availableWidth / (maxBarLegendWidth + maxLineLegendWidth);
+        wrap_entr.append('g').attr('class', 'sc-lines-wrap1');
+        var lines_wrap1 = wrap.select('.sc-lines-wrap1');
+        wrap_entr.append('g').attr('class', 'sc-lines-wrap2');
+        var lines_wrap2 = wrap.select('.sc-lines-wrap2');
 
-        barLegend
-          .arrange(Math.floor(widthRatio * maxBarLegendWidth));
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap sc-bar-legend');
+        var barLegend_wrap = wrap.select('.sc-legend-wrap.sc-bar-legend');
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap sc-line-legend');
+        var lineLegend_wrap = wrap.select('.sc-legend-wrap.sc-line-legend');
 
-        lineLegend
-          .arrange(Math.floor(widthRatio * maxLineLegendWidth));
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
-        barLegend_wrap
-          .attr('transform', 'translate(' + (direction === 'rtl' ? availableWidth - barLegend.width() : 0) + ',' + innerMargin.top + ')');
-        lineLegend_wrap
-          .attr('transform', 'translate(' + (direction === 'rtl' ? 0 : availableWidth - lineLegend.width()) + ',' + innerMargin.top + ')');
-      }
+        //------------------------------------------------------------
+        // Title & Legends
 
-      // Recalculate inner margins based on legend size
-      headerHeight += Math.max(barLegend.height(), lineLegend.height()) + 4;
-      innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+        title_wrap.select('.sc-title').remove();
 
-      //------------------------------------------------------------
-      // Initial call of Main Chart Components
+        if (showTitle) {
+          title_wrap
+            .append('text')
+            .attr('class', 'sc-title')
+            .attr('x', direction === 'rtl' ? availableWidth : 0)
+            .attr('y', 0)
+            .attr('dy', '.75em')
+            .attr('text-anchor', 'start')
+            .attr('stroke', 'none')
+            .attr('fill', 'black')
+            .text(properties.title);
 
-      var limitY = Math.max(d3.max(d3.merge(seriesY)), quotaValue, targetQuotaValue || 0);
-      var forceY = [0, Math.ceil(limitY * 0.1) * 10];
+          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
 
-      // Main Bar Chart
-      multibar
-        .width(innerWidth)
-        .height(innerHeight)
-        .forceY(forceY)
-        .id(chart.id());
-      bars_wrap
-        .datum(dataBars)
-        .call(multibar);
+        if (showLegend) {
 
-      // Main Line Chart
-      lines1
-        .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
-        .width(innerWidth)
-        .height(innerHeight)
-        .forceY(forceY)
-        .useVoronoi(false)
-        .id('outline_' + chart.id());
-      lines2
-        .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
-        .width(innerWidth)
-        .height(innerHeight)
-        .forceY(forceY)
-        .useVoronoi(false)
-        .size(pointSize)
-        .sizeRange([pointSize, pointSize])
-        .sizeDomain([pointSize, pointSize])
-        .id('foreground_' + chart.id());
-      lines_wrap1
-        .datum(dataLines)
-        .call(lines1);
-      lines_wrap2
-        .datum(dataLines)
-        .call(lines2);
+          // bar series legend
+          barLegend
+            .id('barlegend_' + chart.id())
+            .strings(chart.strings().barlegend)
+            .align('left')
+            .height(availableHeight - innerMargin.top);
+          barLegend_wrap
+            .datum(
+              data.filter(function(d) {
+                return d.type === 'bar';
+              })
+            )
+            .call(barLegend);
 
-      // Axes
-      xAxis_wrap
-        .call(xAxis);
+          maxBarLegendWidth = barLegend.calculateWidth();
 
-      yAxis_wrap
-        .style('opacity', dataBars.length ? 1 : 0)
-        .call(yAxis);
+          // line series legend
+          lineLegend
+            .id('linelegend_' + chart.id())
+            .strings(chart.strings().linelegend)
+            .align('right')
+            .height(availableHeight - innerMargin.top);
+          lineLegend_wrap
+            .datum(lineLegendData)
+            .call(lineLegend);
 
-      var xAxisMargin = xAxis.margin();
-      var yAxisMargin = yAxis.margin();
+          maxLineLegendWidth = lineLegend.calculateWidth();
 
-      function setInnerMargins() {
-        innerMargin.left = Math.max(quotaTextWidth, xAxisMargin.left, yAxisMargin.left);
-        innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
-        innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
-        innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
-        setInnerDimensions();
-      }
+          // calculate proportional available space
+          widthRatio = availableWidth / (maxBarLegendWidth + maxLineLegendWidth);
 
-      function setInnerDimensions() {
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-        // Recalc chart dimensions and scales based on new inner dimensions
-        multibar.resetDimensions(innerWidth, innerHeight);
-      }
+          barLegend
+            .arrange(Math.floor(widthRatio * maxBarLegendWidth));
 
-      //------------------------------------------------------------
-      // Quota Line
+          lineLegend
+            .arrange(Math.floor(widthRatio * maxLineLegendWidth));
 
-      quota_wrap.selectAll('line').remove();
-      yAxis_wrap.selectAll('text.sc-quotaValue').remove();
-      yAxis_wrap.selectAll('text.sc-targetQuotaValue').remove();
+          barLegend_wrap
+            .attr('transform', 'translate(' + (direction === 'rtl' ? availableWidth - barLegend.width() : 0) + ',' + innerMargin.top + ')');
+          lineLegend_wrap
+            .attr('transform', 'translate(' + (direction === 'rtl' ? 0 : availableWidth - lineLegend.width()) + ',' + innerMargin.top + ')');
+        }
 
-      var quotaTextWidth = 0,
-        quotaTextHeight = 14;
+        // Recalculate inner margins based on legend size
+        headerHeight += Math.max(barLegend.height(), lineLegend.height()) + 4;
+        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
 
-      // Target Quota Line
-      if (targetQuotaValue > 0) {
-        quota_wrap.append('line')
-          .attr('class', 'sc-quotaLineTarget')
-          .attr('x1', 0)
-          .attr('y1', 0)
-          .attr('x2', innerWidth)
-          .attr('y2', 0)
-          .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')')
-          .style('stroke-dasharray', '8, 8');
+        //------------------------------------------------------------
+        // Initial call of Main Chart Components
 
-        quota_wrap.append('line')
-          .datum({key: targetQuotaLabel, val: targetQuotaValue})
-          .attr('class', 'sc-quotaLineTarget sc-quotaLineBackground')
-          .attr('x1', 0)
-          .attr('y1', 0)
-          .attr('x2', innerWidth)
-          .attr('y2', 0)
-          .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
+        var limitY = Math.max(d3.max(d3.merge(seriesY)), quotaValue, targetQuotaValue || 0);
+        var forceY = [0, Math.ceil(limitY * 0.1) * 10];
 
-        // Target Quota line label
-        yAxis_wrap.append('text')
-          .text(yAxis.valueFormat()(targetQuotaValue, true))
-          .attr('class', 'sc-targetQuotaValue')
-          .attr('dy', '.36em')
-          .attr('dx', '0')
-          .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
-          .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
+        // Main Bar Chart
+        multibar
+          .width(innerWidth)
+          .height(innerHeight)
+          .forceY(forceY)
+          .id(chart.id());
+        bars_wrap
+          .datum(dataBars)
+          .call(multibar);
 
-        quotaTextWidth = Math.round(g.select('text.sc-targetQuotaValue').node().getBoundingClientRect().width + yAxis.tickPadding());
-      }
+        // Main Line Chart
+        lines1
+          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+          .width(innerWidth)
+          .height(innerHeight)
+          .forceY(forceY)
+          .useVoronoi(false)
+          .id('outline_' + chart.id());
+        lines2
+          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+          .width(innerWidth)
+          .height(innerHeight)
+          .forceY(forceY)
+          .useVoronoi(false)
+          .size(pointSize)
+          .sizeRange([pointSize, pointSize])
+          .sizeDomain([pointSize, pointSize])
+          .id('foreground_' + chart.id());
+        lines_wrap1
+          .datum(dataLines)
+          .call(lines1);
+        lines_wrap2
+          .datum(dataLines)
+          .call(lines2);
 
-      if (quotaValue > 0) {
-        quota_wrap.append('line')
-          .attr('class', 'sc-quotaLine')
-          .attr('x1', 0)
-          .attr('y1', 0)
-          .attr('x2', innerWidth)
-          .attr('y2', 0)
-          .attr('transform', 'translate(0,' + y(quotaValue) + ')')
-          .style('stroke-dasharray', '8, 8');
+        // Axes
+        xAxis_wrap
+          .call(xAxis);
 
-        quota_wrap.append('line')
-          .datum({key: quotaLabel, val: quotaValue})
-          .attr('class', 'sc-quotaLine sc-quotaLineBackground')
-          .attr('x1', 0)
-          .attr('y1', 0)
-          .attr('x2', innerWidth)
-          .attr('y2', 0)
-          .attr('transform', 'translate(0,' + y(quotaValue) + ')');
+        yAxis_wrap
+          .style('opacity', dataBars.length ? 1 : 0)
+          .call(yAxis);
 
-        // Quota line label
-        yAxis_wrap.append('text')
-          .text(yAxis.valueFormat()(quotaValue, true))
-          .attr('class', 'sc-quotaValue')
-          .attr('dy', '.36em')
-          .attr('dx', '0')
-          .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
-          .attr('transform', 'translate(' + -yAxis.tickPadding() + ',' + y(quotaValue) + ')');
+        var xAxisMargin = xAxis.margin();
+        var yAxisMargin = yAxis.margin();
 
-        quotaTextWidth = Math.max(quotaTextWidth, Math.round(g.select('text.sc-quotaValue').node().getBoundingClientRect().width + yAxis.tickPadding()));
-      }
+        function setInnerMargins() {
+          innerMargin.left = Math.max(quotaTextWidth, xAxisMargin.left, yAxisMargin.left);
+          innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
+          innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+          setInnerDimensions();
+        }
 
-      //------------------------------------------------------------
-      // Calculate intial dimensions based on first Axis call
+        function setInnerDimensions() {
+          innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+          // Recalc chart dimensions and scales based on new inner dimensions
+          multibar.resetDimensions(innerWidth, innerHeight);
+        }
 
-      // Temporarily reset inner dimensions
-      setInnerMargins();
+        //------------------------------------------------------------
+        // Quota Line
 
-      //------------------------------------------------------------
-      // Recall Main Chart and Axis
+        quota_wrap.selectAll('line').remove();
+        yAxis_wrap.selectAll('text.sc-quota-value').remove();
+        yAxis_wrap.selectAll('text.sc-target-quota-value').remove();
 
-      multibar
-        .width(innerWidth)
-        .height(innerHeight);
-      bars_wrap
-        .call(multibar);
+        var quotaTextWidth = 0,
+          quotaTextHeight = 14;
 
-      xAxis_wrap
-        .call(xAxis);
-      yAxis_wrap
-        .call(yAxis);
-
-      //------------------------------------------------------------
-      // Recalculate final dimensions based on new Axis size
-
-      xAxisMargin = xAxis.margin();
-      yAxisMargin = yAxis.margin();
-
-      setInnerMargins();
-
-      //------------------------------------------------------------
-      // Recall Main Chart Components based on final dimensions
-
-      var lOffset = x(1) + x.bandwidth() / (multibar.stacked() || dataLines.length === 1 ? 2 : 4);
-      var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
-
-      multibar
-        .width(innerWidth)
-        .height(innerHeight);
-
-      bars_wrap
-        .attr('transform', transform)
-        .call(multibar);
-
-
-      lines1
-        .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
-        .width(innerWidth)
-        .height(innerHeight);
-      lines2
-        .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
-        .width(innerWidth)
-        .height(innerHeight);
-
-      lines_wrap1
-        .attr('transform', transform)
-        .call(lines1);
-      lines_wrap2
-        .attr('transform', transform)
-        .call(lines2);
-
-
-      quota_wrap
-        .attr('transform', transform)
-        .selectAll('line')
-          .attr('x2', innerWidth);
-
-      xAxis_wrap
-        .attr('transform', 'translate(' + innerMargin.left + ',' + (xAxis.orient() === 'bottom' ? innerHeight + innerMargin.top : innerMargin.top) + ')')
-        .call(xAxis);
-
-      yAxis
-        .ticks(Math.ceil(innerHeight / 48))
-        .tickSize(-innerWidth, 0);
-
-      yAxis_wrap
-        .attr('transform', 'translate(' + (yAxis.orient() === 'left' ? innerMargin.left : innerMargin.left + innerWidth) + ',' + innerMargin.top + ')')
-        .call(yAxis);
-
-      if (targetQuotaValue > 0) {
-
-        quota_wrap.select('line.sc-quotaLineTarget')
-          .attr('x2', innerWidth)
-          .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
-        yAxis_wrap.select('text.sc-targetQuotaValue')
-          .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
-
-        quotaTextHeight = Math.round(parseInt(g.select('text.sc-targetQuotaValue').node().getBoundingClientRect().height, 10) / 1.15);
-
-        //check if tick lines overlap quota values, if so, hide the values that overlap
-        yAxis_wrap.selectAll('g.tick, g.sc-axisMaxMin')
-          .each(function(d, i) {
-            if (Math.abs(y(d) - y(targetQuotaValue)) <= quotaTextHeight) {
-              d3.select(this).style('opacity', 0);
-            }
-          });
-      }
-
-      if (quotaValue > 0) {
-
-        quota_wrap.select('line.sc-quotaLine')
-          .attr('x2', innerWidth)
-          .attr('transform', 'translate(0,' + y(quotaValue) + ')');
-        yAxis_wrap.select('text.sc-quotaValue')
-          .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(quotaValue) + ')');
-
-        quotaTextHeight = Math.round(parseInt(g.select('text.sc-quotaValue').node().getBoundingClientRect().height, 10) / 1.15);
-
-        //check if tick lines overlap quota values, if so, hide the values that overlap
-        yAxis_wrap.selectAll('g.tick, g.sc-axisMaxMin')
-          .each(function(d, i) {
-            if (Math.abs(y(d) - y(quotaValue)) <= quotaTextHeight) {
-              d3.select(this).style('opacity', 0);
-            }
-          });
-
-        // if there is a quota and an adjusted quota
-        // check to see if the adjusted collides
+        // Target Quota Line
         if (targetQuotaValue > 0) {
-          if (Math.abs(y(quotaValue) - y(targetQuotaValue)) <= quotaTextHeight) {
-            yAxis_wrap.select('.sc-targetQuotaValue').style('opacity', 0);
+          quota_wrap.append('line')
+            .attr('class', 'sc-quota-target')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', innerWidth)
+            .attr('y2', 0)
+            .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')')
+            .style('stroke-dasharray', '8, 8');
+
+          quota_wrap.append('line')
+            .datum({key: targetQuotaLabel, val: targetQuotaValue})
+            .attr('class', 'sc-quota-target sc-quota-background')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', innerWidth)
+            .attr('y2', 0)
+            .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
+
+          // Target Quota line label
+          yAxis_wrap.append('text')
+            .text(yAxis.valueFormat()(targetQuotaValue, true))
+            .attr('class', 'sc-target-quota-value')
+            .attr('dy', '.36em')
+            .attr('dx', '0')
+            .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
+            .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
+
+          quotaTextWidth = Math.round(wrap.select('text.sc-target-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding());
+        }
+
+        if (quotaValue > 0) {
+          quota_wrap.append('line')
+            .attr('class', 'sc-quota-line')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', innerWidth)
+            .attr('y2', 0)
+            .attr('transform', 'translate(0,' + y(quotaValue) + ')')
+            .style('stroke-dasharray', '8, 8');
+
+          quota_wrap.append('line')
+            .datum({key: quotaLabel, val: quotaValue})
+            .attr('class', 'sc-quota-line sc-quota-background')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', innerWidth)
+            .attr('y2', 0)
+            .attr('transform', 'translate(0,' + y(quotaValue) + ')');
+
+          // Quota line label
+          yAxis_wrap.append('text')
+            .text(yAxis.valueFormat()(quotaValue, true))
+            .attr('class', 'sc-quota-value')
+            .attr('dy', '.36em')
+            .attr('dx', '0')
+            .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
+            .attr('transform', 'translate(' + -yAxis.tickPadding() + ',' + y(quotaValue) + ')');
+
+          quotaTextWidth = Math.max(quotaTextWidth, Math.round(wrap.select('text.sc-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding()));
+        }
+
+        //------------------------------------------------------------
+        // Calculate intial dimensions based on first Axis call
+
+        // Temporarily reset inner dimensions
+        setInnerMargins();
+
+        //------------------------------------------------------------
+        // Recall Main Chart and Axis
+
+        multibar
+          .width(innerWidth)
+          .height(innerHeight);
+        bars_wrap
+          .call(multibar);
+
+        xAxis_wrap
+          .call(xAxis);
+        yAxis_wrap
+          .call(yAxis);
+
+        //------------------------------------------------------------
+        // Recalculate final dimensions based on new Axis size
+
+        xAxisMargin = xAxis.margin();
+        yAxisMargin = yAxis.margin();
+
+        setInnerMargins();
+
+        //------------------------------------------------------------
+        // Recall Main Chart Components based on final dimensions
+
+        var lOffset = x(1) + x.bandwidth() / (multibar.stacked() || dataLines.length === 1 ? 2 : 4);
+        var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
+
+        multibar
+          .width(innerWidth)
+          .height(innerHeight);
+
+        bars_wrap
+          .attr('transform', transform)
+          .call(multibar);
+
+
+        lines1
+          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+          .width(innerWidth)
+          .height(innerHeight);
+        lines2
+          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+          .width(innerWidth)
+          .height(innerHeight);
+
+        lines_wrap1
+          .attr('transform', transform)
+          .call(lines1);
+        lines_wrap2
+          .attr('transform', transform)
+          .call(lines2);
+
+
+        quota_wrap
+          .attr('transform', transform)
+          .selectAll('line')
+            .attr('x2', innerWidth);
+
+        xAxis_wrap
+          .attr('transform', 'translate(' + innerMargin.left + ',' + (xAxis.orient() === 'bottom' ? innerHeight + innerMargin.top : innerMargin.top) + ')')
+          .call(xAxis);
+
+        yAxis
+          .ticks(Math.ceil(innerHeight / 48))
+          .tickSize(-innerWidth, 0);
+
+        yAxis_wrap
+          .attr('transform', 'translate(' + (yAxis.orient() === 'left' ? innerMargin.left : innerMargin.left + innerWidth) + ',' + innerMargin.top + ')')
+          .call(yAxis);
+
+        if (targetQuotaValue > 0) {
+
+          quota_wrap.select('line.sc-quota-target')
+            .attr('x2', innerWidth)
+            .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
+          yAxis_wrap.select('text.sc-target-quota-value')
+            .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
+
+          quotaTextHeight = Math.round(parseInt(wrap.select('text.sc-target-quota-value').node().getBoundingClientRect().height, 10) / 1.15);
+
+          //check if tick lines overlap quota values, if so, hide the values that overlap
+          yAxis_wrap.selectAll('g.tick, g.sc-axisMaxMin')
+            .each(function(d, i) {
+              if (Math.abs(y(d) - y(targetQuotaValue)) <= quotaTextHeight) {
+                d3.select(this).style('opacity', 0);
+              }
+            });
+        }
+
+        if (quotaValue > 0) {
+
+          quota_wrap.select('line.sc-quota-line')
+            .attr('x2', innerWidth)
+            .attr('transform', 'translate(0,' + y(quotaValue) + ')');
+          yAxis_wrap.select('text.sc-quota-value')
+            .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(quotaValue) + ')');
+
+          quotaTextHeight = Math.round(parseInt(wrap.select('text.sc-quota-value').node().getBoundingClientRect().height, 10) / 1.15);
+
+          //check if tick lines overlap quota values, if so, hide the values that overlap
+          yAxis_wrap.selectAll('g.tick, g.sc-axisMaxMin')
+            .each(function(d, i) {
+              if (Math.abs(y(d) - y(quotaValue)) <= quotaTextHeight) {
+                d3.select(this).style('opacity', 0);
+              }
+            });
+
+          // if there is a quota and an adjusted quota
+          // check to see if the adjusted collides
+          if (targetQuotaValue > 0) {
+            if (Math.abs(y(quotaValue) - y(targetQuotaValue)) <= quotaTextHeight) {
+              yAxis_wrap.select('.sc-target-quota-value').style('opacity', 0);
+            }
           }
         }
-      }
 
-      //============================================================
-      // Event Handling/Dispatching (in chart's scope)
-      //------------------------------------------------------------
-
-      quota_wrap.selectAll('line.sc-quotaLineBackground')
+      quota_wrap.selectAll('line.sc-quota-background')
         .on('mouseover', function(d) {
           if (tooltips) {
             var eo = {
@@ -710,7 +734,7 @@ sucrose.models.paretoChart = function() {
                 key: d.key,
                 e: d3.event
             };
-            showQuotaTooltip(eo, that.parentNode);
+            tooltip = showQuotaTooltip(eo, that.parentNode);
           }
         })
         .on('mousemove', function() {
@@ -720,6 +744,16 @@ sucrose.models.paretoChart = function() {
         .on('mouseout', function() {
           dispatch.call('tooltipHide', this);
         });
+
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
 
       barLegend.dispatch.on('legendClick', function(d, i) {
         var selectedSeries = d.series;
@@ -741,7 +775,7 @@ sucrose.models.paretoChart = function() {
         }).length) {
           data.map(function(d) {
             d.disabled = false;
-            g.selectAll('.sc-series').classed('disabled', false);
+            wrap.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
@@ -750,7 +784,7 @@ sucrose.models.paretoChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          showTooltip(eo, that.parentNode, dataGroup);
+          tooltip = showTooltip(eo, that.parentNode, dataGroup);
         }
       });
 

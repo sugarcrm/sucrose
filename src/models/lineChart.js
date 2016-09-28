@@ -41,18 +41,18 @@ sucrose.models.lineChart = function() {
         .color(['#444']);
 
   var tooltipContent = function(key, x, y, e, graph) {
-    return '<h3>' + key + '</h3>' +
-           '<p>' + y + ' on ' + x + '</p>';
-  };
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
 
   var showTooltip = function(eo, offsetElement) {
-    var key = eo.series.key,
-        x = lines.x()(eo.point, eo.pointIndex),
-        y = lines.y()(eo.point, eo.pointIndex),
-        content = tooltipContent(key, x, y, eo, chart);
+        var key = eo.series.key,
+            x = lines.x()(eo.point, eo.pointIndex),
+            y = lines.y()(eo.point, eo.pointIndex),
+            content = tooltipContent(key, x, y, eo, chart);
 
-    tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
-  };
+        tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+      };
 
   //============================================================
 
@@ -66,6 +66,9 @@ sucrose.models.lineChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null,
           labels = properties.labels ? properties.labels.map(function(d) { return d.l || d; }) : [];
+
+      var availableWidth = width;
+      var availableHeight = height;
 
       var lineData = [],
           xTickLabels = [],
@@ -89,18 +92,18 @@ sucrose.models.lineChart = function() {
             return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
-      chart.container = this;
-
       chart.update = function() {
         container.transition().duration(duration).call(chart);
       };
+
+      chart.container = this;
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
       function displayNoData(d) {
         if (d && d.length && d.filter(function(d) { return d.values.length; }).length) {
-          container.selectAll('.sc-noData').remove();
+          container.selectAll('.sc-no-data').remove();
           return false;
         }
 
@@ -108,10 +111,10 @@ sucrose.models.lineChart = function() {
 
         var w = width || parseInt(container.style('width'), 10) || 960,
             h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
+            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -308,13 +311,15 @@ sucrose.models.lineChart = function() {
       chart.render = function() {
 
         // Chart layout variables
-        var renderWidth = width || parseInt(container.style('width'), 10) || 960,
-            renderHeight = height || parseInt(container.style('height'), 10) || 400,
-            availableWidth = renderWidth - margin.left - margin.right,
-            availableHeight = renderHeight - margin.top - margin.bottom,
-            innerWidth = availableWidth,
-            innerHeight = availableHeight,
-            innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        var renderWidth, renderHeight, innerMargin, innerWidth, innerHeight;
+
+        renderWidth = width || parseInt(container.style('width'), 10) || 960;
+        renderHeight = height || parseInt(container.style('height'), 10) || 400;
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
 
         // Header variables
         var maxControlsWidth = 0,
@@ -370,11 +375,11 @@ sucrose.models.lineChart = function() {
               .attr('y', 0)
               .attr('dy', '.75em')
               .attr('text-anchor', 'start')
-              .text(properties.title)
               .attr('stroke', 'none')
-              .attr('fill', 'black');
+              .attr('fill', 'black')
+              .text(properties.title);
 
-          titleBBox = sucrose.utils.getTextBBox(wrap.select('.sc-title'));
+          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -422,7 +427,7 @@ sucrose.models.lineChart = function() {
 
         if (showControls) {
           var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
-              ypos = showTitle ? titleBBox.height : - legend.margin().top;
+              ypos = showTitle ? titleBBox.height : - controls.margin().top;
           controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
@@ -589,7 +594,6 @@ sucrose.models.lineChart = function() {
       });
 
       controls.dispatch.on('legendClick', function(d, i) {
-
         //if the option is currently enabled (i.e., selected)
         if (!d.disabled) {
           return;

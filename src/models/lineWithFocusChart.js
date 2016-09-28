@@ -94,10 +94,10 @@ sucrose.models.lineWithFocusChart = function() {
       // Display No Data message if there's nothing to show.
 
       if (!data || !data.length || !data.filter(function(d) { return d.values.length }).length) {
-        var noDataText = container.selectAll('.sc-noData').data([noData]);
+        var noDataText = container.selectAll('.sc-no-data').data([noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -108,7 +108,7 @@ sucrose.models.lineWithFocusChart = function() {
 
         return chart;
       } else {
-        container.selectAll('.sc-noData').remove();
+        container.selectAll('.sc-no-data').remove();
       }
 
       //------------------------------------------------------------
@@ -137,13 +137,13 @@ sucrose.models.lineWithFocusChart = function() {
       g_entr.append('g').attr('class', 'sc-legendWrap');
 
       var focusEnter = g_entr.append('g').attr('class', 'sc-focus');
-      focusEnter.append('g').attr('class', 'sc-x sc-axis');
-      focusEnter.append('g').attr('class', 'sc-y sc-axis');
+      focusEnter.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      focusEnter.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
       focusEnter.append('g').attr('class', 'sc-linesWrap');
 
       var contextEnter = g_entr.append('g').attr('class', 'sc-context');
-      contextEnter.append('g').attr('class', 'sc-x sc-axis');
-      contextEnter.append('g').attr('class', 'sc-y sc-axis');
+      contextEnter.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      contextEnter.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
       contextEnter.append('g').attr('class', 'sc-linesWrap');
       contextEnter.append('g').attr('class', 'sc-brushBackground');
       contextEnter.append('g').attr('class', 'sc-x sc-brush');
@@ -246,7 +246,7 @@ sucrose.models.lineWithFocusChart = function() {
         .ticks( availableHeight1 / 36 )
         .tickSize( -availableWidth, 0);
 
-      g.select('.sc-focus .sc-x.sc-axis')
+      g.select('.sc-focus .sc-axis-wrap.sc-axis-x')
           .attr('transform', 'translate(0,' + availableHeight1 + ')');
 
       //------------------------------------------------------------
@@ -299,9 +299,9 @@ sucrose.models.lineWithFocusChart = function() {
         .ticks( availableWidth / 100 )
         .tickSize(-availableHeight2, 0);
 
-      g.select('.sc-context .sc-x.sc-axis')
+      g.select('.sc-context .sc-axis-wrap.sc-axis-x')
           .attr('transform', 'translate(0,' + y2.range()[0] + ')');
-      d3.transition(g.select('.sc-context .sc-x.sc-axis'))
+      d3.transition(g.select('.sc-context .sc-axis-wrap.sc-axis-x'))
           .call(x2Axis);
 
 
@@ -310,10 +310,10 @@ sucrose.models.lineWithFocusChart = function() {
         .ticks( availableHeight2 / 36 )
         .tickSize( -availableWidth, 0);
 
-      d3.transition(g.select('.sc-context .sc-y.sc-axis'))
+      d3.transition(g.select('.sc-context .sc-axis-wrap.sc-axis-y'))
           .call(y2Axis);
 
-      g.select('.sc-context .sc-x.sc-axis')
+      g.select('.sc-context .sc-axis-wrap.sc-axis-x')
           .attr('transform', 'translate(0,' + y2.range()[0] + ')');
 
       //------------------------------------------------------------
@@ -408,9 +408,9 @@ sucrose.models.lineWithFocusChart = function() {
 
 
         // Update Main (Focus) Axes
-        d3.transition(g.select('.sc-focus .sc-x.sc-axis'))
+        d3.transition(g.select('.sc-focus .sc-axis-wrap.sc-axis-x'))
             .call(xAxis);
-        d3.transition(g.select('.sc-focus .sc-y.sc-axis'))
+        d3.transition(g.select('.sc-focus .sc-axis-wrap.sc-axis-y'))
             .call(yAxis);
       }
 

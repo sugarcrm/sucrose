@@ -41,9 +41,8 @@ sucrose.models.multiBarChart = function() {
         .clipEdge(false),
       xAxis = sucrose.models.axis(),//.orient('bottom'),
       yAxis = sucrose.models.axis(),//.orient('left'),
+      controls = sucrose.models.legend().color(['#444']),
       legend = sucrose.models.legend(),
-      controls = sucrose.models.legend()
-        .color(['#444']),
       scroll = sucrose.models.scroll();
 
   var tooltipContent = function(eo, graph) {
@@ -60,7 +59,7 @@ sucrose.models.multiBarChart = function() {
               vertical ? 'n' : 'e' :
               vertical ? 's' : 'w';
 
-        tooltip = sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+        return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart) {
@@ -80,6 +79,9 @@ sucrose.models.multiBarChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
+      var availableWidth = width;
+      var availableHeight = height;
+
       var seriesData = [],
           seriesCount = 0,
           groupData = [],
@@ -87,12 +89,9 @@ sucrose.models.multiBarChart = function() {
           groupCount = 0,
           totalAmount = 0,
           hasData = false,
+          baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32,
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
-
-      var baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32;
-      var availableWidth = width;
-      var availableHeight = height;
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
@@ -114,18 +113,18 @@ sucrose.models.multiBarChart = function() {
             return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
-      chart.container = this;
-
       chart.update = function() {
-        container.transition().call(chart);
+        container.transition().duration(duration).call(chart);
       };
+
+      chart.container = this;
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
       function displayNoData (d) {
         if (d && d.length && d.filter(function(d) { return d.values.length; }).length) {
-          container.selectAll('.sc-noData').remove();
+          container.selectAll('.sc-no-data').remove();
           return false;
         }
 
@@ -133,10 +132,10 @@ sucrose.models.multiBarChart = function() {
 
         var w = width || parseInt(container.style('width'), 10) || 960,
             h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
+            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -183,8 +182,7 @@ sucrose.models.multiBarChart = function() {
 
         // if there are no active data series, activate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data
-            .map(function(d) {
+          data.map(function(d) {
               d.active = '';
               d.values.map(function(d) {
                 d.active = '';
@@ -198,7 +196,6 @@ sucrose.models.multiBarChart = function() {
       };
 
       // add series index to each data point for reference
-      // and disable data series if total is zero
       data.forEach(function(series, s) {
         // make sure untrimmed values array exists
         // and set immutable series values
@@ -354,14 +351,15 @@ sucrose.models.multiBarChart = function() {
       chart.render = function() {
 
         // Chart layout variables
-        var renderWidth = width || parseInt(container.style('width'), 10) || 960,
-            renderHeight = height || parseInt(container.style('height'), 10) || 400,
-            innerMargin = {top: 0, right: 0, bottom: 0, left: 0},
-            innerWidth = availableWidth,
-            innerHeight = availableHeight;
+        var renderWidth, renderHeight, innerMargin, innerWidth, innerHeight;
 
+        renderWidth = width || parseInt(container.style('width'), 10) || 960;
+        renderHeight = height || parseInt(container.style('height'), 10) || 400;
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
 
         // Header variables
         var maxControlsWidth = 0,
@@ -383,38 +381,36 @@ sucrose.models.multiBarChart = function() {
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
 
-        var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-' + className);
-        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-        var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-        var g = container.select('g.sc-chart-wrap').merge(g_entr);
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-' + className);
+        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         /* Clipping box for scroll */
-        g_entr.append('defs');
+        wrap_entr.append('defs');
 
         /* Container for scroll elements */
-        g_entr.append('g').attr('class', 'sc-scroll-background');
+        wrap_entr.append('g').attr('class', 'sc-scroll-background');
 
-        var title_entr = g_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = g.select('.sc-title-wrap').merge(title_entr);
+        wrap_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = wrap.select('.sc-title-wrap');
 
-        var yAxis_entr = g_entr.append('g').attr('class', 'sc-y sc-axis');
-        var yAxis_wrap = g.select('.sc-y.sc-axis').merge(yAxis_entr);
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
 
         /* Append scroll group with chart mask */
-        var scroll_entr = g_entr.append('g').attr('class', 'sc-scroll-wrap');
-        var scroll_wrap = g.select('.sc-scroll-wrap');
+        wrap_entr.append('g').attr('class', 'sc-scroll-wrap');
+        var scroll_wrap = wrap.select('.sc-scroll-wrap');
 
-        var xAxis_entr = g_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-x sc-axis');
-        var xAxis_wrap = g.select('.sc-x.sc-axis').merge(xAxis_entr);
+        wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
 
-        var bars_entr = g_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-bars-wrap');
-        var bars_wrap = g.select('.sc-bars-wrap').merge(bars_entr);
+        wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-bars-wrap');
+        var bars_wrap = wrap.select('.sc-bars-wrap');
 
-        var controls_entr = g_entr.append('g').attr('class', 'sc-controls-wrap');
-        var controls_wrap = g.select('.sc-controls-wrap').merge(controls_entr);
-        var legend_entr = g_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = g.select('.sc-legend-wrap').merge(legend_entr);
+        wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+        var controls_wrap = wrap.select('.sc-controls-wrap');
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = wrap.select('.sc-legend-wrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -513,7 +509,9 @@ sucrose.models.multiBarChart = function() {
 
         // Recalc inner margins based on legend and control height
         headerHeight += Math.max(controlsHeight, legendHeight);
-        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+        innerMargin.top += headerHeight;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -547,14 +545,14 @@ sucrose.models.multiBarChart = function() {
         function setInnerMargins() {
           innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
           innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
-          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
           innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
           setInnerDimensions();
         }
 
         function setInnerDimensions() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-          innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
           multibar.resetDimensions(getDimension('width'), getDimension('height'));
         }
@@ -566,7 +564,6 @@ sucrose.models.multiBarChart = function() {
           .ticks(innerHeight / 48);
         yAxis_wrap
           .call(yAxis);
-
         // reset inner dimensions
         yAxisMargin = yAxis.margin();
         setInnerMargins();
@@ -583,7 +580,6 @@ sucrose.models.multiBarChart = function() {
           .attr('transform', 'translate(' + trans + ')');
         xAxis_wrap
           .call(xAxis);
-
         // reset inner dimensions
         xAxisMargin = xAxis.margin();
         setInnerMargins();
@@ -618,7 +614,6 @@ sucrose.models.multiBarChart = function() {
         //------------------------------------------------------------
         // Final repositioning
 
-        innerMargin.top += headerHeight;
 
         trans = (vertical || xAxis.orient() === 'left' ? 0 : innerWidth) + ',';
         trans += (vertical && xAxis.orient() === 'bottom' ? innerHeight + 2 : -2);
@@ -661,7 +656,7 @@ sucrose.models.multiBarChart = function() {
             .minDimension(minDimension)
             .panHandler(panMultibar);
 
-          scroll(g, g_entr, scroll_wrap, xAxis);
+          scroll(wrap, wrap_entr, scroll_wrap, xAxis);
 
           scroll.init(scrollOffset, overflowHandler);
 
@@ -701,7 +696,7 @@ sucrose.models.multiBarChart = function() {
         state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
-        container.transition().call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       controls.dispatch.on('legendClick', function(d, i) {
@@ -730,13 +725,13 @@ sucrose.models.multiBarChart = function() {
         state.stacked = multibar.stacked();
         dispatch.call('stateChange', this, state);
 
-        container.transition().call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
           eo.group = groupData[eo.groupIndex];
-          showTooltip(eo, that.parentNode, groupData);
+          tooltip = showTooltip(eo, that.parentNode, groupData);
         }
       });
 
@@ -766,7 +761,7 @@ sucrose.models.multiBarChart = function() {
           state.stacked = eo.stacked;
         }
 
-        container.transition().call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('chartClick', function() {

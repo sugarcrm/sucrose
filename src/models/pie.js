@@ -8,13 +8,14 @@ sucrose.models.pie = function() {
       width = 500,
       height = 500,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getValues = function(d) { return d; },
-      getX = function(d) { return d.key; },
-      getY = function(d) { return d.value; },
+      getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      getKey = function(d) { return d.key || d.data.key; },
+      getValue = function(d, i) { return d.disabled === true ? 0 : d.value; },
+      fmtKey = function(d) { return getKey(d); },
+      fmtValue = function(d) { return getValue(d); },
       locality = sucrose.utils.buildLocality(),
       getDescription = function(d) { return d.description; },
-      valueFormat = function(d) { return d.data ? getY(d.data) : d; },
-      labelFormat = function(d) { return d.data ? getX(d.data) : d; },
       showLabels = true,
       showLeaders = true,
       pieLabelsOutside = true,
@@ -54,11 +55,14 @@ sucrose.models.pie = function() {
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
       textureFill = false,
-      classes = function(d, i) { return 'sc-slice sc-series-' + d.series; },
+      classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   //============================================================
 
+
+  //============================================================
+  // Update chart
 
   function chart(selection) {
     selection.each(function(data) {
@@ -70,7 +74,7 @@ sucrose.models.pie = function() {
       // Setup the Pie chart and choose the data element
       var pie = d3.pie()
             .sort(null)
-            .value(function(d) { return d.disabled ? 0 : getY(d); });
+            .value(getValue);
 
       //------------------------------------------------------------
       // recalculate width and height based on label length
@@ -78,9 +82,9 @@ sucrose.models.pie = function() {
           doLabels = showLabels && pieLabelsOutside ? true : false;
       if (doLabels) {
         labelLengths = sucrose.utils.stringSetLengths(
-            data.map(getX),
+            data,
             container,
-            labelFormat,
+            fmtKey,
             'sc-label'
           );
       }
@@ -92,7 +96,7 @@ sucrose.models.pie = function() {
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
+      var g = wrap.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
@@ -126,13 +130,10 @@ sucrose.models.pie = function() {
           });
         });
 
-      var slices_bind = pie_wrap.selectAll('.sc-slice')
-            .data(pie);
+      var slices_bind = pie_wrap.selectAll('.sc-group').data(pie);
+      var slices_entr = slices_bind.enter().append('g').attr('class', 'sc-group');
       slices_bind.exit().remove();
-      var slices_entr = slices_bind.enter().append('g')
-            .attr('class', 'sc-slice');
-      var slices = pie_wrap.selectAll('.sc-slice')
-            .merge(slices_entr);
+      var slices = pie_wrap.selectAll('.sc-group').merge(slices_entr);
 
       slices_entr
         .style('stroke', '#ffffff')
@@ -274,7 +275,6 @@ sucrose.models.pie = function() {
             .outerRadius(pieRadius * donutRatio);
         }
       }
-
       slices
         .attr('class', function(d) { return classes(d.data, d.data.series); })
         .attr('fill', function(d) { return fill(d.data, d.data.series); })
@@ -290,7 +290,9 @@ sucrose.models.pie = function() {
       //   .attrTween('d', arcTween);
 
       slices.select('.sc-base')
-        .attr('d', pieArc)
+        .attr('d', function(d) {
+          return pieArc(d);
+        })
         .style('stroke-opacity', function(d) {
           return startAngle(d) === endAngle(d) ? 0 : 1;
         });
@@ -325,9 +327,7 @@ sucrose.models.pie = function() {
           });
 
         slices.select('.sc-label text')
-          .text(function(d) {
-            return labelFormat(d);
-          })
+          .text(fmtKey)
           .attr('dy', '.35em')
           .style('fill', '#555')
           .style('fill-opacity', labelOpacity)
@@ -352,7 +352,7 @@ sucrose.models.pie = function() {
                   bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
                   rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
               if (rW < 0) {
-                var label = sucrose.utils.stringEllipsify(labelFormat(d), container, labelLengths[i] + rW);
+                var label = sucrose.utils.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
                 d3.select(this).select('text').text(label);
               }
             }
@@ -411,13 +411,15 @@ sucrose.models.pie = function() {
 
       function buildEventObject(e, d, i) {
         return {
-            label: labelFormat(d),
-            value: valueFormat(d),
-            point: d.data,
-            pointIndex: i,
-            id: id,
-            e: e
-          };
+          id: id,
+          key: fmtKey(d),
+          value: fmtValue(d),
+          point: d.data,
+          pointIndex: d.index,
+          series: data[d.index], // d.index is set at model level
+          seriesIndex: d.data.series, // chart
+          e: e
+        };
       }
 
       // calculate max and min height of slice vertices
@@ -588,6 +590,14 @@ sucrose.models.pie = function() {
 
   chart.dispatch = dispatch;
 
+  chart.id = function(_) {
+    if (!arguments.length) {
+      return id;
+    }
+    id = _;
+    return chart;
+  };
+
   chart.color = function(_) {
     if (!arguments.length) {
       return color;
@@ -644,14 +654,6 @@ sucrose.models.pie = function() {
     return chart;
   };
 
-  chart.values = function(_) {
-    if (!arguments.length) {
-      return getValues;
-    }
-    getValues = _;
-    return chart;
-  };
-
   chart.x = function(_) {
     if (!arguments.length) {
       return getX;
@@ -665,6 +667,70 @@ sucrose.models.pie = function() {
       return getY;
     }
     getY = sucrose.functor(_);
+    return chart;
+  };
+
+  chart.getKey = function(_) {
+    if (!arguments.length) {
+      return getKey;
+    }
+    getKey = _;
+    return chart;
+  };
+
+  chart.getValue = function(_) {
+    if (!arguments.length) {
+      return getValue;
+    }
+    getValue = _;
+    return chart;
+  };
+
+  chart.fmtKey = function(_) {
+    if (!arguments.length) {
+      return fmtKey;
+    }
+    fmtKey = _;
+    return chart;
+  };
+
+  chart.fmtValue = function(_) {
+    if (!arguments.length) {
+      return fmtValue;
+    }
+    fmtValue = _;
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    return chart;
+  };
+
+  chart.textureFill = function(_) {
+    if (!arguments.length) {
+      return textureFill;
+    }
+    textureFill = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = sucrose.utils.buildLocality(_);
+    return chart;
+  };
+
+  chart.values = function(_) {
+    if (!arguments.length) {
+      return getValues;
+    }
+    getValues = _;
     return chart;
   };
 
@@ -764,43 +830,11 @@ sucrose.models.pie = function() {
     return chart;
   };
 
-  chart.id = function(_) {
-    if (!arguments.length) {
-      return id;
-    }
-    id = _;
-    return chart;
-  };
-
-  chart.valueFormat = function(_) {
-    if (!arguments.length) {
-      return valueFormat;
-    }
-    valueFormat = _;
-    return chart;
-  };
-
-  chart.labelFormat = function(_) {
-    if (!arguments.length) {
-      return labelFormat;
-    }
-    labelFormat = _;
-    return chart;
-  };
-
   chart.labelThreshold = function(_) {
     if (!arguments.length) {
       return labelThreshold;
     }
     labelThreshold = _;
-    return chart;
-  };
-
-  chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
-    direction = _;
     return chart;
   };
 
@@ -841,20 +875,6 @@ sucrose.models.pie = function() {
       return fixedRadius;
     }
     fixedRadius = sucrose.functor(_);
-    return chart;
-  };
-
-  chart.textureFill = function(_) {
-    if (!arguments.length) return textureFill;
-    textureFill = _;
-    return chart;
-  };
-
-  chart.locality = function(_) {
-    if (!arguments.length) {
-      return locality;
-    }
-    locality = sucrose.utils.buildLocality(_);
     return chart;
   };
 
