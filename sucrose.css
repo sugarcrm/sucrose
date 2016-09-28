@@ -349,14 +349,14 @@ svg.sc-chart .calc-text-strings {
 /***********
 *  Pie Chart
 */
-.sc-pie .sc-slice.hover path {
+.sc-pie .sc-group.hover path {
   fill-opacity: .75;
 }
-.sc-pie .sc-slice polyline {
+.sc-pie polyline.sc-label-leader {
   stroke-width: 1px;
   pointer-events: none;
 }
-.sc-holeWrap text {
+.sc-hole-wrap text {
   text-anchor: middle;
 }
 text.sc-pie-hole-value {
@@ -470,16 +470,13 @@ text.sc-pie-hole-label {
 /**********
 * Funnel
 */
-.sc-funnelChart .sc-slice.hover polygon {
+.sc-chart-funnel .sc-slice.hover polygon {
   fill-opacity: .75;
 }
-.sc-funnelChart .sc-y path {
-  stroke: none;
-}
-.sc-funnelChart .sc-label-value text.sc-label {
+.sc-chart-funnel .sc-label-value text.sc-label {
   font-size: 11px;
 }
-.sc-funnelChart .sc-label-value text.sc-value {
+.sc-chart-funnel .sc-label-value text.sc-value {
   font-size: 13px;
 }
 /**********

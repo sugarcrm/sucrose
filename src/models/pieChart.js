@@ -103,7 +103,8 @@ sucrose.models.pieChart = function() {
       // Process data
 
       chart.dataSeriesActivate = function(eo) {
-        var series = eo.point;
+console.log(eo)
+        var series = eo.series;
 
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
 
@@ -408,8 +409,9 @@ sucrose.models.pieChart = function() {
   chart.pie = pie;
   chart.legend = legend;
 
-  fc.rebind(chart, pie, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, pie, 'valueFormat', 'labelFormat', 'values', 'description', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold', 'textureFill');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, pie, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
   fc.rebind(chart, pie, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 
   chart.colorData = function(_) {
@@ -449,7 +451,7 @@ sucrose.models.pieChart = function() {
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
-      return pie.gradient(d, d.series);
+      return model.gradient(d, d.series);
     };
 
     model.color(color);
@@ -550,6 +552,14 @@ sucrose.models.pieChart = function() {
     return chart;
   };
 
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
   chart.direction = function(_) {
     if (!arguments.length) {
       return direction;
@@ -560,11 +570,21 @@ sucrose.models.pieChart = function() {
     return chart;
   };
 
-  chart.seriesClick = function(_) {
+  chart.duration = function(_) {
     if (!arguments.length) {
-      return seriesClick;
+      return duration;
     }
-    seriesClick = _;
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    model.delay(_);
     return chart;
   };
 

@@ -14,9 +14,17 @@ sucrose.models.pie = function() {
       getValue = function(d, i) { return d.disabled === true ? 0 : d.value; },
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
+      fmtCount = function(d) { return (' (' + d + ')').replace(' ()', ''); },
       locality = sucrose.utils.buildLocality(),
-      getDescription = function(d) { return d.description; },
-      showLabels = true,
+      direction = 'ltr',
+      delay = 0,
+      duration = 0,
+      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
+      fill = color,
+      textureFill = false,
+      classes = function(d, i) { return 'sc-group sc-series-' + d.series; };
+
+  var showLabels = true,
       showLeaders = true,
       pieLabelsOutside = true,
       donutLabelsOutside = true,
@@ -50,12 +58,6 @@ sucrose.models.pie = function() {
       minRadius = 75,
       maxRadius = 250,
       fixedRadius = function(chart) { return null; },
-      durationMs = 0,
-      direction = 'ltr',
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
-      fill = color,
-      textureFill = false,
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   //============================================================
@@ -76,8 +78,15 @@ sucrose.models.pie = function() {
             .sort(null)
             .value(getValue);
 
+      //set up the gradient constructor function
+      chart.gradient = function(d, i) {
+        var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
+        return sucrose.utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
+      };
+
       //------------------------------------------------------------
       // recalculate width and height based on label length
+
       var labelLengths = [],
           doLabels = showLabels && pieLabelsOutside ? true : false;
       if (doLabels) {
@@ -91,26 +100,18 @@ sucrose.models.pie = function() {
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
-      var wrap_bind = container.selectAll('.sc-wrap.sc-pie').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pie sc-chart-' + id);
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-pie').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-pie');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = wrap.select('g.sc-chart-wrap').merge(g_entr);
 
-      //set up the gradient constructor function
-      chart.gradient = function(d, i) {
-        var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
-        return sucrose.utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
-      };
+      wrap_entr.append('g').attr('class', 'sc-groups');
+      var pie_wrap = wrap.select('.sc-groups');
 
-      var pie_enter = g_entr.append('g').attr('class', 'sc-pie');
-      var pie_wrap = g.select('.sc-pie').merge(pie_enter);
-      var hole_enter = g_entr.append('g').attr('class', 'sc-hole-wrap');
-      var hole_wrap = g.select('.sc-hole-wrap').merge(hole_enter);
+      wrap_entr.append('g').attr('class', 'sc-hole-wrap');
+      var hole_wrap = wrap.select('.sc-hole-wrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-      pie_wrap.attr('transform', 'translate(' + (availableWidth / 2) + ',' + (availableHeight / 2) + ')');
 
       //------------------------------------------------------------
 
@@ -119,23 +120,14 @@ sucrose.models.pie = function() {
       }
 
       //------------------------------------------------------------
+      // Append major data series grouping containers
 
-      container
-        .on('click', function(d, i) {
-          dispatch.chartClick({
-            data: d,
-            index: i,
-            pos: d3.event,
-            id: id
-          });
-        });
+      var groups_bind = pie_wrap.selectAll('.sc-group').data(pie);
+      var groups_entr = groups_bind.enter().append('g').attr('class', 'sc-group');
+      groups_bind.exit().remove();
+      var groups = pie_wrap.selectAll('.sc-group').merge(groups_entr);
 
-      var slices_bind = pie_wrap.selectAll('.sc-group').data(pie);
-      var slices_entr = slices_bind.enter().append('g').attr('class', 'sc-group');
-      slices_bind.exit().remove();
-      var slices = pie_wrap.selectAll('.sc-group').merge(slices_entr);
-
-      slices_entr
+      groups_entr
         .style('stroke', '#ffffff')
         .style('stroke-width', 2)
         .style('stroke-opacity', 0)
@@ -163,14 +155,14 @@ sucrose.models.pie = function() {
           dispatch.call('elementDblClick', this, eo);
         });
 
-      slices_entr.append('path')
+      groups_entr.append('path')
           .attr('class', 'sc-base')
           .each(function(d, i) {
             this._current = d;
           });
 
       if (textureFill) {
-        slices_entr.append('path')
+        groups_entr.append('path')
             .attr('class', 'sc-texture')
             .each(function(d, i) {
               this._current = d;
@@ -178,19 +170,19 @@ sucrose.models.pie = function() {
             .style('mask', 'url(' + mask + ')');
       }
 
-      slices_entr.append('g')
+      groups_entr.append('g')
           .attr('transform', 'translate(0,0)')
           .attr('class', 'sc-label');
 
-      slices_entr.select('.sc-label')
+      groups_entr.select('.sc-label')
           .append('rect')
           .style('fill-opacity', 0)
           .style('stroke-opacity', 0);
-      slices_entr.select('.sc-label')
+      groups_entr.select('.sc-label')
           .append('text')
           .style('fill-opacity', 0);
 
-      slices_entr.append('polyline')
+      groups_entr.append('polyline')
           .attr('class', 'sc-label-leader')
           .style('stroke-opacity', 0);
 
@@ -208,7 +200,7 @@ sucrose.models.pie = function() {
           horizontalReduction = leaderLength + textOffset;
 
       // side effect :: resets extWidths, extHeights
-      slices.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
+      groups.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
 
       // Donut Hole Text
       hole_wrap.call(holeFormat, hole ? [hole] : []);
@@ -275,7 +267,8 @@ sucrose.models.pie = function() {
             .outerRadius(pieRadius * donutRatio);
         }
       }
-      slices
+
+      groups
         .attr('class', function(d) { return classes(d.data, d.data.series); })
         .attr('fill', function(d) { return fill(d.data, d.data.series); })
         .classed('sc-active', function(d) { return d.data.active === 'active'; })
@@ -285,11 +278,11 @@ sucrose.models.pie = function() {
       // there is a "Maximum call stack size exceeded at Date.toString" error
       // in PMSE that stops d3 from calling transitions
       // this may be a logger issue or some recursion somewhere in PMSE
-      // slices.select('path').transition().duration(durationMs)
+      // slices.select('path').transition().duration(duration)
       //   .attr('d', arc)
       //   .attrTween('d', arcTween);
 
-      slices.select('.sc-base')
+      groups.select('.sc-base')
         .attr('d', function(d) {
           return pieArc(d);
         })
@@ -298,7 +291,7 @@ sucrose.models.pie = function() {
         });
 
       if (textureFill) {
-        slices.select('.sc-texture')
+        groups.select('.sc-texture')
           .attr('d', pieArc)
           .style('stroke-opacity', function(d) {
             return startAngle(d) === endAngle(d) ? 0 : 1;
@@ -311,7 +304,7 @@ sucrose.models.pie = function() {
 
       if (showLabels) {
         // This does the normal label
-        slices.select('.sc-label')
+        groups.select('.sc-label')
           .attr('transform', function(d) {
             if (labelSunbeamLayout) {
               d.outerRadius = pieRadius + 10; // Set Outer Coordinate
@@ -326,7 +319,7 @@ sucrose.models.pie = function() {
             }
           });
 
-        slices.select('.sc-label text')
+        groups.select('.sc-label text')
           .text(fmtKey)
           .attr('dy', '.35em')
           .style('fill', '#555')
@@ -344,7 +337,7 @@ sucrose.models.pie = function() {
             return anchor;
           });
 
-        slices
+        groups
           .each(function(d, i) {
             if (labelLengths[i] > minRadius || labelRadius === minRadius) {
               var theta = (startAngle(d) + endAngle(d)) / 2,
@@ -359,7 +352,7 @@ sucrose.models.pie = function() {
           });
 
         if (!pieLabelsOutside) {
-          slices.select('.sc-label')
+          groups.select('.sc-label')
             .each(function(d) {
               if (!labelOpacity(d)) {
                 return;
@@ -378,7 +371,7 @@ sucrose.models.pie = function() {
                 .style('fill-opacity', labelOpacity);
             });
         } else if (showLeaders) {
-          slices.select('.sc-label-leader')
+          groups.select('.sc-label-leader')
             .attr('points', function(d) {
               if (!labelOpacity(d)) {
                 // canvg needs at least 2 points because the lib doesnt have
@@ -401,15 +394,16 @@ sucrose.models.pie = function() {
             .style('stroke-opacity', labelOpacity);
         }
       } else {
-        slices.select('.sc-label-leader').style('stroke-opacity', 0);
-        slices.select('.sc-label rect').style('fill-opacity', 0);
-        slices.select('.sc-label text').style('fill-opacity', 0);
+        groups.select('.sc-label-leader').style('stroke-opacity', 0);
+        groups.select('.sc-label rect').style('fill-opacity', 0);
+        groups.select('.sc-label text').style('fill-opacity', 0);
       }
 
       // Utility Methods
       //------------------------------------------------------------
 
       function buildEventObject(e, d, i) {
+        console.log(d)
         return {
           id: id,
           key: fmtKey(d),
@@ -524,7 +518,7 @@ sucrose.models.pie = function() {
         var widthRadius = [maxWidthRadius],
             heightRadius = [maxHeightRadius + leaderLength];
 
-        slices.select('.sc-base').each(function(d, i) {
+        groups.select('.sc-base').each(function(d, i) {
           if (!labelOpacity(d)) {
             return;
           }
@@ -702,11 +696,35 @@ sucrose.models.pie = function() {
     return chart;
   };
 
+  chart.fmtCount = function(_) {
+    if (!arguments.length) {
+      return fmtCount;
+    }
+    fmtCount = _;
+    return chart;
+  };
+
   chart.direction = function(_) {
     if (!arguments.length) {
       return direction;
     }
     direction = _;
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
     return chart;
   };
 
@@ -731,14 +749,6 @@ sucrose.models.pie = function() {
       return getValues;
     }
     getValues = _;
-    return chart;
-  };
-
-  chart.description = function(_) {
-    if (!arguments.length) {
-      return getDescription;
-    }
-    getDescription = _;
     return chart;
   };
 

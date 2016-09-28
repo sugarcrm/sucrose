@@ -103,6 +103,7 @@ sucrose.models.funnelChart = function() {
       // Process data
 
       chart.dataSeriesActivate = function(eo) {
+console.log(eo)
         var series = eo.series;
 
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
@@ -409,8 +410,9 @@ sucrose.models.funnelChart = function() {
   chart.funnel = funnel;
   chart.legend = legend;
 
-  fc.rebind(chart, funnel, 'id', 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, funnel, 'fmtKey', 'fmtValue', 'fmtCount', 'clipEdge', 'delay', 'wrapLabels', 'minLabelWidth', 'textureFill');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, funnel, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -450,7 +452,7 @@ sucrose.models.funnelChart = function() {
 
     var fill = (!params.gradient) ? color : function(d, i) {
       var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-      return funnel.gradient(d, d.series, p);
+      return model.gradient(d, d.series, p);
     };
 
     model.color(color);
@@ -551,6 +553,14 @@ sucrose.models.funnelChart = function() {
     return chart;
   };
 
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
   chart.direction = function(_) {
     if (!arguments.length) {
       return direction;
@@ -561,11 +571,21 @@ sucrose.models.funnelChart = function() {
     return chart;
   };
 
-  chart.seriesClick = function(_) {
+  chart.duration = function(_) {
     if (!arguments.length) {
-      return seriesClick;
+      return duration;
     }
-    seriesClick = _;
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    model.delay(_);
     return chart;
   };
 
