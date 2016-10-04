@@ -11,7 +11,7 @@
             position: absolute;
             top: 0;
             right: 0;
-            bottom: 0;
+            bottom: 200px;
             left: 0;
         }
     </style>
@@ -19,6 +19,7 @@
   <body>
     <div id="chart_" class="chart">
       <svg></svg>
+      <a id="toggleData">Toggle Data</a>
     </div>
 
     <script src="d3.min.js"></script>
@@ -36,131 +37,204 @@
 
     <script>
 var type = 'multibar';
-var data = {
+// var data1 = {
+//   "properties": {
+//     "title": "Forecasting for Q1 2012",
+//     "yDataType": "currency",
+//     "groups": [
+//       {
+//         "label": "Mark Gibson"
+//       },
+//       {
+//         "label": "Terence Li"
+//       },
+//       {
+//         "label": "James Joplin"
+//       },
+//       {
+//         "label": "Amy McCray"
+//       },
+//       {
+//         "label": "My Opps"
+//       }
+//     ]
+//   },
+//   "data": [
+//     {
+//       "key": "Qualified",
+//       "values": [
+//         {
+//           "x": 1,
+//           "y": 50
+//         },
+//         {
+//           "x": 2,
+//           "y": 80
+//         },
+//         {
+//           "x": 3,
+//           "y": 0
+//         },
+//         {
+//           "x": 4,
+//           "y": 100
+//         },
+//         {
+//           "x": 5,
+//           "y": 100
+//         }
+//       ]
+//     },
+//     {
+//       "key": "Proposal",
+//       "values": [
+//         {
+//           "x": 1,
+//           "y": 50
+//         },
+//         {
+//           "x": 2,
+//           "y": 80
+//         },
+//         {
+//           "x": 3,
+//           "y": 0
+//         },
+//         {
+//           "x": 4,
+//           "y": 100
+//         },
+//         {
+//           "x": 5,
+//           "y": 90
+//         }
+//       ]
+//     },
+//     {
+//       "key": "Negotiation",
+//       "values": [
+//         {
+//           "x": 1,
+//           "y": 10
+//         },
+//         {
+//           "x": 2,
+//           "y": 50
+//         },
+//         {
+//           "x": 3,
+//           "y": 0
+//         },
+//         {
+//           "x": 4,
+//           "y": 40
+//         },
+//         {
+//           "x": 5,
+//           "y": 40
+//         }
+//       ]
+//     },
+//     {
+//       "key": "Closed",
+//       "values": [
+//         {
+//           "x": 1,
+//           "y": 0
+//         },
+//         {
+//           "x": 2,
+//           "y": 0
+//         },
+//         {
+//           "x": 3,
+//           "y": 0
+//         },
+//         {
+//           "x": 4,
+//           "y": 0
+//         },
+//         {
+//           "x": 5,
+//           "y": 0
+//         }
+//       ]
+//     }
+//   ]
+// };
+var data1 = {
   "properties": {
-    "title": "Forecasting for Q1 2012",
-    "yDataType": "currency",
+    "title": "Opportunities Won/Lost by Industry",
     "groups": [
-      {
-        "label": "Mark Gibson"
-      },
-      {
-        "label": "Terence Li"
-      },
-      {
-        "label": "James Joplin"
-      },
-      {
-        "label": "Amy McCray"
-      },
-      {
-        "label": "My Opps"
-      }
+      {"label": "Info Tech"},
+      {"label": "Discretionary"},
+      {"label": "Health Care"},
+      {"label": "Consumer"},
+      {"label": "Financials"},
+      {"label": "Industrials"},
+      {"label": "Energy"},
+      {"label": "Materials"},
+      {"label": "Telecomm"}
     ]
   },
   "data": [
     {
-      "key": "Qualified",
+      "key": "Lost",
+      "color": "#d62728",
+      "classes": "sc-fill00",
       "values": [
-        {
-          "x": 1,
-          "y": 50
-        },
-        {
-          "x": 2,
-          "y": 80
-        },
-        {
-          "x": 3,
-          "y": 0
-        },
-        {
-          "x": 4,
-          "y": 100
-        },
-        {
-          "x": 5,
-          "y": 100
-        }
+        {"x": 1, "y": -1.8746444827653},
+        {"x": 2, "y": -8.0961543492239},
+        {"x": 3, "y": -0.57072943117674},
+        {"x": 4, "y": -2.4174010336624},
+        {"x": 5, "y": -0.72009071426284},
+        {"x": 6, "y": -0.77154485523777},
+        {"x": 7, "y": -0.90152097798131},
+        {"x": 8, "y": -0.91445417330854},
+        {"x": 9, "y": -0.055746319141851}
       ]
     },
     {
-      "key": "Proposal",
+      "key": "Won",
+      "color": "#1f77b4",
+      "classes": "sc-fill02",
       "values": [
-        {
-          "x": 1,
-          "y": 50
-        },
-        {
-          "x": 2,
-          "y": 80
-        },
-        {
-          "x": 3,
-          "y": 0
-        },
-        {
-          "x": 4,
-          "y": 100
-        },
-        {
-          "x": 5,
-          "y": 90
-        }
+        {"x": 1, "y": 25.307646510375},
+        {"x": 2, "y": 16.756779544553},
+        {"x": 3, "y": 18.451534877007},
+        {"x": 4, "y": 8.6142352811805},
+        {"x": 5, "y": 7.8082472075876},
+        {"x": 6, "y": 5.259101026956},
+        {"x": 7, "y": 0.30947953487127},
+        {"x": 8, "y": 0},
+        {"x": 9, "y": 0}
       ]
-    },
+    }
+  ]
+}
+;
+var data2 = {
+  "properties": {
+    "title": "Total is 3780.00",
+    "groups": [
+      {"label": "Red"},
+      {"label": "Yellow"},
+      {"label": "Green"}
+    ]
+  },
+  "data": [
     {
-      "key": "Negotiation",
+      "key": "Apples",
       "values": [
-        {
-          "x": 1,
-          "y": 10
-        },
-        {
-          "x": 2,
-          "y": 50
-        },
-        {
-          "x": 3,
-          "y": 0
-        },
-        {
-          "x": 4,
-          "y": 40
-        },
-        {
-          "x": 5,
-          "y": 40
-        }
-      ]
-    },
-    {
-      "key": "Closed",
-      "values": [
-        {
-          "x": 1,
-          "y": 0
-        },
-        {
-          "x": 2,
-          "y": 0
-        },
-        {
-          "x": 3,
-          "y": 0
-        },
-        {
-          "x": 4,
-          "y": 0
-        },
-        {
-          "x": 5,
-          "y": 0
-        }
+        {"x": 1, "y": 1234},
+        {"x": 2, "y": 567},
+        {"x": 3, "y": 89}
       ]
     }
   ]
 };
+
+var data = data1;
 
 var config = {
   "colorData": "default",
@@ -391,6 +465,20 @@ window.onload = function () {
 
     // Rebind window resizer
     window.addEventListener('resize', chart.render);
+
+    d3.select('#toggleData')
+      .on('click', function() {
+        // Unbind window resizer because for some reason
+        // chart is holding onto old data
+        window.removeEventListener('resize', chart.render);
+        // toggle chart
+        data = (data == data1) ? data2 : data1;
+        d3.select('#chart_ svg')
+          .attr('class', 'sucrose sc-chart')
+          .datum(data).call(chart);
+        // Rebind window resizer
+        window.addEventListener('resize', chart.render);
+      });
 };
     </script>
   </body>

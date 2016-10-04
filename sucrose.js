@@ -987,13 +987,11 @@ sucrose.models.axis = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-axis')
-            .data([data]);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-axis').data([data]);
       var wrap_entr = wrap_bind.enter()
             .append('g').attr('class', 'sucrose sc-wrap sc-axis')
             .append('g').attr('class', 'sc-axis-inner');
-      var wrap = container.select('.sc-axis-inner')
-            .merge(wrap_entr);
+      var wrap = container.select('.sc-axis-inner').merge(wrap_entr);
 
       wrap.call(axis);
 
@@ -9652,8 +9650,6 @@ sucrose.models.multiBar = function() {
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   //============================================================
-
-  //============================================================
   // Private Variables
   //------------------------------------------------------------
 
@@ -9741,9 +9737,7 @@ sucrose.models.multiBar = function() {
       // Setup Scales
 
       // remap and flatten the data for use in calculating the scales' domains
-      var seriesData = (xDomain && yDomain && !showValues) ?
-            [] : // if we know xDomain and yDomain, no need to calculate
-            d3.merge(data.map(function(d) {
+      var seriesData = d3.merge(data.map(function(d) {
               return d.values.map(function(d, i) {
                 return {x: getX(d, i), y: getY(d, i), y0: d.y0, y0: d.y0};
               });
@@ -9771,7 +9765,7 @@ sucrose.models.multiBar = function() {
           );
 
         labelThickness = sucrose.utils.stringSetThickness(
-            [0123],
+            ['Xy'],
             container,
             valueFormat,
             'sc-label-value'
@@ -9786,8 +9780,14 @@ sucrose.models.multiBar = function() {
         resetScale();
       };
 
+      function unique(x) {
+        return x.reverse()
+                .filter(function (e, i, x) { return x.indexOf(e, i+1) === -1; })
+                .reverse();
+      }
+
       function resetScale() {
-        xDomain = xDomain || seriesData.map(function(d) { return d.x; });
+        var xDomain = xDomain || unique(seriesData.map(getX));
         var maxX = vertical ? availableWidth : availableHeight,
             maxY = vertical ? availableHeight : availableWidth;
 
@@ -10999,7 +10999,6 @@ sucrose.models.multiBarChart = function() {
 
           maxControlsWidth = controls.calculateWidth();
         }
-
         if (showLegend) {
           if (multibar.barColor()) {
             data.forEach(function(series, i) {
@@ -11042,7 +11041,6 @@ sucrose.models.multiBarChart = function() {
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
         }
-
         if (showLegend) {
           var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
@@ -11111,7 +11109,6 @@ sucrose.models.multiBarChart = function() {
 
         // Y-Axis
         yAxis
-          // .orient(vertical ? 'left' : 'bottom')
           .margin(innerMargin)
           .ticks(innerHeight / 48);
         yAxis_wrap
@@ -11122,16 +11119,13 @@ sucrose.models.multiBarChart = function() {
 
         // X-Axis
         xAxis
-          // .orient(vertical ? 'bottom' : 'left')
           .margin(innerMargin)
-
+          .ticks(groupCount);
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
-        xAxis_wrap
-          .call(xAxis);
+          .attr('transform', 'translate(' + trans + ')')
+            .call(xAxis);
         // reset inner dimensions
         xAxisMargin = xAxis.margin();
         setInnerMargins();

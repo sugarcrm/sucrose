@@ -447,7 +447,6 @@ sucrose.models.multiBarChart = function() {
 
           maxControlsWidth = controls.calculateWidth();
         }
-
         if (showLegend) {
           if (multibar.barColor()) {
             data.forEach(function(series, i) {
@@ -490,7 +489,6 @@ sucrose.models.multiBarChart = function() {
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
         }
-
         if (showLegend) {
           var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
@@ -559,7 +557,6 @@ sucrose.models.multiBarChart = function() {
 
         // Y-Axis
         yAxis
-          // .orient(vertical ? 'left' : 'bottom')
           .margin(innerMargin)
           .ticks(innerHeight / 48);
         yAxis_wrap
@@ -570,16 +567,13 @@ sucrose.models.multiBarChart = function() {
 
         // X-Axis
         xAxis
-          // .orient(vertical ? 'bottom' : 'left')
           .margin(innerMargin)
-
+          .ticks(groupCount);
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
-        xAxis_wrap
-          .call(xAxis);
+          .attr('transform', 'translate(' + trans + ')')
+            .call(xAxis);
         // reset inner dimensions
         xAxisMargin = xAxis.margin();
         setInnerMargins();

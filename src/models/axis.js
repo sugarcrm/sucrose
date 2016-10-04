@@ -86,13 +86,11 @@ sucrose.models.axis = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-axis')
-            .data([data]);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-axis').data([data]);
       var wrap_entr = wrap_bind.enter()
             .append('g').attr('class', 'sucrose sc-wrap sc-axis')
             .append('g').attr('class', 'sc-axis-inner');
-      var wrap = container.select('.sc-axis-inner')
-            .merge(wrap_entr);
+      var wrap = container.select('.sc-axis-inner').merge(wrap_entr);
 
       wrap.call(axis);
 
