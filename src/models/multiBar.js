@@ -17,7 +17,6 @@ sucrose.models.multiBar = function() {
       stacked = true,
       barColor = null, // adding the ability to set the color for each rather than the whole group
       disabled, // used in conjunction with barColor to communicate to multiBarChart what series are disabled
-      clipEdge = true,
       showValues = false,
       valueFormat = function(d) { return d; },
       withLine = false,

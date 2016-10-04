@@ -10,9 +10,10 @@ sucrose.models.funnelChart = function() {
       showTitle = false,
       showLegend = true,
       direction = 'ltr',
+      delay = 0,
+      duration = 0,
       tooltip = null,
       tooltips = true,
-      duration = 0,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},

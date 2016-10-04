@@ -11,10 +11,10 @@ sucrose.models.multiBarChart = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
+      delay = 0,
+      duration = 0,
       tooltip = null,
       tooltips = true,
-      x,
-      y,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
@@ -22,6 +22,8 @@ sucrose.models.multiBarChart = function() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
+      x,
+      y,
       vertical = true,
       scrollEnabled = true,
       overflowHandler = function(d) { return; },
@@ -805,7 +807,7 @@ sucrose.models.multiBarChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'duration', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -956,6 +958,14 @@ sucrose.models.multiBarChart = function() {
     return chart;
   };
 
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
   chart.direction = function(_) {
     if (!arguments.length) {
       return direction;
@@ -969,11 +979,21 @@ sucrose.models.multiBarChart = function() {
     return chart;
   };
 
-  chart.seriesClick = function(_) {
+  chart.duration = function(_) {
     if (!arguments.length) {
-      return seriesClick;
+      return duration;
     }
-    seriesClick = _;
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    model.delay(_);
     return chart;
   };
 

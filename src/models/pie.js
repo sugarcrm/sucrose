@@ -61,6 +61,8 @@ sucrose.models.pie = function() {
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   //============================================================
+  // Private Variables
+  //------------------------------------------------------------
 
   // Setup the Pie chart and choose the data element
   var pie = d3.pie()
