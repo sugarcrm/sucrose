@@ -11,19 +11,19 @@ sucrose.models.funnel = function() {
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       getH = function(d) { return d.height; },
-      getKey = function(d) { return d.key || d.data.key; },
-      getValue = function(d, i) { return d.disabled === true ? 0 : d.value; },
-      fmtKey = function(d) { return getKey(d); },
-      fmtValue = function(d) { return getValue(d); },
-      fmtCount = function(d) { return (' (' + d + ')').replace(' ()', ''); },
+      getKey = function(d) { return d.key; },
+      getValue = function(d, i) { return d.value; },
+      fmtKey = function(d) { return getKey(d.series || d); },
+      fmtValue = function(d) { return getValue(d.series || d); },
+      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
       locality = sucrose.utils.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
+      color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.series.seriesIndex); },
       fill = color,
       textureFill = false,
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; };
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; };
 
   var r = 0.3, // ratio of width to height (or slope)
       y = d3.scaleLinear(),
@@ -58,8 +58,8 @@ sucrose.models.funnel = function() {
           funnelTotal = 0,
           funnelOffset = 0;
 
-      // Add series index to each data point for reference
-      funnelTotal = d3.sum(data, function(d) { return d.total; });
+      //sum the values for each data element
+      funnelTotal = d3.sum(data, function(d) { return d.value; });
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
@@ -134,17 +134,16 @@ sucrose.models.funnel = function() {
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-funnel').data([data]);
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-funnel');
       var wrap = container.select('.sc-wrap').merge(wrap_entr);
-      var defs_entr = wrap_entr.append('defs');
 
-      wrap_entr.append('g').attr('class', 'sc-groups');
-      var funnel_wrap = wrap.select('.sc-groups');
+      var defs_entr = wrap_entr.append('defs');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
+      // Definitions
 
       if (textureFill) {
         var mask = sucrose.utils.createTexture(defs_entr, id);
@@ -153,9 +152,9 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      var groups_bind = funnel_wrap.selectAll('.sc-group').data(data, function(d) { return d.series; });
-      var groups_entr = groups_bind.enter().append('g').attr('class', 'sc-group');
-      groups_bind.exit().transition().duration(duration)
+      var series_bind = wrap.selectAll('.sc-series').data(data, function(d) { return d.series; });
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
+      series_bind.exit().transition().duration(duration)
         .selectAll('g.sc-slice')
         .delay(function(d, i) { return i * delay / data[0].values.length; })
           .attr('points', function(d) {
@@ -164,7 +163,7 @@ sucrose.models.funnel = function() {
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
           .remove();
-      groups_bind.exit().transition().duration(duration)
+      series_bind.exit().transition().duration(duration)
         .selectAll('g.sc-label-value')
         .delay(function(d, i) { return i * delay / data[0].values.length; })
           .attr('y', 0)
@@ -172,33 +171,49 @@ sucrose.models.funnel = function() {
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
           .remove();
-      groups_bind.exit().remove();
-      var groups = funnel_wrap.selectAll('.sc-group').merge(groups_entr);
+      series_bind.exit().remove();
+      var series = wrap.selectAll('.sc-series').merge(series_entr);
 
-      // groups
-      //   .style('stroke-opacity', 1e-6)
-      //   .style('fill-opacity', 1e-6);
+      series_entr
+        .style('stroke', '#FFF')
+        .style('stroke-width', 2)
+        .style('stroke-opacity', 1)
+        .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
+          d3.select(this).classed('hover', true);
+        })
+        .on('mouseout', function(d, i, j) {
+          d3.select(this).classed('hover', false);
+        });
 
-      groups
-        .attr('class', classes)
-        .attr('fill', fill)
-        .classed('hover', function(d) { return d.hover; })
+      series
+        .attr('class', function(d) { return classes(d, d.seriesIndex); })
+        .attr('fill', function(d) { return fill(d, d.seriesIndex); })
         .classed('sc-active', function(d) { return d.active === 'active'; })
-        .classed('sc-inactive', function(d) { return d.active === 'inactive'; })
-        .style('stroke', '#FFFFFF')
-        .style('stroke-width', 2);
+        .classed('sc-inactive', function(d) { return d.active === 'inactive'; });
 
-      groups.transition().duration(duration)
+      series.transition().duration(duration)
           .style('stroke-opacity', 1)
           .style('fill-opacity', 1);
 
       //------------------------------------------------------------
       // Append polygons for funnel
 
-      var slice_bind = groups.selectAll('g.sc-slice').data(function(d) { return d.values; }, function(d) { return d.series; });
+      var slice_bind = series.selectAll('g.sc-slice').data(
+            function(s, i) {
+              return s.values.map(function(v, j) {
+                v.disabled = s.disabled;
+                v.key = s.key;
+                v.seriesIndex = s.series;
+                v.seriesDataIndex = i;
+                v.index = j;
+                return v;
+              });
+            },
+            function(d) { return d.series; }
+          );
       slice_bind.exit().remove();
       var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
-      var slices = groups.selectAll('g.sc-slice').merge(slice_entr);
+      var slices = series.selectAll('g.sc-slice').merge(slice_entr);
 
       slice_entr.append('polygon')
         .attr('class', 'sc-base');
@@ -246,12 +261,12 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append containers for labels
 
-      var labels_bind = groups.selectAll('.sc-label-value')
+      var labels_bind = series.selectAll('.sc-label-value')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
       labels_bind.exit().remove();
       var labels_entr = labels_bind.enter().append('g')
             .attr('class', 'sc-label-value');
-      var labels = groups.selectAll('g.sc-label-value')
+      var labels = series.selectAll('g.sc-label-value')
             .merge(labels_entr);
 
       labels
@@ -282,9 +297,7 @@ sucrose.models.funnel = function() {
 
         // Append label text and wrap if needed
         labels.append('text')
-          .text(function(d) {
-            return fmtKey(data[d.series]);
-          })
+          .text(fmtKey)
             .call(fmtLabel, 'sc-label', 0.85, 'middle', fmtFill);
 
         labels.select('.sc-label')
@@ -299,16 +312,12 @@ sucrose.models.funnel = function() {
 
         // Append value and count text
         labels.append('text')
-          .text(function(d) {
-            return fmtValue(d.value || d.label || d);
-          })
+          .text(fmtValue)
             .call(fmtLabel, 'sc-value', 0.85, 'middle', fmtFill);
 
         labels.select('.sc-value')
           .append('tspan')
-            .text(function(d) {
-              return fmtCount(data[d.index].count);
-            });
+            .text(fmtCount);
 
         labels
           .call(positionValue)
@@ -332,9 +341,7 @@ sucrose.models.funnel = function() {
 
         // Position side labels
         sideLabels.append('text')
-          .text(function(d) {
-            return fmtKey(data[d.series]);
-          })
+          .text(fmtKey)
             .call(fmtLabel, 'sc-label', 0.85, 'start', '#555');
 
         sideLabels.select('.sc-label')
@@ -487,12 +494,11 @@ sucrose.models.funnel = function() {
       function buildEventObject(e, d, i) {
         return {
           id: id,
-          key: fmtKey(data[d.series]),
-          value: fmtValue(d, i),
-          point: d,
-          pointIndex: d.index,
-          series: data[d.series],
-          seriesIndex: d.series,
+          key: fmtKey(d),
+          value: fmtValue(d),
+          count: fmtCount(d),
+          data: d,
+          series: d.series,
           e: e
         };
       }

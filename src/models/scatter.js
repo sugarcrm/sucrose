@@ -10,7 +10,7 @@ sucrose.models.scatter = function() {
       margin = {top: 0, right: 0, bottom: 0, left: 0},
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); }, // chooses color
       fill = color,
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; },
       x = d3.scaleLinear(),
       y = d3.scaleLinear(),
       z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
@@ -363,13 +363,13 @@ sucrose.models.scatter = function() {
 
       needsUpdate = true;
 
-      var groups_bind = wrap.select('.sc-groups').selectAll('.sc-group')
+      var groups_bind = wrap.select('.sc-groups').selectAll('.sc-series')
             .data(function(d) { return d; }, function(d) { return d.series; });
       var groups_entr = groups_bind.enter().append('g')
-            .attr('class', 'sc-group')
+            .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
             .style('fill-opacity', 1e-6);
-      var groups = wrap.select('.sc-groups').selectAll('.sc-group')
+      var groups = wrap.select('.sc-groups').selectAll('.sc-series')
             .merge(groups_entr);
 
       groups

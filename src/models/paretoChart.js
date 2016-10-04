@@ -106,7 +106,8 @@ sucrose.models.paretoChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          container = d3.select(this);
+          container = d3.select(this),
+          modelClass = 'pareto';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
@@ -359,9 +360,9 @@ sucrose.models.paretoChart = function() {
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
 
-        var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pareto-chart');
-        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
@@ -889,7 +890,7 @@ sucrose.models.paretoChart = function() {
       return sucrose.utils.defaultColor()(d, d.series);
     };
     var barClasses = function(d, i) {
-      return 'sc-group sc-series-' + d.series;
+      return 'sc-series sc-series-' + d.series;
     };
     var lineColor = function(d, i) {
       var p = params.lineColor ? params.lineColor : {
@@ -900,7 +901,7 @@ sucrose.models.paretoChart = function() {
       return d.color || d3.interpolateHsl(d3.rgb(p.c1), d3.rgb(p.c2))(d.series / 2);
     };
     var lineClasses = function(d, i) {
-      return 'sc-group sc-series-' + d.series;
+      return 'sc-series sc-series-' + d.series;
     };
 
     switch (type) {
@@ -916,12 +917,12 @@ sucrose.models.paretoChart = function() {
         barClasses = function(d, i) {
           var iClass = (d.series * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.series + ' sc-fill' + iClass;
         };
         lineClasses = function(d, i) {
           var iClass = (d.series * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + d.series + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
@@ -929,10 +930,10 @@ sucrose.models.paretoChart = function() {
           return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
         };
         barClasses = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
         };
         lineClasses = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }

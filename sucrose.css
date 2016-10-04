@@ -349,7 +349,7 @@ svg.sc-chart .calc-text-strings {
 /***********
 *  Pie Chart
 */
-.sc-pie .sc-group.hover path {
+.sc-pie .sc-series.hover path {
   fill-opacity: .75;
 }
 .sc-pie polyline.sc-label-leader {
@@ -472,6 +472,10 @@ text.sc-pie-hole-label {
 */
 .sc-chart-funnel .sc-slice.hover polygon {
   fill-opacity: .75;
+}
+.sc-chart-funnel polyline.sc-label-leader {
+  stroke-width: 1px;
+  pointer-events: none;
 }
 .sc-chart-funnel .sc-label-value text.sc-label {
   font-size: 11px;

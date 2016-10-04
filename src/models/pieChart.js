@@ -35,8 +35,8 @@ sucrose.models.pieChart = function() {
 
   var showTooltip = function(eo, offsetElement, properties) {
         var key = model.getKey()(eo),
-            x = properties.total ? (model.getValue()(eo.point) * 100 / properties.total).toFixed(1) : 100,
-            y = model.getValue()(eo.point),
+            y = model.getValue()(eo),
+            x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
         return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
@@ -103,7 +103,6 @@ sucrose.models.pieChart = function() {
       // Process data
 
       chart.dataSeriesActivate = function(eo) {
-console.log(eo)
         var series = eo.series;
 
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
@@ -134,23 +133,22 @@ console.log(eo)
       // add series index to each data point for reference
       data.forEach(function(s, i) {
         var y = model.y();
-        s.series = i;
+        s.seriesIndex = i;
 
         if (!s.value && !s.values) {
           s.values = [];
-        } else if (s.values) {
-          s.values.forEach(function(p, i) {
-            p.series = s.series;
-            p.index = i;
-            if (typeof p.value == 'undefined') {
-              p.value = y(p);
-            }
-          });
-        } else {
-          s.values = [parseInt(s.value, 10)];
+        } else if (!isNaN(s.value)) {
+          s.values = [{x: 0, y: parseInt(s.value, 10)}];
         }
+        s.values.forEach(function(p, j) {
+          p.index = j;
+          p.series = s;
+          if (typeof p.value == 'undefined') {
+            p.value = y(p);
+          }
+        });
 
-        s.value = s.total = s.value || d3.sum(s.values, function(p) { return p.value; });
+        s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
         s.count = s.count || s.values.length;
         s.disabled = s.disabled || s.value === 0;
       });
@@ -165,7 +163,7 @@ console.log(eo)
       var totalCount = d3.sum(modelData, function(d) { return d.count; });
       properties.count = totalCount;
 
-      var totalAmount = d3.sum(modelData, function(d) { return d.total; });
+      var totalAmount = d3.sum(modelData, function(d) { return d.value; });
       properties.total = totalAmount;
 
       // set title display option
@@ -209,7 +207,7 @@ console.log(eo)
         // Setup containers and skeleton of chart
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-' + modelClass + '-chart');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')
@@ -418,16 +416,16 @@ console.log(eo)
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.series);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series;
+          return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
         color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.series / params.l);
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
       case 'class':
@@ -435,23 +433,23 @@ console.log(eo)
           return 'inherit';
         };
         classes = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
+          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient(d, d.series);
+      return model.gradient(d, d.seriesIndex);
     };
 
     model.color(color);

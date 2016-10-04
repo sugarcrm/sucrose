@@ -34,7 +34,7 @@ sucrose.models.multiBar = function() {
       fill = color,
       textureFill = false,
       barColor = null, // adding the ability to set the color for each rather than the whole group
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   //============================================================
@@ -262,13 +262,9 @@ sucrose.models.multiBar = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('.sucrose.sc-wrap.sc-multibar').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-multibar');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-
-      var defs_entr = wrap_entr.append('defs');
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-groups');
-      var g = container.select('.sc-groups').merge(g_entr);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-multibar').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
@@ -278,6 +274,9 @@ sucrose.models.multiBar = function() {
       };
 
       //------------------------------------------------------------
+      // Definitions
+
+      var defs_entr = wrap_entr.append('defs');
 
       if (clipEdge) {
         defs_entr.append('clipPath')
@@ -287,23 +286,22 @@ sucrose.models.multiBar = function() {
           .attr('width', availableWidth)
           .attr('height', availableHeight);
       }
-      g .attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
 
       if (textureFill) {
         var mask = sucrose.utils.createTexture(defs_entr, id);
       }
 
-
       //------------------------------------------------------------
 
-      var groups_bind = g.selectAll('.sc-group').data(function(d) { return d; });
+      var groups_bind = wrap.selectAll('.sc-series').data(function(d) { return d; });
       var groups_entr = groups_bind.enter().append('g')
             .attr('class', classes)
             .style('stroke-opacity', 1e-6)
             .style('fill-opacity', 1e-6);
       groups_bind.exit().remove();
-      var groups = wrap.selectAll('.sc-group').merge(groups_entr);
+      var groups = wrap.selectAll('.sc-series').merge(groups_entr);
 
       // groups_bind.exit()
       //   .style('stroke-opacity', 1e-6)

@@ -74,7 +74,7 @@ sucrose.models.multiBarChart = function() {
 
       var that = this,
           container = d3.select(this),
-          className = vertical ? 'multibarChart' : 'multiBarHorizontalChart';
+          modelClass = vertical ? 'multibar' : 'multibar-horizontal';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
@@ -128,14 +128,14 @@ sucrose.models.multiBarChart = function() {
           return false;
         }
 
-        container.select('.sucrose.sc-wrap').remove();
+        container.select('.sc-chart-wrap').remove();
 
         var w = width || parseInt(container.style('width'), 10) || 960,
             h = height || parseInt(container.style('height'), 10) || 400,
             noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-no-data')
+          .attr('class', 'sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -382,7 +382,7 @@ sucrose.models.multiBarChart = function() {
         // Setup containers and skeleton of chart
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-' + className);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         /* Clipping box for scroll */
@@ -822,7 +822,7 @@ sucrose.models.multiBarChart = function() {
           return sucrose.utils.defaultColor()(d, d.series);
         };
     var classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series;
+          return 'sc-series sc-series-' + d.series;
         };
 
     switch (type) {
@@ -838,7 +838,7 @@ sucrose.models.multiBarChart = function() {
         classes = function(d, i) {
           var iClass = (d.series * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.series + ' sc-fill' + iClass;
         };
         break;
       case 'data':
@@ -846,7 +846,7 @@ sucrose.models.multiBarChart = function() {
           return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
         };
         classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }

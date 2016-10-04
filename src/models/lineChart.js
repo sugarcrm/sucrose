@@ -61,7 +61,8 @@ sucrose.models.lineChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          container = d3.select(this);
+          container = d3.select(this),
+          modelClass = 'line';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null,
@@ -332,7 +333,7 @@ sucrose.models.lineChart = function() {
             trans = '';
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([lineData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-line');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')

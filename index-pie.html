@@ -36,79 +36,29 @@
 var type = 'pie';
 var data = {
   "properties": {
-    "title": "Pipeline total is $675k",
-    "total": 675,
-    "scale": 1000,
-    "units": "$",
-    "yDataType": "currency"
+    "title": "All Opportunities by Lead Source"
   },
   "data": [
     {
-      "key": "Series-0",
-      "count": 1,
-      "values": [
-        {"x": 0, "y": 10}
-      ]
+      "key": "EEEE",
+      "value": 100
     },
     {
-      "key": "Series-1",
-      "count": 1,
-      "values": [
-        {"x": 0, "y": 10}
-      ]
+      "key": "EEEEEEEE",
+      "value": 100
     },
     {
-      "key": "Series-2",
-      "count": 1,
-      "values": [
-        {"x": 0, "y": 10}
-      ]
+      "key": "EEEEEEEEEEEE",
+      "value": 100
     },
     {
-      "key": "Series-3",
-      "count": 1,
-      "values": [
-        {"x": 0, "y": 10}
-      ]
-    },
-    {
-      "key": "Series-4",
-      "count": 1,
-      "values": [
-        {"x": 0, "y": 10}
-      ]
-    },
-    {
-      "key": "Series-5",
-      "count": 1,
-      "values": [
-        {"x": 0, "y": 10}
-      ]
-    },
-    {
-      "key": "Series-6",
-      "count": 1,
-      "values": [
-        {"x": 0, "y": 10}
-      ]
-    },
-    {
-      "key": "Series-7",
-      "count": 1,
-      "values": [
-        {"x": 0, "y": 10}
-      ]
-    },
-    {
-      "key": "Series-8",
-      "count": 1,
-      "values": [
-        {"x": 0, "y": 10}
-      ]
+      "key": "EEEEEEEEEEEEEEEE",
+      "value": 100
     }
   ]
-}
-;
+};
+
+
 var config = {
   "colorData": "default",
   "direction": "ltr",
@@ -314,7 +264,7 @@ window.onload = function () {
 
     // Bind D3 chart to SVG element
     d3.select('#chart_ svg')
-        .attr('class', 'sucrose sc-chart sc-chart-' + type)
+        .attr('class', 'sucrose sc-chart')
         .datum(data).call(chart);
 
     // Dismiss tooltips

@@ -21,7 +21,7 @@ sucrose.models.line = function() {
       duration = 300, // transition
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; };
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; };
 
 
   //============================================================
@@ -65,8 +65,8 @@ sucrose.models.line = function() {
       // Setup containers and skeleton of chart
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-line').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-line');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
@@ -99,13 +99,13 @@ sucrose.models.line = function() {
       //------------------------------------------------------------
       // Groups
 
-      var groups_bind = groups_wrap.selectAll('g.sc-group')
+      var groups_bind = groups_wrap.selectAll('g.sc-series')
             .data(function(d) { return d; }, function(d) { return d.series; });
       var groups_entr = groups_bind.enter().append('g')
-            .attr('class', 'sc-group')
+            .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
             .style('fill-opacity', 1e-6);
-      var groups = wrap.select('.sc-groups').selectAll('.sc-group')
+      var groups = wrap.select('.sc-groups').selectAll('.sc-series')
             .merge(groups_entr);
 
       groups

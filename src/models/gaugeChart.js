@@ -50,6 +50,7 @@ sucrose.models.gaugeChart = function() {
       var properties = chartData.properties,
           data = chartData.data,
           container = d3.select(this),
+          modelClass = 'gauge',
           that = this,
           availableWidth = (width || parseInt(container.style('width'), 10) || 960) - margin.left - margin.right,
           availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom,
@@ -96,27 +97,25 @@ sucrose.models.gaugeChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-gaugeChart').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-gaugeChart');
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      g_entr.append('rect').attr('class', 'sc-background')
+      wrap_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
         .attr('fill', '#FFF');
 
-      g.select('.sc-background')
+      wrap.select('.sc-background')
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom);
 
-      g_entr.append('g').attr('class', 'sc-titleWrap');
-      var titleWrap = g.select('.sc-titleWrap');
-      g_entr.append('g').attr('class', 'sc-gaugeWrap');
-      var gaugeWrap = g.select('.sc-gaugeWrap');
-      g_entr.append('g').attr('class', 'sc-legendWrap');
-      var legendWrap = g.select('.sc-legendWrap');
+      wrap_entr.append('g').attr('class', 'sc-titleWrap');
+      var titleWrap = wrap.select('.sc-titleWrap');
+      wrap_entr.append('g').attr('class', 'sc-gaugeWrap');
+      var gaugeWrap = wrap.select('.sc-gaugeWrap');
+      wrap_entr.append('g').attr('class', 'sc-legendWrap');
+      var legendWrap = wrap.select('.sc-legendWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 

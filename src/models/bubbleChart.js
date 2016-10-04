@@ -85,7 +85,8 @@ sucrose.models.bubbleChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          container = d3.select(this);
+          container = d3.select(this),
+          modelClass = 'bubble';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
@@ -324,7 +325,7 @@ sucrose.models.bubbleChart = function() {
         // Setup containers and skeleton of chart
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([filteredData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-bubble-chart');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')

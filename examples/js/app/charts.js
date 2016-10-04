@@ -152,54 +152,6 @@ var sucroseCharts = function () {
       // y: null,
       // yDomain: null
     },
-    pie: {
-      donut: true,
-      donutRatio: 0.5,
-      pieLabelsOutside: true,
-      maxRadius: 250,
-      minRadius: 100,
-      // rotateDegrees: 0,
-      // arcDegrees: 360,
-      // fixedRadius: function (container, chart) {
-      //   var n = d3.select('#chart_').node(),
-      //       r = Math.min(n.clientWidth * 0.25, n.clientHeight * 0.4);
-      //   return Math.max(r, 75);
-      // }
-      _format: function format(chart) {
-        chart
-          .tooltipContent(function (key, x, y, e, graph) {
-            var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-                percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
-            return '<p>Stage: <b>' + key + '</b></p>' +
-                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-                   '<p>Percent: <b>' + percent + '%</b></p>';
-          });
-      }
-    },
-    funnel: {
-      minLabelWidth: null,
-      wrapLabels: null,
-      _format: function format(chart) {
-        chart
-          // .fmtCount(function (d) {
-          // })
-          // .fmtKey(function (d) {
-          // })
-          .fmtValue(function (d) {
-              return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
-          })
-          .fmtCount(function (d) {
-              return d ? ' (' + sucrose.utils.numberFormatSI(d, 0, false, chart.locality()) + ')' : '';
-          })
-          .tooltipContent(function (key, x, y, e, graph) {
-            var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-                percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
-            return '<p>Stage: <b>' + key + '</b></p>' +
-                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-                   '<p>Percent: <b>' + percent + '%</b></p>';
-          });
-      }
-    },
     multibar: {
       stacked: true,
       _format: function format(chart) {
@@ -237,6 +189,54 @@ var sucroseCharts = function () {
               content += '<p>Date: <b>' + sucrose.utils.dateFormat(x, '%x', chart.locality()) + '</b></p>';
             }
             return content;
+          });
+      }
+    },
+    pie: {
+      donut: true,
+      donutRatio: 0.5,
+      pieLabelsOutside: true,
+      maxRadius: 250,
+      minRadius: 100,
+      // rotateDegrees: 0,
+      // arcDegrees: 360,
+      // fixedRadius: function (container, chart) {
+      //   var n = d3.select('#chart_').node(),
+      //       r = Math.min(n.clientWidth * 0.25, n.clientHeight * 0.4);
+      //   return Math.max(r, 75);
+      // }
+      _format: function format(chart) {
+        chart
+          .tooltipContent(function (key, x, y, e, graph) {
+            var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+                percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
+            return '<p>Stage: <b>' + key + '</b></p>' +
+                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+                   '<p>Percent: <b>' + percent + '%</b></p>';
+          });
+      }
+    },
+    funnel: {
+      minLabelWidth: null,
+      wrapLabels: null,
+      _format: function format(chart) {
+        chart
+          // .fmtCount(function (d) {
+          // })
+          // .fmtKey(function (d) {
+          // })
+          .fmtValue(function (d) {
+              return sucrose.utils.numberFormatSI(chart.getValue()(d), 0, yIsCurrency, chart.locality());
+          })
+          .fmtCount(function (d) {
+              return d.count ? ' (' + sucrose.utils.numberFormatSI(d.count, 0, false, chart.locality()) + ')' : '';
+          })
+          .tooltipContent(function (key, x, y, e, graph) {
+            var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+                percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
+            return '<p>Stage: <b>' + key + '</b></p>' +
+                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+                   '<p>Percent: <b>' + percent + '%</b></p>';
           });
       }
     },
@@ -350,11 +350,6 @@ var sucroseCharts = function () {
           .y(function (d) { return d.y; });
       }
     },
-    globe: {
-      showTitle: false,
-      _format: function format(chart) {
-      }
-    },
     area: {
       tooltips: true,
       useVoronoi: false,
@@ -431,6 +426,11 @@ var sucroseCharts = function () {
                  d3.select(this).classed('hover', false);
               });
           });
+      }
+    },
+    globe: {
+      showTitle: false,
+      _format: function format(chart) {
       }
     }
   };

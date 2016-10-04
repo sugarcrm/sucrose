@@ -10,11 +10,11 @@
         .chart {
             position: absolute;
             top: 0;
-            /*right: 0;
-            bottom: 0;*/
+            right: 0;
+            bottom: 0;
             left: 0;
-            height: 600px;
-            width: 100%;
+            /*height: 600px;
+            width: 100%;*/
         }
     </style>
   </head>
@@ -23,8 +23,7 @@
       <svg></svg>
     </div>
 
-    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/4.2.1/d3.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/topojson/1.6.20/topojson.min.js"></script>
+    <script src="d3.min.js"></script>
     <script src="d3fc-rebind.min.js"></script>
 
     <script src="src/core.js"></script>
@@ -307,10 +306,10 @@ function format(chart) {
     // .fmtKey(function (d) {
     // })
     .fmtValue(function (d) {
-      return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+      return sucrose.utils.numberFormatSI(chart.getValue()(d), 0, yIsCurrency, chart.locality());
     })
     .fmtCount(function (d) {
-        return d ? ' (' + sucrose.utils.numberFormatSI(d, 0, false, chart.locality()) + ')' : '';
+        return d.count ? ' (' + sucrose.utils.numberFormatSI(d.count, 0, false, chart.locality()) + ')' : '';
     })
     .tooltipContent(function (key, x, y, e, graph) {
       var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
@@ -331,7 +330,7 @@ window.onload = function () {
 
     // Bind D3 chart to SVG element
     d3.select('#chart_ svg')
-        .attr('class', 'sucrose sc-chart sc-chart-' + type)
+        .attr('class', 'sucrose sc-chart')
         .datum(data).call(chart);
 
     // Dismiss tooltips

@@ -1749,7 +1749,8 @@ sucrose.models.legend = function() {
       getKey = function(d) {
         return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
       },
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, i); },
+      color = function(d, i) {
+        return sucrose.utils.defaultColor()(d, i); },
       classes = function(d, i) { return ''; },
       dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout', 'toggleMenu', 'closeMenu');
 
@@ -1786,9 +1787,9 @@ sucrose.models.legend = function() {
       }
 
       // enforce existence of series for static legend keys
-      var iSeries = data.filter(function(d) { return d.hasOwnProperty('series'); }).length;
-      data.filter(function(d) { return !d.hasOwnProperty('series'); }).map(function(d, i) {
-        d.series = iSeries;
+      var iSeries = data.filter(function(d) { return d.hasOwnProperty('seriesIndex'); }).length;
+      data.filter(function(d) { return !d.hasOwnProperty('seriesIndex'); }).map(function(d, i) {
+        d.seriesIndex = iSeries;
         iSeries += 1;
       });
 
@@ -1806,41 +1807,43 @@ sucrose.models.legend = function() {
       wrap.attr('transform', 'translate(0,0)');
 
       var defs_entr = wrap_entr.append('defs');
-      var defs = wrap.select('defs').merge(defs_entr);
+      var defs = wrap.select('defs');
 
-      var clip_entr = defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
-      var clip = wrap.select('#sc-edge-clip-' + id + ' rect').merge(clip_entr);
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
+      var clip = wrap.select('#sc-edge-clip-' + id + ' rect');
 
-      var back_entr = wrap_entr.append('rect').attr('class', 'sc-legend-background');
-      var back = wrap.select('.sc-legend-background').merge(back_entr);
+      wrap_entr.append('rect').attr('class', 'sc-legend-background');
+      var back = wrap.select('.sc-legend-background');
       var backFilter = sucrose.utils.dropShadow('legend_back_' + id, defs, {blur: 2});
 
-      var link_entr = wrap_entr.append('text').attr('class', 'sc-legend-link');
-      var link = wrap.select('.sc-legend-link').merge(link_entr);
+      wrap_entr.append('text').attr('class', 'sc-legend-link');
+      var link = wrap.select('.sc-legend-link');
 
       var mask_entr = wrap_entr.append('g').attr('class', 'sc-legend-mask');
-      var mask = wrap.select('.sc-legend-mask').merge(mask_entr);
-      var g_entr = mask_entr.append('g').attr('class', 'sc-legend');
-      var g = wrap.select('.sc-legend').merge(g_entr);
+      var mask = wrap.select('.sc-legend-mask');
 
+      mask_entr.append('g').attr('class', 'sc-legend');
+      var g = wrap.select('.sc-legend');
 
       var series_bind = g.selectAll('.sc-series').data(sucrose.identity, function(d) { return d.key; });
       series_bind.exit().remove();
-      var series_entr = series_bind.enter()
-        .append('g').attr('class', 'sc-series')
-          .on('mouseover', function(d, i) {
-            dispatch.call('legendMouseover', this, d);
-          })
-          .on('mouseout', function(d, i) {
-            dispatch.call('legendMouseout', this, d);
-          })
-          .on('click', function(d, i) {
-            d3.event.preventDefault();
-            d3.event.stopPropagation();
-            dispatch.call('legendClick', this, d);
-          });
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
+            .on('mouseover', function(d, i) {
+              dispatch.call('legendMouseover', this, d);
+            })
+            .on('mouseout', function(d, i) {
+              dispatch.call('legendMouseout', this, d);
+            })
+            .on('click', function(d, i) {
+              d3.event.preventDefault();
+              d3.event.stopPropagation();
+              dispatch.call('legendClick', this, d);
+            });
       var series = g.selectAll('.sc-series').merge(series_entr);
-
+      series
+          .attr('class', classes)
+          .attr('fill', color)
+          .attr('stroke', color)
       series_entr
         .append('rect')
           .attr('x', (diameter + textGap) / -2)
@@ -1848,16 +1851,15 @@ sucrose.models.legend = function() {
           .attr('width', diameter + textGap)
           .attr('height', diameter + lineSpacing)
           .style('fill', '#FFE')
+          .style('stroke-width', 0)
           .style('opacity', 0.1);
-
 
       var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
       circles_bind.exit().remove();
       var circles_entr = circles_bind.enter()
         .append('circle')
           .attr('r', radius)
-          .attr('stroke', '#fff')
-          .style('stroke-width', 2);
+          .style('stroke-width', '2px');
       var circles = series.selectAll('circle').merge(circles_entr);
 
       var line_bind = series_entr.selectAll('line').data(type === 'line' ? function(d) { return [d]; } : []);
@@ -1871,9 +1873,12 @@ sucrose.models.legend = function() {
       var lines = series.selectAll('line').merge(lines_entr);
 
       var texts_entr = series_entr.append('text')
-        .attr('dy', inline ? '.36em' : '.71em')
         .attr('dx', 0);
       var texts = series.selectAll('text').merge(texts_entr);
+
+      texts
+        .attr('dy', inline ? '.36em' : '.71em')
+        .text(getKey);
 
       //------------------------------------------------------------
       // Update legend attributes
@@ -1906,28 +1911,6 @@ sucrose.models.legend = function() {
           d3.event.stopPropagation();
           dispatch.call('toggleMenu', this, d, i);
         });
-
-      circles
-        .attr('class', function(d, i) {
-          return classes(d, i);
-        })
-        .attr('fill', function(d, i) {
-          return color(d, i);
-        })
-        .attr('stroke', function(d, i) {
-          return color(d, i);
-        });
-
-      lines
-        .attr('class', function(d, i) {
-          return classes(d, i);
-        })
-        .attr('stroke', function(d, i) {
-          return color(d, i);
-        });
-
-      texts
-        .text(getKey);
 
       series.classed('disabled', function(d) {
         return d.disabled;
@@ -2129,7 +2112,7 @@ sucrose.models.legend = function() {
 
           series
             .attr('transform', function(d) {
-              var pos = keyPositions[d.series];
+              var pos = keyPositions[d.seriesIndex];
               return 'translate(' + pos.x + ',' + pos.y + ')';
             });
 
@@ -2138,14 +2121,14 @@ sucrose.models.legend = function() {
               var xpos = 0;
               if (inline) {
                 xpos = (diameter + gutter) / 2 * sign(rtl);
-                xpos -= rtl ? keyWidth(d.series) : 0;
+                xpos -= rtl ? keyWidth(d.seriesIndex) : 0;
               } else {
-                xpos = keyWidth(d.series) / -2;
+                xpos = keyWidth(d.seriesIndex) / -2;
               }
               return xpos;
             })
             .attr('width', function(d) {
-              return keyWidth(d.series);
+              return keyWidth(d.seriesIndex);
             })
             .attr('height', lineHeight);
 
@@ -2242,11 +2225,11 @@ sucrose.models.legend = function() {
           series.select('rect')
             .attr('x', function(d) {
               var w = (diameter + gutter) / 2 * sign(rtl);
-              w -= rtl ? keyWidth(d.series) : 0;
+              w -= rtl ? keyWidth(d.seriesIndex) : 0;
               return w;
             })
             .attr('width', function(d) {
-              return keyWidth(d.series);
+              return keyWidth(d.seriesIndex);
             })
             .attr('height', diameter + lineSpacing);
 
@@ -3029,7 +3012,7 @@ sucrose.models.scatter = function() {
       margin = {top: 0, right: 0, bottom: 0, left: 0},
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); }, // chooses color
       fill = color,
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; },
       x = d3.scaleLinear(),
       y = d3.scaleLinear(),
       z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
@@ -3382,13 +3365,13 @@ sucrose.models.scatter = function() {
 
       needsUpdate = true;
 
-      var groups_bind = wrap.select('.sc-groups').selectAll('.sc-group')
+      var groups_bind = wrap.select('.sc-groups').selectAll('.sc-series')
             .data(function(d) { return d; }, function(d) { return d.series; });
       var groups_entr = groups_bind.enter().append('g')
-            .attr('class', 'sc-group')
+            .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
             .style('fill-opacity', 1e-6);
-      var groups = wrap.select('.sc-groups').selectAll('.sc-group')
+      var groups = wrap.select('.sc-groups').selectAll('.sc-series')
             .merge(groups_entr);
 
       groups
@@ -3844,7 +3827,8 @@ sucrose.models.bubbleChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          container = d3.select(this);
+          container = d3.select(this),
+          modelClass = 'bubble';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
@@ -4083,7 +4067,7 @@ sucrose.models.bubbleChart = function() {
         // Setup containers and skeleton of chart
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([filteredData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-bubble-chart');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')
@@ -4570,19 +4554,19 @@ sucrose.models.funnel = function() {
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       getH = function(d) { return d.height; },
-      getKey = function(d) { return d.key || d.data.key; },
-      getValue = function(d, i) { return d.disabled === true ? 0 : d.value; },
-      fmtKey = function(d) { return getKey(d); },
-      fmtValue = function(d) { return getValue(d); },
-      fmtCount = function(d) { return (' (' + d + ')').replace(' ()', ''); },
+      getKey = function(d) { return d.key; },
+      getValue = function(d, i) { return d.value; },
+      fmtKey = function(d) { return getKey(d.series || d); },
+      fmtValue = function(d) { return getValue(d.series || d); },
+      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
       locality = sucrose.utils.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
+      color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.series.seriesIndex); },
       fill = color,
       textureFill = false,
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; };
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; };
 
   var r = 0.3, // ratio of width to height (or slope)
       y = d3.scaleLinear(),
@@ -4617,8 +4601,8 @@ sucrose.models.funnel = function() {
           funnelTotal = 0,
           funnelOffset = 0;
 
-      // Add series index to each data point for reference
-      funnelTotal = d3.sum(data, function(d) { return d.total; });
+      //sum the values for each data element
+      funnelTotal = d3.sum(data, function(d) { return d.value; });
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
@@ -4693,17 +4677,16 @@ sucrose.models.funnel = function() {
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-funnel').data([data]);
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-funnel');
       var wrap = container.select('.sc-wrap').merge(wrap_entr);
-      var defs_entr = wrap_entr.append('defs');
 
-      wrap_entr.append('g').attr('class', 'sc-groups');
-      var funnel_wrap = wrap.select('.sc-groups');
+      var defs_entr = wrap_entr.append('defs');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
+      // Definitions
 
       if (textureFill) {
         var mask = sucrose.utils.createTexture(defs_entr, id);
@@ -4712,9 +4695,9 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      var groups_bind = funnel_wrap.selectAll('.sc-group').data(data, function(d) { return d.series; });
-      var groups_entr = groups_bind.enter().append('g').attr('class', 'sc-group');
-      groups_bind.exit().transition().duration(duration)
+      var series_bind = wrap.selectAll('.sc-series').data(data, function(d) { return d.series; });
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
+      series_bind.exit().transition().duration(duration)
         .selectAll('g.sc-slice')
         .delay(function(d, i) { return i * delay / data[0].values.length; })
           .attr('points', function(d) {
@@ -4723,7 +4706,7 @@ sucrose.models.funnel = function() {
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
           .remove();
-      groups_bind.exit().transition().duration(duration)
+      series_bind.exit().transition().duration(duration)
         .selectAll('g.sc-label-value')
         .delay(function(d, i) { return i * delay / data[0].values.length; })
           .attr('y', 0)
@@ -4731,33 +4714,49 @@ sucrose.models.funnel = function() {
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
           .remove();
-      groups_bind.exit().remove();
-      var groups = funnel_wrap.selectAll('.sc-group').merge(groups_entr);
+      series_bind.exit().remove();
+      var series = wrap.selectAll('.sc-series').merge(series_entr);
 
-      // groups
-      //   .style('stroke-opacity', 1e-6)
-      //   .style('fill-opacity', 1e-6);
+      series_entr
+        .style('stroke', '#FFF')
+        .style('stroke-width', 2)
+        .style('stroke-opacity', 1)
+        .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
+          d3.select(this).classed('hover', true);
+        })
+        .on('mouseout', function(d, i, j) {
+          d3.select(this).classed('hover', false);
+        });
 
-      groups
-        .attr('class', classes)
-        .attr('fill', fill)
-        .classed('hover', function(d) { return d.hover; })
+      series
+        .attr('class', function(d) { return classes(d, d.seriesIndex); })
+        .attr('fill', function(d) { return fill(d, d.seriesIndex); })
         .classed('sc-active', function(d) { return d.active === 'active'; })
-        .classed('sc-inactive', function(d) { return d.active === 'inactive'; })
-        .style('stroke', '#FFFFFF')
-        .style('stroke-width', 2);
+        .classed('sc-inactive', function(d) { return d.active === 'inactive'; });
 
-      groups.transition().duration(duration)
+      series.transition().duration(duration)
           .style('stroke-opacity', 1)
           .style('fill-opacity', 1);
 
       //------------------------------------------------------------
       // Append polygons for funnel
 
-      var slice_bind = groups.selectAll('g.sc-slice').data(function(d) { return d.values; }, function(d) { return d.series; });
+      var slice_bind = series.selectAll('g.sc-slice').data(
+            function(s, i) {
+              return s.values.map(function(v, j) {
+                v.disabled = s.disabled;
+                v.key = s.key;
+                v.seriesIndex = s.series;
+                v.seriesDataIndex = i;
+                v.index = j;
+                return v;
+              });
+            },
+            function(d) { return d.series; }
+          );
       slice_bind.exit().remove();
       var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
-      var slices = groups.selectAll('g.sc-slice').merge(slice_entr);
+      var slices = series.selectAll('g.sc-slice').merge(slice_entr);
 
       slice_entr.append('polygon')
         .attr('class', 'sc-base');
@@ -4805,12 +4804,12 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append containers for labels
 
-      var labels_bind = groups.selectAll('.sc-label-value')
+      var labels_bind = series.selectAll('.sc-label-value')
             .data(function(d) { return d.values; }, function(d) { return d.series; });
       labels_bind.exit().remove();
       var labels_entr = labels_bind.enter().append('g')
             .attr('class', 'sc-label-value');
-      var labels = groups.selectAll('g.sc-label-value')
+      var labels = series.selectAll('g.sc-label-value')
             .merge(labels_entr);
 
       labels
@@ -4841,9 +4840,7 @@ sucrose.models.funnel = function() {
 
         // Append label text and wrap if needed
         labels.append('text')
-          .text(function(d) {
-            return fmtKey(data[d.series]);
-          })
+          .text(fmtKey)
             .call(fmtLabel, 'sc-label', 0.85, 'middle', fmtFill);
 
         labels.select('.sc-label')
@@ -4858,16 +4855,12 @@ sucrose.models.funnel = function() {
 
         // Append value and count text
         labels.append('text')
-          .text(function(d) {
-            return fmtValue(d.value || d.label || d);
-          })
+          .text(fmtValue)
             .call(fmtLabel, 'sc-value', 0.85, 'middle', fmtFill);
 
         labels.select('.sc-value')
           .append('tspan')
-            .text(function(d) {
-              return fmtCount(data[d.index].count);
-            });
+            .text(fmtCount);
 
         labels
           .call(positionValue)
@@ -4891,9 +4884,7 @@ sucrose.models.funnel = function() {
 
         // Position side labels
         sideLabels.append('text')
-          .text(function(d) {
-            return fmtKey(data[d.series]);
-          })
+          .text(fmtKey)
             .call(fmtLabel, 'sc-label', 0.85, 'start', '#555');
 
         sideLabels.select('.sc-label')
@@ -5046,12 +5037,11 @@ sucrose.models.funnel = function() {
       function buildEventObject(e, d, i) {
         return {
           id: id,
-          key: fmtKey(data[d.series]),
-          value: fmtValue(d, i),
-          point: d,
-          pointIndex: d.index,
-          series: data[d.series],
-          seriesIndex: d.series,
+          key: fmtKey(d),
+          value: fmtValue(d),
+          count: fmtCount(d),
+          data: d,
+          series: d.series,
           e: e
         };
       }
@@ -5614,8 +5604,8 @@ sucrose.models.funnelChart = function() {
 
   var showTooltip = function(eo, offsetElement, properties) {
         var key = model.getKey()(eo),
-            x = properties.total ? (model.getValue()(eo.point) * 100 / properties.total).toFixed(1) : 100,
-            y = model.getValue()(eo.point),
+            y = model.getValue()(eo),
+            x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
         return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
@@ -5682,11 +5672,9 @@ sucrose.models.funnelChart = function() {
       // Process data
 
       chart.dataSeriesActivate = function(eo) {
-console.log(eo)
         var series = eo.series;
 
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
-        series.values[0].active = series.active;
 
         // if you have activated a data series, inactivate the rest
         if (series.active === 'active') {
@@ -5714,23 +5702,22 @@ console.log(eo)
       // add series index to each data point for reference
       data.forEach(function(s, i) {
         var y = model.y();
-        s.series = i;
+        s.seriesIndex = i;
 
         if (!s.value && !s.values) {
           s.values = [];
-        } else if (s.values) {
-        s.values.forEach(function(p, i) {
-          p.series = s.series;
-          p.index = i;
+        } else if (!isNaN(s.value)) {
+          s.values = [{x: 0, y: parseInt(s.value, 10)}];
+        }
+        s.values.forEach(function(p, j) {
+          p.index = j;
+          p.series = s;
           if (typeof p.value == 'undefined') {
-              p.value = y(p);
+            p.value = y(p);
           }
         });
-        } else {
-          s.values = [parseInt(s.value, 10)];
-        }
 
-        s.value = s.total = s.value || d3.sum(s.values, function(p) { return p.value; });
+        s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
         s.count = s.count || s.values.length;
         s.disabled = s.disabled || s.value === 0;
       });
@@ -5745,7 +5732,7 @@ console.log(eo)
       var totalCount = d3.sum(modelData, function(d) { return d.count; });
       properties.count = totalCount;
 
-      var totalAmount = d3.sum(modelData, function(d) { return d.total; });
+      var totalAmount = d3.sum(modelData, function(d) { return d.value; });
       properties.total = totalAmount;
 
       // set title display option
@@ -5789,7 +5776,7 @@ console.log(eo)
         // Setup containers and skeleton of chart
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-' + modelClass + '-chart');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')
@@ -5997,16 +5984,16 @@ console.log(eo)
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.series);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series;
+          return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
         color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.series / params.l);
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
       case 'class':
@@ -6014,24 +6001,24 @@ console.log(eo)
           return 'inherit';
         };
         classes = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
+          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
       var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-      return model.gradient(d, d.series, p);
+      return model.gradient(d, d.seriesIndex, p);
     };
 
     model.color(color);
@@ -6690,6 +6677,7 @@ sucrose.models.gaugeChart = function() {
       var properties = chartData.properties,
           data = chartData.data,
           container = d3.select(this),
+          modelClass = 'gauge',
           that = this,
           availableWidth = (width || parseInt(container.style('width'), 10) || 960) - margin.left - margin.right,
           availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom,
@@ -6736,27 +6724,25 @@ sucrose.models.gaugeChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-gaugeChart').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-gaugeChart');
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      g_entr.append('rect').attr('class', 'sc-background')
+      wrap_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
         .attr('fill', '#FFF');
 
-      g.select('.sc-background')
+      wrap.select('.sc-background')
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom);
 
-      g_entr.append('g').attr('class', 'sc-titleWrap');
-      var titleWrap = g.select('.sc-titleWrap');
-      g_entr.append('g').attr('class', 'sc-gaugeWrap');
-      var gaugeWrap = g.select('.sc-gaugeWrap');
-      g_entr.append('g').attr('class', 'sc-legendWrap');
-      var legendWrap = g.select('.sc-legendWrap');
+      wrap_entr.append('g').attr('class', 'sc-titleWrap');
+      var titleWrap = wrap.select('.sc-titleWrap');
+      wrap_entr.append('g').attr('class', 'sc-gaugeWrap');
+      var gaugeWrap = wrap.select('.sc-gaugeWrap');
+      wrap_entr.append('g').attr('class', 'sc-legendWrap');
+      var legendWrap = wrap.select('.sc-legendWrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -7821,7 +7807,7 @@ sucrose.models.line = function() {
       duration = 300, // transition
       color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
       fill = color,
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; };
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; };
 
 
   //============================================================
@@ -7865,8 +7851,8 @@ sucrose.models.line = function() {
       // Setup containers and skeleton of chart
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-line').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-line');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-line');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
@@ -7899,13 +7885,13 @@ sucrose.models.line = function() {
       //------------------------------------------------------------
       // Groups
 
-      var groups_bind = groups_wrap.selectAll('g.sc-group')
+      var groups_bind = groups_wrap.selectAll('g.sc-series')
             .data(function(d) { return d; }, function(d) { return d.series; });
       var groups_entr = groups_bind.enter().append('g')
-            .attr('class', 'sc-group')
+            .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
             .style('fill-opacity', 1e-6);
-      var groups = wrap.select('.sc-groups').selectAll('.sc-group')
+      var groups = wrap.select('.sc-groups').selectAll('.sc-series')
             .merge(groups_entr);
 
       groups
@@ -8230,7 +8216,8 @@ sucrose.models.lineChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          container = d3.select(this);
+          container = d3.select(this),
+          modelClass = 'line';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null,
@@ -8501,7 +8488,7 @@ sucrose.models.lineChart = function() {
             trans = '';
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([lineData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-line');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')
@@ -9661,7 +9648,7 @@ sucrose.models.multiBar = function() {
       fill = color,
       textureFill = false,
       barColor = null, // adding the ability to set the color for each rather than the whole group
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   //============================================================
@@ -9889,13 +9876,9 @@ sucrose.models.multiBar = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('.sucrose.sc-wrap.sc-multibar').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-multibar');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-
-      var defs_entr = wrap_entr.append('defs');
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-groups');
-      var g = container.select('.sc-groups').merge(g_entr);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-multibar').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
@@ -9905,6 +9888,9 @@ sucrose.models.multiBar = function() {
       };
 
       //------------------------------------------------------------
+      // Definitions
+
+      var defs_entr = wrap_entr.append('defs');
 
       if (clipEdge) {
         defs_entr.append('clipPath')
@@ -9914,23 +9900,22 @@ sucrose.models.multiBar = function() {
           .attr('width', availableWidth)
           .attr('height', availableHeight);
       }
-      g .attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
 
       if (textureFill) {
         var mask = sucrose.utils.createTexture(defs_entr, id);
       }
 
-
       //------------------------------------------------------------
 
-      var groups_bind = g.selectAll('.sc-group').data(function(d) { return d; });
+      var groups_bind = wrap.selectAll('.sc-series').data(function(d) { return d; });
       var groups_entr = groups_bind.enter().append('g')
             .attr('class', classes)
             .style('stroke-opacity', 1e-6)
             .style('fill-opacity', 1e-6);
       groups_bind.exit().remove();
-      var groups = wrap.selectAll('.sc-group').merge(groups_entr);
+      var groups = wrap.selectAll('.sc-series').merge(groups_entr);
 
       // groups_bind.exit()
       //   .style('stroke-opacity', 1e-6)
@@ -10641,7 +10626,7 @@ sucrose.models.multiBarChart = function() {
 
       var that = this,
           container = d3.select(this),
-          className = vertical ? 'multibarChart' : 'multiBarHorizontalChart';
+          modelClass = vertical ? 'multibar' : 'multibar-horizontal';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
@@ -10695,14 +10680,14 @@ sucrose.models.multiBarChart = function() {
           return false;
         }
 
-        container.select('.sucrose.sc-wrap').remove();
+        container.select('.sc-chart-wrap').remove();
 
         var w = width || parseInt(container.style('width'), 10) || 960,
             h = height || parseInt(container.style('height'), 10) || 400,
             noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-no-data')
+          .attr('class', 'sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -10949,7 +10934,7 @@ sucrose.models.multiBarChart = function() {
         // Setup containers and skeleton of chart
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-' + className);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         /* Clipping box for scroll */
@@ -11389,7 +11374,7 @@ sucrose.models.multiBarChart = function() {
           return sucrose.utils.defaultColor()(d, d.series);
         };
     var classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series;
+          return 'sc-series sc-series-' + d.series;
         };
 
     switch (type) {
@@ -11405,7 +11390,7 @@ sucrose.models.multiBarChart = function() {
         classes = function(d, i) {
           var iClass = (d.series * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.series + ' sc-fill' + iClass;
         };
         break;
       case 'data':
@@ -11413,7 +11398,7 @@ sucrose.models.multiBarChart = function() {
           return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
         };
         classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
@@ -11694,7 +11679,8 @@ sucrose.models.paretoChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          container = d3.select(this);
+          container = d3.select(this),
+          modelClass = 'pareto';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
@@ -11947,9 +11933,9 @@ sucrose.models.paretoChart = function() {
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
 
-        var wrap_bind = container.selectAll('.sucrose.sc-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-pareto-chart');
-        var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
@@ -12477,7 +12463,7 @@ sucrose.models.paretoChart = function() {
       return sucrose.utils.defaultColor()(d, d.series);
     };
     var barClasses = function(d, i) {
-      return 'sc-group sc-series-' + d.series;
+      return 'sc-series sc-series-' + d.series;
     };
     var lineColor = function(d, i) {
       var p = params.lineColor ? params.lineColor : {
@@ -12488,7 +12474,7 @@ sucrose.models.paretoChart = function() {
       return d.color || d3.interpolateHsl(d3.rgb(p.c1), d3.rgb(p.c2))(d.series / 2);
     };
     var lineClasses = function(d, i) {
-      return 'sc-group sc-series-' + d.series;
+      return 'sc-series sc-series-' + d.series;
     };
 
     switch (type) {
@@ -12504,12 +12490,12 @@ sucrose.models.paretoChart = function() {
         barClasses = function(d, i) {
           var iClass = (d.series * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.series + ' sc-fill' + iClass;
         };
         lineClasses = function(d, i) {
           var iClass = (d.series * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + d.series + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
@@ -12517,10 +12503,10 @@ sucrose.models.paretoChart = function() {
           return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
         };
         barClasses = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
         };
         lineClasses = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
@@ -12769,19 +12755,19 @@ sucrose.models.pie = function() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      getKey = function(d) { return d.key || d.data.key; },
-      getValue = function(d, i) { return d.disabled === true ? 0 : d.value; },
-      fmtKey = function(d) { return getKey(d); },
-      fmtValue = function(d) { return getValue(d); },
-      fmtCount = function(d) { return (' (' + d + ')').replace(' ()', ''); },
+      getKey = function(d) { return d.key; },
+      getValue = function(d, i) { return d.value; },
+      fmtKey = function(d) { return getKey(d.series || d); },
+      fmtValue = function(d) { return getValue(d.series || d); },
+      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
       locality = sucrose.utils.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
+      color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.series.seriesIndex); },
       fill = color,
       textureFill = false,
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; };
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; };
 
   var showLabels = true,
       showLeaders = true,
@@ -12821,6 +12807,10 @@ sucrose.models.pie = function() {
 
   //============================================================
 
+  // Setup the Pie chart and choose the data element
+  var pie = d3.pie()
+        .sort(null)
+        .value(getValue);
 
   //============================================================
   // Update chart
@@ -12831,11 +12821,6 @@ sucrose.models.pie = function() {
       var availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
-
-      // Setup the Pie chart and choose the data element
-      var pie = d3.pie()
-            .sort(null)
-            .value(getValue);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
@@ -12859,13 +12844,14 @@ sucrose.models.pie = function() {
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-pie').data([data]);
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-pie');
       var wrap = container.select('.sc-wrap').merge(wrap_entr);
+
       var defs_entr = wrap_entr.append('defs');
 
-      wrap_entr.append('g').attr('class', 'sc-groups');
-      var pie_wrap = wrap.select('.sc-groups');
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var pie_wrap = wrap.select('.sc-group');
 
       wrap_entr.append('g').attr('class', 'sc-hole-wrap');
       var hole_wrap = wrap.select('.sc-hole-wrap');
@@ -12873,6 +12859,7 @@ sucrose.models.pie = function() {
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
+      // Definitions
 
       if (textureFill) {
         var mask = sucrose.utils.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
@@ -12881,15 +12868,62 @@ sucrose.models.pie = function() {
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      var groups_bind = pie_wrap.selectAll('.sc-group').data(pie);
-      var groups_entr = groups_bind.enter().append('g').attr('class', 'sc-group');
-      groups_bind.exit().remove();
-      var groups = pie_wrap.selectAll('.sc-group').merge(groups_entr);
+      var series_bind = pie_wrap.selectAll('.sc-series').data(pie);
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
+      series_bind.exit().remove();
+      var series = pie_wrap.selectAll('.sc-series').merge(series_entr);
 
-      groups_entr
-        .style('stroke', '#ffffff')
+      series_entr
+        .style('stroke', '#FFF')
         .style('stroke-width', 2)
         .style('stroke-opacity', 0)
+        .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
+          d3.select(this).classed('hover', true);
+        })
+        .on('mouseout', function(d, i, j) {
+          d3.select(this).classed('hover', false);
+        });
+
+      series
+        .attr('class', function(d) { return classes(d.data, d.data.seriesIndex); })
+        .attr('fill', function(d) { return fill(d.data, d.data.seriesIndex); })
+        .classed('sc-active', function(d) { return d.data.active === 'active'; })
+        .classed('sc-inactive', function(d) { return d.data.active === 'inactive'; });
+
+      //------------------------------------------------------------
+      // Append polygons for funnel
+
+      var slice_bind = series.selectAll('g.sc-slice').data(
+            function(s, i) {
+              return s.data.values.map(function(v, j) {
+                v.endAngle = s.endAngle;
+                v.padAngle = s.padAngle;
+                v.startAngle = s.startAngle;
+                return v;
+              });
+            },
+            function(d) { return d.series; }
+          );
+      slice_bind.exit().remove();
+      var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
+      var slices = series.selectAll('g.sc-slice').merge(slice_entr);
+
+      slice_entr.append('path')
+        .attr('class', 'sc-base')
+        .each(function(d, i) {
+          this._current = d;
+        });
+
+      if (textureFill) {
+        slice_entr.append('path')
+          .attr('class', 'sc-texture')
+          .each(function(d, i) {
+            this._current = d;
+          })
+          .style('mask', 'url(' + mask + ')');
+      }
+
+      slice_entr
         .on('mouseover', function(d, i) {
           d3.select(this).classed('hover', true);
           var eo = buildEventObject(d3.event, d, i);
@@ -12914,40 +12948,27 @@ sucrose.models.pie = function() {
           dispatch.call('elementDblClick', this, eo);
         });
 
-      groups_entr.append('path')
-          .attr('class', 'sc-base')
-          .each(function(d, i) {
-            this._current = d;
-          });
-
-      if (textureFill) {
-        groups_entr.append('path')
-            .attr('class', 'sc-texture')
-            .each(function(d, i) {
-              this._current = d;
-            })
-            .style('mask', 'url(' + mask + ')');
-      }
-
-      groups_entr.append('g')
-          .attr('transform', 'translate(0,0)')
-          .attr('class', 'sc-label');
-
-      groups_entr.select('.sc-label')
-          .append('rect')
-          .style('fill-opacity', 0)
-          .style('stroke-opacity', 0);
-      groups_entr.select('.sc-label')
-          .append('text')
-          .style('fill-opacity', 0);
-
-      groups_entr.append('polyline')
-          .attr('class', 'sc-label-leader')
-          .style('stroke-opacity', 0);
-
-
-      // UPDATE
       //------------------------------------------------------------
+      // Append containers for labels
+
+      slice_entr.append('g')
+        .attr('class', 'sc-label')
+        .attr('transform', 'translate(0,0)');
+
+      slice_entr.select('.sc-label')
+        .append('rect')
+        .style('fill-opacity', 0)
+        .style('stroke-opacity', 0);
+      slice_entr.select('.sc-label')
+        .append('text')
+        .style('fill-opacity', 0);
+
+      slice_entr.append('polyline')
+        .attr('class', 'sc-label-leader')
+        .style('stroke-opacity', 0);
+
+      //------------------------------------------------------------
+      // UPDATE
 
       var maxWidthRadius = availableWidth / 2,
           maxHeightRadius = availableHeight / 2,
@@ -12959,7 +12980,7 @@ sucrose.models.pie = function() {
           horizontalReduction = leaderLength + textOffset;
 
       // side effect :: resets extWidths, extHeights
-      groups.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
+      slices.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
 
       // Donut Hole Text
       hole_wrap.call(holeFormat, hole ? [hole] : []);
@@ -12993,7 +13014,6 @@ sucrose.models.pie = function() {
 
       offsetVertical += ((d3.max(extHeights) - d3.min(extHeights)) / 2 + d3.min(extHeights)) * ((labelRadius + verticalShift) / offsetVertical);
       offsetHorizontal += ((d3.max(extWidths) - d3.min(extWidths)) / 2 - d3.max(extWidths)) * (labelRadius / offsetHorizontal);
-
       offsetVertical += verticalShift / 2;
 
       pie_wrap
@@ -13027,12 +13047,6 @@ sucrose.models.pie = function() {
         }
       }
 
-      groups
-        .attr('class', function(d) { return classes(d.data, d.data.series); })
-        .attr('fill', function(d) { return fill(d.data, d.data.series); })
-        .classed('sc-active', function(d) { return d.data.active === 'active'; })
-        .classed('sc-inactive', function(d) { return d.data.active === 'inactive'; });
-
       // removed d3 transition in MACAROON-133 because
       // there is a "Maximum call stack size exceeded at Date.toString" error
       // in PMSE that stops d3 from calling transitions
@@ -13041,16 +13055,14 @@ sucrose.models.pie = function() {
       //   .attr('d', arc)
       //   .attrTween('d', arcTween);
 
-      groups.select('.sc-base')
-        .attr('d', function(d) {
-          return pieArc(d);
-        })
+      slices.select('.sc-base')
+        .attr('d', pieArc)
         .style('stroke-opacity', function(d) {
           return startAngle(d) === endAngle(d) ? 0 : 1;
         });
 
       if (textureFill) {
-        groups.select('.sc-texture')
+        slices.select('.sc-texture')
           .attr('d', pieArc)
           .style('stroke-opacity', function(d) {
             return startAngle(d) === endAngle(d) ? 0 : 1;
@@ -13061,9 +13073,12 @@ sucrose.models.pie = function() {
           });
       }
 
+      //------------------------------------------------------------
+      // Update label containers
+
       if (showLabels) {
         // This does the normal label
-        groups.select('.sc-label')
+        slices.select('.sc-label')
           .attr('transform', function(d) {
             if (labelSunbeamLayout) {
               d.outerRadius = pieRadius + 10; // Set Outer Coordinate
@@ -13078,7 +13093,7 @@ sucrose.models.pie = function() {
             }
           });
 
-        groups.select('.sc-label text')
+        slices.select('.sc-label text')
           .text(fmtKey)
           .attr('dy', '.35em')
           .style('fill', '#555')
@@ -13096,7 +13111,7 @@ sucrose.models.pie = function() {
             return anchor;
           });
 
-        groups
+        slices
           .each(function(d, i) {
             if (labelLengths[i] > minRadius || labelRadius === minRadius) {
               var theta = (startAngle(d) + endAngle(d)) / 2,
@@ -13111,7 +13126,7 @@ sucrose.models.pie = function() {
           });
 
         if (!pieLabelsOutside) {
-          groups.select('.sc-label')
+          slices.select('.sc-label')
             .each(function(d) {
               if (!labelOpacity(d)) {
                 return;
@@ -13126,11 +13141,11 @@ sucrose.models.pie = function() {
                 .attr('transform', function() {
                   return 'translate(' + [textBox.x - 5, textBox.y - 5] + ')';
                 })
-                .style('fill', '#fff')
+                .style('fill', '#FFF')
                 .style('fill-opacity', labelOpacity);
             });
         } else if (showLeaders) {
-          groups.select('.sc-label-leader')
+          slices.select('.sc-label-leader')
             .attr('points', function(d) {
               if (!labelOpacity(d)) {
                 // canvg needs at least 2 points because the lib doesnt have
@@ -13148,29 +13163,27 @@ sucrose.models.pie = function() {
                   leadArcPoints = [labelArcPoints[0] + leadOffset, labelArcPoints[1]];
               return outerArcPoints + ' ' + labelArcPoints + ' ' + leadArcPoints;
             })
-            .style('stroke', '#aaa')
+            .style('stroke', '#AAA')
             .style('fill', 'none')
             .style('stroke-opacity', labelOpacity);
         }
       } else {
-        groups.select('.sc-label-leader').style('stroke-opacity', 0);
-        groups.select('.sc-label rect').style('fill-opacity', 0);
-        groups.select('.sc-label text').style('fill-opacity', 0);
+        slices.select('.sc-label-leader').style('stroke-opacity', 0);
+        slices.select('.sc-label rect').style('fill-opacity', 0);
+        slices.select('.sc-label text').style('fill-opacity', 0);
       }
 
-      // Utility Methods
       //------------------------------------------------------------
+      // Utility functions
 
       function buildEventObject(e, d, i) {
-        console.log(d)
         return {
           id: id,
           key: fmtKey(d),
           value: fmtValue(d),
-          point: d.data,
-          pointIndex: d.index,
-          series: data[d.index], // d.index is set at model level
-          seriesIndex: d.data.series, // chart
+          count: fmtCount(d),
+          data: d,
+          series: d.series,
           e: e
         };
       }
@@ -13277,7 +13290,7 @@ sucrose.models.pie = function() {
         var widthRadius = [maxWidthRadius],
             heightRadius = [maxHeightRadius + leaderLength];
 
-        groups.select('.sc-base').each(function(d, i) {
+        series.select('.sc-base').each(function(d, i) {
           if (!labelOpacity(d)) {
             return;
           }
@@ -13688,8 +13701,8 @@ sucrose.models.pieChart = function() {
 
   var showTooltip = function(eo, offsetElement, properties) {
         var key = model.getKey()(eo),
-            x = properties.total ? (model.getValue()(eo.point) * 100 / properties.total).toFixed(1) : 100,
-            y = model.getValue()(eo.point),
+            y = model.getValue()(eo),
+            x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
         return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
@@ -13756,7 +13769,6 @@ sucrose.models.pieChart = function() {
       // Process data
 
       chart.dataSeriesActivate = function(eo) {
-console.log(eo)
         var series = eo.series;
 
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
@@ -13787,23 +13799,22 @@ console.log(eo)
       // add series index to each data point for reference
       data.forEach(function(s, i) {
         var y = model.y();
-        s.series = i;
+        s.seriesIndex = i;
 
         if (!s.value && !s.values) {
           s.values = [];
-        } else if (s.values) {
-          s.values.forEach(function(p, i) {
-            p.series = s.series;
-            p.index = i;
-            if (typeof p.value == 'undefined') {
-              p.value = y(p);
-            }
-          });
-        } else {
-          s.values = [parseInt(s.value, 10)];
+        } else if (!isNaN(s.value)) {
+          s.values = [{x: 0, y: parseInt(s.value, 10)}];
         }
+        s.values.forEach(function(p, j) {
+          p.index = j;
+          p.series = s;
+          if (typeof p.value == 'undefined') {
+            p.value = y(p);
+          }
+        });
 
-        s.value = s.total = s.value || d3.sum(s.values, function(p) { return p.value; });
+        s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
         s.count = s.count || s.values.length;
         s.disabled = s.disabled || s.value === 0;
       });
@@ -13818,7 +13829,7 @@ console.log(eo)
       var totalCount = d3.sum(modelData, function(d) { return d.count; });
       properties.count = totalCount;
 
-      var totalAmount = d3.sum(modelData, function(d) { return d.total; });
+      var totalAmount = d3.sum(modelData, function(d) { return d.value; });
       properties.total = totalAmount;
 
       // set title display option
@@ -13862,7 +13873,7 @@ console.log(eo)
         // Setup containers and skeleton of chart
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-' + modelClass + '-chart');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')
@@ -14071,16 +14082,16 @@ console.log(eo)
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.series);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series;
+          return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
         color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.series / params.l);
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
       case 'class':
@@ -14088,23 +14099,23 @@ console.log(eo)
           return 'inherit';
         };
         classes = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
+          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient(d, d.series);
+      return model.gradient(d, d.seriesIndex);
     };
 
     model.color(color);
