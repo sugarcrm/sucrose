@@ -22,7 +22,8 @@ sucrose.models.pie = function() {
       color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.series.seriesIndex); },
       fill = color,
       textureFill = false,
-      classes = function(d, i) { return 'sc-series sc-series-' + d.series; };
+      classes = function(d, i) { return 'sc-series sc-series-' + d.series; },
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   var showLabels = true,
       showLeaders = true,
@@ -31,7 +32,16 @@ sucrose.models.pie = function() {
       labelThreshold = 0.01, //if slice percentage is under this, don't show label
       donut = false,
       hole = false,
-      holeFormat = function(hole_wrap, data) {
+      labelSunbeamLayout = false,
+      leaderLength = 20,
+      textOffset = 5,
+      arcDegrees = 360,
+      rotateDegrees = 0,
+      donutRatio = 0.447,
+      minRadius = 75,
+      maxRadius = 250;
+
+  var holeFormat = function(hole_wrap, data) {
         var hole_bind = hole_wrap.selectAll('.sc-hole-container').data(data),
             hole_entr = hole_bind.enter().append('g').attr('class', 'sc-hole-container');
         hole_entr.append('text')
@@ -41,24 +51,17 @@ sucrose.models.pie = function() {
           .attr('text-anchor', 'middle')
           .style('font-size', '50px');
         hole_bind.exit().remove();
-      },
-      labelSunbeamLayout = false,
-      leaderLength = 20,
-      textOffset = 5,
-      arcDegrees = 360,
-      rotateDegrees = 0,
-      startAngle = function(d) {
+      };
+
+  var startAngle = function(d) {
         // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
         return d.startAngle * arcDegrees / 360 + sucrose.utils.angleToRadians(rotateDegrees);
-      },
-      endAngle = function(d) {
+      };
+  var endAngle = function(d) {
         return d.endAngle * arcDegrees / 360 + sucrose.utils.angleToRadians(rotateDegrees);
-      },
-      donutRatio = 0.447,
-      minRadius = 75,
-      maxRadius = 250,
-      fixedRadius = function(chart) { return null; },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
+      };
+
+  var fixedRadius = function(chart) { return null; };
 
   //============================================================
   // Private Variables
@@ -73,6 +76,7 @@ sucrose.models.pie = function() {
   // Update chart
 
   function chart(selection) {
+
     selection.each(function(data) {
 
       var availableWidth = width - margin.left - margin.right,
@@ -90,6 +94,7 @@ sucrose.models.pie = function() {
 
       var labelLengths = [],
           doLabels = showLabels && pieLabelsOutside ? true : false;
+
       if (doLabels) {
         labelLengths = sucrose.utils.stringSetLengths(
             data,
@@ -101,6 +106,7 @@ sucrose.models.pie = function() {
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
+
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-pie');
       var wrap = container.select('.sc-wrap').merge(wrap_entr);
@@ -159,7 +165,7 @@ sucrose.models.pie = function() {
                 return v;
               });
             },
-            function(d) { return d.series; }
+            function(d) { return d.seriesIndex; }
           );
       slice_bind.exit().remove();
       var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
@@ -757,14 +763,6 @@ sucrose.models.pie = function() {
     return chart;
   };
 
-  chart.textureFill = function(_) {
-    if (!arguments.length) {
-      return textureFill;
-    }
-    textureFill = _;
-    return chart;
-  };
-
   chart.locality = function(_) {
     if (!arguments.length) {
       return locality;
@@ -780,6 +778,16 @@ sucrose.models.pie = function() {
     getValues = _;
     return chart;
   };
+
+  chart.textureFill = function(_) {
+    if (!arguments.length) {
+      return textureFill;
+    }
+    textureFill = _;
+    return chart;
+  };
+
+  // PIE
 
   chart.showLabels = function(_) {
     if (!arguments.length) {

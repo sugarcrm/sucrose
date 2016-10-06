@@ -39,6 +39,7 @@ sucrose.models.pieChart = function() {
             y = model.getValue()(eo),
             x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
+
         return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
@@ -59,8 +60,8 @@ sucrose.models.pieChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
-      var availableWidth = width || parseInt(container.style('width'), 10) || 960;
-      var availableHeight = height || parseInt(container.style('height'), 10) || 400;
+      var availableWidth = width || parseInt(container.style('width'), 10) || 960,
+          availableHeight = height || parseInt(container.style('height'), 10) || 400;
 
       var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
@@ -194,8 +195,8 @@ sucrose.models.pieChart = function() {
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
         // Header variables
         var maxLegendWidth = 0,
@@ -551,14 +552,6 @@ sucrose.models.pieChart = function() {
     return chart;
   };
 
-  chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
-    seriesClick = _;
-    return chart;
-  };
-
   chart.direction = function(_) {
     if (!arguments.length) {
       return direction;
@@ -584,6 +577,14 @@ sucrose.models.pieChart = function() {
     }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
     return chart;
   };
 
