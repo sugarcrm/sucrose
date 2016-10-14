@@ -43,7 +43,6 @@
     ],
     "treemap": [
         {"value": "flare", "label": "Flare Code Lines"},
-        {"value": "treemap_data", "label": "Treemap Data"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
     "pareto": [

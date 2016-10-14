@@ -296,7 +296,7 @@ sucrose.models.multiBar = function() {
 
       //------------------------------------------------------------
 
-      var series_bind = wrap.selectAll('.sc-series').data(function(d) { return d; });
+      var series_bind = wrap.selectAll('.sc-series').data(sucrose.identity);
       var series_entr = series_bind.enter().append('g')
             .attr('class', classes)
             .style('stroke-opacity', 1e-6)

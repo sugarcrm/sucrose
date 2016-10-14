@@ -78,15 +78,6 @@ sucrose.models.scatter = function() {
 
       needsUpdate = true;
 
-      //add series index to each data point for reference
-      data = data.map(function(series, i) {
-        series.values = series.values.map(function(point) {
-          point.series = i;
-          return point;
-        });
-        return series;
-      });
-
       //------------------------------------------------------------
       // Setup Scales
 
@@ -227,7 +218,7 @@ sucrose.models.scatter = function() {
       // Series
 
       var series_bind = group_wrap.selectAll('.sc-series')
-            .data(function(d) { return d; }, function(d) { return d.seriesIndex; });
+            .data(sucrose.identity, function(d) { return d.seriesIndex; });
       var series_entr = series_bind.enter().append('g')
             .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
@@ -324,22 +315,21 @@ sucrose.models.scatter = function() {
 
       }
 
+      function buildEventObject(e, d, i, s) {
+        return {
+            series: s,
+            point: s.values[i],
+            pointIndex: i,
+            seriesIndex: s.seriesIndex,
+            id: id,
+            e: e
+          };
+      }
+
       function updateInteractiveLayer() {
 
         if (!interactive) {
           return false;
-        }
-
-        function buildEventObject(e, d, i, j) {
-          var seriesData = data[j];
-          return {
-              series: seriesData,
-              point: seriesData.values[i],
-              pointIndex: i,
-              seriesIndex: seriesData.series,
-              id: id,
-              e: e
-            };
         }
 
         //inject series and point index for reference into voronoi
@@ -397,8 +387,8 @@ sucrose.models.scatter = function() {
                 .map(function(d, i) {
                   return {
                     'data': d,
-                    'series': vertices[i][2],
-                    'point': vertices[i][3]
+                    'seriesIndex': vertices[i][2],
+                    'pointIndex': vertices[i][3]
                   };
                 })
                 .filter(function(d) { return d.seriesIndex !== null; });
@@ -413,8 +403,8 @@ sucrose.models.scatter = function() {
 
           paths
             .on('mouseover', function(d) {
-              if (needsUpdate) return 0;
-              var eo = buildEventObject(d3.event, d, d.point, d.seriesIndex);
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
               dispatch.call('elementMouseover', this, eo);
             })
             .on('mousemove', function(d, i) {
@@ -422,12 +412,13 @@ sucrose.models.scatter = function() {
               dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
-              if (needsUpdate) return 0;
-              dispatch.call('elementMouseout', this);
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
             })
             .on('click', function(d) {
-              if (needsUpdate) return 0;
-              var eo = buildEventObject(d3.event, d, d.point, d.seriesIndex);
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
               dispatch.call('elementClick', this, eo);
             });
 
@@ -435,26 +426,27 @@ sucrose.models.scatter = function() {
 
           // add event handlers to points instead voronoi paths
           series.selectAll('.sc-point')
-              //.data(dataWithPoints)
-              // .style('pointer-events', 'auto') // recativate events, disabled by css
-              .on('mouseover', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                var eo = buildEventObject(d3.event, d, i, d.seriesIndex);
-                dispatch.call('elementMouseover', this, eo);
-              })
-              .on('mousemove', function(d, i) {
-                var e = d3.event;
-                dispatch.call('elementMousemove', this, e);
-              })
-              .on('mouseout', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.call('elementMouseout', this);
-              })
-              .on('click', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                var eo = buildEventObject(d3.event, d, i, d.seriesIndex);
-                dispatch.call('elementClick', this, eo);
-              });
+            //.data(dataWithPoints)
+            // .style('pointer-events', 'auto') // recativate events, disabled by css
+            .on('mouseover', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
+            })
+            .on('click', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementClick', this, eo);
+            });
 
         }
 
@@ -470,30 +462,28 @@ sucrose.models.scatter = function() {
       y0 = y.copy();
       z0 = z.copy();
 
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      dispatch.on('elementMouseover.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', true);
+        }
+      });
+
+      dispatch.on('elementMouseout.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', false);
+        }
+      });
+
     });
 
     return chart;
   }
-
-
-  //============================================================
-  // Event Handling/Dispatching (out of chart's scope)
-  //------------------------------------------------------------
-
-  // dispatch.on('elementMouseover.point', function(d) {
-  //   if (interactive)
-  //     d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-  //         .classed('hover', true);
-  // });
-
-  // dispatch.on('elementMouseout.point', function(d) {
-  //   if (interactive)
-  //     d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-  //         .classed('hover', false);
-  // });
-
-  //============================================================
-
 
   //============================================================
   // Expose Public Variables
@@ -502,180 +492,181 @@ sucrose.models.scatter = function() {
   chart.dispatch = dispatch;
 
   chart.id = function(_) {
-    if (!arguments.length) return id;
+    if (!arguments.length) { return id; }
     id = _;
     return chart;
   };
   chart.color = function(_) {
-    if (!arguments.length) return color;
+    if (!arguments.length) { return color; }
     color = _;
     return chart;
   };
   chart.fill = function(_) {
-    if (!arguments.length) return fill;
+    if (!arguments.length) { return fill; }
     fill = _;
     return chart;
   };
   chart.classes = function(_) {
-    if (!arguments.length) return classes;
+    if (!arguments.length) { return classes; }
     classes = _;
     return chart;
   };
   chart.gradient = function(_) {
-    if (!arguments.length) return gradient;
+    if (!arguments.length) { return gradient; }
     gradient = _;
     return chart;
   };
 
   chart.x = function(_) {
-    if (!arguments.length) return getX;
+    if (!arguments.length) { return getX; }
     getX = sucrose.functor(_);
     return chart;
   };
 
   chart.y = function(_) {
-    if (!arguments.length) return getY;
+    if (!arguments.length) { return getY; }
     getY = sucrose.functor(_);
     return chart;
   };
 
   chart.z = function(_) {
-    if (!arguments.length) return getZ;
+    if (!arguments.length) { return getZ; }
     getZ = sucrose.functor(_);
     return chart;
   };
 
   chart.xScale = function(_) {
-    if (!arguments.length) return x;
+    if (!arguments.length) { return x; }
     x = _;
     return chart;
   };
 
   chart.yScale = function(_) {
-    if (!arguments.length) return y;
+    if (!arguments.length) { return y; }
     y = _;
     return chart;
   };
 
   chart.zScale = function(_) {
-    if (!arguments.length) return z;
+    if (!arguments.length) { return z; }
     z = _;
     return chart;
   };
 
   chart.xDomain = function(_) {
-    if (!arguments.length) return xDomain;
+    if (!arguments.length) { return xDomain; }
     xDomain = _;
     return chart;
   };
 
   chart.yDomain = function(_) {
-    if (!arguments.length) return yDomain;
+    if (!arguments.length) { return yDomain; }
     yDomain = _;
     return chart;
   };
 
   chart.zDomain = function(_) {
-    if (!arguments.length) return zDomain;
+    if (!arguments.length) { return zDomain; }
     zDomain = _;
     return chart;
   };
 
   chart.forceX = function(_) {
-    if (!arguments.length) return forceX;
+    if (!arguments.length) { return forceX; }
     forceX = _;
     return chart;
   };
 
   chart.forceY = function(_) {
-    if (!arguments.length) return forceY;
+    if (!arguments.length) { return forceY; }
     forceY = _;
     return chart;
   };
 
   chart.forceZ = function(_) {
-    if (!arguments.length) return forceZ;
+    if (!arguments.length) { return forceZ; }
     forceZ = _;
     return chart;
   };
 
   chart.size = function(_) {
-    if (!arguments.length) return getZ;
+    if (!arguments.length) { return getZ; }
     getZ = sucrose.functor(_);
     return chart;
   };
 
   chart.sizeRange = function(_) {
-    if (!arguments.length) return zRange;
+    if (!arguments.length) { return zRange; }
     zRange = _;
     return chart;
   };
   chart.sizeDomain = function(_) {
-    if (!arguments.length) return sizeDomain;
+    if (!arguments.length) { return sizeDomain; }
     zDomain = _;
     return chart;
   };
 
 
   chart.margin = function(_) {
-    if (!arguments.length) return margin;
-    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
     return chart;
   };
 
   chart.width = function(_) {
-    if (!arguments.length) return width;
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) return height;
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.interactive = function(_) {
-    if (!arguments.length) return interactive;
+    if (!arguments.length) { return interactive; }
     interactive = _;
     return chart;
   };
 
   chart.pointActive = function(_) {
-    if (!arguments.length) return pointActive;
+    if (!arguments.length) { return pointActive; }
     pointActive = _;
     return chart;
   };
 
   chart.padData = function(_) {
-    if (!arguments.length) return padData;
+    if (!arguments.length) { return padData; }
     padData = _;
     return chart;
   };
 
   chart.padDataOuter = function(_) {
-    if (!arguments.length) return padDataOuter;
+    if (!arguments.length) { return padDataOuter; }
     padDataOuter = _;
     return chart;
   };
 
   chart.clipEdge = function(_) {
-    if (!arguments.length) return clipEdge;
+    if (!arguments.length) { return clipEdge; }
     clipEdge = _;
     return chart;
   };
 
   chart.clipVoronoi = function(_) {
-    if (!arguments.length) return clipVoronoi;
+    if (!arguments.length) { return clipVoronoi; }
     clipVoronoi = _;
     return chart;
   };
 
   chart.useVoronoi = function(_) {
-    if (!arguments.length) return useVoronoi;
+    if (!arguments.length) { return useVoronoi; }
     useVoronoi = _;
     if (useVoronoi === false) {
         clipVoronoi = false;
@@ -684,49 +675,43 @@ sucrose.models.scatter = function() {
   };
 
   chart.circleRadius = function(_) {
-    if (!arguments.length) return circleRadius;
+    if (!arguments.length) { return circleRadius; }
     circleRadius = _;
     return chart;
   };
 
   chart.shape = function(_) {
-    if (!arguments.length) return getShape;
+    if (!arguments.length) { return getShape; }
     getShape = _;
     return chart;
   };
 
   chart.onlyCircles = function(_) {
-    if (!arguments.length) return onlyCircles;
+    if (!arguments.length) { return onlyCircles; }
     onlyCircles = _;
     return chart;
   };
 
   chart.singlePoint = function(_) {
-    if (!arguments.length) return singlePoint;
+    if (!arguments.length) { return singlePoint; }
     singlePoint = _;
     return chart;
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     return chart;
   };
 
   chart.nice = function(_) {
-    if (!arguments.length) {
-      return nice;
-    }
+    if (!arguments.length) { return nice; }
     nice = _;
     return chart;
   };
 
   chart.locality = function(_) {
-    if (!arguments.length) {
-      return locality;
-    }
+    if (!arguments.length) { return locality; }
     locality = sucrose.utils.buildLocality(_);
     return chart;
   };

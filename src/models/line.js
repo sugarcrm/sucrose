@@ -11,11 +11,11 @@ sucrose.models.line = function() {
       height = 500,
       getX = function(d) { return d.x; }, // accessor to get the x value from a data point
       getY = function(d) { return d.y; }, // accessor to get the y value from a data point
+      x, //can be accessed via chart.xScale()
+      y, //can be accessed via chart.yScale()
       defined = function(d, i) { return !isNaN(getY(d, i)) && getY(d, i) !== null; }, // allows a line to be not continuous when it is not defined
       isArea = function(d) { return (d && d.area) || false; }, // decides if a line is an area or just a line
       interpolate = 'linear', // controls the line interpolation
-      x, //can be accessed via chart.xScale()
-      y, //can be accessed via chart.yScale()
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
@@ -35,9 +35,10 @@ sucrose.models.line = function() {
   function chart(selection) {
     selection.each(function(data) {
 
+      var container = d3.select(this);
+
       var availableWidth = width - margin.left - margin.right,
-          availableHeight = height - margin.top - margin.bottom,
-          container = d3.select(this);
+          availableHeight = height - margin.top - margin.bottom;
 
       var curve =
             interpolate === 'linear' ? d3.curveLinear :
@@ -45,9 +46,25 @@ sucrose.models.line = function() {
             interpolate === 'monotone' ? d3.curveMonotoneX :
             interpolate === 'basis' ? d3.curveBasis : d3.natural;
 
-      var t = d3.transition('scatter')
-          .duration(duration)
-          .ease(d3.easeLinear);
+      var area = d3.area()
+            .curve(curve)
+            .defined(defined)
+            .x(function(d, i) { return x(getX(d, i)); })
+            .y0(function(d, i) { return y(getY(d, i)); })
+            .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); });
+
+      var zero = d3.area()
+            .curve(curve)
+            .defined(defined)
+            .x(function(d, i) { return x(getX(d, i)); })
+            .y0(function(d, i) { return y(0); })
+            .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); });
+
+      var tran = d3.transition('scatter')
+            .duration(duration)
+            .ease(d3.easeLinear);
+
+	  var id = scatter.id();
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
@@ -81,27 +98,20 @@ sucrose.models.line = function() {
 
       //------------------------------------------------------------
 
-      scatter
-        .width(availableWidth)
-        .height(availableHeight);
-      scatter_wrap.call(scatter);
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id)
+        .append('rect');
 
-      defs_entr.append('clipPath')
-        .attr('id', 'sc-edge-clip-' + scatter.id())
-          .append('rect');
+      wrap.select('#sc-edge-clip-' + id + ' rect')
+        .attr('width', availableWidth)
+        .attr('height', availableHeight);
 
-      wrap.select('#sc-edge-clip-' + scatter.id() + ' rect')
-          .attr('width', availableWidth)
-          .attr('height', availableHeight);
-
-      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
-      scatter_wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+      scatter_wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
       //------------------------------------------------------------
       // Series
 
-      var series_bind = group_wrap.selectAll('g.sc-series')
-            .data(function(d) { return d; }, function(d) { return d.seriesIndex; });
+      var series_bind = group_wrap.selectAll('g.sc-series').data(data, function(d) { return d.seriesIndex; });
       var series_entr = series_bind.enter().append('g')
             .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
@@ -114,22 +124,29 @@ sucrose.models.line = function() {
         .attr('fill', color)
         .attr('stroke', color);
       series
-        .transition(t)
+        .transition(tran)
           .style('stroke-opacity', 1)
           .style('fill-opacity', 0.5);
       series_bind.exit()
-        .transition(t)
+        .transition(tran)
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
           .remove();
 
       //------------------------------------------------------------
+      // Points
+
+      scatter
+        .clipEdge(clipEdge)
+        .width(availableWidth)
+        .height(availableHeight);
+      scatter_wrap.call(scatter);
+
+      //------------------------------------------------------------
       // Areas
 
-      var areas_bind = series.selectAll('path.sc-area')
-            .data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
-      var areas_entr = areas_bind.enter().append('path')
-            .attr('class', 'sc-area sc-enter');
+      var areas_bind = series.selectAll('path.sc-area').data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
+      var areas_entr = areas_bind.enter().append('path').attr('class', 'sc-area sc-enter');
       var areas = series.selectAll('.sc-area').merge(areas_entr);
 
       areas
@@ -137,43 +154,26 @@ sucrose.models.line = function() {
           return d3.select(this).classed('sc-enter');
         })
         .attr('d', function(d) {
-          return d3.area()
-              .curve(curve)
-              .defined(defined)
-              .x(function(d, i) { return x(getX(d, i)); })
-              .y0(function(d, i) { return y(0); })
-              .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
-              .apply(this, [d.values]);
+          return zero.apply(this, [d.values]);
         });
+
       areas
-        .transition(t)
+        .transition(tran)
           .attr('d', function(d) {
-            return d3.area()
-                .curve(curve)
-                .defined(defined)
-                .x(function(d, i) { return x(getX(d, i)); })
-                .y0(function(d, i) { return y(getY(d, i)); })
-                .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
-                .apply(this, [d.values]);
+            return area.apply(this, [d.values]);
           })
           .on('end', function(d) {
             d3.select(this).classed('sc-enter', false);
           });
+
       // we need this exit remove call here to support
       // toggle between lines and areas
       areas_bind.exit().remove();
 
       series_bind.exit()
-        .transition(t).selectAll('.sc-area')
+        .transition(tran).selectAll('.sc-area')
           .attr('d', function(d) {
-            return d3.area()
-                .curve(curve)
-                .defined(defined)
-                .x(function(d, i) { return x(getX(d, i)); })
-                .y0(function(d, i) { return y(0); })
-                .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
-                //.y1(function(d,i) { return y0(0) }) //assuming 0 is within y domain.. may need to tweak this
-                .apply(this, [d.values]);
+            return zero.apply(this, [d.values]);
           })
           .remove();
 
@@ -225,7 +225,7 @@ sucrose.models.line = function() {
             .y(function(d, i) { return y(0); })
         );
       lines
-        .transition(t)
+        .transition(tran)
           .attr('d',
             d3.line()
               .curve(curve)
@@ -237,7 +237,7 @@ sucrose.models.line = function() {
             d3.select(this).classed('sc-enter', false);
           });
       series_bind.exit()
-        .transition(t).selectAll('.sc-line')
+        .transition(tran).selectAll('.sc-line')
           .attr('d',
             d3.line()
               .curve(curve)
@@ -254,7 +254,6 @@ sucrose.models.line = function() {
 
     return chart;
   }
-
 
   //============================================================
   // Expose Public Variables
@@ -291,19 +290,18 @@ sucrose.models.line = function() {
 
   chart.margin = function(_) {
     if (!arguments.length) { return margin; }
-    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
     return chart;
   };
-
   chart.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
-
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
@@ -316,7 +314,6 @@ sucrose.models.line = function() {
     scatter.x(_);
     return chart;
   };
-
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
@@ -325,17 +322,12 @@ sucrose.models.line = function() {
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     return chart;
   };
-
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     scatter.duration(_);
     return chart;

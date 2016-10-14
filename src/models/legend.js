@@ -109,7 +109,7 @@ sucrose.models.legend = function() {
       mask_entr.append('g').attr('class', 'sc-group');
       var g = wrap.select('.sc-group');
 
-      var series_bind = g.selectAll('.sc-series').data(sucrose.identity, function(d) { return d.key; });
+      var series_bind = g.selectAll('.sc-series').data(sucrose.identity, function(d) { return d.seriesIndex; });
       series_bind.exit().remove();
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
             .on('mouseover', function(d, i) {
@@ -554,7 +554,7 @@ sucrose.models.legend = function() {
               var zoom = d3.zoom()
                     .on('zoom', panLegend);
               var drag = d3.drag()
-                    .subject(function(d) { return d; })
+                    .subject(sucrose.identity)
                     .on('drag', panLegend);
 
               back.call(zoom);

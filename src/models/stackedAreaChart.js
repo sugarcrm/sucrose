@@ -11,10 +11,11 @@ sucrose.models.stackedAreaChart = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      tooltip = false,
-      tooltip0 = null,
+      delay = 0,
       duration = 0,
+      tooltip = null,
       tooltips = true,
+      guidetips = null,
       x,
       y,
       state = {},
@@ -24,13 +25,14 @@ sucrose.models.stackedAreaChart = function() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
+      pointRadius = 3,
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var stacked = sucrose.models.stackedArea()
+  var model = stacked = sucrose.models.stackedArea()
         .clipEdge(true),
       xAxis = sucrose.models.axis(),
       yAxis = sucrose.models.axis(),
@@ -42,15 +44,14 @@ sucrose.models.stackedAreaChart = function() {
       guide = sucrose.models.line().duration(0);
 
   var tooltipContent = function(key, x, y, e, graph) {
-    return '<h3>' + key + '</h3>' +
-           '<p>' + y + ' on ' + x + '</p>';
-  };
+        return '<p>' + key + ': ' + y + '</p>';
+      };
 
   //============================================================
 
   function chart(selection) {
 
-    selection.each(function (chartData) {
+    selection.each(function(chartData) {
 
       var that = this,
           container = d3.select(this),
@@ -63,7 +64,7 @@ sucrose.models.stackedAreaChart = function() {
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var lineData = [],
+      var modelData = [],
           xTickLabels = [],
           totalAmount = 0,
           singlePoint = false,
@@ -85,7 +86,7 @@ sucrose.models.stackedAreaChart = function() {
             return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
-      chart.update = function () {
+      chart.update = function() {
         container.transition().duration(duration).call(chart);
       };
 
@@ -111,11 +112,11 @@ sucrose.models.stackedAreaChart = function() {
 
       isArrayData = Array.isArray(data[0].values[0]);
       if (isArrayData) {
-        stacked.x(function(d) { return d ? d[0] : 0; });
-        stacked.y(function(d) { return d ? d[1] : 0; });
+        model.x(function(d) { return d ? d[0] : 0; });
+        model.y(function(d) { return d ? d[1] : 0; });
       } else {
-        stacked.x(function(d) { return d.x; });
-        stacked.y(function(d) { return d.y; });
+        model.x(function(d) { return d.x; });
+        model.y(function(d) { return d.y; });
       }
 
       // set title display option
@@ -123,10 +124,10 @@ sucrose.models.stackedAreaChart = function() {
 
       // add series index to each data point for reference
       // and disable data series if total is zero
-      data.map(function (d, i) {
+      data.map(function(d, i) {
         d.seriesIndex = i;
         d.total = d3.sum(d.values, function(d, i) {
-          return stacked.y()(d, i);
+          return model.y()(d, i);
         });
         if (!d.total) {
           d.disabled = true;
@@ -140,24 +141,24 @@ sucrose.models.stackedAreaChart = function() {
       // TODO: what if the dimension is a numerical range?
       // xValuesAreDates = xTickLabels.length ?
       //       sucrose.utils.isValidDate(xTickLabels[0]) :
-      //       sucrose.utils.isValidDate(stacked.x()(data[0].values[0]));
+      //       sucrose.utils.isValidDate(model.x()(data[0].values[0]));
       // xValuesAreDates = isArrayData && sucrose.utils.isValidDate(data[0].values[0][0]);
 
       // SAVE FOR LATER
-      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(lineData, function(d) {
+      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
       //   return d3.min(d.values, function(d, i) {
-      //     return stacked.x()(d, i);
+      //     return model.x()(d, i);
       //   });
       // }) > 0;
 
-      lineData = data.filter(function (d) {
+      modelData = data.filter(function(d) {
           return !d.disabled;
         });
 
       // safety array
-      lineData = lineData.length ? lineData : [{series: 0, total: 0, disabled: true, values: []}];
+      modelData = modelData.length ? modelData : [{series: 0, total: 0, disabled: true, values: []}];
 
-      totalAmount = d3.sum(lineData, function(d) {
+      totalAmount = d3.sum(modelData, function(d) {
           return d.total;
         });
 
@@ -170,7 +171,7 @@ sucrose.models.stackedAreaChart = function() {
       }
 
       // set state.disabled
-      state.disabled = lineData.map(function (d) { return !!d.disabled; });
+      state.disabled = modelData.map(function(d) { return !!d.disabled; });
       state.style = stacked.style();
 
       var controlsData = [
@@ -183,6 +184,7 @@ sucrose.models.stackedAreaChart = function() {
       // Setup Scales and Axes
 
       stacked
+        .id(chart.id())
         .xDomain(null)  //?why null?
         .yDomain(null)
         .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear());
@@ -209,18 +211,47 @@ sucrose.models.stackedAreaChart = function() {
         .valueFormat(yValueFormat);
 
       guide
+        .id(chart.id())
         .useVoronoi(false)
+        .clipEdge(false)
         .xScale(x)
         .yScale(y);
 
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-guide-wrap');
+      var guide_wrap = wrap.select('.sc-guide-wrap');
 
       //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
-
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
 
         // Chart layout variables
         var renderWidth, renderHeight,
@@ -228,13 +259,26 @@ sucrose.models.stackedAreaChart = function() {
             innerMargin,
             innerWidth, innerHeight;
 
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         renderWidth = width || containerWidth || 960;
         renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
 
         // Header variables
         var maxControlsWidth = 0,
@@ -245,43 +289,6 @@ sucrose.models.stackedAreaChart = function() {
             controlsHeight = 0,
             legendHeight = 0,
             trans = '';
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
-        wrap.select('.sc-background')
-          .attr('width', renderWidth)
-          .attr('height', renderHeight);
-
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
-        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
-        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
-
-        wrap_entr.append('g').attr('class', 'sc-stackedarea-wrap');
-        var stacked_wrap = wrap.select('.sc-stackedarea-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-        var controls_wrap = wrap.select('.sc-controls-wrap');
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-guide-wrap');
-        var guide_wrap = wrap.select('.sc-guide-wrap');
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-        //------------------------------------------------------------
-        // Title & Legend & Controls
 
         title_wrap.select('.sc-title').remove();
 
@@ -313,7 +320,6 @@ sucrose.models.stackedAreaChart = function() {
 
           maxControlsWidth = controls.calcMaxWidth();
         }
-
         if (showLegend) {
           legend
             .id('legend_' + chart.id())
@@ -350,7 +356,6 @@ sucrose.models.stackedAreaChart = function() {
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
         }
-
         if (showLegend) {
           var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
@@ -374,17 +379,15 @@ sucrose.models.stackedAreaChart = function() {
         //------------------------------------------------------------
         // Main Chart Component(s)
 
-        stacked
+        model
           .width(innerWidth)
-          .height(innerHeight)
-          .id(chart.id());
-        stacked_wrap
-          .datum(lineData)
-          .call(stacked);
-
+          .height(innerHeight);
+        model_wrap
+          .datum(modelData)
+          .call(model);
 
         //------------------------------------------------------------
-        // Setup Axes
+        // Axes
 
         var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
@@ -400,7 +403,7 @@ sucrose.models.stackedAreaChart = function() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          stacked.width(innerWidth).height(innerHeight);
+          model.width(innerWidth).height(innerHeight);
           // This resets the scales for the whole chart
           // unfortunately we can't call this without until line instance is called
           // stacked.scatter.resetDimensions(innerWidth, innerHeight);
@@ -439,6 +442,7 @@ sucrose.models.stackedAreaChart = function() {
 
         // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
+          .ticks(stacked.offset() === 'wiggle' ? 0 : null)
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
         yAxis_wrap
@@ -450,21 +454,25 @@ sucrose.models.stackedAreaChart = function() {
         xAxis_wrap
           .call(xAxis);
 
-        stacked
+        model
           .width(innerWidth)
           .height(innerHeight);
-        stacked_wrap
-          // .transition().duration(chart.delay())
-          .datum(lineData)
-            .call(stacked)
+        model_wrap
+          .datum(modelData)
+          .call(model);
+
+        //------------------------------------------------------------
+        // Guide Line
 
         // var middleDate = (x.domain()[0].getTime() + (x.domain()[1].getTime() - x.domain()[0].getTime()) / 2);
+        var pointSize = Math.pow(3, 2) * Math.PI; // default size set to 3
 
         guide
           .width(innerWidth)
           .height(innerHeight)
-          .size(2)
-          .color(function() { return '#000'; })
+          // .color(function() { return '#000'; })
+          .size(pointSize)
+          .sizeRange([pointSize, pointSize])
           .xDomain(x.domain()) // don't let scatter recalc domain from data
           .yDomain(y.domain()); // don't let scatter recalc domain from data
 
@@ -493,33 +501,50 @@ sucrose.models.stackedAreaChart = function() {
                 .concat(eo.data.map(function(d, i) { return {x: xpos, y: d[1]}; }))
                 .concat([{x: xpos, y: y.domain()[1]}]);
           var guidePos = {
-            clientX: eo.origin.left + x(xpos)
-          };
+                clientX: eo.origin.left + x(xpos)
+              };
+
+          var xData = [xpos, 0];
+              xData.e = eo.e;
+              xData.seriesIndex = 0;
+              xData.seriesKey = 'x';
 
           guide_wrap
             .datum([{
               key:'guide',
-              values: values
+              values: values,
+              seriesIndex: 0
             }])
             .call(guide);
 
-          if (!tooltip0) {
-            tooltip0 = {};
+          if (!guidetips) {
+            guidetips = {};
             eo.data.forEach(function(d, i) {
               d.e = eo.e;
-              tooltip0[i] = chart.showTooltip(d, that.parentNode);
+              guidetips[i] = chart.showTooltip(d, that.parentNode);
             });
+            guidetips['x'] = chart.showTooltip(xData, that.parentNode);
           }
 
+          // Line
           eo.data.forEach(function(d, i) {
             var key = d.seriesKey,
                 xval = xValueFormat(stacked.x()(d)),
                 yval = yValueFormat(stacked.y()(d)),
                 content = tooltipContent(key, xval, yval, d, chart);
             guidePos.clientY = eo.origin.top + y(d[1]);
-            d3.select(tooltip0[i]).select('.tooltip-inner').html(content)
-            sucrose.tooltip.position(that.parentNode, tooltip0[i], guidePos, 'e');
+            d3.select(guidetips[i]).select('.tooltip-inner').html(content);
+            sucrose.tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');
           });
+
+          // Top date
+          xData.forEach(function(d, i) {
+            var xval = xValueFormat(xpos);
+            guidePos.clientY = eo.origin.top;
+            d3.select(guidetips['x']).select('.tooltip-inner').html(xval);
+            sucrose.tooltip.position(that.parentNode, guidetips['x'], guidePos, 's');
+          });
+
         }
 
         //------------------------------------------------------------
@@ -538,10 +563,32 @@ sucrose.models.stackedAreaChart = function() {
           .attr('transform', 'translate(' + trans + ')');
 
         trans = innerMargin.left + ',' + innerMargin.top;
-        stacked_wrap
+        model_wrap
           .attr('transform', 'translate(' + trans + ')');
         guide_wrap
           .attr('transform', 'translate(' + trans + ')');
+
+        dispatch.on('tooltipShow', function(eo) {
+          if (tooltips) {
+            tooltip = true;
+            guide_wrap.classed('hover', true);
+          }
+        });
+
+        dispatch.on('tooltipMove', function(eo) {
+          if (tooltip) {
+            chart.moveGuide(that.parentNode, container, eo);
+          }
+        });
+
+        dispatch.on('tooltipHide', function() {
+          if (tooltips) {
+            tooltip = false;
+            sucrose.tooltip.cleanup();
+            guidetips = null;
+            guide_wrap.classed('hover', false);
+          }
+        });
 
       };
 
@@ -553,50 +600,51 @@ sucrose.models.stackedAreaChart = function() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      stacked.dispatch.on('areaClick.toggle', function (e) {
-        if (data.filter(function (d) { return !d.disabled; }).length === 1) {
-          data = data.map(function (d) {
+      stacked.dispatch.on('elementClick.toggle', function(e) {
+        if (data.filter(function(d) { return !d.disabled; }).length === 1) {
+          data = data.map(function(d) {
             d.disabled = false;
             return d;
           });
         } else {
-          data = data.map(function (d,i) {
+          data = data.map(function(d,i) {
             d.disabled = (i !== e.seriesIndex);
             return d;
           });
         }
 
-        state.disabled = data.map(function (d) { return !!d.disabled; });
+        state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
+        dispatch.call('tooltipHide', this);
 
-        container.transition().duration(chart.delay()).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
-      legend.dispatch.on('legendClick', function (d, i) {
+      legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
 
-        if (!data.filter(function (d) { return !d.disabled; }).length) {
-          data.map(function (d) {
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
+          data.map(function(d) {
             d.disabled = false;
             container.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
 
-        state.disabled = data.map(function (d) { return !!d.disabled; });
+        state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
         container.transition().duration(duration).call(chart);
       });
 
-      controls.dispatch.on('legendClick', function (d, i) {
+      controls.dispatch.on('legendClick', function(d, i) {
         //if the option is currently enabled (i.e., selected)
         if (!d.disabled) {
           return;
         }
 
         //set the controls all to false
-        controlsData = controlsData.map(function (s) {
+        controlsData = controlsData.map(function(s) {
           s.disabled = true;
           return s;
         });
@@ -618,27 +666,7 @@ sucrose.models.stackedAreaChart = function() {
         state.style = stacked.style();
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(chart.delay()).call(chart);
-      });
-
-      dispatch.on('tooltipShow', function(eo) {
-        if (tooltips) {
-          tooltip = true;
-        }
-      });
-
-      dispatch.on('tooltipMove', function(eo) {
-        if (tooltip) {
-          chart.moveGuide(that.parentNode, container, eo);
-        }
-      });
-
-      dispatch.on('tooltipHide', function() {
-        if (tooltips) {
-          tooltip = false;
-          sucrose.tooltip.cleanup();
-          tooltip0 = null;
-        }
+        container.transition().duration(duration).call(chart);
       });
 
       // Update chart from a state object passed to event handler
@@ -676,15 +704,15 @@ sucrose.models.stackedAreaChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  stacked.dispatch.on('areaMouseover.tooltip', function(eo) {
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  stacked.dispatch.on('areaMousemove.tooltip', function(eo) {
-    dispatch.call('tooltipMove', this, eo);
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
   });
 
-  stacked.dispatch.on('areaMouseout.tooltip', function() {
+  model.dispatch.on('elementMouseout.tooltip', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -700,7 +728,7 @@ sucrose.models.stackedAreaChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, stacked, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, stacked, 'size', 'sizeDomain', 'forceSize', 'offset', 'order', 'style', 'interactive', 'useVoronoi', 'clipVoronoi');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -708,10 +736,10 @@ sucrose.models.stackedAreaChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.seriesIndex || i);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
-          return 'sc-area sc-series-' + (d.seriesIndex || i);
+          return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
@@ -727,28 +755,31 @@ sucrose.models.stackedAreaChart = function() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-area sc-area-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
-          return 'sc-area sc-area-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
       var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return stacked.gradient(d, d.seriesIndex, p);
+      return model.gradient(d, d.seriesIndex, p);
     };
 
-    stacked.color(color);
-    stacked.fill(fill);
-    stacked.classes(classes);
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
 
+    // don't enable this since controls get a custom function
+    // controls.color(color);
+    // controls.classes(classes);
     legend.color(color);
     legend.classes(classes);
 
@@ -756,9 +787,7 @@ sucrose.models.stackedAreaChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -768,81 +797,61 @@ sucrose.models.stackedAreaChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showControls = function(_) {
-    if (!arguments.length) {
-      return showControls;
-    }
+    if (!arguments.length) { return showControls; }
     showControls = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -852,12 +861,10 @@ sucrose.models.stackedAreaChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
-    yAxis.direction(_);
     xAxis.direction(_);
+    yAxis.direction(_);
     legend.direction(_);
     controls.direction(_);
     return chart;
@@ -866,7 +873,14 @@ sucrose.models.stackedAreaChart = function() {
   chart.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    stacked.duration(_);
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    model.delay(_);
     return chart;
   };
 

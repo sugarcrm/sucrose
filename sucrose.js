@@ -1857,7 +1857,7 @@ sucrose.models.legend = function() {
       mask_entr.append('g').attr('class', 'sc-group');
       var g = wrap.select('.sc-group');
 
-      var series_bind = g.selectAll('.sc-series').data(sucrose.identity, function(d) { return d.key; });
+      var series_bind = g.selectAll('.sc-series').data(sucrose.identity, function(d) { return d.seriesIndex; });
       series_bind.exit().remove();
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
             .on('mouseover', function(d, i) {
@@ -2302,7 +2302,7 @@ sucrose.models.legend = function() {
               var zoom = d3.zoom()
                     .on('zoom', panLegend);
               var drag = d3.drag()
-                    .subject(function(d) { return d; })
+                    .subject(sucrose.identity)
                     .on('drag', panLegend);
 
               back.call(zoom);
@@ -3114,15 +3114,6 @@ sucrose.models.scatter = function() {
 
       needsUpdate = true;
 
-      //add series index to each data point for reference
-      data = data.map(function(series, i) {
-        series.values = series.values.map(function(point) {
-          point.series = i;
-          return point;
-        });
-        return series;
-      });
-
       //------------------------------------------------------------
       // Setup Scales
 
@@ -3263,7 +3254,7 @@ sucrose.models.scatter = function() {
       // Series
 
       var series_bind = group_wrap.selectAll('.sc-series')
-            .data(function(d) { return d; }, function(d) { return d.seriesIndex; });
+            .data(sucrose.identity, function(d) { return d.seriesIndex; });
       var series_entr = series_bind.enter().append('g')
             .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
@@ -3360,22 +3351,21 @@ sucrose.models.scatter = function() {
 
       }
 
+      function buildEventObject(e, d, i, s) {
+        return {
+            series: s,
+            point: s.values[i],
+            pointIndex: i,
+            seriesIndex: s.seriesIndex,
+            id: id,
+            e: e
+          };
+      }
+
       function updateInteractiveLayer() {
 
         if (!interactive) {
           return false;
-        }
-
-        function buildEventObject(e, d, i, j) {
-          var seriesData = data[j];
-          return {
-              series: seriesData,
-              point: seriesData.values[i],
-              pointIndex: i,
-              seriesIndex: seriesData.series,
-              id: id,
-              e: e
-            };
         }
 
         //inject series and point index for reference into voronoi
@@ -3433,8 +3423,8 @@ sucrose.models.scatter = function() {
                 .map(function(d, i) {
                   return {
                     'data': d,
-                    'series': vertices[i][2],
-                    'point': vertices[i][3]
+                    'seriesIndex': vertices[i][2],
+                    'pointIndex': vertices[i][3]
                   };
                 })
                 .filter(function(d) { return d.seriesIndex !== null; });
@@ -3449,8 +3439,8 @@ sucrose.models.scatter = function() {
 
           paths
             .on('mouseover', function(d) {
-              if (needsUpdate) return 0;
-              var eo = buildEventObject(d3.event, d, d.point, d.seriesIndex);
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
               dispatch.call('elementMouseover', this, eo);
             })
             .on('mousemove', function(d, i) {
@@ -3458,12 +3448,13 @@ sucrose.models.scatter = function() {
               dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
-              if (needsUpdate) return 0;
-              dispatch.call('elementMouseout', this);
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
             })
             .on('click', function(d) {
-              if (needsUpdate) return 0;
-              var eo = buildEventObject(d3.event, d, d.point, d.seriesIndex);
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
               dispatch.call('elementClick', this, eo);
             });
 
@@ -3471,26 +3462,27 @@ sucrose.models.scatter = function() {
 
           // add event handlers to points instead voronoi paths
           series.selectAll('.sc-point')
-              //.data(dataWithPoints)
-              // .style('pointer-events', 'auto') // recativate events, disabled by css
-              .on('mouseover', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                var eo = buildEventObject(d3.event, d, i, d.seriesIndex);
-                dispatch.call('elementMouseover', this, eo);
-              })
-              .on('mousemove', function(d, i) {
-                var e = d3.event;
-                dispatch.call('elementMousemove', this, e);
-              })
-              .on('mouseout', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.call('elementMouseout', this);
-              })
-              .on('click', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                var eo = buildEventObject(d3.event, d, i, d.seriesIndex);
-                dispatch.call('elementClick', this, eo);
-              });
+            //.data(dataWithPoints)
+            // .style('pointer-events', 'auto') // recativate events, disabled by css
+            .on('mouseover', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
+            })
+            .on('click', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementClick', this, eo);
+            });
 
         }
 
@@ -3506,30 +3498,28 @@ sucrose.models.scatter = function() {
       y0 = y.copy();
       z0 = z.copy();
 
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      dispatch.on('elementMouseover.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', true);
+        }
+      });
+
+      dispatch.on('elementMouseout.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', false);
+        }
+      });
+
     });
 
     return chart;
   }
-
-
-  //============================================================
-  // Event Handling/Dispatching (out of chart's scope)
-  //------------------------------------------------------------
-
-  // dispatch.on('elementMouseover.point', function(d) {
-  //   if (interactive)
-  //     d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-  //         .classed('hover', true);
-  // });
-
-  // dispatch.on('elementMouseout.point', function(d) {
-  //   if (interactive)
-  //     d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-  //         .classed('hover', false);
-  // });
-
-  //============================================================
-
 
   //============================================================
   // Expose Public Variables
@@ -3538,180 +3528,181 @@ sucrose.models.scatter = function() {
   chart.dispatch = dispatch;
 
   chart.id = function(_) {
-    if (!arguments.length) return id;
+    if (!arguments.length) { return id; }
     id = _;
     return chart;
   };
   chart.color = function(_) {
-    if (!arguments.length) return color;
+    if (!arguments.length) { return color; }
     color = _;
     return chart;
   };
   chart.fill = function(_) {
-    if (!arguments.length) return fill;
+    if (!arguments.length) { return fill; }
     fill = _;
     return chart;
   };
   chart.classes = function(_) {
-    if (!arguments.length) return classes;
+    if (!arguments.length) { return classes; }
     classes = _;
     return chart;
   };
   chart.gradient = function(_) {
-    if (!arguments.length) return gradient;
+    if (!arguments.length) { return gradient; }
     gradient = _;
     return chart;
   };
 
   chart.x = function(_) {
-    if (!arguments.length) return getX;
+    if (!arguments.length) { return getX; }
     getX = sucrose.functor(_);
     return chart;
   };
 
   chart.y = function(_) {
-    if (!arguments.length) return getY;
+    if (!arguments.length) { return getY; }
     getY = sucrose.functor(_);
     return chart;
   };
 
   chart.z = function(_) {
-    if (!arguments.length) return getZ;
+    if (!arguments.length) { return getZ; }
     getZ = sucrose.functor(_);
     return chart;
   };
 
   chart.xScale = function(_) {
-    if (!arguments.length) return x;
+    if (!arguments.length) { return x; }
     x = _;
     return chart;
   };
 
   chart.yScale = function(_) {
-    if (!arguments.length) return y;
+    if (!arguments.length) { return y; }
     y = _;
     return chart;
   };
 
   chart.zScale = function(_) {
-    if (!arguments.length) return z;
+    if (!arguments.length) { return z; }
     z = _;
     return chart;
   };
 
   chart.xDomain = function(_) {
-    if (!arguments.length) return xDomain;
+    if (!arguments.length) { return xDomain; }
     xDomain = _;
     return chart;
   };
 
   chart.yDomain = function(_) {
-    if (!arguments.length) return yDomain;
+    if (!arguments.length) { return yDomain; }
     yDomain = _;
     return chart;
   };
 
   chart.zDomain = function(_) {
-    if (!arguments.length) return zDomain;
+    if (!arguments.length) { return zDomain; }
     zDomain = _;
     return chart;
   };
 
   chart.forceX = function(_) {
-    if (!arguments.length) return forceX;
+    if (!arguments.length) { return forceX; }
     forceX = _;
     return chart;
   };
 
   chart.forceY = function(_) {
-    if (!arguments.length) return forceY;
+    if (!arguments.length) { return forceY; }
     forceY = _;
     return chart;
   };
 
   chart.forceZ = function(_) {
-    if (!arguments.length) return forceZ;
+    if (!arguments.length) { return forceZ; }
     forceZ = _;
     return chart;
   };
 
   chart.size = function(_) {
-    if (!arguments.length) return getZ;
+    if (!arguments.length) { return getZ; }
     getZ = sucrose.functor(_);
     return chart;
   };
 
   chart.sizeRange = function(_) {
-    if (!arguments.length) return zRange;
+    if (!arguments.length) { return zRange; }
     zRange = _;
     return chart;
   };
   chart.sizeDomain = function(_) {
-    if (!arguments.length) return sizeDomain;
+    if (!arguments.length) { return sizeDomain; }
     zDomain = _;
     return chart;
   };
 
 
   chart.margin = function(_) {
-    if (!arguments.length) return margin;
-    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
     return chart;
   };
 
   chart.width = function(_) {
-    if (!arguments.length) return width;
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) return height;
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.interactive = function(_) {
-    if (!arguments.length) return interactive;
+    if (!arguments.length) { return interactive; }
     interactive = _;
     return chart;
   };
 
   chart.pointActive = function(_) {
-    if (!arguments.length) return pointActive;
+    if (!arguments.length) { return pointActive; }
     pointActive = _;
     return chart;
   };
 
   chart.padData = function(_) {
-    if (!arguments.length) return padData;
+    if (!arguments.length) { return padData; }
     padData = _;
     return chart;
   };
 
   chart.padDataOuter = function(_) {
-    if (!arguments.length) return padDataOuter;
+    if (!arguments.length) { return padDataOuter; }
     padDataOuter = _;
     return chart;
   };
 
   chart.clipEdge = function(_) {
-    if (!arguments.length) return clipEdge;
+    if (!arguments.length) { return clipEdge; }
     clipEdge = _;
     return chart;
   };
 
   chart.clipVoronoi = function(_) {
-    if (!arguments.length) return clipVoronoi;
+    if (!arguments.length) { return clipVoronoi; }
     clipVoronoi = _;
     return chart;
   };
 
   chart.useVoronoi = function(_) {
-    if (!arguments.length) return useVoronoi;
+    if (!arguments.length) { return useVoronoi; }
     useVoronoi = _;
     if (useVoronoi === false) {
         clipVoronoi = false;
@@ -3720,49 +3711,43 @@ sucrose.models.scatter = function() {
   };
 
   chart.circleRadius = function(_) {
-    if (!arguments.length) return circleRadius;
+    if (!arguments.length) { return circleRadius; }
     circleRadius = _;
     return chart;
   };
 
   chart.shape = function(_) {
-    if (!arguments.length) return getShape;
+    if (!arguments.length) { return getShape; }
     getShape = _;
     return chart;
   };
 
   chart.onlyCircles = function(_) {
-    if (!arguments.length) return onlyCircles;
+    if (!arguments.length) { return onlyCircles; }
     onlyCircles = _;
     return chart;
   };
 
   chart.singlePoint = function(_) {
-    if (!arguments.length) return singlePoint;
+    if (!arguments.length) { return singlePoint; }
     singlePoint = _;
     return chart;
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     return chart;
   };
 
   chart.nice = function(_) {
-    if (!arguments.length) {
-      return nice;
-    }
+    if (!arguments.length) { return nice; }
     nice = _;
     return chart;
   };
 
   chart.locality = function(_) {
-    if (!arguments.length) {
-      return locality;
-    }
+    if (!arguments.length) { return locality; }
     locality = sucrose.utils.buildLocality(_);
     return chart;
   };
@@ -5779,12 +5764,32 @@ sucrose.models.funnelChart = function() {
       }
 
       //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
-
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
 
         // Chart layout variables
         var renderWidth, renderHeight,
@@ -5792,51 +5797,36 @@ sucrose.models.funnelChart = function() {
             innerMargin,
             innerWidth, innerHeight;
 
-        // Chart layout variables
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         renderWidth = width || containerWidth || 960;
         renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        // Header variables
-        var maxLegendWidth = 0,
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            legendHeight = 0,
-            trans = '';
-
-        //------------------------------------------------------------
-        // Setup containers and skeleton of chart
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
         wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
 
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
-        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
         //------------------------------------------------------------
-        // Title & Legend
+        // Title & Legend & Controls
+
+        // Header variables
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
+            legendHeight = 0,
+            trans = '';
 
         title_wrap.select('.sc-title').remove();
 
@@ -6015,6 +6005,7 @@ sucrose.models.funnelChart = function() {
   chart.dispatch = dispatch;
   chart.funnel = funnel;
   chart.legend = legend;
+  chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
@@ -6072,9 +6063,7 @@ sucrose.models.funnelChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -6084,81 +6073,61 @@ sucrose.models.funnelChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showControls = function(_) {
-    if (!arguments.length) {
-      return showControls;
-    }
+    if (!arguments.length) { return showControls; }
     showControls = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -6168,28 +6137,23 @@ sucrose.models.funnelChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
     legend.direction(_);
+    controls.direction(_);
     return chart;
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     model.duration(_);
     return chart;
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
     return chart;
@@ -8101,11 +8065,11 @@ sucrose.models.line = function() {
       height = 500,
       getX = function(d) { return d.x; }, // accessor to get the x value from a data point
       getY = function(d) { return d.y; }, // accessor to get the y value from a data point
+      x, //can be accessed via chart.xScale()
+      y, //can be accessed via chart.yScale()
       defined = function(d, i) { return !isNaN(getY(d, i)) && getY(d, i) !== null; }, // allows a line to be not continuous when it is not defined
       isArea = function(d) { return (d && d.area) || false; }, // decides if a line is an area or just a line
       interpolate = 'linear', // controls the line interpolation
-      x, //can be accessed via chart.xScale()
-      y, //can be accessed via chart.yScale()
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
@@ -8125,9 +8089,10 @@ sucrose.models.line = function() {
   function chart(selection) {
     selection.each(function(data) {
 
+      var container = d3.select(this);
+
       var availableWidth = width - margin.left - margin.right,
-          availableHeight = height - margin.top - margin.bottom,
-          container = d3.select(this);
+          availableHeight = height - margin.top - margin.bottom;
 
       var curve =
             interpolate === 'linear' ? d3.curveLinear :
@@ -8135,9 +8100,25 @@ sucrose.models.line = function() {
             interpolate === 'monotone' ? d3.curveMonotoneX :
             interpolate === 'basis' ? d3.curveBasis : d3.natural;
 
-      var t = d3.transition('scatter')
-          .duration(duration)
-          .ease(d3.easeLinear);
+      var area = d3.area()
+            .curve(curve)
+            .defined(defined)
+            .x(function(d, i) { return x(getX(d, i)); })
+            .y0(function(d, i) { return y(getY(d, i)); })
+            .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); });
+
+      var zero = d3.area()
+            .curve(curve)
+            .defined(defined)
+            .x(function(d, i) { return x(getX(d, i)); })
+            .y0(function(d, i) { return y(0); })
+            .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); });
+
+      var tran = d3.transition('scatter')
+            .duration(duration)
+            .ease(d3.easeLinear);
+
+	  var id = scatter.id();
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
@@ -8171,27 +8152,20 @@ sucrose.models.line = function() {
 
       //------------------------------------------------------------
 
-      scatter
-        .width(availableWidth)
-        .height(availableHeight);
-      scatter_wrap.call(scatter);
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id)
+        .append('rect');
 
-      defs_entr.append('clipPath')
-        .attr('id', 'sc-edge-clip-' + scatter.id())
-          .append('rect');
+      wrap.select('#sc-edge-clip-' + id + ' rect')
+        .attr('width', availableWidth)
+        .attr('height', availableHeight);
 
-      wrap.select('#sc-edge-clip-' + scatter.id() + ' rect')
-          .attr('width', availableWidth)
-          .attr('height', availableHeight);
-
-      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
-      scatter_wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+      scatter_wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
       //------------------------------------------------------------
       // Series
 
-      var series_bind = group_wrap.selectAll('g.sc-series')
-            .data(function(d) { return d; }, function(d) { return d.seriesIndex; });
+      var series_bind = group_wrap.selectAll('g.sc-series').data(data, function(d) { return d.seriesIndex; });
       var series_entr = series_bind.enter().append('g')
             .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
@@ -8204,22 +8178,29 @@ sucrose.models.line = function() {
         .attr('fill', color)
         .attr('stroke', color);
       series
-        .transition(t)
+        .transition(tran)
           .style('stroke-opacity', 1)
           .style('fill-opacity', 0.5);
       series_bind.exit()
-        .transition(t)
+        .transition(tran)
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
           .remove();
 
       //------------------------------------------------------------
+      // Points
+
+      scatter
+        .clipEdge(clipEdge)
+        .width(availableWidth)
+        .height(availableHeight);
+      scatter_wrap.call(scatter);
+
+      //------------------------------------------------------------
       // Areas
 
-      var areas_bind = series.selectAll('path.sc-area')
-            .data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
-      var areas_entr = areas_bind.enter().append('path')
-            .attr('class', 'sc-area sc-enter');
+      var areas_bind = series.selectAll('path.sc-area').data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
+      var areas_entr = areas_bind.enter().append('path').attr('class', 'sc-area sc-enter');
       var areas = series.selectAll('.sc-area').merge(areas_entr);
 
       areas
@@ -8227,43 +8208,26 @@ sucrose.models.line = function() {
           return d3.select(this).classed('sc-enter');
         })
         .attr('d', function(d) {
-          return d3.area()
-              .curve(curve)
-              .defined(defined)
-              .x(function(d, i) { return x(getX(d, i)); })
-              .y0(function(d, i) { return y(0); })
-              .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
-              .apply(this, [d.values]);
+          return zero.apply(this, [d.values]);
         });
+
       areas
-        .transition(t)
+        .transition(tran)
           .attr('d', function(d) {
-            return d3.area()
-                .curve(curve)
-                .defined(defined)
-                .x(function(d, i) { return x(getX(d, i)); })
-                .y0(function(d, i) { return y(getY(d, i)); })
-                .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
-                .apply(this, [d.values]);
+            return area.apply(this, [d.values]);
           })
           .on('end', function(d) {
             d3.select(this).classed('sc-enter', false);
           });
+
       // we need this exit remove call here to support
       // toggle between lines and areas
       areas_bind.exit().remove();
 
       series_bind.exit()
-        .transition(t).selectAll('.sc-area')
+        .transition(tran).selectAll('.sc-area')
           .attr('d', function(d) {
-            return d3.area()
-                .curve(curve)
-                .defined(defined)
-                .x(function(d, i) { return x(getX(d, i)); })
-                .y0(function(d, i) { return y(0); })
-                .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); })
-                //.y1(function(d,i) { return y0(0) }) //assuming 0 is within y domain.. may need to tweak this
-                .apply(this, [d.values]);
+            return zero.apply(this, [d.values]);
           })
           .remove();
 
@@ -8315,7 +8279,7 @@ sucrose.models.line = function() {
             .y(function(d, i) { return y(0); })
         );
       lines
-        .transition(t)
+        .transition(tran)
           .attr('d',
             d3.line()
               .curve(curve)
@@ -8327,7 +8291,7 @@ sucrose.models.line = function() {
             d3.select(this).classed('sc-enter', false);
           });
       series_bind.exit()
-        .transition(t).selectAll('.sc-line')
+        .transition(tran).selectAll('.sc-line')
           .attr('d',
             d3.line()
               .curve(curve)
@@ -8344,7 +8308,6 @@ sucrose.models.line = function() {
 
     return chart;
   }
-
 
   //============================================================
   // Expose Public Variables
@@ -8381,19 +8344,18 @@ sucrose.models.line = function() {
 
   chart.margin = function(_) {
     if (!arguments.length) { return margin; }
-    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
     return chart;
   };
-
   chart.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
-
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
@@ -8406,7 +8368,6 @@ sucrose.models.line = function() {
     scatter.x(_);
     return chart;
   };
-
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
@@ -8415,17 +8376,12 @@ sucrose.models.line = function() {
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     return chart;
   };
-
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     scatter.duration(_);
     return chart;
@@ -8533,7 +8489,7 @@ sucrose.models.lineChart = function() {
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var lineData = [],
+      var modelData = [],
           xTickLabels = [],
           totalAmount = 0,
           singlePoint = false,
@@ -8581,11 +8537,11 @@ sucrose.models.lineChart = function() {
 
       isArrayData = Array.isArray(data[0].values[0]);
       if (isArrayData) {
-        lines.x(function(d) { return d ? d[0] : 0; });
-        lines.y(function(d) { return d ? d[1] : 0; });
+        model.x(function(d) { return d ? d[0] : 0; });
+        model.y(function(d) { return d ? d[1] : 0; });
       } else {
-        lines.x(function(d) { return d.x; });
-        lines.y(function(d) { return d.y; });
+        model.x(function(d) { return d.x; });
+        model.y(function(d) { return d.y; });
       }
 
       // set title display option
@@ -8596,7 +8552,7 @@ sucrose.models.lineChart = function() {
       data.map(function(d, i) {
         d.seriesIndex = i;
         d.total = d3.sum(d.values, function(d, i) {
-          return lines.y()(d, i);
+          return model.y()(d, i);
         });
         if (!d.total) {
           d.disabled = true;
@@ -8610,24 +8566,24 @@ sucrose.models.lineChart = function() {
       // TODO: what if the dimension is a numerical range?
       // xValuesAreDates = xTickLabels.length ?
       //       sucrose.utils.isValidDate(xTickLabels[0]) :
-      //       sucrose.utils.isValidDate(lines.x()(data[0].values[0]));
+      //       sucrose.utils.isValidDate(model.x()(data[0].values[0]));
       // xValuesAreDates = isArrayData && sucrose.utils.isValidDate(data[0].values[0][0]);
 
       // SAVE FOR LATER
-      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(lineData, function(d) {
+      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
       //   return d3.min(d.values, function(d, i) {
-      //     return lines.x()(d, i);
+      //     return model.x()(d, i);
       //   });
       // }) > 0;
 
-      lineData = data.filter(function(d) {
+      modelData = data.filter(function(d) {
           return !d.disabled;
         });
 
       // safety array
-      lineData = lineData.length ? lineData : [{series: 0, total: 0, disabled: true, values: []}];
+      modelData = modelData.length ? modelData : [{series: 0, total: 0, disabled: true, values: []}];
 
-      totalAmount = d3.sum(lineData, function(d) {
+      totalAmount = d3.sum(modelData, function(d) {
           return d.total;
         });
 
@@ -8640,7 +8596,7 @@ sucrose.models.lineChart = function() {
       }
 
       // set state.disabled
-      state.disabled = lineData.map(function(d) { return !!d.disabled; });
+      state.disabled = modelData.map(function(d) { return !!d.disabled; });
       state.interpolate = lines.interpolate();
       state.isArea = lines.isArea()();
 
@@ -8657,21 +8613,27 @@ sucrose.models.lineChart = function() {
       // Setup Scales and Axes
 
       // Are all data series single points
-      singlePoint = d3.max(lineData, function(d) {
+      singlePoint = d3.max(modelData, function(d) {
           return d.values.length;
         }) === 1;
 
+      var pointSize = Math.pow(pointRadius, 2) * Math.PI * (singlePoint ? 3 : 1);
+
       lines
+        .id(chart.id())
         //TODO: we need to reconsider use of padData
         // .padData(singlePoint ? false : true)
         // .padDataOuter(-1)
-        .singlePoint(singlePoint)
         // set x-scale as time instead of linear
-        .xScale(xIsDatetime && !xTickLabels.length ? d3.scaleTime() : d3.scaleLinear());
+        .xScale(xIsDatetime && !xTickLabels.length ? d3.scaleTime() : d3.scaleLinear())
+        .singlePoint(singlePoint)
+        .size(pointSize) // default size set to 3
+        .sizeRange([pointSize, pointSize])
+        .sizeDomain([pointSize, pointSize]); //set to speed up calculation, needs to be unset if there is a custom size accessor
 
       if (singlePoint) {
 
-        var xValues = d3.merge(lineData.map(function(d) {
+        var xValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
                   return lines.x()(d, i);
                 });
@@ -8686,13 +8648,13 @@ sucrose.models.lineChart = function() {
             xExtents = d3.extent(xValues),
             xOffset = 1 * (xIsDatetime && !xTickLabels.length ? 86400000 : 1);
 
-        var yValues = d3.merge(lineData.map(function(d) {
+        var yValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
                   return lines.y()(d, i);
                 });
               })),
             yExtents = d3.extent(yValues),
-            yOffset = lineData.length === 1 ? 2 : Math.min((yExtents[1] - yExtents[0]) / lineData.length, yExtents[0]);
+            yOffset = modelData.length === 1 ? 2 : Math.min((yExtents[1] - yExtents[0]) / modelData.length, yExtents[0]);
 
         lines
           .xDomain([
@@ -8749,12 +8711,37 @@ sucrose.models.lineChart = function() {
         .valueFormat(yValueFormat);
 
       //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
-
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
 
         // Chart layout variables
         var renderWidth, renderHeight,
@@ -8762,13 +8749,26 @@ sucrose.models.lineChart = function() {
             innerMargin,
             innerWidth, innerHeight;
 
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         renderWidth = width || containerWidth || 960;
         renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
 
         // Header variables
         var maxControlsWidth = 0,
@@ -8779,40 +8779,6 @@ sucrose.models.lineChart = function() {
             controlsHeight = 0,
             legendHeight = 0,
             trans = '';
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([lineData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
-        wrap.select('.sc-background')
-          .attr('width', renderWidth)
-          .attr('height', renderHeight);
-
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
-        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
-        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
-
-        wrap_entr.append('g').attr('class', 'sc-lines-wrap');
-        var lines_wrap = wrap.select('.sc-lines-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-        var controls_wrap = wrap.select('.sc-controls-wrap');
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-        //------------------------------------------------------------
-        // Title & Legend & Controls
 
         title_wrap.select('.sc-title').remove();
 
@@ -8903,21 +8869,15 @@ sucrose.models.lineChart = function() {
         //------------------------------------------------------------
         // Main Chart Component(s)
 
-        var pointSize = Math.pow(pointRadius, 2) * Math.PI * (singlePoint ? 3 : 1);
-
-        lines
+        model
           .width(innerWidth)
-          .height(innerHeight)
-          .id(chart.id())
-          .size(pointSize) // default size set to 3
-          .sizeRange([pointSize, pointSize])
-          .sizeDomain([pointSize, pointSize]); //set to speed up calculation, needs to be unset if there is a custom size accessor
-        lines_wrap
-          .datum(lineData)
-          .call(lines);
+          .height(innerHeight);
+        model_wrap
+          .datum(modelData)
+          .call(model);
 
         //------------------------------------------------------------
-        // Setup Axes
+        // Axes
 
         var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
@@ -8933,7 +8893,7 @@ sucrose.models.lineChart = function() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          lines.width(innerWidth).height(innerHeight);
+          model.width(innerWidth).height(innerHeight);
           // This resets the scales for the whole chart
           // unfortunately we can't call this without until line instance is called
           lines.scatter.resetDimensions(innerWidth, innerHeight);
@@ -8966,7 +8926,7 @@ sucrose.models.lineChart = function() {
         setInnerMargins();
         setInnerDimensions();
         // xAxis
-        //   .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
+        //  .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
 
         // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
@@ -8981,17 +8941,17 @@ sucrose.models.lineChart = function() {
         xAxis_wrap
           .call(xAxis);
 
-        lines
+        model
           .width(innerWidth)
           .height(innerHeight);
-        lines_wrap
-          .datum(lineData)
-          .call(lines);
+        model_wrap
+          .datum(modelData)
+          .call(model);
 
         // final call to lines based on new dimensions
-        // lines_wrap
+        // model_wrap
         //   .transition().duration(duration)
-        //     .call(lines);
+        //     .call(model);
 
         //------------------------------------------------------------
         // Final repositioning
@@ -9009,7 +8969,7 @@ sucrose.models.lineChart = function() {
           .attr('transform', 'translate(' + trans + ')');
 
         trans = innerMargin.left + ',' + innerMargin.top;
-        lines_wrap
+        model_wrap
           .attr('transform', 'translate(' + trans + ')');
 
       };
@@ -9083,7 +9043,7 @@ sucrose.models.lineChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          showTooltip(eo, that.parentNode);
+          tooltip = showTooltip(eo, that.parentNode, properties);
         }
       });
 
@@ -9148,8 +9108,9 @@ sucrose.models.lineChart = function() {
     dispatch.call('tooltipMove', this, e);
   });
 
-  model.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.call('tooltipHide', this);
+  model.dispatch.on('elementMouseout.tooltip', function(eo) {
+	// need eo for removing hover class on element
+    dispatch.call('tooltipHide', this, eo);
   });
 
   //============================================================
@@ -9222,9 +9183,7 @@ sucrose.models.lineChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -9234,81 +9193,61 @@ sucrose.models.lineChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showControls = function(_) {
-    if (!arguments.length) {
-      return showControls;
-    }
+    if (!arguments.length) { return showControls; }
     showControls = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -9318,11 +9257,8 @@ sucrose.models.lineChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
-    //model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
     legend.direction(_);
@@ -9331,18 +9267,14 @@ sucrose.models.lineChart = function() {
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     model.duration(_);
     return chart;
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
     return chart;
@@ -10215,7 +10147,7 @@ sucrose.models.multiBar = function() {
 
       //------------------------------------------------------------
 
-      var series_bind = wrap.selectAll('.sc-series').data(function(d) { return d; });
+      var series_bind = wrap.selectAll('.sc-series').data(sucrose.identity);
       var series_entr = series_bind.enter().append('g')
             .attr('class', classes)
             .style('stroke-opacity', 1e-6)
@@ -11199,12 +11131,43 @@ sucrose.models.multiBarChart = function() {
         .showMaxMin(true);
 
       //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      /* Clipping box for scroll */
+      wrap_entr.append('defs');
+
+      /* Container for scroll elements */
+      wrap_entr.append('g').attr('class', 'sc-scroll-background');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+      /* Append scroll group with chart mask */
+      wrap_entr.append('g').attr('class', 'sc-scroll-wrap');
+      var scroll_wrap = wrap.select('.sc-scroll-wrap');
+
+      wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+
+      wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-bars-wrap');
+      var model_wrap = wrap.select('.sc-bars-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
-
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
 
         // Chart layout variables
         var renderWidth, renderHeight,
@@ -11212,13 +11175,30 @@ sucrose.models.multiBarChart = function() {
             innerMargin,
             innerWidth, innerHeight;
 
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         renderWidth = width || containerWidth || 960;
         renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        // Scroll variables
+        // for stacked, baseDimension is width of bar plus 1/4 of bar for gap
+        // for grouped, baseDimension is width of bar plus width of one bar for gap
+        var boundsWidth = state.stacked ? baseDimension : baseDimension * seriesCount + baseDimension,
+            gap = baseDimension * (state.stacked ? 0.25 : 1),
+            minDimension = groupCount * boundsWidth + gap;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
 
         // Header variables
         var maxControlsWidth = 0,
@@ -11229,52 +11209,6 @@ sucrose.models.multiBarChart = function() {
             controlsHeight = 0,
             legendHeight = 0,
             trans = '';
-
-        // Scroll variables
-        // for stacked, baseDimension is width of bar plus 1/4 of bar for gap
-        // for grouped, baseDimension is width of bar plus width of one bar for gap
-        var boundsWidth = state.stacked ? baseDimension : baseDimension * seriesCount + baseDimension,
-            gap = baseDimension * (state.stacked ? 0.25 : 1),
-            minDimension = groupCount * boundsWidth + gap;
-
-        //------------------------------------------------------------
-        // Setup containers and skeleton of chart
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        /* Clipping box for scroll */
-        wrap_entr.append('defs');
-
-        /* Container for scroll elements */
-        wrap_entr.append('g').attr('class', 'sc-scroll-background');
-
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
-        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
-
-        /* Append scroll group with chart mask */
-        wrap_entr.append('g').attr('class', 'sc-scroll-wrap');
-        var scroll_wrap = wrap.select('.sc-scroll-wrap');
-
-        wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-axis-wrap sc-axis-x');
-        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
-
-        wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-bars-wrap');
-        var bars_wrap = wrap.select('.sc-bars-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-        var controls_wrap = wrap.select('.sc-controls-wrap');
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-        //------------------------------------------------------------
-        // Title & Legend & Controls
 
         title_wrap.select('.sc-title').remove();
 
@@ -11318,6 +11252,7 @@ sucrose.models.multiBarChart = function() {
             .strings(chart.strings().legend)
             .align('right')
             .height(availableHeight - headerHeight);
+
           legend_wrap
             .datum(data)
             .call(legend);
@@ -11389,12 +11324,12 @@ sucrose.models.multiBarChart = function() {
           .disabled(data.map(function(series) { return series.disabled; }))
           .width(getDimension('width'))
           .height(getDimension('height'));
-        bars_wrap
+        model_wrap
           .data([seriesData])
           .call(multibar);
 
         //------------------------------------------------------------
-        // Setup Axes
+        // Axes
 
         var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
@@ -11460,7 +11395,7 @@ sucrose.models.multiBarChart = function() {
         setInnerMargins();
 
         // final call to lines based on new dimensions
-        bars_wrap
+        model_wrap
           .transition()
             .call(multibar);
 
@@ -11724,9 +11659,7 @@ sucrose.models.multiBarChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -11736,81 +11669,61 @@ sucrose.models.multiBarChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showControls = function(_) {
-    if (!arguments.length) {
-      return showControls;
-    }
+    if (!arguments.length) { return showControls; }
     showControls = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -11820,9 +11733,7 @@ sucrose.models.multiBarChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
     xAxis.direction(_);
@@ -11833,18 +11744,14 @@ sucrose.models.multiBarChart = function() {
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     model.duration(_);
     return chart;
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
     return chart;
@@ -13085,7 +12992,7 @@ sucrose.models.pie = function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.series.seriesIndex); },
+      color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
@@ -14166,12 +14073,32 @@ sucrose.models.pieChart = function() {
       }
 
       //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
-
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
 
         // Chart layout variables
         var renderWidth, renderHeight,
@@ -14179,51 +14106,36 @@ sucrose.models.pieChart = function() {
             innerMargin,
             innerWidth, innerHeight;
 
-        // Chart layout variables
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         renderWidth = width || containerWidth || 960;
         renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        // Header variables
-        var maxLegendWidth = 0,
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            legendHeight = 0,
-            trans = '';
-
-        //------------------------------------------------------------
-        // Setup containers and skeleton of chart
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
         wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
 
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
-        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
         //------------------------------------------------------------
-        // Title & Legend
+        // Title & Legend & Controls
+
+        // Header variables
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
+            legendHeight = 0,
+            trans = '';
 
         title_wrap.select('.sc-title').remove();
 
@@ -14402,6 +14314,7 @@ sucrose.models.pieChart = function() {
   chart.dispatch = dispatch;
   chart.pie = pie;
   chart.legend = legend;
+  chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
@@ -14459,9 +14372,7 @@ sucrose.models.pieChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -14471,81 +14382,61 @@ sucrose.models.pieChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showControls = function(_) {
-    if (!arguments.length) {
-      return showControls;
-    }
+    if (!arguments.length) { return showControls; }
     showControls = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -14555,28 +14446,23 @@ sucrose.models.pieChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
     legend.direction(_);
+    controls.direction(_);
     return chart;
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     model.duration(_);
     return chart;
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
     return chart;
@@ -14896,39 +14782,35 @@ d3.sankey = function() {
 
     return sankey;
 };
-sucrose.models.stackedArea = function () {
+sucrose.models.stackedArea = function() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  // var scatter = sucrose.models.scatter();
-
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = 960,
       height = 500,
-      getX = function (d) { return d.x; }, // accessor to get the x value from a data point
-      getY = function (d) { return d.y; }, // accessor to get the y value from a data point
+      getX = function(d) { return d.x; }, // accessor to get the x value from a data point
+      getY = function(d) { return d.y; }, // accessor to get the y value from a data point
       id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
-      style = 'stack',
-      offset = 'zero',
-      order = 'default',
-      interpolate = 'linear',  // controls the line interpolation
       x = d3.scaleLinear(), //can be accessed via chart.xScale()
       y = d3.scaleLinear(), //can be accessed via chart.yScale()
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
       locality = sucrose.utils.buildLocality(),
+      style = 'stack',
+      offset = 'zero',
+      order = 'default',
+      interpolate = 'linear',  // controls the line interpolation
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
       xDomain = null, // Override x domain (skips the calculation from data)
       yDomain = null, // Override y domain
-      color = function (d, i) {
-        return sucrose.utils.defaultColor()(d, d.seriesIndex || i);
-      },
+      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); },
       fill = color,
-      classes = function (d, i) { return 'sc-area sc-series-' + (d.seriesIndex || i); },
-      dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'areaClick', 'areaMouseover', 'areaMouseout', 'areaMousemove');
+      classes = function(d, i) { return 'sc-area sc-series-' + d.seriesIndex; },
+      dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   /************************************
    * offset:
@@ -14942,92 +14824,133 @@ sucrose.models.stackedArea = function () {
    *   'inside-out' (stream) d3.stackOrderInsideOut
    ************************************/
 
+  var data0;
+  var x0 = x.copy();
+  var y0 = y.copy();
+
   //============================================================
 
   function chart(selection) {
-    selection.each(function (chartData) {
+    selection.each(function(chartData) {
+
+      var container = d3.select(this);
+
       var availableWidth = width - margin.left - margin.right,
-          availableHeight = height - margin.top - margin.bottom,
-          container = d3.select(this);
+          availableHeight = height - margin.top - margin.bottom;
+
+      var curve =
+            interpolate === 'linear' ? d3.curveLinear :
+            interpolate === 'cardinal' ? d3.curveCardinal :
+            interpolate === 'monotone' ? d3.curveMonotoneX :
+            interpolate === 'basis' ? d3.curveBasis : d3.natural;
 
       var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette]
-                       [['zero', 'wiggle', 'expand', 'silhouette'].indexOf(offset)];
+                        [['zero', 'wiggle', 'expand', 'silhouette'].indexOf(offset)];
 
       var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut]
                        [['default', 'inside-out'].indexOf(order)];
 
-      var stack = d3.stack()
-                    .offset(stackOffset)
-                    .order(stackOrder)
-                    .value(function(d, k) { return d[k]; });
-
-      var t = d3.transition('area')
-            .duration(duration)
-            .ease(d3.easeLinear);
-
-      var area = d3.area()
-            .x(function(d) { return x(d.data.date); })
-            .y0(function(d) { return y(d[0]); })
-            .y1(function(d) { return y(d[1]); })
-            // .interpolate(interpolate);
-
-      var zeroArea = d3.area()
-            .x(function (d, i) { return x(d.data.date); })
-            .y0(function (d) { return y(d[0]); })
-            .y1(function (d) { return y(d[0]); });
-
-      //set up the gradient constructor function
-      chart.gradient = function (d, i, p) {
-        return sucrose.utils.colorLinearGradient( d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs') );
+      // gradient constructor function
+      chart.gradient = function(d, i, p) {
+        return sucrose.utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
+      // Process data
+
+      var stack = d3.stack()
+            .offset(stackOffset)
+            .order(stackOrder)
+            .value(function(d, k) { return d[k]; });
 
       var indexedData = {};
-      var keys = [];
-      var keyIndices = [];
-
-      // insert values at keys
       chartData.forEach(function(s, i) {
-        if (s.disabled !== false) {
-          keys.push(s.key);
-          keyIndices.push(i);
-        }
-        s.values.forEach(function(a, b) {
-          var x = a[0];
-          var y = s.disabled === false ? 0 : a[1];
+        s.values.forEach(function(p, j) {
+          var x = p[0];
+          var y = p[1];
           if (!indexedData[x]) {
             indexedData[x] = [];
+            indexedData[x].date = x;
           }
           indexedData[x].push(y);
-          indexedData[x].index = b;
-          indexedData[x].date = x;
+        });
+      });
+      var keys = d3.keys(indexedData);
+      var dates = keys.map(function(d) { return parseInt(d, 10); });
+      var data = stack.keys(d3.range(0, chartData.length))(d3.values(indexedData));
+
+      var min = d3.min(data, function(series) {
+              return d3.min(series, function(point) {
+                return d3.min(point, function(d) {
+                  return d;
+                });
+              });
+            });
+      var max = d3.max(data, function(series) {
+              return d3.max(series, function(point) {
+                return d3.max(point, function(d) {
+                  return d;
+                });
+              });
+            });
+
+      data.forEach(function(s, i) {
+        s.key = chartData[i].key;
+        s.seriesIndex = chartData[i].seriesIndex;
+        s.total = chartData[i].total;
+        s.forEach(function(p, j) {
+          p.seriesIndex = chartData[i].seriesIndex;
+          p.si0 = i - 1;
+          // shift streamgraph for each point in series
+          if (min) {
+              p[0] -= min;
+              p[1] -= min;
+          }
         });
       });
 
-      var dates = d3.keys(indexedData)
-                    .map(function(d) { return parseInt(d, 10); });
+      //------------------------------------------------------------
+      // Rendering functions
 
-      var data = stack.keys(d3.range(0, keys.length))
-                    (d3.values(indexedData));
-      // var data = d3.stack()
-            // .x(getX)
-            // .y(function (d) { return d.stackedY; })
-            // .out(function (d, y0, y) {
-            //   d.display = {
-            //     y: y,
-            //     y0: y0
-            //   };
-            // })
+      var area = d3.area()
+            .curve(curve)
+            .x(function(d) { return x(d.data.date); })
+            .y0(function(d) { return y(d[0]); })
+            .y1(function(d) { return y(d[1]); });
 
-      //this only works for default stack
-      var max = d3.max(data.slice(-1)[0], function(d) { return d[1]; });
+      var areaEnter = d3.area()
+            .curve(curve)
+            .x(function(d) { return x(d.data.date); })
+            .y0(function(d, i) {
+              var d0 = data0 ? data0[d.si0] : null;
+              return (d0 && d0[i]) ? y0(d0[i][1]) : y0(0);
+            })
+            .y1(function(d, i) {
+              var d0 = data0 ? data0[d.si0] : null;
+              return (d0 && d0[i]) ? y0(d0[i][1]) : y0(0);
+            });
+
+      var areaExit = d3.area()
+            .curve(curve)
+            .x(function(d) { return x(d.data.date); })
+            .y0(function(d, i) {
+              var d0 = data[d.si0];
+              return (d0 && d0[i]) ? y(d0[i][1]) : y(0);
+            })
+            .y1(function(d, i) {
+              var d0 = data[d.si0];
+              return (d0 && d0[i]) ? y(d0[i][1]) : y(0);
+            });
+
+      var tran = d3.transition('area')
+            .duration(duration)
+            .ease(d3.easeLinear);
 
       //------------------------------------------------------------
       // Setup Scales
 
       x.domain(d3.extent(dates)).range([0, availableWidth]);
-      y.domain([0, max]).range([availableHeight, 0]);
+      y.domain([0, max - min]).range([availableHeight, 0]);
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
@@ -15035,58 +14958,96 @@ sucrose.models.stackedArea = function () {
       var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-stackedarea');
       var wrap = container.select('.sc-wrap').merge(wrap_entr);
-      var defs_entr = wrap_entr.append('defs');
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-clip-wrap');
-      var g = container.select('g.sc-clip-wrap').merge(g_entr);
 
-      g_entr.append('g').attr('class', 'sc-groups');
-      var groups_wrap = wrap.select('.sc-groups');
+      var defs_entr = wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //------------------------------------------------------------
 
-      defs_entr.append('clipPath')
-        .attr('id', 'sc-edge-clip-' + id)
-          .append('rect');
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id)
+        .append('rect');
 
       wrap.select('#sc-edge-clip-' + id + ' rect')
-          .attr('width', availableWidth)
-          .attr('height', availableHeight);
+        .attr('width', availableWidth)
+        .attr('height', availableHeight);
 
-      g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      //------------------------------------------------------------
+      // Series
+
+      var series_bind = group_wrap.selectAll('g.sc-series').data(data, function(d) { return d.seriesIndex; });
+      var series_entr = series_bind.enter().append('g')
+            .attr('class', 'sc-series')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series
+        .classed('hover', function(d) { return d.hover; })
+        .attr('class', classes)
+        .attr('fill', color)
+        .attr('stroke', color);
+      series
+        .transition(tran)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 0.5);
+      series_bind.exit()
+        .transition(tran)
+          .style('stroke-opacity', 1e-6)
+          .style('fill-opacity', 1e-6)
+          .remove();
 
       //------------------------------------------------------------
       // Areas
 
-      var areas_bind = groups_wrap.selectAll('path.sc-area').data(data);
+      var areas_bind = series.selectAll('path.sc-area').data(function(d) { return [d]; }); // note the special treatment of data
       var areas_entr = areas_bind.enter().append('path').attr('class', 'sc-area sc-enter');
-      var areas = groups_wrap.selectAll('.sc-area').merge(areas_entr);
+      var areas = series.selectAll('.sc-area').merge(areas_entr);
 
-      areas_bind.exit()
-          .attr('d', zeroArea)
+      areas
+        .filter(function(d) {
+          return d3.select(this).classed('sc-enter');
+        })
+        .attr('d', areaEnter);
+
+      areas
+        .transition(tran)
+          .attr('d', area)
+          .on('end', function(d) {
+            d3.select(this).classed('sc-enter', false);
+            // store previous data for transitions
+            data0 = data.map(function(s) {
+              return s.map(function(p) {
+                return [p[0], p[1]];
+              });
+            });
+            // store previous scale for transitions
+            y0 = y.copy();
+          });
+
+      series_bind.exit()
+        .transition(tran).selectAll('.sc-area')
+          .attr('d', areaExit)
           .remove();
-      areas
-          .attr('class', classes)
-          .attr('fill', color)
-          .attr('stroke', color);
-      areas
-          .attr('d', area);
 
       function buildEventObject(e, d, i) {
         return {
             points: d,
-            seriesKey: keys[d.key],
-            seriesIndex: d.index,
+            seriesKey: d.key,
+            seriesIndex: d.seriesIndex,
             e: e
           };
       }
 
       areas
-        .on('mouseover', function (d, i) {
+        .on('mouseover', function(d, i) {
           var eo = buildEventObject(d3.event, d, i);
-          d3.select(this).classed('hover', true);
-          dispatch.call('areaMouseover', this, eo);
+          dispatch.call('elementMouseover', this, eo);
           d3.select(this).classed('hover', true);
         })
         .on('mousemove', function(d, i) {
@@ -15096,22 +15057,22 @@ sucrose.models.stackedArea = function () {
           var index = Math.round((xpos * dates.length) / availableWidth) - 1;
           eo.data = data.map(function(d,i) {
             var point = [d[index].data.date, d[index][1]];
-            point.seriesKey = keys[i];
-            point.seriesIndex = i;
+            point.seriesKey = d.key;
+            point.seriesIndex = d.seriesIndex;
             return point;
           });
           eo.origin = rect;
-          dispatch.call('areaMousemove', this, eo);
+          dispatch.call('elementMousemove', this, eo);
         })
         .on('mouseout', function(d, i) {
-          dispatch.call('areaMouseout', this);
+          dispatch.call('elementMouseout', this);
           d3.select(this).classed('hover', false);
         })
-        .on('click', function (d, i) {
+        .on('click', function(d, i) {
           var eo = buildEventObject(d3.event, d, i);
           d3.event.stopPropagation();
           d3.select(this).classed('hover', false);
-          dispatch.call('areaClick', this, eo);
+          dispatch.call('elementClick', this, eo);
         });
 
     });
@@ -15126,149 +15087,137 @@ sucrose.models.stackedArea = function () {
   chart.dispatch = dispatch;
 
   chart.id = function(_) {
-    if (!arguments.length) return id;
+    if (!arguments.length) { return id; }
     id = _;
     return chart;
   };
 
-  chart.color = function (_) {
+  chart.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
     return chart;
   };
-  chart.fill = function (_) {
+  chart.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
     return chart;
   };
-  chart.classes = function (_) {
+  chart.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
     return chart;
   };
-  chart.gradient = function (_) {
+  chart.gradient = function(_) {
     if (!arguments.length) { return gradient; }
     gradient = _;
     return chart;
   };
 
-  chart.margin = function (_) {
+  chart.margin = function(_) {
     if (!arguments.length) { return margin; }
-    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
     return chart;
   };
-
-  chart.width = function (_) {
+  chart.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
-
-  chart.height = function (_) {
+  chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
-  chart.x = function (_) {
+  chart.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
     return chart;
   };
-
-  chart.y = function (_) {
+  chart.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
     return chart;
   };
-
   chart.xScale = function(_) {
-    if (!arguments.length) return x;
+    if (!arguments.length) { return x; }
     x = _;
     return chart;
   };
-
   chart.yScale = function(_) {
-    if (!arguments.length) return y;
+    if (!arguments.length) { return y; }
     y = _;
     return chart;
   };
-
   chart.xDomain = function(_) {
-    if (!arguments.length) return xDomain;
+    if (!arguments.length) { return xDomain; }
     xDomain = _;
     return chart;
   };
-
   chart.yDomain = function(_) {
-    if (!arguments.length) return yDomain;
+    if (!arguments.length) { return yDomain; }
     yDomain = _;
     return chart;
   };
-
   chart.forceX = function(_) {
-    if (!arguments.length) return forceX;
+    if (!arguments.length) { return forceX; }
     forceX = _;
     return chart;
   };
-
   chart.forceY = function(_) {
-    if (!arguments.length) return forceY;
+    if (!arguments.length) { return forceY; }
     forceY = _;
     return chart;
   };
 
   chart.interactive = function(_) {
-    if (!arguments.length) return interactive;
+    if (!arguments.length) { return interactive; }
     interactive = _;
     return chart;
   };
-
-  chart.delay = function (_) {
-    if (!arguments.length) {
-      return delay;
-    }
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
     delay = _;
     return chart;
   };
-
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     return chart;
   };
 
-  chart.clipEdge = function (_) {
+  chart.locality = function(_) {
+    if (!arguments.length) { return locality; }
+    locality = sucrose.utils.buildLocality(_);
+    return chart;
+  };
+  chart.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
     return chart;
   };
 
-  chart.interpolate = function (_) {
+  chart.interpolate = function(_) {
     if (!arguments.length) { return interpolate; }
     interpolate = _;
     return chart;
   };
-
-  chart.offset = function (_) {
+  chart.offset = function(_) {
     if (!arguments.length) { return offset; }
     offset = _;
     return chart;
   };
-
-  chart.order = function (_) {
+  chart.order = function(_) {
     if (!arguments.length) { return order; }
     order = _;
     return chart;
   };
-
   //shortcut for offset + order
-  chart.style = function (_) {
+  chart.style = function(_) {
     if (!arguments.length) { return style; }
     style = _;
 
@@ -15294,14 +15243,6 @@ sucrose.models.stackedArea = function () {
     return chart;
   };
 
-  chart.locality = function(_) {
-    if (!arguments.length) {
-      return locality;
-    }
-    locality = sucrose.utils.buildLocality(_);
-    return chart;
-  };
-
   //============================================================
 
   return chart;
@@ -15319,10 +15260,11 @@ sucrose.models.stackedAreaChart = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      tooltip = false,
-      tooltip0 = null,
+      delay = 0,
       duration = 0,
+      tooltip = null,
       tooltips = true,
+      guidetips = null,
       x,
       y,
       state = {},
@@ -15332,13 +15274,14 @@ sucrose.models.stackedAreaChart = function() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
+      pointRadius = 3,
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var stacked = sucrose.models.stackedArea()
+  var model = stacked = sucrose.models.stackedArea()
         .clipEdge(true),
       xAxis = sucrose.models.axis(),
       yAxis = sucrose.models.axis(),
@@ -15350,15 +15293,14 @@ sucrose.models.stackedAreaChart = function() {
       guide = sucrose.models.line().duration(0);
 
   var tooltipContent = function(key, x, y, e, graph) {
-    return '<h3>' + key + '</h3>' +
-           '<p>' + y + ' on ' + x + '</p>';
-  };
+        return '<p>' + key + ': ' + y + '</p>';
+      };
 
   //============================================================
 
   function chart(selection) {
 
-    selection.each(function (chartData) {
+    selection.each(function(chartData) {
 
       var that = this,
           container = d3.select(this),
@@ -15371,7 +15313,7 @@ sucrose.models.stackedAreaChart = function() {
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var lineData = [],
+      var modelData = [],
           xTickLabels = [],
           totalAmount = 0,
           singlePoint = false,
@@ -15393,7 +15335,7 @@ sucrose.models.stackedAreaChart = function() {
             return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
-      chart.update = function () {
+      chart.update = function() {
         container.transition().duration(duration).call(chart);
       };
 
@@ -15419,11 +15361,11 @@ sucrose.models.stackedAreaChart = function() {
 
       isArrayData = Array.isArray(data[0].values[0]);
       if (isArrayData) {
-        stacked.x(function(d) { return d ? d[0] : 0; });
-        stacked.y(function(d) { return d ? d[1] : 0; });
+        model.x(function(d) { return d ? d[0] : 0; });
+        model.y(function(d) { return d ? d[1] : 0; });
       } else {
-        stacked.x(function(d) { return d.x; });
-        stacked.y(function(d) { return d.y; });
+        model.x(function(d) { return d.x; });
+        model.y(function(d) { return d.y; });
       }
 
       // set title display option
@@ -15431,10 +15373,10 @@ sucrose.models.stackedAreaChart = function() {
 
       // add series index to each data point for reference
       // and disable data series if total is zero
-      data.map(function (d, i) {
+      data.map(function(d, i) {
         d.seriesIndex = i;
         d.total = d3.sum(d.values, function(d, i) {
-          return stacked.y()(d, i);
+          return model.y()(d, i);
         });
         if (!d.total) {
           d.disabled = true;
@@ -15448,24 +15390,24 @@ sucrose.models.stackedAreaChart = function() {
       // TODO: what if the dimension is a numerical range?
       // xValuesAreDates = xTickLabels.length ?
       //       sucrose.utils.isValidDate(xTickLabels[0]) :
-      //       sucrose.utils.isValidDate(stacked.x()(data[0].values[0]));
+      //       sucrose.utils.isValidDate(model.x()(data[0].values[0]));
       // xValuesAreDates = isArrayData && sucrose.utils.isValidDate(data[0].values[0][0]);
 
       // SAVE FOR LATER
-      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(lineData, function(d) {
+      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
       //   return d3.min(d.values, function(d, i) {
-      //     return stacked.x()(d, i);
+      //     return model.x()(d, i);
       //   });
       // }) > 0;
 
-      lineData = data.filter(function (d) {
+      modelData = data.filter(function(d) {
           return !d.disabled;
         });
 
       // safety array
-      lineData = lineData.length ? lineData : [{series: 0, total: 0, disabled: true, values: []}];
+      modelData = modelData.length ? modelData : [{series: 0, total: 0, disabled: true, values: []}];
 
-      totalAmount = d3.sum(lineData, function(d) {
+      totalAmount = d3.sum(modelData, function(d) {
           return d.total;
         });
 
@@ -15478,7 +15420,7 @@ sucrose.models.stackedAreaChart = function() {
       }
 
       // set state.disabled
-      state.disabled = lineData.map(function (d) { return !!d.disabled; });
+      state.disabled = modelData.map(function(d) { return !!d.disabled; });
       state.style = stacked.style();
 
       var controlsData = [
@@ -15491,6 +15433,7 @@ sucrose.models.stackedAreaChart = function() {
       // Setup Scales and Axes
 
       stacked
+        .id(chart.id())
         .xDomain(null)  //?why null?
         .yDomain(null)
         .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear());
@@ -15517,18 +15460,47 @@ sucrose.models.stackedAreaChart = function() {
         .valueFormat(yValueFormat);
 
       guide
+        .id(chart.id())
         .useVoronoi(false)
+        .clipEdge(false)
         .xScale(x)
         .yScale(y);
 
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-guide-wrap');
+      var guide_wrap = wrap.select('.sc-guide-wrap');
 
       //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
-
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
 
         // Chart layout variables
         var renderWidth, renderHeight,
@@ -15536,13 +15508,26 @@ sucrose.models.stackedAreaChart = function() {
             innerMargin,
             innerWidth, innerHeight;
 
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         renderWidth = width || containerWidth || 960;
         renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
 
         // Header variables
         var maxControlsWidth = 0,
@@ -15553,43 +15538,6 @@ sucrose.models.stackedAreaChart = function() {
             controlsHeight = 0,
             legendHeight = 0,
             trans = '';
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
-        wrap.select('.sc-background')
-          .attr('width', renderWidth)
-          .attr('height', renderHeight);
-
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
-        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
-        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
-
-        wrap_entr.append('g').attr('class', 'sc-stackedarea-wrap');
-        var stacked_wrap = wrap.select('.sc-stackedarea-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-        var controls_wrap = wrap.select('.sc-controls-wrap');
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-guide-wrap');
-        var guide_wrap = wrap.select('.sc-guide-wrap');
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-        //------------------------------------------------------------
-        // Title & Legend & Controls
 
         title_wrap.select('.sc-title').remove();
 
@@ -15621,7 +15569,6 @@ sucrose.models.stackedAreaChart = function() {
 
           maxControlsWidth = controls.calcMaxWidth();
         }
-
         if (showLegend) {
           legend
             .id('legend_' + chart.id())
@@ -15658,7 +15605,6 @@ sucrose.models.stackedAreaChart = function() {
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
         }
-
         if (showLegend) {
           var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
@@ -15682,17 +15628,15 @@ sucrose.models.stackedAreaChart = function() {
         //------------------------------------------------------------
         // Main Chart Component(s)
 
-        stacked
+        model
           .width(innerWidth)
-          .height(innerHeight)
-          .id(chart.id());
-        stacked_wrap
-          .datum(lineData)
-          .call(stacked);
-
+          .height(innerHeight);
+        model_wrap
+          .datum(modelData)
+          .call(model);
 
         //------------------------------------------------------------
-        // Setup Axes
+        // Axes
 
         var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
@@ -15708,7 +15652,7 @@ sucrose.models.stackedAreaChart = function() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          stacked.width(innerWidth).height(innerHeight);
+          model.width(innerWidth).height(innerHeight);
           // This resets the scales for the whole chart
           // unfortunately we can't call this without until line instance is called
           // stacked.scatter.resetDimensions(innerWidth, innerHeight);
@@ -15747,6 +15691,7 @@ sucrose.models.stackedAreaChart = function() {
 
         // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
+          .ticks(stacked.offset() === 'wiggle' ? 0 : null)
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
         yAxis_wrap
@@ -15758,21 +15703,25 @@ sucrose.models.stackedAreaChart = function() {
         xAxis_wrap
           .call(xAxis);
 
-        stacked
+        model
           .width(innerWidth)
           .height(innerHeight);
-        stacked_wrap
-          // .transition().duration(chart.delay())
-          .datum(lineData)
-            .call(stacked)
+        model_wrap
+          .datum(modelData)
+          .call(model);
+
+        //------------------------------------------------------------
+        // Guide Line
 
         // var middleDate = (x.domain()[0].getTime() + (x.domain()[1].getTime() - x.domain()[0].getTime()) / 2);
+        var pointSize = Math.pow(3, 2) * Math.PI; // default size set to 3
 
         guide
           .width(innerWidth)
           .height(innerHeight)
-          .size(2)
-          .color(function() { return '#000'; })
+          // .color(function() { return '#000'; })
+          .size(pointSize)
+          .sizeRange([pointSize, pointSize])
           .xDomain(x.domain()) // don't let scatter recalc domain from data
           .yDomain(y.domain()); // don't let scatter recalc domain from data
 
@@ -15801,33 +15750,50 @@ sucrose.models.stackedAreaChart = function() {
                 .concat(eo.data.map(function(d, i) { return {x: xpos, y: d[1]}; }))
                 .concat([{x: xpos, y: y.domain()[1]}]);
           var guidePos = {
-            clientX: eo.origin.left + x(xpos)
-          };
+                clientX: eo.origin.left + x(xpos)
+              };
+
+          var xData = [xpos, 0];
+              xData.e = eo.e;
+              xData.seriesIndex = 0;
+              xData.seriesKey = 'x';
 
           guide_wrap
             .datum([{
               key:'guide',
-              values: values
+              values: values,
+              seriesIndex: 0
             }])
             .call(guide);
 
-          if (!tooltip0) {
-            tooltip0 = {};
+          if (!guidetips) {
+            guidetips = {};
             eo.data.forEach(function(d, i) {
               d.e = eo.e;
-              tooltip0[i] = chart.showTooltip(d, that.parentNode);
+              guidetips[i] = chart.showTooltip(d, that.parentNode);
             });
+            guidetips['x'] = chart.showTooltip(xData, that.parentNode);
           }
 
+          // Line
           eo.data.forEach(function(d, i) {
             var key = d.seriesKey,
                 xval = xValueFormat(stacked.x()(d)),
                 yval = yValueFormat(stacked.y()(d)),
                 content = tooltipContent(key, xval, yval, d, chart);
             guidePos.clientY = eo.origin.top + y(d[1]);
-            d3.select(tooltip0[i]).select('.tooltip-inner').html(content)
-            sucrose.tooltip.position(that.parentNode, tooltip0[i], guidePos, 'e');
+            d3.select(guidetips[i]).select('.tooltip-inner').html(content);
+            sucrose.tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');
           });
+
+          // Top date
+          xData.forEach(function(d, i) {
+            var xval = xValueFormat(xpos);
+            guidePos.clientY = eo.origin.top;
+            d3.select(guidetips['x']).select('.tooltip-inner').html(xval);
+            sucrose.tooltip.position(that.parentNode, guidetips['x'], guidePos, 's');
+          });
+
         }
 
         //------------------------------------------------------------
@@ -15846,10 +15812,32 @@ sucrose.models.stackedAreaChart = function() {
           .attr('transform', 'translate(' + trans + ')');
 
         trans = innerMargin.left + ',' + innerMargin.top;
-        stacked_wrap
+        model_wrap
           .attr('transform', 'translate(' + trans + ')');
         guide_wrap
           .attr('transform', 'translate(' + trans + ')');
+
+        dispatch.on('tooltipShow', function(eo) {
+          if (tooltips) {
+            tooltip = true;
+            guide_wrap.classed('hover', true);
+          }
+        });
+
+        dispatch.on('tooltipMove', function(eo) {
+          if (tooltip) {
+            chart.moveGuide(that.parentNode, container, eo);
+          }
+        });
+
+        dispatch.on('tooltipHide', function() {
+          if (tooltips) {
+            tooltip = false;
+            sucrose.tooltip.cleanup();
+            guidetips = null;
+            guide_wrap.classed('hover', false);
+          }
+        });
 
       };
 
@@ -15861,50 +15849,51 @@ sucrose.models.stackedAreaChart = function() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      stacked.dispatch.on('areaClick.toggle', function (e) {
-        if (data.filter(function (d) { return !d.disabled; }).length === 1) {
-          data = data.map(function (d) {
+      stacked.dispatch.on('elementClick.toggle', function(e) {
+        if (data.filter(function(d) { return !d.disabled; }).length === 1) {
+          data = data.map(function(d) {
             d.disabled = false;
             return d;
           });
         } else {
-          data = data.map(function (d,i) {
+          data = data.map(function(d,i) {
             d.disabled = (i !== e.seriesIndex);
             return d;
           });
         }
 
-        state.disabled = data.map(function (d) { return !!d.disabled; });
+        state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
+        dispatch.call('tooltipHide', this);
 
-        container.transition().duration(chart.delay()).call(chart);
+        container.transition().duration(duration).call(chart);
       });
 
-      legend.dispatch.on('legendClick', function (d, i) {
+      legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
 
-        if (!data.filter(function (d) { return !d.disabled; }).length) {
-          data.map(function (d) {
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
+          data.map(function(d) {
             d.disabled = false;
             container.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
 
-        state.disabled = data.map(function (d) { return !!d.disabled; });
+        state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
         container.transition().duration(duration).call(chart);
       });
 
-      controls.dispatch.on('legendClick', function (d, i) {
+      controls.dispatch.on('legendClick', function(d, i) {
         //if the option is currently enabled (i.e., selected)
         if (!d.disabled) {
           return;
         }
 
         //set the controls all to false
-        controlsData = controlsData.map(function (s) {
+        controlsData = controlsData.map(function(s) {
           s.disabled = true;
           return s;
         });
@@ -15926,27 +15915,7 @@ sucrose.models.stackedAreaChart = function() {
         state.style = stacked.style();
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(chart.delay()).call(chart);
-      });
-
-      dispatch.on('tooltipShow', function(eo) {
-        if (tooltips) {
-          tooltip = true;
-        }
-      });
-
-      dispatch.on('tooltipMove', function(eo) {
-        if (tooltip) {
-          chart.moveGuide(that.parentNode, container, eo);
-        }
-      });
-
-      dispatch.on('tooltipHide', function() {
-        if (tooltips) {
-          tooltip = false;
-          sucrose.tooltip.cleanup();
-          tooltip0 = null;
-        }
+        container.transition().duration(duration).call(chart);
       });
 
       // Update chart from a state object passed to event handler
@@ -15984,15 +15953,15 @@ sucrose.models.stackedAreaChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  stacked.dispatch.on('areaMouseover.tooltip', function(eo) {
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  stacked.dispatch.on('areaMousemove.tooltip', function(eo) {
-    dispatch.call('tooltipMove', this, eo);
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
   });
 
-  stacked.dispatch.on('areaMouseout.tooltip', function() {
+  model.dispatch.on('elementMouseout.tooltip', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -16008,7 +15977,7 @@ sucrose.models.stackedAreaChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, stacked, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, stacked, 'size', 'sizeDomain', 'forceSize', 'offset', 'order', 'style', 'interactive', 'useVoronoi', 'clipVoronoi');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -16016,10 +15985,10 @@ sucrose.models.stackedAreaChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.seriesIndex || i);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
-          return 'sc-area sc-series-' + (d.seriesIndex || i);
+          return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
@@ -16035,28 +16004,31 @@ sucrose.models.stackedAreaChart = function() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-area sc-area-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
-          return 'sc-area sc-area-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
       var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return stacked.gradient(d, d.seriesIndex, p);
+      return model.gradient(d, d.seriesIndex, p);
     };
 
-    stacked.color(color);
-    stacked.fill(fill);
-    stacked.classes(classes);
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
 
+    // don't enable this since controls get a custom function
+    // controls.color(color);
+    // controls.classes(classes);
     legend.color(color);
     legend.classes(classes);
 
@@ -16064,9 +16036,7 @@ sucrose.models.stackedAreaChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -16076,81 +16046,61 @@ sucrose.models.stackedAreaChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showControls = function(_) {
-    if (!arguments.length) {
-      return showControls;
-    }
+    if (!arguments.length) { return showControls; }
     showControls = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -16160,12 +16110,10 @@ sucrose.models.stackedAreaChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
-    yAxis.direction(_);
     xAxis.direction(_);
+    yAxis.direction(_);
     legend.direction(_);
     controls.direction(_);
     return chart;
@@ -16174,7 +16122,14 @@ sucrose.models.stackedAreaChart = function() {
   chart.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    stacked.duration(_);
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    model.delay(_);
     return chart;
   };
 
@@ -17603,7 +17558,7 @@ sucrose.models.treemapChart = function() {
       tooltips = true,
       colorData = 'default',
       //create a clone of the d3 array
-      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map( function(d) { return d; }),
+      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(sucrose.identity),
       x, //can be accessed via chart.xScale()
       y, //can be accessed via chart.yScale()
       strings = {
@@ -17665,7 +17620,7 @@ sucrose.models.treemapChart = function() {
         noDataText
           .attr('x', margin.left + availableWidth / 2)
           .attr('y', margin.top + availableHeight / 2)
-          .text(function(d) { return d; });
+          .text(sucrose.identity);
 
         return chart;
       } else {

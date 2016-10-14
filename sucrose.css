@@ -371,7 +371,7 @@ text.sc-pie-hole-label {
 */
 .sc-group path.sc-line {
   fill: none;
-  stroke-width: 2.5px;
+  stroke-width: 2px;
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
 }
@@ -380,21 +380,20 @@ text.sc-pie-hole-label {
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
 }
-.sc-line.hover path {
-  stroke-width: 6px;
-}
 .sc-line .sc-scatter .sc-series .sc-point {
-  fill-opacity: 1;
   stroke-opacity: 1;
   stroke: #fff;
+  fill-opacity: 1;
 }
 .sc-scatter.sc-single-point .sc-series .sc-point {
   stroke-width: 2px;
 }
+.sc-line.hover path {
+  stroke-width: 6px;
+}
 .sc-scatter .sc-series .sc-point.hover,
 .sc-series .sc-point.hover {
-  stroke-width: 16px;
-  stroke-opacity: .5 !important;
+  stroke-opacity: .3 !important;
   stroke: inherit;
 }
 .sc-point-paths path {
@@ -419,8 +418,8 @@ text.sc-pie-hole-label {
   pointer-events: none;
 }
 .sc-series .sc-point.hover {
-  stroke-width: 20px;
-  stroke-opacity: .5;
+  stroke-width: 12px;
+  stroke-opacity: .3;
 }
 .sc-scatter .sc-point.hover {
   fill-opacity: 1;
@@ -435,23 +434,24 @@ text.sc-pie-hole-label {
 .sc-chart-stackedarea path.sc-area.hover {
   fill-opacity: .9;
 }
-.sc-chart-stackedarea .sc-groups .sc-point {
-  stroke-opacity: 0;
-  fill-opacity: 0;
-}
-.sc-chart-stackedarea .sc-groups .sc-point.hover {
-  stroke-width: 20px;
-  stroke-opacity: .75;
-  fill-opacity: 1;
-}
-.sc-chart-stackedarea .sc-guide-wrap .sc-wrap .sc-groups path.sc-line,
-.sc-chart-stackedarea .sc-guide-wrap .sc-wrap .sc-groups circle.sc-point {
+.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-line,
+.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-point {
   pointer-events: none;
   stroke: #777;
-  stroke-width: 2px;
+  fill-opacity: 0;
+  stroke-opacity: 0;
 }
-.sc-chart-stackedarea .sc-guide-wrap .sc-wrap .sc-groups circle.sc-point {
-  fill: #ddd;
+.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-line {
+  stroke-width: 1.5px;
+}
+.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-point {
+  stroke-width: 1px;
+  fill: #FFF;
+}
+.sc-chart-stackedarea .sc-guide-wrap.hover .sc-series .sc-line,
+.sc-chart-stackedarea .sc-guide-wrap.hover .sc-series .sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
 }
 /**********
 * Guage

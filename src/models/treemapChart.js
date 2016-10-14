@@ -15,7 +15,7 @@ sucrose.models.treemapChart = function() {
       tooltips = true,
       colorData = 'default',
       //create a clone of the d3 array
-      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map( function(d) { return d; }),
+      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(sucrose.identity),
       x, //can be accessed via chart.xScale()
       y, //can be accessed via chart.yScale()
       strings = {
@@ -77,7 +77,7 @@ sucrose.models.treemapChart = function() {
         noDataText
           .attr('x', margin.left + availableWidth / 2)
           .attr('y', margin.top + availableHeight / 2)
-          .text(function(d) { return d; });
+          .text(sucrose.identity);
 
         return chart;
       } else {
