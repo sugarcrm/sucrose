@@ -2,14 +2,14 @@
 * Lines
 */
 
-.sc-groups path.sc-line {
+.sc-group path.sc-line {
   fill: none;
   stroke-width: 2.5px;
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
 }
 
-.sc-groups path.sc-area {
+.sc-group path.sc-area {
   stroke: none;
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
@@ -19,18 +19,18 @@
   stroke-width: 6px;
 }
 
-.sc-line .sc-scatter .sc-groups .sc-point {
+.sc-line .sc-scatter .sc-series .sc-point {
   fill-opacity: 1;
   stroke-opacity: 1;
   stroke: #fff;
 }
 
-.sc-scatter.sc-single-point .sc-groups .sc-point {
+.sc-scatter.sc-single-point .sc-series .sc-point {
   stroke-width: 2px;
 }
 
-.sc-scatter .sc-groups .sc-point.hover,
-.sc-groups .sc-point.hover {
+.sc-scatter .sc-series .sc-point.hover,
+.sc-series .sc-point.hover {
   stroke-width: 16px;
   stroke-opacity: .5 !important;
   stroke: inherit;

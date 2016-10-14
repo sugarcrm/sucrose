@@ -53,11 +53,15 @@ sucrose.models.stackedAreaChart = function() {
     selection.each(function (chartData) {
 
       var that = this,
-          container = d3.select(this);
+          container = d3.select(this),
+          modelClass = 'stackedarea';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null,
           labels = properties.labels ? properties.labels.map(function(d) { return d.l || d; }) : [];
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
 
       var lineData = [],
           xTickLabels = [],
@@ -81,40 +85,20 @@ sucrose.models.stackedAreaChart = function() {
             return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
-      chart.container = this;
-
       chart.update = function () {
         container.transition().duration(duration).call(chart);
       };
+
+      chart.container = this;
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        if (d && d.length && d.filter(function(d) { return d.values.length; }).length) {
-          container.selectAll('.sc-no-data').remove();
-          return false;
-        }
-
-        container.select('.sucrose.sc-wrap').remove();
-
-        var w = width || parseInt(container.style('width'), 10) || 960,
-            h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
-
-        noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-no-data')
-          .attr('dy', '-.7em')
-          .style('text-anchor', 'middle');
-
-        noDataText
-          .attr('x', margin.left + w / 2)
-          .attr('y', margin.top + h / 2)
-          .text(function(d) {
-            return d;
-          });
-
-        return true;
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -140,7 +124,7 @@ sucrose.models.stackedAreaChart = function() {
       // add series index to each data point for reference
       // and disable data series if total is zero
       data.map(function (d, i) {
-        d.series = i;
+        d.seriesIndex = i;
         d.total = d3.sum(d.values, function(d, i) {
           return stacked.y()(d, i);
         });
@@ -235,14 +219,22 @@ sucrose.models.stackedAreaChart = function() {
 
       chart.render = function() {
 
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         // Chart layout variables
-        var renderWidth = width || parseInt(container.style('width'), 10) || 960,
-            renderHeight = height || parseInt(container.style('height'), 10) || 400,
-            availableWidth = renderWidth - margin.left - margin.right,
-            availableHeight = renderHeight - margin.top - margin.bottom,
-            innerWidth = availableWidth,
-            innerHeight = availableHeight,
-            innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
 
         // Header variables
         var maxControlsWidth = 0,
@@ -255,7 +247,7 @@ sucrose.models.stackedAreaChart = function() {
             trans = '';
 
         var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-stackedarea');
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
         wrap_entr.append('rect').attr('class', 'sc-background')
@@ -264,8 +256,8 @@ sucrose.models.stackedAreaChart = function() {
           .attr('fill', '#FFF');
 
         wrap.select('.sc-background')
-          .attr('width', availableWidth + margin.left + margin.right)
-          .attr('height', availableHeight + margin.top + margin.bottom);
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
 
         wrap_entr.append('g').attr('class', 'sc-title-wrap');
         var title_wrap = wrap.select('.sc-title-wrap');
@@ -301,11 +293,11 @@ sucrose.models.stackedAreaChart = function() {
               .attr('y', 0)
               .attr('dy', '.75em')
               .attr('text-anchor', 'start')
-              .text(properties.title)
               .attr('stroke', 'none')
-              .attr('fill', 'black');
+              .attr('fill', 'black')
+              .text(properties.title);
 
-          titleBBox = sucrose.utils.getTextBBox(wrap.select('.sc-title'));
+          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -319,7 +311,7 @@ sucrose.models.stackedAreaChart = function() {
             .datum(controlsData)
             .call(controls);
 
-          maxControlsWidth = controls.calculateWidth();
+          maxControlsWidth = controls.calcMaxWidth();
         }
 
         if (showLegend) {
@@ -332,7 +324,7 @@ sucrose.models.stackedAreaChart = function() {
             .datum(data)
             .call(legend);
 
-          maxLegendWidth = legend.calculateWidth();
+          maxLegendWidth = legend.calcMaxWidth();
         }
 
         // calculate proportional available space
@@ -353,7 +345,7 @@ sucrose.models.stackedAreaChart = function() {
 
         if (showControls) {
           var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
-              ypos = showTitle ? titleBBox.height : - legend.margin().top;
+              ypos = showTitle ? titleBBox.height : - controls.margin().top;
           controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
@@ -598,7 +590,6 @@ sucrose.models.stackedAreaChart = function() {
       });
 
       controls.dispatch.on('legendClick', function (d, i) {
-
         //if the option is currently enabled (i.e., selected)
         if (!d.disabled) {
           return;
@@ -717,16 +708,16 @@ sucrose.models.stackedAreaChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.series || i);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex || i);
         };
     var classes = function(d, i) {
-          return 'sc-area sc-series-' + (d.series || i);
+          return 'sc-area sc-series-' + (d.seriesIndex || i);
         };
 
     switch (type) {
       case 'graduated':
         color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.series / params.l);
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
       case 'class':
@@ -734,24 +725,24 @@ sucrose.models.stackedAreaChart = function() {
           return 'inherit';
         };
         classes = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-area sc-area-' + d.series + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-area sc-area-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.color || sucrose.utils.defaultColor()(d, d.series);
+          return d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
-          return 'sc-area sc-area-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-area sc-area-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
       var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return stacked.gradient(d, d.series, p);
+      return stacked.gradient(d, d.seriesIndex, p);
     };
 
     stacked.color(color);

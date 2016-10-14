@@ -26,10 +26,10 @@ sucrose.models.stackedArea = function () {
       xDomain = null, // Override x domain (skips the calculation from data)
       yDomain = null, // Override y domain
       color = function (d, i) {
-        return sucrose.utils.defaultColor()(d, d.series || i);
+        return sucrose.utils.defaultColor()(d, d.seriesIndex || i);
       },
       fill = color,
-      classes = function (d, i) { return 'sc-area sc-series-' + (d.series || i); },
+      classes = function (d, i) { return 'sc-area sc-series-' + (d.seriesIndex || i); },
       dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'areaClick', 'areaMouseover', 'areaMouseout', 'areaMousemove');
 
   /************************************

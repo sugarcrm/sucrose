@@ -19,9 +19,9 @@ sucrose.models.line = function() {
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
+      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); },
       fill = color,
-      classes = function(d, i) { return 'sc-series sc-series-' + d.series; };
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
 
 
   //============================================================
@@ -34,6 +34,7 @@ sucrose.models.line = function() {
 
   function chart(selection) {
     selection.each(function(data) {
+
       var availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
@@ -67,13 +68,13 @@ sucrose.models.line = function() {
       var wrap_bind = container.selectAll('g.sc-wrap.sc-line').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-line');
       var wrap = container.select('.sc-wrap').merge(wrap_entr);
-      var defs_entr = wrap_entr.append('defs');
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      g_entr.append('g').attr('class', 'sc-groups');
-      var groups_wrap = wrap.select('.sc-groups');
-      g_entr.append('g').attr('class', 'sc-scatter-wrap');
+      var defs_entr = wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
+
+      wrap_entr.append('g').attr('class', 'sc-scatter-wrap');
       var scatter_wrap = wrap.select('.sc-scatter-wrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
@@ -93,31 +94,30 @@ sucrose.models.line = function() {
           .attr('width', availableWidth)
           .attr('height', availableHeight);
 
-      g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
       scatter_wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + scatter.id() + ')' : '');
 
       //------------------------------------------------------------
-      // Groups
+      // Series
 
-      var groups_bind = groups_wrap.selectAll('g.sc-series')
-            .data(function(d) { return d; }, function(d) { return d.series; });
-      var groups_entr = groups_bind.enter().append('g')
+      var series_bind = group_wrap.selectAll('g.sc-series')
+            .data(function(d) { return d; }, function(d) { return d.seriesIndex; });
+      var series_entr = series_bind.enter().append('g')
             .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
             .style('fill-opacity', 1e-6);
-      var groups = wrap.select('.sc-groups').selectAll('.sc-series')
-            .merge(groups_entr);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
 
-      groups
+      series
         .classed('hover', function(d) { return d.hover; })
         .attr('class', classes)
         .attr('fill', color)
         .attr('stroke', color);
-      groups
+      series
         .transition(t)
           .style('stroke-opacity', 1)
           .style('fill-opacity', 0.5);
-      groups_bind.exit()
+      series_bind.exit()
         .transition(t)
           .style('stroke-opacity', 1e-6)
           .style('fill-opacity', 1e-6)
@@ -126,9 +126,11 @@ sucrose.models.line = function() {
       //------------------------------------------------------------
       // Areas
 
-      var areas_bind = groups.selectAll('path.sc-area').data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
-      var areas_entr = areas_bind.enter().append('path').attr('class', 'sc-area sc-enter');
-      var areas = groups.selectAll('.sc-area').merge(areas_entr);
+      var areas_bind = series.selectAll('path.sc-area')
+            .data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
+      var areas_entr = areas_bind.enter().append('path')
+            .attr('class', 'sc-area sc-enter');
+      var areas = series.selectAll('.sc-area').merge(areas_entr);
 
       areas
         .filter(function(d) {
@@ -161,7 +163,7 @@ sucrose.models.line = function() {
       // toggle between lines and areas
       areas_bind.exit().remove();
 
-      groups_bind.exit()
+      series_bind.exit()
         .transition(t).selectAll('.sc-area')
           .attr('d', function(d) {
             return d3.area()
@@ -177,6 +179,7 @@ sucrose.models.line = function() {
 
       //------------------------------------------------------------
       // Lines
+
       function lineData(d) {
         // if there are no values, return null
         if (!d.values || !d.values.length) {
@@ -204,12 +207,11 @@ sucrose.models.line = function() {
         return [values];
       }
 
-      var lines_bind = groups.selectAll('path.sc-line')
-            .data(lineData, function(d) { return d.series; });
+      var lines_bind = series.selectAll('path.sc-line')
+            .data(lineData, function(d) { return d.seriesIndex; });
       var lines_entr = lines_bind.enter().append('path')
             .attr('class', 'sc-line sc-enter');
-      var lines = groups.selectAll('.sc-line')
-            .merge(lines_entr);
+      var lines = series.selectAll('.sc-line').merge(lines_entr);
 
       lines
         .filter(function(d) {
@@ -234,7 +236,7 @@ sucrose.models.line = function() {
           .on('end', function(d) {
             d3.select(this).classed('sc-enter', false);
           });
-      groups_bind.exit()
+      series_bind.exit()
         .transition(t).selectAll('.sc-line')
           .attr('d',
             d3.line()

@@ -1,37 +1,4 @@
 {
-    "area": [
-        {"value": "line_data", "label": "Test Line Chart Data #1"},
-        {"value": "data_null", "label": "Test Null Data"}
-    ],
-    "bubble": [
-        {"value": "top10_opportunities", "label": "Top 10 Opportunities"},
-        {"value": "bubble_year_data", "label": "Year Data"},
-        {"value": "data_null", "label": "Test Null Data"}
-    ],
-    "funnel": [
-        {"value": "funnel_data", "label": "Opportunity Total by Sales Stage"},
-        {"value": "funnel_data_opps", "label": "Opportunity Data"},
-        {"value": "funnel_data_long", "label": "Long Label Lengths"},
-        {"value": "funnel_data_uniform", "label": "Uniform Data and Labels"},
-        {"value": "funnel_data_single", "label": "One Long Single Label"},
-        {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
-        {"value": "data_null", "label": "Test Null Data"}
-    ],
-    "gauge": [
-        {"value": "gauge_data", "label": "Closed Won Opportunities"}
-    ],
-    "globe": [
-        {"value": "globe_data", "label": "Globe Data"}
-    ],
-    "line": [
-        {"value": "line_data", "label": "Test Line Chart Data #1"},
-        {"value": "line_raw_data", "label": "Test Line Chart Data (raw) #2"},
-        {"value": "line_data_bar", "label": "Test Bar Data"},
-        {"value": "line_single_data", "label": "Test Single Data Point (time)"},
-        {"value": "line_single_bar", "label": "Test Single Data Point (bar data)"},
-        {"value": "line_two_single", "label": "Test Two Single Data Points"},
-        {"value": "data_null", "label": "Test Null Data"}
-    ],
     "multibar": [
         {"value": "multibar_data", "label": "Forecasting for Q1"},
         {"value": "multibar_data_color", "label": "Forecasting for Q2 (color data)"},
@@ -44,11 +11,13 @@
         {"value": "multibar_data_raw", "label": "Raw Report Data"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
-    "pareto": [
-        {"value": "pareto_data_salesrep_probability", "label": "Sales Rep Worksheet by Probability"},
-        {"value": "pareto_data_salesrep_stage", "label": "Sales Rep Worksheet by Sales Stage"},
-        {"value": "pareto_data_salesrep", "label": "Sales Rep Worksheet"},
-        {"value": "pareto_data_manager", "label": "Manager Worksheet"},
+    "line": [
+        {"value": "line_data", "label": "Test Line Chart Data #1"},
+        {"value": "line_raw_data", "label": "Test Line Chart Data (raw) #2"},
+        {"value": "line_data_bar", "label": "Test Bar Data"},
+        {"value": "line_single_data", "label": "Test Single Data Point (time)"},
+        {"value": "line_single_bar", "label": "Test Single Data Point (bar data)"},
+        {"value": "line_two_single", "label": "Test Two Single Data Points"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
     "pie": [
@@ -58,12 +27,45 @@
         {"value": "pie_data_single", "label": "Test Single Slice Data"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
-    "tree": [
-        {"value": "tree_data", "label": "Organization"}
+    "funnel": [
+        {"value": "funnel_data", "label": "Opportunity Total by Sales Stage"},
+        {"value": "funnel_data_opps", "label": "Opportunity Data"},
+        {"value": "funnel_data_long", "label": "Long Label Lengths"},
+        {"value": "funnel_data_uniform", "label": "Uniform Data and Labels"},
+        {"value": "funnel_data_single", "label": "One Long Single Label"},
+        {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
+        {"value": "data_null", "label": "Test Null Data"}
+    ],
+    "bubble": [
+        {"value": "top10_opportunities", "label": "Top 10 Opportunities"},
+        {"value": "bubble_year_data", "label": "Year Data"},
+        {"value": "data_null", "label": "Test Null Data"}
     ],
     "treemap": [
         {"value": "flare", "label": "Flare Code Lines"},
         {"value": "treemap_data", "label": "Treemap Data"},
         {"value": "data_null", "label": "Test Null Data"}
+    ],
+    "pareto": [
+        {"value": "pareto_data_salesrep_probability", "label": "Sales Rep Worksheet by Probability"},
+        {"value": "pareto_data_salesrep_stage", "label": "Sales Rep Worksheet by Sales Stage"},
+        {"value": "pareto_data_salesrep", "label": "Sales Rep Worksheet"},
+        {"value": "pareto_data_manager", "label": "Manager Worksheet"},
+        {"value": "data_null", "label": "Test Null Data"}
+    ],
+    "gauge": [
+        {"value": "gauge_data", "label": "Closed Won Opportunities"},
+        {"value": "gauge_data_color", "label": "Test Quarter Labels"},
+        {"value": "data_null", "label": "Test Null Data"}
+    ],
+    "area": [
+        {"value": "line_data", "label": "Test Line Chart Data #1"},
+        {"value": "data_null", "label": "Test Null Data"}
+    ],
+    "tree": [
+        {"value": "tree_data", "label": "Organization"}
+    ],
+    "globe": [
+        {"value": "globe_data", "label": "Globe Data"}
     ]
 }

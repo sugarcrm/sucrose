@@ -22,7 +22,7 @@ sucrose.models.pie = function() {
       color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.series.seriesIndex); },
       fill = color,
       textureFill = false,
-      classes = function(d, i) { return 'sc-series sc-series-' + d.series; },
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   var showLabels = true,
@@ -114,7 +114,7 @@ sucrose.models.pie = function() {
       var defs_entr = wrap_entr.append('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
-      var pie_wrap = wrap.select('.sc-group');
+      var group_wrap = wrap.select('.sc-group');
 
       wrap_entr.append('g').attr('class', 'sc-hole-wrap');
       var hole_wrap = wrap.select('.sc-hole-wrap');
@@ -131,10 +131,10 @@ sucrose.models.pie = function() {
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      var series_bind = pie_wrap.selectAll('.sc-series').data(pie);
+      var series_bind = group_wrap.selectAll('.sc-series').data(pie);
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
       series_bind.exit().remove();
-      var series = pie_wrap.selectAll('.sc-series').merge(series_entr);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
 
       series_entr
         .style('stroke', '#FFF')
@@ -157,6 +157,7 @@ sucrose.models.pie = function() {
       // Append polygons for funnel
 
       var slice_bind = series.selectAll('g.sc-slice').data(
+            // I wish we didn't have to do this :-(
             function(s, i) {
               return s.data.values.map(function(v, j) {
                 v.endAngle = s.endAngle;
@@ -279,11 +280,11 @@ sucrose.models.pie = function() {
       offsetHorizontal += ((d3.max(extWidths) - d3.min(extWidths)) / 2 - d3.max(extWidths)) * (labelRadius / offsetHorizontal);
       offsetVertical += verticalShift / 2;
 
-      pie_wrap
+      group_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
       hole_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
-      pie_wrap.select(mask)
+      group_wrap.select(mask)
         .attr('x', -pieRadius / 2)
         .attr('y', -pieRadius / 2);
 

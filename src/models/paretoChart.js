@@ -112,6 +112,9 @@ sucrose.models.paretoChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
       var maxBarLegendWidth = 0,
           maxLineLegendWidth = 0,
           widthRatio = 0,
@@ -119,12 +122,6 @@ sucrose.models.paretoChart = function() {
           pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
-
-      var availableWidth = (width || parseInt(container.style('width'), 10) || 960) - margin.left - margin.right,
-          availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom,
-          innerWidth = availableWidth,
-          innerHeight = availableHeight,
-          innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
 
       var baseDimension = multibar.stacked() ? 72 : 32;
 
@@ -146,40 +143,20 @@ sucrose.models.paretoChart = function() {
             return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
-      chart.container = this;
-
       chart.update = function() {
         container.transition().call(chart);
       };
+
+      chart.container = this;
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
       function displayNoData (d) {
-        if (d && d.length && d.filter(function(d) { return d.values.length; }).length) {
-          container.selectAll('.sc-no-data').remove();
-          return false;
-        }
-
-        container.select('.sucrose.sc-wrap').remove();
-
-        var w = width || parseInt(container.style('width'), 10) || 960,
-            h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
-
-        noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-no-data')
-          .attr('dy', '-.7em')
-          .style('text-anchor', 'middle');
-
-        noDataText
-          .attr('x', margin.left + w / 2)
-          .attr('y', margin.top + h / 2)
-          .text(function(d) {
-            return d;
-          });
-
-        return true;
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -229,34 +206,47 @@ sucrose.models.paretoChart = function() {
         container.call(chart);
       };
 
-      var dataBars = data.filter(function(d) {
+      var dataBars = data
+          .filter(function(d) {
             return !d.disabled && (!d.type || d.type === 'bar');
+          })
+          .map(function(series, s) {
+            series.seriesIndex = s;
+            series.values.forEach(function(value, v) {
+              // do not eval d.active because it can be false
+              value.seriesIndex = series.seriesIndex;
+              value.active = typeof series.active !== 'undefined' ? series.active : '';
+            });
+            return series;
           });
 
-      var dataLines = data.filter(function(d) {
+      var dataLines = data
+          .filter(function(d) {
             return !d.disabled && d.type === 'line';
-          }).map(function(lineData) {
+          })
+         .map(function(series, s) {
+            series.seriesIndex = s;
             if (!multibar.stacked()) {
-              lineData.values = lineData.valuesOrig.map(function(v, i) {
+              series.values = series.valuesOrig.map(function(v, i) {
                 return {'series': v.series, 'x': (v.x + v.series * 0.25 - i * 0.25), 'y': v.y};
               });
             } else {
-              lineData.values.map(function(v) {
+              series.values.map(function(v) {
                 v.y = 0;
               });
               dataBars
                 .map(function(v, i) {
                   v.values.map(function(v, i) {
-                    lineData.values[i].y += v.y;
+                    series.values[i].y += v.y;
                   });
                 });
-              lineData.values.map(function(v, i) {
+              series.values.map(function(v, i) {
                 if (i > 0) {
-                  v.y += lineData.values[i - 1].y;
+                  v.y += series.values[i - 1].y;
                 }
               });
             }
-            return lineData;
+            return series;
           });
 
       var dataGroup = properties.groupData,
@@ -331,21 +321,27 @@ sucrose.models.paretoChart = function() {
         .tickPadding(7)
         .showMaxMin(true);
 
-
       //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
 
-        // Chart layout variables
-        var renderWidth = width || parseInt(container.style('width'), 10) || 960,
-            renderHeight = height || parseInt(container.style('height'), 10) || 400,
-            innerMargin = {top: 0, right: 0, bottom: 0, left: 0},
-            innerWidth = availableWidth,
-            innerHeight = availableHeight;
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
 
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
 
         // Header variables
         var maxControlsWidth = 0,
@@ -367,16 +363,18 @@ sucrose.models.paretoChart = function() {
         wrap_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
-          .attr('width', availableWidth + margin.left + margin.right)
-          .attr('height', availableHeight + margin.top + margin.bottom)
+          .attr('width', renderWidth)
+          .attr('height', renderHeight)
           .attr('fill', '#FFF');
 
         wrap_entr.append('g').attr('class', 'sc-title-wrap');
         var title_wrap = wrap.select('.sc-title-wrap');
+
         wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
         var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
         wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
         var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
         wrap_entr.append('g').attr('class', 'sc-bars-wrap');
         var bars_wrap = wrap.select('.sc-bars-wrap');
         wrap_entr.append('g').attr('class', 'sc-quota-wrap');
@@ -431,7 +429,7 @@ sucrose.models.paretoChart = function() {
             )
             .call(barLegend);
 
-          maxBarLegendWidth = barLegend.calculateWidth();
+          maxBarLegendWidth = barLegend.calcMaxWidth();
 
           // line series legend
           lineLegend
@@ -443,7 +441,7 @@ sucrose.models.paretoChart = function() {
             .datum(lineLegendData)
             .call(lineLegend);
 
-          maxLineLegendWidth = lineLegend.calculateWidth();
+          maxLineLegendWidth = lineLegend.calcMaxWidth();
 
           // calculate proportional available space
           widthRatio = availableWidth / (maxBarLegendWidth + maxLineLegendWidth);
@@ -764,7 +762,7 @@ sucrose.models.paretoChart = function() {
         //swap line disabled for same series
         if (!chart.stacked()) {
           data.filter(function(d) {
-              return d.series === selectedSeries && d.type === 'line';
+              return d.seriesIndex === selectedSeries && d.type === 'line';
             }).map(function(d) {
               d.disabled = !d.disabled;
               return d;
@@ -887,10 +885,10 @@ sucrose.models.paretoChart = function() {
     var type = arguments[0],
       params = arguments[1] || {};
     var barColor = function(d, i) {
-      return sucrose.utils.defaultColor()(d, d.series);
+      return sucrose.utils.defaultColor()(d, d.seriesIndex);
     };
     var barClasses = function(d, i) {
-      return 'sc-series sc-series-' + d.series;
+      return 'sc-series sc-series-' + d.seriesIndex;
     };
     var lineColor = function(d, i) {
       var p = params.lineColor ? params.lineColor : {
@@ -898,16 +896,16 @@ sucrose.models.paretoChart = function() {
         c2: '#62B464',
         l: 1
       };
-      return d.color || d3.interpolateHsl(d3.rgb(p.c1), d3.rgb(p.c2))(d.series / 2);
+      return d.color || d3.interpolateHsl(d3.rgb(p.c1), d3.rgb(p.c2))(d.seriesIndex / 2);
     };
     var lineClasses = function(d, i) {
-      return 'sc-series sc-series-' + d.series;
+      return 'sc-series sc-series-' + d.seriesIndex;
     };
 
     switch (type) {
       case 'graduated':
         barColor = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.barColor.c1), d3.rgb(params.barColor.c2))(d.series / params.barColor.l);
+          return d3.interpolateHsl(d3.rgb(params.barColor.c1), d3.rgb(params.barColor.c2))(d.seriesIndex / params.barColor.l);
         };
         break;
       case 'class':
@@ -915,32 +913,32 @@ sucrose.models.paretoChart = function() {
           return 'inherit';
         };
         barClasses = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
         };
         lineClasses = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.series + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
         barColor = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
+          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         barClasses = function(d, i) {
-          return 'sc-series sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         lineClasses = function(d, i) {
-          return 'sc-series sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var barFill = (!params.gradient) ? barColor : function(d, i) {
       var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-      return multibar.gradient(d, d.series, p);
+      return multibar.gradient(d, d.seriesIndex, p);
     };
 
     multibar.color(barColor);

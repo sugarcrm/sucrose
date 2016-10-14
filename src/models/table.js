@@ -14,7 +14,8 @@ sucrose.models.table = function () {
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       color = sucrose.utils.getColor(['#000']);
 
@@ -33,10 +34,13 @@ sucrose.models.table = function () {
               'key': d.key || 'Undefined',
               'type': d.type || null,
               'disabled': d.disabled || false,
-              'series': d.series || i,
+              'series': d.seriesIndex || i,
               'values': d._values || d.values
             };
           }) : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
 
       var labels = properties.labels ||
             d3.range(
@@ -52,27 +56,11 @@ sucrose.models.table = function () {
           })) === 1;
 
       function displayNoData(d) {
-        if (d && d.length && d.filter(function (d) { return d.values.length; }).length) {
-          container.selectAll('.sc-no-data').remove();
-          return false;
-        }
-
-        container.select('.sucrose').remove();
-        var parentDimensions = container.node().parentNode.getBoundingClientRect();
-        var w = width || parseInt(parentDimensions.width, 10) || 960,
-            h = height || parseInt(parentDimensions.height, 10) || 400,
-            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
-
-        noDataText.enter().append('div')
-          .attr('class', 'sucrose sc-no-data')
-          .style({'text-align': 'center', 'position': 'absolute', 'top': (h / 2) + 'px', 'width': w + 'px'})
-          .text(function (d) {
-            return d;
-          });
-
-        return true;
+        var hasData = d && d.length && d.filter(function (d) { return d.values.length; }).length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
-
       // Check to see if there's nothing to show.
       if (displayNoData(data)) {
         return chart;
@@ -81,50 +69,53 @@ sucrose.models.table = function () {
       // Setup containers and skeleton of chart
 
       var wrap_bind = container.selectAll('table').data([data]);
-      var tableEnter = wrap.enter().append('table').attr('class', 'sucrose');
+      var wrap_enter = wrap_bind.enter().append('table');
+      wrap_bind.exit().remove();
+      var wrap = container.selectAll('table').merge(wrap_enter);
 
       //------------------------------------------------------------
+      var table_entr = wrap_enter.attr('class', 'sucrose');
 
-      var theadEnter = tableEnter
-            .append('thead').attr('class', 'sc-thead')
-              .append('tr').attr('class', 'sc-groups');
-      var thead = wrap.select('.sc-groups');
-          theadEnter
-            .append('th').attr('class', 'sc-th sc-series-state')
+      var thead_entr = table_entr.append('thead')
+            .attr('class', 'sc-thead')
+              .append('tr')
+                .attr('class', 'sc-groups');
+      var thead = wrap.select('.sc-groups').merge(thead_entr);
+          thead_entr.append('th')
+            .attr('class', 'sc-th sc-series-state')
             .text('Enabled');
-          theadEnter
-            .append('th').attr('class', 'sc-th sc-series-keys')
+          thead_entr.append('th')
+            .attr('class', 'sc-th sc-series-keys')
             .text(properties.key || 'Series Key');
 
-      var cols = thead.selectAll('.sc-group')
-            .data(labels);
-          cols.exit().remove();
-          cols.enter()
-            .append('th').attr('class', 'sc-th sc-group');
-          thead.selectAll('.sc-group')
+      var cols_bind = thead.selectAll('.sc-group').data(labels);
+      var cols_entr = cols_bind.enter().append('th')
+            .attr('class', 'sc-th sc-group');
+          cols_bind.exit().remove();
+          thead.selectAll('.sc-group').merge(cols_entr)
             .text(function (d) { return singleSeries ? 'Series Total' : d.l; });
 
         if (!singleSeries) {
-          theadEnter
+          thead_entr
             .append('th').attr('class', 'sc-th sc-series-totals')
             .text('Series Total');
         }
 
       //------------------------------------------------------------
 
-      var tfootEnter = tableEnter
-            .append('tfoot').attr('class', 'sc-tfoot')
-              .append('tr').attr('class', 'sc-sums');
-      var tfoot = wrap.select('.sc-sums');
-          tfootEnter
-            .append('th').attr('class', 'sc-th sc-group-sums')
-              .text('');
-          tfootEnter
-            .append('th').attr('class', 'sc-th sc-group-sums')
-              .text(singleSeries ? 'Sum' : 'Group Sums');
+      var tfoot_entr = table_entr.append('tfoot')
+            .attr('class', 'sc-tfoot')
+              .append('tr')
+                .attr('class', 'sc-sums');
+      var tfoot = wrap.select('.sc-sums').merge(tfoot_entr);
+          tfoot_entr.append('th')
+            .attr('class', 'sc-th sc-group-sums')
+            .text('');
+          tfoot_entr.append('th')
+            .attr('class', 'sc-th sc-group-sums')
+            .text(singleSeries ? 'Sum' : 'Group Sums');
 
-      var sums = tfoot.selectAll('.sc-sum')
-            .data(function (d) {
+      var sums_bind = tfoot.selectAll('.sc-sum').data(function (d) {
               return d
                 .filter(function (f) {
                   return !f.disabled;
@@ -138,15 +129,15 @@ sucrose.models.table = function () {
                   });
                 });
               });
-          sums.exit().remove();
-          sums.enter()
-            .append('th').attr('class', 'sc-sum');
-          tfoot.selectAll('.sc-sum')
+      var sums_entr = sums_bind.enter().append('th')
+            .attr('class', 'sc-sum');
+          sums_bind.exit().remove();
+          tfoot.selectAll('.sc-sum').merge(sums_entr)
             .text(function (d) { return d; });
 
         if (!singleSeries) {
-          tfootEnter
-            .append('th').attr('class', 'sc-th sc-sum-total');
+          tfoot_entr.append('th')
+            .attr('class', 'sc-th sc-sum-total');
           tfoot.select('.sc-sum-total')
             .text(function (d) {
               return d
@@ -168,25 +159,25 @@ sucrose.models.table = function () {
 
       //------------------------------------------------------------
 
-          tableEnter
-            .append('tbody').attr('class', 'sc-tbody');
+          table_entr.append('tbody')
+            .attr('class', 'sc-tbody');
+
       var tbody = wrap.select('.sc-tbody');
 
-      var rows = tbody.selectAll('.sc-series')
-            .data(function (d) { return d; });
-          rows.exit().remove();
-      var rowsEnter = rows.enter()
-            .append('tr').attr('class', 'sc-series');
-          rowsEnter
-            .append('td').attr('class', 'sc-td sc-state')
+      var rows_bind = tbody.selectAll('.sc-series').data(function (d) { return d; });
+          rows_bind.exit().remove();
+      var rows_entr = rows_bind.enter().append('tr')
+            .attr('class', 'sc-series');
+          rows_entr.append('td')
+            .attr('class', 'sc-td sc-state')
             .attr('tabindex', -1)
             .attr('data-editable', false)
             .append('input')
               .attr('type', 'checkbox');
-          rowsEnter
-            .append('td').attr('class', 'sc-td sc-key');
+          rows_entr.append('td')
+            .attr('class', 'sc-td sc-key');
 
-      var series = tbody.selectAll('.sc-series')
+      var series = tbody.selectAll('.sc-series').merge(rows_entr)
             .style('color', function (d) { return d.disabled ? '#ddd' : '#000'; })
             .style('text-decoration', function (d) { return d.disabled ? 'line-through' : 'inherit'; });
           series.select('.sc-state input')
@@ -194,8 +185,7 @@ sucrose.models.table = function () {
           series.select('.sc-key')
             .text(function (d) { return d.key; });
 
-      var cells = series.selectAll('.sc-val')
-            .data(function (d, i) {
+      var cells_bind = series.selectAll('.sc-val').data(function (d, i) {
               return d.values.map(function (g, j) {
                   var val = Array.isArray(g) ?
                     {
@@ -211,19 +201,19 @@ sucrose.models.table = function () {
                   return val;
                 });
             });
-          cells.exit().remove();
-          cells.enter()
-            .append('td').attr('class', 'sc-td sc-val');
-          tbody.selectAll('.sc-val')
+      var cells_entr = cells_bind.enter().append('td')
+            .attr('class', 'sc-td sc-val');
+          cells_bind.exit().remove();
+          tbody.selectAll('.sc-val').merge(cells_entr)
             .text(function (d) {
               return getY(d);
             });
 
         if (!singleSeries) {
-          rowsEnter
-            .append('td').attr('class', 'sc-td sc-total')
-              .attr('tabindex', -1)
-              .attr('data-editable', false);
+          rows_entr.append('td')
+            .attr('class', 'sc-td sc-total')
+            .attr('tabindex', -1)
+            .attr('data-editable', false);
           series.select('.sc-total')
             .text(function (d) {
               return d.values

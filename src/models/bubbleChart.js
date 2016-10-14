@@ -17,12 +17,12 @@ sucrose.models.bubbleChart = function() {
       xDomain,
       yDomain,
       delay = 200,
+      duration = 0,
       groupBy = function(d) { return d.y; },
       filterBy = function(d) { return d.y; },
       clipEdge = false, // if true, masks lines within x and y scale
       seriesLength = 0,
       reduceYTicks = false, // if false a tick will show for every data point
-      bubbleClick = function(e) { return; },
       format = d3.timeFormat('%Y-%m-%d'),
       tooltip = null,
       tooltips = true,
@@ -35,7 +35,7 @@ sucrose.models.bubbleChart = function() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
@@ -51,7 +51,7 @@ sucrose.models.bubbleChart = function() {
           return sucrose.utils.numberFormatSI(val, 2, isCurrency, chart.locality());
       };
 
-  var scatter = sucrose.models.scatter()
+  var model = scatter = sucrose.models.scatter()
         .padData(true)
         .padDataOuter(-1)
         .size(function(d) { return d.y; })
@@ -78,6 +78,8 @@ sucrose.models.bubbleChart = function() {
     return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
   };
 
+  var seriesClick = function(data, e, chart) { return; };
+
   //============================================================
 
   function chart(selection) {
@@ -91,48 +93,32 @@ sucrose.models.bubbleChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
-      var filteredData,
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var modelData,
           timeExtent,
           xD,
           yD,
-          yValues,
-          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
-
-      chart.container = this;
+          yValues;
 
       chart.update = function() {
-        container.transition().call(chart);
+        container.transition().duration(duration).call(chart);
       };
+
+      chart.container = this;
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        if (d && d.length) {
-          container.selectAll('.sc-no-data').remove();
-          return false;
-        }
-
-        container.select('.sucrose.sc-wrap').remove();
-
-        var w = width || parseInt(container.style('width'), 10) || 960,
-            h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
-
-        noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-no-data')
-          .attr('dy', '-.7em')
-          .style('text-anchor', 'middle');
-
-        noDataText
-          .attr('x', margin.left + w / 2)
-          .attr('y', margin.top + h / 2)
-          .text(function(d) {
-            return d;
-          });
-
-        return true;
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -242,30 +228,30 @@ sucrose.models.bubbleChart = function() {
 
       // Now that group calculations are done,
       // group the data by filter so that legend filters
-      filteredData = d3.nest()
+      var nestedData = d3.nest()
         .key(filterBy)
         .entries(data);
 
       //add series index to each data point for reference
-      filteredData = filteredData
+      modelData = nestedData
         .sort(function(a, b) {
           //sort legend by key
           return parseInt(a.key, 10) < parseInt(b.key, 10) ? -1 : parseInt(a.key, 10) > parseInt(b.key, 10) ? 1 : 0;
         })
         .map(function(d, i) {
-          d.series = i;
+          d.seriesIndex = i;
           d.classes = d.values[0].classes;
           d.color = d.values[0].color;
           return d;
         });
 
-      xD = getTimeDomain(filteredData);
+      xD = getTimeDomain(modelData);
 
       yValues = getGroupTicks(data);
 
       yD = d3.extent(
             d3.merge(
-              filteredData.map(function(d) {
+              modelData.map(function(d) {
                 return d.values.map(function(d, i) {
                   return getY(d, i);
                 });
@@ -306,25 +292,35 @@ sucrose.models.bubbleChart = function() {
 
       chart.render = function() {
 
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         // Chart layout variables
-        var renderWidth = width || parseInt(container.style('width'), 10) || 960,
-            renderHeight = height || parseInt(container.style('height'), 10) || 400,
-            availableWidth = renderWidth - margin.left - margin.right,
-            availableHeight = renderHeight - margin.top - margin.bottom,
-            innerWidth = availableWidth,
-            innerHeight = availableHeight,
-            innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        // Chart layout variables
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
         // Header variables
         var maxBubbleSize = Math.sqrt(scatter.sizeRange()[1] / Math.PI),
             headerHeight = 0,
             titleBBox = {width: 0, height: 0},
+            legendHeight = 0,
             trans = '';
 
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
 
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([filteredData]);
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
         var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
@@ -334,8 +330,8 @@ sucrose.models.bubbleChart = function() {
           .attr('fill', '#FFF');
 
         wrap.select('.sc-background')
-          .attr('width', availableWidth + margin.left + margin.right)
-          .attr('height', availableHeight + margin.top + margin.bottom);
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
 
         wrap_entr.append('g').attr('class', 'sc-title-wrap');
         var title_wrap = wrap.select('.sc-title-wrap');
@@ -346,8 +342,8 @@ sucrose.models.bubbleChart = function() {
         wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
         var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
 
-        wrap_entr.append('g').attr('class', 'sc-bubbles-wrap');
-        var bubbles_wrap = wrap.select('.sc-bubbles-wrap');
+        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
         wrap_entr.append('g').attr('class', 'sc-legend-wrap');
         var legend_wrap = wrap.select('.sc-legend-wrap');
@@ -367,9 +363,9 @@ sucrose.models.bubbleChart = function() {
               .attr('y', 0)
               .attr('dy', '.75em')
               .attr('text-anchor', 'start')
-              .text(properties.title)
               .attr('stroke', 'none')
-              .attr('fill', 'black');
+              .attr('fill', 'black')
+              .text(properties.title);
 
           titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
@@ -382,9 +378,8 @@ sucrose.models.bubbleChart = function() {
             .align('center')
             .height(availableHeight - headerHeight);
           legend_wrap
-            .datum(filteredData)
+            .datum(modelData)
             .call(legend);
-
           legend
             .arrange(availableWidth);
 
@@ -393,11 +388,13 @@ sucrose.models.bubbleChart = function() {
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
               ypos = titleBBox.height;
+
           if (legendTop) {
             ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
             ypos = - legend.margin().top;
           }
+
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
@@ -410,19 +407,19 @@ sucrose.models.bubbleChart = function() {
         //------------------------------------------------------------
         // Main Chart Components
 
-        scatter
+        model
           .width(innerWidth)
           .height(innerHeight)
           .id(chart.id())
           .xDomain(xD)
           .yDomain(yD);
 
-        bubbles_wrap
-          .datum(filteredData.filter(function(d) {
+        model_wrap
+          .datum(modelData.filter(function(d) {
             return !d.disabled;
           }))
-          .transition().duration(chart.delay())
-            .call(scatter);
+          .transition().duration(duration)
+            .call(model);
 
         innerMargin.top += maxBubbleSize;
 
@@ -485,7 +482,7 @@ sucrose.models.bubbleChart = function() {
           .attr('d', "M0,0V0.5H0V" + innerHeight);
 
         // final call to lines based on new dimensions
-        bubbles_wrap
+        model_wrap
           .transition().duration(chart.delay())
             .call(scatter);
 
@@ -502,7 +499,7 @@ sucrose.models.bubbleChart = function() {
         yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        bubbles_wrap
+        model_wrap
           .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
 
       };
@@ -518,16 +515,15 @@ sucrose.models.bubbleChart = function() {
       legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
 
-        if (!filteredData.filter(function(d) { return !d.disabled; }).length) {
-          filteredData.map(function(d) {
+        if (!modelData.filter(function(d) { return !d.disabled; }).length) {
+          modelData.map(function(d) {
             d.disabled = false;
             container.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
 
-        state.disabled = filteredData.map(function(d) { return !!d.disabled; });
-
+        state.disabled = modelData.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
         container.transition().call(chart.render);
@@ -570,9 +566,9 @@ sucrose.models.bubbleChart = function() {
         }
       });
 
-      scatter.dispatch.on('elementClick', function(eo) {
+      model.dispatch.on('elementClick', function(eo) {
         dispatch.call('chartClick', this);
-        bubbleClick(eo);
+        seriesClick(data, eo, chart);
       });
 
     });
@@ -584,15 +580,15 @@ sucrose.models.bubbleChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  scatter.dispatch.on('elementMouseover.tooltip', function(eo) {
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  scatter.dispatch.on('elementMousemove.tooltip', function(e) {
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  scatter.dispatch.on('elementMouseout.tooltip', function() {
+  model.dispatch.on('elementMouseout.tooltip', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -615,16 +611,16 @@ sucrose.models.bubbleChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.series);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series;
+          return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
         color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.series / params.l);
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
       case 'class':
@@ -632,28 +628,28 @@ sucrose.models.bubbleChart = function() {
           return 'inherit';
         };
         classes = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
+          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
-      return scatter.gradient(d, d.series);
+      return series.gradient(d, d.seriesIndex);
     };
 
-    scatter.color(color);
-    scatter.fill(fill);
-    scatter.classes(classes);
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
 
     legend.color(color);
     legend.classes(classes);
@@ -737,42 +733,6 @@ sucrose.models.bubbleChart = function() {
     return chart;
   };
 
-  chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
-    delay = _;
-    return chart;
-  };
-
-  chart.bubbleClick = function(_) {
-    if (!arguments.length) {
-      return bubbleClick;
-    }
-    bubbleClick = _;
-    return chart;
-  };
-
-  chart.groupBy = function(_) {
-    if (!arguments.length) {
-      return groupBy;
-    }
-    groupBy = _;
-    return chart;
-  };
-
-  chart.filterBy = function(_) {
-    if (!arguments.length) {
-      return filterBy;
-    }
-    filterBy = _;
-    return chart;
-  };
-
-  chart.colorFill = function(_) {
-    return chart;
-  };
-
   chart.strings = function(_) {
     if (!arguments.length) {
       return strings;
@@ -790,8 +750,56 @@ sucrose.models.bubbleChart = function() {
       return direction;
     }
     direction = _;
+    // model.direction(_);
+    xAxis.direction(_);
     yAxis.direction(_);
     legend.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
+    return chart;
+  };
+
+  chart.groupBy = function(_) {
+    if (!arguments.length) {
+      return groupBy;
+    }
+    groupBy = _;
+    return chart;
+  };
+
+  chart.filterBy = function(_) {
+    if (!arguments.length) {
+      return filterBy;
+    }
+    filterBy = _;
     return chart;
   };
 

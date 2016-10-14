@@ -10,20 +10,21 @@ sucrose.models.gauge = function() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.key; },
       getY = function(d) { return d.y; },
-      getKey = function(d) { return d.key; },
-      getValue = function(d, i) { return d.value; },
+      getKey = function(d) { return typeof d.key === 'undefined' ? d : d.key; },
+      getValue = function(d, i) { return isNaN(d.value) ? d : d.value; },
+      getCount = function(d, i) { return isNaN(d.count) ? d : d.count; },
       getValues = function(d) { return d.values; },
-      fmtKey = function(d) { return getKey(d.series || d); },
-      fmtValue = function(d) { return getValue(d.series || d); },
-      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
+      fmtKey = function(d) { return getKey(d); },
+      fmtValue = function(d) { return getValue(d); },
+      fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
       locality = sucrose.utils.buildLocality(),
       direction = 'ltr',
       clipEdge = true,
       delay = 0,
-      duration = 0,
-      color = function (d, i) { return sucrose.utils.defaultColor()(d, d.series); },
+      duration = 720,
+      color = function (d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); },
       fill = color,
-      classes = function (d,i) { return 'sc-slice sc-series-' + d.series; },
+      classes = function (d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   var ringWidth = 50,
@@ -37,7 +38,6 @@ sucrose.models.gauge = function() {
       maxValue = 10,
       minAngle = -90,
       maxAngle = 90,
-      duration = 750,
       labelInset = 10;
 
   //colorScale = d3.scaleLinear().domain([0, .5, 1].map(d3.interpolate(min, max))).range(["green", "yellow", "red"]);
@@ -412,6 +412,14 @@ sucrose.models.gauge = function() {
       return getValue;
     }
     getValue = _;
+    return chart;
+  };
+
+  chart.getCount = function(_) {
+    if (!arguments.length) {
+      return getCount;
+    }
+    getCount = _;
     return chart;
   };
 

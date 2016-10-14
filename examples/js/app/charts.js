@@ -159,12 +159,19 @@ var sucroseCharts = function () {
           .valueFormat(function (d) {
             return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
-          .tooltipContent(function (key, x, y, e, graph) {
+          .tooltipContent(function (eo, graph) {
+            var key = eo.group.label,
+                y = eo.point.y,
+                x = (typeof eo.group._height !== 'undefined') ?
+                      Math.abs(y * 100 / eo.group._height).toFixed(1) :
+                      xAxis.tickFormat()(eo.point.x);
+
             var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
                 percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
-            return '<p>Outcome: <b>' + key + '</b></p>' +
+            return '<p>Key: <b>' + key + '</b></p>' +
                    '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                    '<p>Percentage: <b>' + percent + '%</b></p>';
+
           });
           // .overflowHandler(function (d) {
           //   var b = $('body');

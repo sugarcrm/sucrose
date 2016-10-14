@@ -29,11 +29,11 @@ sucrose.models.multiBar = function() {
       xDomain,
       yDomain,
       nice = false,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
+      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); },
       fill = color,
       textureFill = false,
       barColor = null, // adding the ability to set the color for each rather than the whole group
-      classes = function(d, i) { return 'sc-series sc-series-' + d.series; },
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   //============================================================
@@ -140,7 +140,7 @@ sucrose.models.multiBar = function() {
               ) :
               seriesData.map(getY);
 
-        var seriesExtents = d3.extent(data.map(function(d, i) { return d.series; }));
+        var seriesExtents = d3.extent(data.map(function(d, i) { return d.seriesIndex; }));
         minSeries = seriesExtents[0];
         maxSeries = seriesExtents[1];
 
@@ -296,15 +296,15 @@ sucrose.models.multiBar = function() {
 
       //------------------------------------------------------------
 
-      var groups_bind = wrap.selectAll('.sc-series').data(function(d) { return d; });
-      var groups_entr = groups_bind.enter().append('g')
+      var series_bind = wrap.selectAll('.sc-series').data(function(d) { return d; });
+      var series_entr = series_bind.enter().append('g')
             .attr('class', classes)
             .style('stroke-opacity', 1e-6)
             .style('fill-opacity', 1e-6);
-      groups_bind.exit().remove();
-      var groups = wrap.selectAll('.sc-series').merge(groups_entr);
+      series_bind.exit().remove();
+      var series = wrap.selectAll('.sc-series').merge(series_entr);
 
-      // groups_bind.exit()
+      // series_bind.exit()
       //   .style('stroke-opacity', 1e-6)
       //   .style('fill-opacity', 1e-6)
       //     .selectAll('g.sc-bar')
@@ -314,15 +314,16 @@ sucrose.models.multiBar = function() {
       //       .attr(dimX, 0)
       //       .remove();
 
-      groups
+      series
         .attr('fill', fill)
+        .attr('class', function(d,i) { return classes(d,i); })
         .classed('hover', function(d) { return d.hover; })
         .classed('sc-active', function(d) { return d.active === 'active'; })
         .classed('sc-inactive', function(d) { return d.active === 'inactive'; })
         .style('stroke-opacity', 1)
         .style('fill-opacity', 1);
 
-      groups
+      series
         .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
           d3.select(this).classed('hover', true);
         })
@@ -332,11 +333,11 @@ sucrose.models.multiBar = function() {
 
       //------------------------------------------------------------
 
-      var bars_bind = groups.selectAll('.sc-bar').data(function(d) { return d.values; });
+      var bars_bind = series.selectAll('.sc-bar').data(function(d) { return d.values; });
       var bars_entr = bars_bind.enter().append('g')
             .attr('class', 'sc-bar');
       bars_bind.exit().remove();
-      var bars = groups.selectAll('.sc-bar').merge(bars_entr);
+      var bars = series.selectAll('.sc-bar').merge(bars_entr);
 
       // The actual bar rectangle
       bars_entr.append('rect')
@@ -383,7 +384,7 @@ sucrose.models.multiBar = function() {
                 x: Math.round(x(getX(d, i))),
                 y: Math.round(y(d.y0))
               } :
-              { x: Math.round(d.series * barThickness() + x(getX(d, i))),
+              { x: Math.round(d.seriesIndex * barThickness() + x(getX(d, i))),
                 y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
               };
           return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
@@ -415,9 +416,9 @@ sucrose.models.multiBar = function() {
         return {
             value: getY(d, i),
             point: d,
-            series: data[d.series],
+            series: data[d.seriesIndex],
             pointIndex: i,
-            seriesIndex: d.series,
+            seriesIndex: d.seriesIndex,
             groupIndex: d.group,
             id: id,
             e: e
@@ -565,7 +566,7 @@ sucrose.models.multiBar = function() {
             })
             .style('fill-opacity', function(d, i) {
               if (labelPosition === 'total') {
-                if (d.series !== minSeries && d.series !== maxSeries) {
+                if (d.seriesIndex !== minSeries && d.seriesIndex !== maxSeries) {
                   return 0;
                 }
                 var y = getY(d, i);
@@ -611,7 +612,7 @@ sucrose.models.multiBar = function() {
           //------------------------------------------------------------
           // Label background box
           // bars.filter(function(d, i) {
-          //     return labelPosition === 'total' && stacked ? (d.series !== minSeries && d.series !== maxSeries) : false;
+          //     return labelPosition === 'total' && stacked ? (d.seriesIndex !== minSeries && d.seriesIndex !== maxSeries) : false;
           //   })
           //   .select('rect.sc-label-box')
           //       .style('fill-opacity', 0);
@@ -620,7 +621,7 @@ sucrose.models.multiBar = function() {
               .style('fill-opacity', 0);
           }
           bars.filter(function(d, i) {
-              return labelPosition === 'total' && stacked ? (d.series === minSeries || d.series === maxSeries) : true;
+              return labelPosition === 'total' && stacked ? (d.seriesIndex === minSeries || d.seriesIndex === maxSeries) : true;
             })
             .select('rect.sc-label-box')
                 .attr('x', function(d, i) {

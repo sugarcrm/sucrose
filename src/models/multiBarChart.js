@@ -15,6 +15,8 @@ sucrose.models.multiBarChart = function() {
       duration = 0,
       tooltip = null,
       tooltips = true,
+      x,
+      y,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
@@ -22,8 +24,6 @@ sucrose.models.multiBarChart = function() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      x,
-      y,
       vertical = true,
       scrollEnabled = true,
       overflowHandler = function(d) { return; },
@@ -38,7 +38,7 @@ sucrose.models.multiBarChart = function() {
   var useScroll = false,
       scrollOffset = 0;
 
-  var multibar = sucrose.models.multiBar()
+  var model = multibar = sucrose.models.multiBar()
         .stacked(false)
         .clipEdge(false),
       xAxis = sucrose.models.axis(),//.orient('bottom'),
@@ -80,6 +80,9 @@ sucrose.models.multiBarChart = function() {
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
 
       var availableWidth = width;
       var availableHeight = height;
@@ -124,31 +127,11 @@ sucrose.models.multiBarChart = function() {
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
-      function displayNoData (d) {
-        if (d && d.length && d.filter(function(d) { return d.values.length; }).length) {
-          container.selectAll('.sc-no-data').remove();
-          return false;
-        }
-
-        container.select('.sc-chart-wrap').remove();
-
-        var w = width || parseInt(container.style('width'), 10) || 960,
-            h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
-
-        noDataText.enter().append('text')
-          .attr('class', 'sc-no-data')
-          .attr('dy', '-.7em')
-          .style('text-anchor', 'middle');
-
-        noDataText
-          .attr('x', margin.left + w / 2)
-          .attr('y', margin.top + h / 2)
-          .text(function(d) {
-            return d;
-          });
-
-        return true;
+      function displayNoData(d) {
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -210,16 +193,16 @@ sucrose.models.multiBarChart = function() {
           });
         }
 
-        series.series = s;
+        series.seriesIndex = s;
 
         series.values = series._values.map(function(value, v) {
             return {
-                  'series': series.series,
+                  'seriesIndex': series.seriesIndex,
                   'group': v,
                   'color': typeof series.color !== 'undefined' ? series.color : '',
                   'x': multibar.x()(value, v),
                   'y': multibar.y()(value, v),
-                  'y0': value.y + (s > 0 ? data[series.series - 1].values[v].y0 : 0),
+                  'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
                   'active': typeof series.active !== 'undefined' ? series.active : ''
                 };
           });
@@ -288,18 +271,27 @@ sucrose.models.multiBarChart = function() {
             })
             .map(function(value, v) {
               return {
-                'series': value.series,
+                'seriesIndex': value.seriesIndex,
                 'group': value.group,
                 'color': value.color,
                 'x': (v + 1),
                 'y': value.y,
+                'y0': value.y0,
                 'active': value.active
               };
             });
           return series;
         });
       }
-
+            // return {
+            //       'seriesIndex': series.seriesIndex,
+            //       'group': v,
+            //       'color': typeof series.color !== 'undefined' ? series.color : '',
+            //       'x': multibar.x()(value, v),
+            //       'y': multibar.y()(value, v),
+            //       'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
+            //       'active': typeof series.active !== 'undefined' ? series.active : ''
+            //     };
       //------------------------------------------------------------
       // Display No Data message if there's nothing to show.
 
@@ -352,11 +344,17 @@ sucrose.models.multiBarChart = function() {
 
       chart.render = function() {
 
-        // Chart layout variables
-        var renderWidth, renderHeight, innerMargin, innerWidth, innerHeight;
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
 
-        renderWidth = width || parseInt(container.style('width'), 10) || 960;
-        renderHeight = height || parseInt(container.style('height'), 10) || 400;
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            // availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
@@ -447,7 +445,7 @@ sucrose.models.multiBarChart = function() {
             .datum(controlsData)
             .call(controls);
 
-          maxControlsWidth = controls.calculateWidth();
+          maxControlsWidth = controls.calcMaxWidth();
         }
         if (showLegend) {
           if (multibar.barColor()) {
@@ -465,7 +463,7 @@ sucrose.models.multiBarChart = function() {
             .datum(data)
             .call(legend);
 
-          maxLegendWidth = legend.calculateWidth();
+          maxLegendWidth = legend.calcMaxWidth();
         }
 
         // calculate proportional available space
@@ -761,6 +759,7 @@ sucrose.models.multiBarChart = function() {
       });
 
       dispatch.on('chartClick', function() {
+        //dispatch.call('tooltipHide', this);
         if (controls.enabled()) {
           controls.dispatch.call('closeMenu', this);
         }
@@ -769,7 +768,7 @@ sucrose.models.multiBarChart = function() {
         }
       });
 
-      multibar.dispatch.on('elementClick', function(eo) {
+      model.dispatch.on('elementClick', function(eo) {
         dispatch.call('chartClick', this);
         seriesClick(data, eo, chart);
       });
@@ -783,15 +782,15 @@ sucrose.models.multiBarChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  multibar.dispatch.on('elementMouseover.tooltip', function(eo) {
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  multibar.dispatch.on('elementMousemove.tooltip', function(e) {
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  multibar.dispatch.on('elementMouseout.tooltip', function() {
+  model.dispatch.on('elementMouseout.tooltip', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -807,7 +806,7 @@ sucrose.models.multiBarChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, multibar, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -815,16 +814,16 @@ sucrose.models.multiBarChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.series);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
-          return 'sc-series sc-series-' + d.series;
+          return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
         color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.series / params.l);
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
       case 'class':
@@ -832,30 +831,33 @@ sucrose.models.multiBarChart = function() {
           return 'inherit';
         };
         classes = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
-          return 'sc-series sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
       var p = {orientation: params.orientation || (vertical ? 'vertical' : 'horizontal'), position: params.position || 'middle'};
-      return multibar.gradient(d, d.series, p);
+      return model.gradient(d, d.seriesIndex, p);
     };
 
-    multibar.color(color);
-    multibar.fill(fill);
-    multibar.classes(classes);
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
 
+    // don't enable this since controls get a custom function
+    // controls.color(color);
+    // controls.classes(classes);
     legend.color(color);
     legend.classes(classes);
 
@@ -958,20 +960,12 @@ sucrose.models.multiBarChart = function() {
     return chart;
   };
 
-  chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
-    seriesClick = _;
-    return chart;
-  };
-
   chart.direction = function(_) {
     if (!arguments.length) {
       return direction;
     }
     direction = _;
-    multibar.direction(_);
+    model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
     legend.direction(_);
@@ -994,6 +988,14 @@ sucrose.models.multiBarChart = function() {
     }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
     return chart;
   };
 

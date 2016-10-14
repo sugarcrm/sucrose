@@ -97,13 +97,23 @@ sucrose.utils.unResizeOnPrint = function (fn) {
 // If passed an array, wrap it in a function which implements the old default
 // behavior
 sucrose.utils.getColor = function (color) {
-    if (!arguments.length) { return sucrose.utils.defaultColor(); } //if you pass in nothing, get default colors back
+    if (!arguments.length) {
+      //if you pass in nothing, get default colors back
+      return sucrose.utils.defaultColor();
+    }
 
-    if (Object.prototype.toString.call( color ) === '[object Array]') {
-        return function (d, i) { return d.color || color[i % color.length]; };
+    if (Array.isArray(color)) {
+      return function (d, i) {
+        return d.color || color[i % color.length];
+      };
+    } else if (Object.prototype.toString.call(color) === '[object String]') {
+      return function(s) {
+        return d.color || '#' + color.replace('#', '');
+      }
     } else {
-        return color;
-        //can't really help it if someone passes rubbish as color
+      return color;
+        // can't really help it if someone passes rubbish as color
+        // or color is already a function
     }
 };
 
@@ -637,3 +647,24 @@ sucrose.utils.buildLocality = function(l, d) {
 
     return definition;
 }
+
+sucrose.utils.displayNoData = function (hasData, container, label, x, y) {
+  var data = hasData ? [] : [label];
+  var noData_bind = container.selectAll('.sc-no-data').data(data);
+  var noData_entr = noData_bind.enter().append('text')
+        .attr('class', 'sc-no-data')
+        .attr('dy', '-.7em')
+        .style('text-anchor', 'middle');
+  var noData = container.selectAll('.sc-no-data').merge(noData_entr);
+  noData_bind.exit().remove();
+  if (!!data.length) {
+    noData
+      .attr('x', x)
+      .attr('y', y)
+      .text(sucrose.identity);
+    container.selectAll('.sc-chart-wrap').remove();
+    return true;
+  } else {
+    return false;
+  }
+};

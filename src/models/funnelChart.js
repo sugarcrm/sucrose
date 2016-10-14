@@ -8,6 +8,7 @@ sucrose.models.funnelChart = function() {
       width = null,
       height = null,
       showTitle = false,
+      showControls = false,
       showLegend = true,
       direction = 'ltr',
       delay = 0,
@@ -17,6 +18,7 @@ sucrose.models.funnelChart = function() {
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
@@ -27,11 +29,12 @@ sucrose.models.funnelChart = function() {
   //------------------------------------------------------------
 
   var model = funnel = sucrose.models.funnel(),
+      controls = sucrose.models.legend().align('center'),
       legend = sucrose.models.legend().align('center');
 
   var tooltipContent = function(key, x, y, e, graph) {
-        return '<h3>' + key + ' - ' + x + '</h3>' +
-               '<p>' + y + '</p>';
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -43,9 +46,7 @@ sucrose.models.funnelChart = function() {
         return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart) {
-        return;
-      };
+  var seriesClick = function(data, e, chart) { return; };
 
   //============================================================
 
@@ -60,8 +61,8 @@ sucrose.models.funnelChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
-      var availableWidth = width || parseInt(container.style('width'), 10) || 960,
-          availableHeight = height || parseInt(container.style('height'), 10) || 400;
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
 
       var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
@@ -76,24 +77,10 @@ sucrose.models.funnelChart = function() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var noDataText = d && d.length ? [] : [chart.strings().noData];
-        var noData_bind = container.selectAll('.sc-no-data').data(noDataText);
-        var noData_entr = noData_bind.enter().append('text')
-              .attr('class', 'sucrose sc-no-data')
-          .attr('dy', '-.7em')
-          .style('text-anchor', 'middle');
-        noData_bind.exit().remove();
-        var noData = container.selectAll('.sc-no-data').merge(noData_entr);
-        noData
-          .attr('x', margin.left + availableWidth / 2)
-          .attr('y', margin.top + availableHeight / 2)
-          .text(sucrose.identity);
-
-        if (noDataText.length) {
-        return true;
-          container.select('.sucrose.sc-wrap').remove();
-        }
-        return false;
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -162,14 +149,12 @@ sucrose.models.funnelChart = function() {
         modelData = [{values: []}]; // safety array
       }
 
-      var totalCount = d3.sum(modelData, function(d) { return d.count; });
-      properties.count = totalCount;
+      properties.count = d3.sum(modelData, function(d) { return d.count; });
 
-      var totalAmount = d3.sum(modelData, function(d) { return d.value; });
-      properties.total = totalAmount;
+      properties.total = d3.sum(modelData, function(d) { return d.value; });
 
       // set title display option
-      showTitle = showTitle && properties.title;
+      showTitle = showTitle && properties.title.length;
 
       //set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
@@ -177,7 +162,7 @@ sucrose.models.funnelChart = function() {
       //------------------------------------------------------------
       // Display No Data message if there's nothing to show.
 
-      if (!totalAmount) {
+      if (!properties.total) {
         displayNoData();
         return chart;
       }
@@ -187,11 +172,18 @@ sucrose.models.funnelChart = function() {
 
       chart.render = function() {
 
-        // Chart layout variables
-        var renderWidth, renderHeight, innerMargin, innerWidth, innerHeight;
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
 
-        renderWidth = width || parseInt(container.style('width'), 10) || 960;
-        renderHeight = height || parseInt(container.style('height'), 10) || 400;
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        // Chart layout variables
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
@@ -218,8 +210,8 @@ sucrose.models.funnelChart = function() {
           .attr('fill', '#FFF');
 
         wrap.select('.sc-background')
-          .attr('width', availableWidth + margin.left + margin.right)
-          .attr('height', availableHeight + margin.top + margin.bottom);
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
 
         wrap_entr.append('g').attr('class', 'sc-title-wrap');
         var title_wrap = wrap.select('.sc-title-wrap');
@@ -369,6 +361,10 @@ sucrose.models.funnelChart = function() {
       });
 
       dispatch.on('chartClick', function() {
+        //dispatch.call('tooltipHide', this);
+        if (controls.enabled()) {
+          controls.dispatch.call('closeMenu', this);
+        }
         if (legend.enabled()) {
           legend.dispatch.call('closeMenu', this);
         }
@@ -441,7 +437,7 @@ sucrose.models.funnelChart = function() {
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -497,6 +493,14 @@ sucrose.models.funnelChart = function() {
       return showTitle;
     }
     showTitle = _;
+    return chart;
+  };
+
+  chart.showControls = function(_) {
+    if (!arguments.length) {
+      return showControls;
+    }
+    showControls = _;
     return chart;
   };
 
@@ -585,6 +589,10 @@ sucrose.models.funnelChart = function() {
       return seriesClick;
     }
     seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
     return chart;
   };
 

@@ -30,9 +30,12 @@ sucrose.models.legend = function() {
       getKey = function(d) {
         return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
       },
-      color = function(d, i) {
-        return sucrose.utils.defaultColor()(d, i); },
-      classes = function(d, i) { return ''; },
+      color = function(d) {
+        return sucrose.utils.defaultColor()(d, d.seriesIndex);
+      },
+      classes = function(d) {
+        return 'sc-series sc-series-' + d.seriesIndex;
+      },
       dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout', 'toggleMenu', 'closeMenu');
 
   // Private Variables
@@ -82,9 +85,9 @@ sucrose.models.legend = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of legend
 
-      var wrap_bind = container.selectAll('g.sc-chart-legend').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-legend');
-      var wrap = container.select('g.sc-chart-legend').merge(wrap_entr);
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-legend');
+      var wrap = container.select('g.sc-wrap').merge(wrap_entr);
       wrap.attr('transform', 'translate(0,0)');
 
       var defs_entr = wrap_entr.append('defs');
@@ -103,8 +106,8 @@ sucrose.models.legend = function() {
       var mask_entr = wrap_entr.append('g').attr('class', 'sc-legend-mask');
       var mask = wrap.select('.sc-legend-mask');
 
-      mask_entr.append('g').attr('class', 'sc-legend');
-      var g = wrap.select('.sc-legend');
+      mask_entr.append('g').attr('class', 'sc-group');
+      var g = wrap.select('.sc-group');
 
       var series_bind = g.selectAll('.sc-series').data(sucrose.identity, function(d) { return d.key; });
       series_bind.exit().remove();
@@ -121,6 +124,7 @@ sucrose.models.legend = function() {
               dispatch.call('legendClick', this, d);
             });
       var series = g.selectAll('.sc-series').merge(series_entr);
+
       series
           .attr('class', classes)
           .attr('fill', color)
@@ -200,10 +204,11 @@ sucrose.models.legend = function() {
       //------------------------------------------------------------
 
       //TODO: add ability to add key to legend
+      //TODO: have series display values on hover
       //var label = g.append('text').text('Probability:').attr('class','sc-series-label').attr('transform','translate(0,0)');
 
       // store legend label widths
-      legend.calculateWidth = function() {
+      legend.calcMaxWidth = function() {
         keyWidths = [];
 
         g.style('display', 'inline');
@@ -227,7 +232,7 @@ sucrose.models.legend = function() {
       legend.arrange = function(containerWidth) {
 
         if (keyWidths.length === 0) {
-          this.calculateWidth();
+          this.calcMaxWidth();
         }
 
         function keyWidth(i) {

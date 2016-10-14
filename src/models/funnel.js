@@ -20,10 +20,10 @@ sucrose.models.funnel = function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.series.seriesIndex); },
+      color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
-      classes = function(d, i) { return 'sc-series sc-series-' + d.series; };
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
 
   var r = 0.3, // ratio of width to height (or slope)
       y = d3.scaleLinear(),
@@ -87,13 +87,12 @@ sucrose.models.funnel = function() {
         // by increasing height relative to area of funnel
 
         // runs from bottom to top
-        data.map(function(series, i) {
-          series.values = series.values.map(function(point) {
-            point._height = 0;
+        data.forEach(function(series, i) {
+          series.values.forEach(function(point) {
 
-            if (funnelTotal > 0) {
-              point._height = heightTrapezoid(funnelArea * point.value / funnelTotal, _base);
-            }
+            point._height = funnelTotal > 0 ?
+              heightTrapezoid(funnelArea * point.value / funnelTotal, _base) :
+              0;
 
             //TODO: not working
             if (point._height < funnelMinHeight) {
@@ -110,20 +109,21 @@ sucrose.models.funnel = function() {
 
             _base += 2 * r * point._height;
             _bottom -= point._height;
-
-            return point;
           });
-          return series;
         });
 
         // Remap and flatten the data for use in calculating the scales' domains
         //TODO: this is no longer needed
         var seriesData = yDomain || // if we know yDomain, no need to calculate
-              d3.extent(d3.merge(data.map(function(d) {
-                return d.values.map(function(d, i) {
-                  return d._top;
-                });
-              })).concat(forceY));
+              d3.extent(
+                d3.merge(
+                  data.map(function(d) {
+                    return d.values.map(function(d) {
+                      return d._top;
+                    });
+                  })
+                ).concat(forceY)
+              );
 
         y .domain(seriesData)
           .range([calculatedHeight, 0]);
@@ -152,25 +152,25 @@ sucrose.models.funnel = function() {
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      var series_bind = wrap.selectAll('.sc-series').data(data, function(d) { return d.series; });
+      var series_bind = wrap.selectAll('.sc-series').data(data, function(d) { return d.seriesIndex; });
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
-      series_bind.exit().transition().duration(duration)
-        .selectAll('g.sc-slice')
-        .delay(function(d, i) { return i * delay / data[0].values.length; })
-          .attr('points', function(d) {
-            return pointsTrapezoid(d, 0, calculatedWidth);
-          })
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6)
-          .remove();
-      series_bind.exit().transition().duration(duration)
-        .selectAll('g.sc-label-value')
-        .delay(function(d, i) { return i * delay / data[0].values.length; })
-          .attr('y', 0)
-          .attr('transform', 'translate(' + calculatedCenter + ',0)')
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6)
-          .remove();
+      // series_bind.exit().transition().duration(duration)
+      //   .selectAll('g.sc-slice')
+      //   .delay(function(d, i) { return i * delay / data[0].values.length; })
+      //     .attr('points', function(d) {
+      //       return pointsTrapezoid(d, 0, calculatedWidth);
+      //     })
+      //     .style('stroke-opacity', 1e-6)
+      //     .style('fill-opacity', 1e-6)
+      //     .remove();
+      // series_bind.exit().transition().duration(duration)
+      //   .selectAll('g.sc-label-value')
+      //   .delay(function(d, i) { return i * delay / data[0].values.length; })
+      //     .attr('y', 0)
+      //     .attr('transform', 'translate(' + calculatedCenter + ',0)')
+      //     .style('stroke-opacity', 1e-6)
+      //     .style('fill-opacity', 1e-6)
+      //     .remove();
       series_bind.exit().remove();
       var series = wrap.selectAll('.sc-series').merge(series_entr);
 
@@ -197,27 +197,27 @@ sucrose.models.funnel = function() {
 
       //------------------------------------------------------------
       // Append polygons for funnel
+// function(s, i) {
+//               return s.values.map(function(v, j) {
+//                 v.disabled = s.disabled;
+//                 v.key = s.key;
+//                 v.seriesIndex = s.seriesIndex;
+//                 v.index = j;
+//                 // console.log(v)
+//                 return v;
+//               });
+//             },
 
-      var slice_bind = series.selectAll('g.sc-slice').data(
-            function(s, i) {
-              return s.values.map(function(v, j) {
-                v.disabled = s.disabled;
-                v.key = s.key;
-                v.seriesIndex = s.series;
-                v.seriesDataIndex = i;
-                v.index = j;
-                return v;
-              });
-            },
-            function(d) { return d.series; }
-          );
+      var slice_bind = series.selectAll('g.sc-slice')
+            .data(function(d) { return d.values; }, function(d) { return d.seriesIndex; });
       slice_bind.exit().remove();
       var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
       var slices = series.selectAll('g.sc-slice').merge(slice_entr);
 
       slice_entr.append('polygon')
         .attr('class', 'sc-base');
-      slices.selectAll('.sc-base')
+
+      slices.select('polygon.sc-base')
         .attr('points', function(d) {
           return pointsTrapezoid(d, 0, calculatedWidth);
         });
@@ -225,12 +225,13 @@ sucrose.models.funnel = function() {
       if (textureFill) {
         // For on click active bars
         slice_entr.append('polygon')
-          .attr('class', 'sc-texture');
-        slices.selectAll('.sc-texture')
+          .attr('class', 'sc-texture')
+          .style('mask', 'url(' + mask + ')');
+
+        slices.select('polygon.sc-texture')
           .attr('points', function(d) {
             return pointsTrapezoid(d, 0, calculatedWidth);
-          })
-          .style('mask', 'url(' + mask + ')');
+          });
       }
 
       slice_entr
@@ -262,12 +263,10 @@ sucrose.models.funnel = function() {
       // Append containers for labels
 
       var labels_bind = series.selectAll('.sc-label-value')
-            .data(function(d) { return d.values; }, function(d) { return d.series; });
+            .data(function(d) { return d.values; }, function(d) { return d.seriesIndex; });
       labels_bind.exit().remove();
-      var labels_entr = labels_bind.enter().append('g')
-            .attr('class', 'sc-label-value');
-      var labels = series.selectAll('g.sc-label-value')
-            .merge(labels_entr);
+      var labels_entr = labels_bind.enter().append('g').attr('class', 'sc-label-value');
+      var labels = series.selectAll('g.sc-label-value').merge(labels_entr);
 
       labels
         .attr('transform', 'translate(' + calculatedCenter + ',0)');
@@ -435,28 +434,32 @@ sucrose.models.funnel = function() {
 
       renderLabels();
       calcDimensions();
+      calcScales();
 
       // Calls twice since the first call may create a funnel offset
       // which decreases the funnel width which impacts label position
 
-      calcScales();
       renderLabels();
       calcDimensions();
+      calcScales();
 
-      calcScales();
       renderLabels();
       calcDimensions();
+      calcScales();
 
       //------------------------------------------------------------
       // Reposition responsive elements
 
-      slices.selectAll('polygon')
+      slices.select('.sc-base')
         .attr('points', function(d) {
           return pointsTrapezoid(d, 1, calculatedWidth);
         });
 
       if (textureFill) {
         slices.selectAll('.sc-texture')
+          .attr('points', function(d) {
+            return pointsTrapezoid(d, 1, calculatedWidth);
+          })
           .style('fill', fmtFill);
       }
 
@@ -583,7 +586,7 @@ sucrose.models.funnel = function() {
         // (h + b/r/2)(h + b/r/2) = v/r + b/r/2*b/r/2;
         // h + b/r/2 = Math.sqrt(v/r + b/r/2*b/r/2);
         // h  = Math.abs(Math.sqrt(v/r + b/r/2*b/r/2)) - b/r/2;
-
+        // console.log(d._bottom, d._top)
         var y0 = d._bottom,
             y1 = d._top,
             w0 = w / 2 - r * y0,
@@ -1023,4 +1026,4 @@ sucrose.models.funnel = function() {
   //============================================================
 
   return chart;
-}
+};

@@ -37,10 +37,10 @@ sucrose.models.gaugeChart = function() {
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
-        var key = model.getKey()(eo),
-            y = model.fmtValue()(eo.point.y1 - eo.point.y0),
-            content = tooltipContent(key, y, eo, chart);
-
+        var key = model.fmtKey()(eo.point.series),
+            x = model.getCount()(eo.point.series),
+            y = model.getValue()(eo.point.y1 - eo.point.y0),
+            content = tooltipContent(key, x, y, eo.e, chart);
         return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
@@ -132,13 +132,13 @@ sucrose.models.gaugeChart = function() {
       }
 
       var totalCount = d3.sum(modelData, function(d) { return d.count; });
-      properties.count = totalCount;
+      properties.count = properties.count || totalCount;
 
       var totalAmount = d3.sum(modelData, function(d) { return d.value; });
-      properties.total = totalAmount;
+      properties.total = properties.value || totalAmount;
 
       // set title display option
-      showTitle = showTitle && properties.title;
+      showTitle = showTitle && properties.title.length;
 
       //set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
@@ -187,8 +187,8 @@ sucrose.models.gaugeChart = function() {
           .attr('fill', '#FFF');
 
         wrap.select('.sc-background')
-          .attr('width', availableWidth + margin.left + margin.right)
-          .attr('height', availableHeight + margin.top + margin.bottom);
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
 
         wrap_entr.append('g').attr('class', 'sc-title-wrap');
         var title_wrap = wrap.select('.sc-title-wrap');
@@ -266,13 +266,12 @@ sucrose.models.gaugeChart = function() {
           .height(innerHeight);
 
         model_wrap
-          .data([modelData])
+          .datum(modelData)
           .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
           .transition().duration(duration)
             .call(model);
 
-        // model.pointerValue(6);
-        model.setPointer(6);
+        model.setPointer(properties.total);
       };
 
       //============================================================
@@ -350,7 +349,7 @@ sucrose.models.gaugeChart = function() {
   chart.legend = legend;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'values', 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue', 'transitionMs');
 
   chart.colorData = function(_) {

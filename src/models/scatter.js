@@ -8,23 +8,21 @@ sucrose.models.scatter = function() {
       width = 960,
       height = 500,
       margin = {top: 0, right: 0, bottom: 0, left: 0},
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); }, // chooses color
+      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); }, // chooses color
       fill = color,
-      classes = function(d, i) { return 'sc-series sc-series-' + d.series; },
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       x = d3.scaleLinear(),
       y = d3.scaleLinear(),
       z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
       getX = function(d) { return d.x; }, // accessor to get the x value
       getY = function(d) { return d.y; }, // accessor to get the y value
-      getZ = function(d) {
-        return d.size || 1;
-      }, // accessor to get the point size, set by public method .size()
+      getZ = function(d) { return d.size || 1; }, // accessor to get the point size, set by public method .size()
       forceX = [], // List of numbers to Force into the X scale (ie. 0, or a max / min, etc.)
       forceY = [], // List of numbers to Force into the Y scale
       forceZ = [], // List of numbers to Force into the Size scale
       xDomain = null, // Override x domain (skips the calculation from data)
       yDomain = null, // Override y domain
-      zDomain = [1, 5], // Override point size domain
+      zDomain = null, // Override point size domain
       zRange = [1 * 1 * Math.PI, 5 * 5 * Math.PI],
       circleRadius = function(d, i) {
         // a = pi*r^2
@@ -69,9 +67,16 @@ sucrose.models.scatter = function() {
 
   function chart(selection) {
     selection.each(function(data) {
+
       var availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
+
+      var t = d3.transition('scatter')
+          .duration(duration)
+          .ease(d3.easeLinear);
+
+      needsUpdate = true;
 
       //add series index to each data point for reference
       data = data.map(function(series, i) {
@@ -150,20 +155,23 @@ sucrose.models.scatter = function() {
           y.nice();
         }
 
-        z.range(zRange)
-         .domain(zDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceZ)));
-
         // If scale's domain don't have a range, slightly adjust to make one... so a chart can show a single data point
-        if (x.domain()[0] === x.domain()[1] || y.domain()[0] === y.domain()[1]) singlePoint = true;
-        if (x.domain()[0] === x.domain()[1])
+        singlePoint = (x.domain()[0] === x.domain()[1] || y.domain()[0] === y.domain()[1]);
+
+        if (x.domain()[0] === x.domain()[1]) {
           x.domain()[0] ?
               x.domain([x.domain()[0] - x.domain()[0] * 0.1, x.domain()[1] + x.domain()[1] * 0.1]) :
               x.domain([-1, 1]);
+        }
 
-        if (y.domain()[0] === y.domain()[1])
+        if (y.domain()[0] === y.domain()[1]) {
           y.domain()[0] ?
               y.domain([y.domain()[0] - y.domain()[0] * 0.1, y.domain()[1] + y.domain()[1] * 0.1]) :
               y.domain([-1, 1]);
+        }
+
+        z.domain(zDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceZ)))
+         .range(zRange);
 
         if (z.domain().length < 2) {
           z.domain([0, z.domain()]);
@@ -177,24 +185,24 @@ sucrose.models.scatter = function() {
       resetScale();
 
       //------------------------------------------------------------
-
-      //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-scatter sc-chart-' + id);
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-scatter');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+
       var defs_entr = wrap_entr.append('defs');
-      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         return sucrose.utils.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
-      g_entr.append('g').attr('class', 'sc-groups');
-      g_entr.append('g').attr('class', 'sc-point-paths');
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
+
+      wrap_entr.append('g').attr('class', 'sc-point-paths');
+      var paths_wrap = wrap.select('.sc-point-paths');
 
       wrap
         .classed('sc-single-point', singlePoint)
@@ -213,12 +221,108 @@ sucrose.models.scatter = function() {
           .attr('width', availableWidth)
           .attr('height', availableHeight);
 
-      g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
+      //------------------------------------------------------------
+      // Series
 
-      var t = d3.transition('scatter')
-          .duration(duration)
-          .ease(d3.easeLinear);
+      var series_bind = group_wrap.selectAll('.sc-series')
+            .data(function(d) { return d; }, function(d) { return d.seriesIndex; });
+      var series_entr = series_bind.enter().append('g')
+            .attr('class', 'sc-series')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series
+        .attr('class', function(d, i) { return classes(d, d.seriesIndex); })
+        .attr('fill', function(d, i) { return fill(d, d.seriesIndex); })
+        .attr('stroke', function(d, i) { return fill(d, d.seriesIndex); })
+        .classed('hover', function(d) { return d.hover; });
+      series
+        .transition(t)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 0.5);
+      series_bind.exit()
+        .transition(t)
+          .style('stroke-opacity', 1e-6)
+          .style('fill-opacity', 1e-6)
+          .remove();
+
+      //------------------------------------------------------------
+      // Interactive Layer
+
+      if (onlyCircles) {
+
+        var points_bind = series.selectAll('circle.sc-point')
+              .data(function(d) { return d.values; });
+        var points_entr = points_bind.enter().append('circle')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('r', circleRadius);
+        var points = series.selectAll('.sc-point').merge(points_entr);
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('cx', function(d, i) {
+            return x(getX(d, i));
+          })
+          .attr('cy', function(d, i) {
+            return y(0);
+          });
+        points
+          .transition(t)
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(getY(d, i)); })
+            .on('end', function(d) {
+              d3.select(this).classed('sc-enter', false);
+            });
+
+        series_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(0); })
+            .remove();
+
+      } else {
+
+        var points_bind = series.selectAll('path.sc-point').data(function(d) { return d.values; });
+        var points_enter = points_bind.enter().append('path')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('d',
+                d3.svg.symbol()
+                  .type(getShape)
+                  .size(symbolSize)
+              );
+        var points = series.selectAll('.sc-point').merge(points_entr)
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('transform', function(d, i) {
+            return 'translate(' + x0(getX(d, i)) + ',' + y(0) + ')';
+          })
+        points
+          .transition(t)
+            .attr('transform', function(d, i) {
+              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
+            })
+            .attr('d',
+              d3.svg.symbol()
+                .type(getShape)
+                .size(symbolSize)
+            );
+
+        series_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('transform', function(d, i) {
+              return 'translate(' + x(getX(d, i)) + ',' + y(0) + ')';
+            })
+            .remove();
+
+      }
 
       function updateInteractiveLayer() {
 
@@ -263,11 +367,10 @@ sucrose.models.scatter = function() {
           );
 
           if (clipVoronoi) {
-            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle')
-                  .data(vertices);
+            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle').data(vertices);
             var clips_entr = clips_bind.enter().append('circle');
-            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle')
-                  .merge(clips_entr);
+            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle').merge(clips_entr);
+
             clips
               .attr('cx', function(d) { return d[0] })
               .attr('cy', function(d) { return d[1] })
@@ -276,7 +379,7 @@ sucrose.models.scatter = function() {
               });
             clips_bind.exit().remove();
 
-            wrap.select('.sc-point-paths')
+            paths_wrap
                 .attr('clip-path', 'url(#sc-points-clip-' + id + ')');
           }
 
@@ -298,14 +401,12 @@ sucrose.models.scatter = function() {
                     'point': vertices[i][3]
                   };
                 })
-                .filter(function(d) { return d.series !== null; });
+                .filter(function(d) { return d.seriesIndex !== null; });
 
-          var paths_bind = wrap.select('.sc-point-paths').selectAll('path')
-                .data(voronoi);
-          var paths_entr = paths_bind.enter().append('path')
-                .attr('class', function(d, i) { return 'sc-path-' + i; });
-          var paths = wrap.select('.sc-point-paths').selectAll('path')
-                .merge(paths_entr);
+          var paths_bind = paths_wrap.selectAll('path').data(voronoi);
+          var paths_entr = paths_bind.enter().append('path').attr('class', function(d, i) { return 'sc-path-' + i; });
+          var paths = paths_wrap.selectAll('path').merge(paths_entr);
+
           paths
             .attr('d', function(d) { return d ? 'M' + d.data.join('L') + 'Z' : null; });
           paths_bind.exit().remove();
@@ -313,7 +414,7 @@ sucrose.models.scatter = function() {
           paths
             .on('mouseover', function(d) {
               if (needsUpdate) return 0;
-              var eo = buildEventObject(d3.event, d, d.point, d.series);
+              var eo = buildEventObject(d3.event, d, d.point, d.seriesIndex);
               dispatch.call('elementMouseover', this, eo);
             })
             .on('mousemove', function(d, i) {
@@ -326,20 +427,19 @@ sucrose.models.scatter = function() {
             })
             .on('click', function(d) {
               if (needsUpdate) return 0;
-              var eo = buildEventObject(d3.event, d, d.point, d.series);
+              var eo = buildEventObject(d3.event, d, d.point, d.seriesIndex);
               dispatch.call('elementClick', this, eo);
             });
 
         } else {
 
           // add event handlers to points instead voronoi paths
-          wrap.select('.sc-groups').selectAll('.sc-group')
-            .selectAll('.sc-point')
+          series.selectAll('.sc-point')
               //.data(dataWithPoints)
               // .style('pointer-events', 'auto') // recativate events, disabled by css
               .on('mouseover', function(d, i) {
                 if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                var eo = buildEventObject(d3.event, d, i, d.series);
+                var eo = buildEventObject(d3.event, d, i, d.seriesIndex);
                 dispatch.call('elementMouseover', this, eo);
               })
               .on('mousemove', function(d, i) {
@@ -352,7 +452,7 @@ sucrose.models.scatter = function() {
               })
               .on('click', function(d, i) {
                 if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                var eo = buildEventObject(d3.event, d, i, d.series);
+                var eo = buildEventObject(d3.event, d, i, d.seriesIndex);
                 dispatch.call('elementClick', this, eo);
               });
 
@@ -361,112 +461,9 @@ sucrose.models.scatter = function() {
         needsUpdate = false;
       }
 
-      needsUpdate = true;
-
-      var groups_bind = wrap.select('.sc-groups').selectAll('.sc-series')
-            .data(function(d) { return d; }, function(d) { return d.series; });
-      var groups_entr = groups_bind.enter().append('g')
-            .attr('class', 'sc-series')
-            .style('stroke-opacity', 1e-6)
-            .style('fill-opacity', 1e-6);
-      var groups = wrap.select('.sc-groups').selectAll('.sc-series')
-            .merge(groups_entr);
-
-      groups
-        .attr('class', function(d, i) { return classes(d, d.series); })
-        .attr('fill', function(d, i) { return fill(d, d.series); })
-        .attr('stroke', function(d, i) { return fill(d, d.series); })
-        .classed('hover', function(d) { return d.hover; });
-      groups
-        .transition(t)
-          .style('stroke-opacity', 1)
-          .style('fill-opacity', 0.5);
-      groups_bind.exit()
-        .transition(t)
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6)
-          .remove();
-
-      if (onlyCircles) {
-
-        var points_bind = groups.selectAll('circle.sc-point')
-              .data(function(d) { return d.values; });
-        var points_entr = points_bind.enter().append('circle')
-              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
-              .attr('r', circleRadius);
-        var points = groups.selectAll('.sc-point')
-              .merge(points_entr);
-
-        points
-          .filter(function(d) {
-            return d3.select(this).classed('sc-enter');
-          })
-          .attr('cx', function(d, i) {
-            return x(getX(d, i));
-          })
-          .attr('cy', function(d, i) {
-            return y(0);
-          });
-        points
-          .transition(t)
-            .attr('cx', function(d, i) { return x(getX(d, i)); })
-            .attr('cy', function(d, i) { return y(getY(d, i)); })
-            .on('end', function(d) {
-              d3.select(this).classed('sc-enter', false);
-            });
-
-        groups_bind.exit()
-          .transition(t).selectAll('.sc-point')
-            .attr('cx', function(d, i) { return x(getX(d, i)); })
-            .attr('cy', function(d, i) { return y(0); })
-            .remove();
-
-      } else {
-
-        var points_bind = groups.selectAll('path.sc-point')
-              .data(function(d) { return d.values; });
-        var points_enter = points_bind.enter().append('path')
-              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
-              .attr('d',
-                d3.svg.symbol()
-                  .type(getShape)
-                  .size(symbolSize)
-              );
-        var points = groups.selectAll('.sc-point')
-              .merge(points_entr)
-
-        points
-          .filter(function(d) {
-            return d3.select(this).classed('sc-enter');
-          })
-          .attr('transform', function(d, i) {
-            return 'translate(' + x0(getX(d, i)) + ',' + y(0) + ')';
-          })
-        points
-          .transition(t)
-            .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
-            })
-            .attr('d',
-              d3.svg.symbol()
-                .type(getShape)
-                .size(symbolSize)
-            );
-
-        groups_bind.exit()
-          .transition(t).selectAll('.sc-point')
-            .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(0) + ')';
-            })
-            .remove();
-
-      }
-
-
       // Delay updating the invisible interactive layer for smoother animation
       clearTimeout(timeoutID); // stop repeat calls to updateInteractiveLayer
       timeoutID = setTimeout(updateInteractiveLayer, 300);
-      //updateInteractiveLayer();
 
       //store old scales for use in transitions on update
       x0 = x.copy();
