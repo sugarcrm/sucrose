@@ -87,10 +87,14 @@ sucrose.models.globeChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          node = d3.select('#' + id + ' svg').node(),
-          container = d3.select(this);
+          container = d3.select(this),
+          node = d3.select('#' + id + ' svg').node();
+
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
 
       var tooltips0 = tooltips,
           m0, n0, o0;
@@ -128,30 +132,12 @@ sucrose.models.globeChart = function() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        if (d && d.length) {
-          container.selectAll('.sc-no-data').remove();
-          return false;
-        }
-
-        container.select('.sucrose.sc-wrap').remove();
-
-        var w = width || parseInt(container.style('width'), 10) || 960,
-            h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
-
-        noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-no-data')
-          .attr('dy', '-.7em')
-          .style('text-anchor', 'middle');
-
-        noDataText
-          .attr('x', margin.left + w / 2)
-          .attr('y', margin.top + h / 2)
-          .text(function(d) {
-            return d;
-          });
-
-        return true;
+        var hasData = d && d.length,
+            x, y;
+        if (hasData) return false;
+        x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -166,34 +152,28 @@ sucrose.models.globeChart = function() {
       //------------------------------------------------------------
       // Setup svgs and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-globeChart').data([1]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-globeChart');
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-globe');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      g_entr.append('defs');
+      wrap_entr.append('defs');
       var defs = wrap.select('defs');
 
-
-
-
-      g_entr.append('svg:rect')
-        .attr('class', 'sc-chartBackground')
+      wrap_entr.append('svg:rect')
+        .attr('class', 'sc-chart-background')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-      var backg = wrap.select('.sc-chartBackground');
+      var backg = wrap.select('.sc-chart-background');
 
-      var globeEnter = g_entr.append('g')
-            .attr('class', 'sc-globe');
-      var globeChart = wrap.select('.sc-globe');
+      var globe_entr = wrap_entr.append('g').attr('class', 'sc-globe');
+      var globe = wrap.select('.sc-globe');
 
-      globeEnter.append('path')
+      globe_entr.append('path')
         .datum({type: 'Sphere'})
         .attr('class', 'sphere');
       var sphere = d3.select('.sphere');
 
       if (showGraticule) {
-        globeEnter.append('path')
+        globe_entr.append('path')
           .datum(graticule)
           .attr('class', 'graticule');
         var grid = d3.select('.graticule');
@@ -209,7 +189,7 @@ sucrose.models.globeChart = function() {
         });
       globeChart.call(zoom);
 
-      globeChart
+      globe
         .on('mousedown', mousedown);
 
       wrap
@@ -272,7 +252,7 @@ sucrose.models.globeChart = function() {
 
       chart.render();
 
-      queue()
+      d3.queue()
         .defer(d3.json, 'data/geo/world-countries-topo-110.json')
         .defer(d3.json, 'data/geo/usa-states-topo-110.json')
         .defer(d3.json, 'data/geo/cldr_en.json')
@@ -315,21 +295,23 @@ sucrose.models.globeChart = function() {
       function loadChart(data, type) {
         colorLimit = results._total;
 
-        world = globeEnter.append('g')
-            .attr('class', type)
-          .selectAll('path')
-            .data(data)
-          .enter().append('path')
-            .attr('d', clip)
-            .attr('class', classes)
-            .style('fill', function (d, i) {
-              d.amount = amount(d);
-              return fill(d, d.properties.mapcolor13 || i);
-            });
+        var world_bind = globe_entr.append('g').attr('class', type)
+              .selectAll('path').data(data);
+        var world_entr = world_bind.enter().append('path')
+              .attr('d', clip)
+              .attr('class', classes)
+              .style('fill', function (d, i) {
+                d.amount = amount(d);
+                return fill(d, d.properties.mapcolor13 || i);
+              });
+        world = globe.selectAll('path').merge(world_entr);
 
         world
           .on('click', loadCountry)
           .on('mouseover', function (d, i, j) {
+            if (!d.properties) {
+              return;
+            }
             var eo = buildEventObject(d3.event, d, i, j);
             dispatch.call('tooltipShow', this, eo);
           })
@@ -440,15 +422,6 @@ sucrose.models.globeChart = function() {
         return region_results(d)._total || 0;
       }
 
-      function clip(d) {
-        return path(d) || 'M0,0Z';
-      }
-
-      function refresh(duration) {
-        globeChart.selectAll('path')
-          .attr('d', clip);
-      }
-
       function spin() {
         var o0 = projection.rotate(),
             m1 = [10, 0],
@@ -459,6 +432,15 @@ sucrose.models.globeChart = function() {
       function rotate(o) {
         projection.rotate(o);
         refresh();
+      }
+
+      function refresh(duration) {
+        globe.selectAll('path')
+          .attr('d', clip);
+      }
+
+      function clip(d) {
+        return path(d) || 'M0,0Z';
       }
 
       //============================================================

@@ -64,7 +64,7 @@ sucrose.models.line = function() {
             .duration(duration)
             .ease(d3.easeLinear);
 
-	  var id = scatter.id();
+      var id = scatter.id();
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {

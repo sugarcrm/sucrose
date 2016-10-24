@@ -11,12 +11,12 @@ sucrose.models.multiBarChart = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      delay = 0,
-      duration = 0,
       tooltip = null,
       tooltips = true,
       x,
       y,
+      delay = 0,
+      duration = 0,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
@@ -94,9 +94,10 @@ sucrose.models.multiBarChart = function() {
           groupCount = 0,
           totalAmount = 0,
           hasData = false,
-          baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32,
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32;
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
@@ -221,8 +222,17 @@ sucrose.models.multiBarChart = function() {
         });
       });
 
-      seriesData = data.filter(function(series, s) {
+      seriesData = data
+        .filter(function(series, s) {
           return !series.disabled && (!series.type || series.type === 'bar');
+        })
+        .map(function(series, s) {
+          series.seri = s;
+          series.values
+            .forEach(function(value, v) {
+              value.seri = series.seri;
+            });
+          return series;
         });
 
       seriesCount = seriesData.length;
@@ -233,16 +243,17 @@ sucrose.models.multiBarChart = function() {
           group.total = 0;
           group._height = 0;
           // only sum enabled series
-          seriesData.forEach(function(series, s) {
-            series.values
-              .filter(function(value, v) {
-                return value.group === g;
-              })
-              .forEach(function(value, v) {
-                group.total += value.y;
-                group._height += Math.abs(value.y);
-              });
-          });
+          seriesData
+            .forEach(function(series, s) {
+              series.values
+                .filter(function(value, v) {
+                  return value.group === g;
+                })
+                .forEach(function(value, v) {
+                  group.total += value.y;
+                  group._height += Math.abs(value.y);
+                });
+            });
           return group;
         });
 
@@ -271,6 +282,7 @@ sucrose.models.multiBarChart = function() {
             })
             .map(function(value, v) {
               return {
+                'seri': series.seri,
                 'seriesIndex': value.seriesIndex,
                 'group': value.group,
                 'color': value.color,
@@ -967,41 +979,31 @@ sucrose.models.multiBarChart = function() {
   };
 
   chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
+    if (!arguments.length) { return seriesClick; }
     seriesClick = _;
     return chart;
   };
 
   chart.vertical = function(_) {
-    if (!arguments.length) {
-      return vertical;
-    }
+    if (!arguments.length) { return vertical; }
     vertical = _;
     return chart;
   };
 
   chart.allowScroll = function(_) {
-    if (!arguments.length) {
-      return scrollEnabled;
-    }
+    if (!arguments.length) { return scrollEnabled; }
     scrollEnabled = _;
     return chart;
   };
 
   chart.overflowHandler = function(_) {
-    if (!arguments.length) {
-      return overflowHandler;
-    }
+    if (!arguments.length) { return overflowHandler; }
     overflowHandler = sucrose.functor(_);
     return chart;
   };
 
   chart.hideEmptyGroups = function(_) {
-    if (!arguments.length) {
-      return hideEmptyGroups;
-    }
+    if (!arguments.length) { return hideEmptyGroups; }
     hideEmptyGroups = _;
     return chart;
   };

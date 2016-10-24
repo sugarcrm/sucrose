@@ -427,7 +427,7 @@ sucrose.models.scatter = function() {
           // add event handlers to points instead voronoi paths
           series.selectAll('.sc-point')
             //.data(dataWithPoints)
-            // .style('pointer-events', 'auto') // recativate events, disabled by css
+            .style('pointer-events', 'auto') // recaptivate events, disabled by css
             .on('mouseover', function(d, i) {
               if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
               var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
@@ -438,6 +438,7 @@ sucrose.models.scatter = function() {
               dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
+              console.log(d)
               if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
               var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
               dispatch.call('elementMouseout', this, eo);

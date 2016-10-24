@@ -18,25 +18,25 @@
     opacity: 0;
     stroke-width: 12px;
   }
-  .sc-y.sc-axis .domain {
+  .sc-axis-y .domain {
     display: none;
   }
-  .sc-y.sc-axis text.sc-quota-value,
-  .sc-y.sc-axis text.sc-target-quota-value {
+  .sc-axis-y text.sc-quota-value,
+  .sc-axis-y text.sc-target-quota-value {
     font-weight: bold;
   }
-  .sc-line .sc-groups path {
+  .sc-line .sc-group path {
     stroke-width: 4px;
   }
-  .sc-line .sc-scatter .sc-groups .sc-point {
+  .sc-lines-wrap1 .sc-line .sc-group path {
+    stroke-width: 6px;
+  }
+  .sc-scatter .sc-group .sc-point {
     fill-opacity: 1;
     stroke-opacity: 1;
     stroke-width: 2px;
   }
-  .sc-linesWrap1 .sc-line .sc-groups path {
-    stroke-width: 6px;
-  }
-  .sc-linesWrap2 .sc-scatter .sc-groups circle {
+  .sc-lines-wrap2 .sc-scatter .sc-group circle {
     stroke: @white;
   }
 }

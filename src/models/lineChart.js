@@ -692,7 +692,7 @@ sucrose.models.lineChart = function() {
   });
 
   model.dispatch.on('elementMouseout.tooltip', function(eo) {
-	// need eo for removing hover class on element
+    // need eo for removing hover class on element
     dispatch.call('tooltipHide', this, eo);
   });
 

@@ -48,7 +48,7 @@ sucrose.models.sparkline = function() {
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
-      
+
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 
       //------------------------------------------------------------
@@ -72,7 +72,7 @@ sucrose.models.sparkline = function() {
               var yValues = data.map(function(d, i) { return getY(d,i); });
               function pointIndex(index) {
                   if (index != -1) {
-	              var result = data[index];
+                  var result = data[index];
                       result.pointIndex = index;
                       return result;
                   } else {

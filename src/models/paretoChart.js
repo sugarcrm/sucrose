@@ -40,12 +40,12 @@ sucrose.models.paretoChart = function() {
       .clipEdge(false)
       .withLine(true)
       .nice(false),
-    lines1 = sucrose.models.line()
+    linesBackground = sucrose.models.line()
       .color(function(d, i) { return '#FFF'; })
       .fill(function(d, i) { return '#FFF'; })
       .useVoronoi(false)
       .nice(false),
-    lines2 = sucrose.models.line()
+    lines = sucrose.models.line()
       .useVoronoi(false)
       .color('data')
       .nice(false),
@@ -70,10 +70,10 @@ sucrose.models.paretoChart = function() {
         return '<p>' + e.key + ': <b>' + y + '</b></p>';
       };
 
-  var showTooltip = function(eo, offsetElement, dataGroup) {
+  var showTooltip = function(eo, offsetElement, groupData) {
         var key = eo.series.key,
-            per = (eo.point.y * 100 / dataGroup[eo.pointIndex].t).toFixed(1),
-            amt = lines2.y()(eo.point, eo.pointIndex),
+            per = (eo.point.y * 100 / groupData[eo.pointIndex].t).toFixed(1),
+            amt = lines.y()(eo.point, eo.pointIndex),
             content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
 
         return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
@@ -152,7 +152,7 @@ sucrose.models.paretoChart = function() {
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
-      function displayNoData (d) {
+      function displayNoData(d) {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
@@ -206,95 +206,163 @@ sucrose.models.paretoChart = function() {
         container.call(chart);
       };
 
-      var dataBars = data
-          .filter(function(d) {
-            return !d.disabled && (!d.type || d.type === 'bar');
-          })
-          .map(function(series, s) {
-            series.seriesIndex = s;
-            series.values.forEach(function(value, v) {
-              // do not eval d.active because it can be false
-              value.seriesIndex = series.seriesIndex;
-              value.active = typeof series.active !== 'undefined' ? series.active : '';
-            });
-            return series;
+      // add series index to each data point for reference
+      data.forEach(function(series, s) {
+        // make sure untrimmed values array exists
+        // and set immutable series values
+        if (!series._values) {
+          series._values = series.values.map(function(value, v) {
+            return {
+              'x': Array.isArray(value) ? value[0] : value.x,
+              'y': Array.isArray(value) ? value[1] : value.y
+            };
           });
+        }
+      });
 
-      var dataLines = data
-          .filter(function(d) {
-            return !d.disabled && d.type === 'line';
-          })
-         .map(function(series, s) {
-            series.seriesIndex = s;
-            if (!multibar.stacked()) {
-              series.values = series.valuesOrig.map(function(v, i) {
-                return {'series': v.series, 'x': (v.x + v.series * 0.25 - i * 0.25), 'y': v.y};
-              });
-            } else {
-              series.values.map(function(v) {
-                v.y = 0;
-              });
-              dataBars
-                .map(function(v, i) {
-                  v.values.map(function(v, i) {
-                    series.values[i].y += v.y;
-                  });
+      var barData = data
+            .filter(function(d) {
+              return !d.type || d.type === 'bar';
+            })
+            .map(function(series, s) {
+              series.seriesIndex = s;
+
+              series.values = series._values.map(function(value, v) {
+                  return {
+                      'group': v,
+                      'seriesIndex': series.seriesIndex,
+                      'color': typeof series.color !== 'undefined' ? series.color : '',
+                      'x': multibar.x()(value, v),
+                      'y': multibar.y()(value, v),
+                      'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
+                      'active': typeof series.active !== 'undefined' ? series.active : '' // do not eval d.active because it can be false
+                    };
                 });
-              series.values.map(function(v, i) {
-                if (i > 0) {
-                  v.y += series.values[i - 1].y;
-                }
-              });
-            }
-            return series;
+
+              return series;
+            })
+            .filter(function(d) {
+              return !d.disabled;
+            })
+            .map(function(series, s) {
+              series.seri = s;
+              series.values
+                .forEach(function(value, v) {
+                  value.seri = series.seri;
+                });
+              return series;
+            });
+      barData = barData.length ? barData : [{values: []}];
+
+      var lineData = data
+            .filter(function(d) {
+              return d.type === 'line';
+            })
+            .map(function(series, s) {
+              series.seriesIndex = s;
+
+              if (!multibar.stacked()) {
+
+                series.values = series._values.map(function(value, v) {
+                  return {
+                    'seriesIndex': series.seriesIndex,
+                    'color': typeof series.color !== 'undefined' ? series.color : '',
+                    'x': lines.x()(value, v) + (series.seriesIndex - v) * 0.25,
+                    'y': lines.y()(value, v)
+                  };
+                });
+
+              } else {
+
+                series.values.forEach(function(value) {
+                  value.y = 0;
+                });
+
+                barData.map(function(barSeries) {
+                    barSeries.values.map(function(value, v) {
+                      series.values[v].y += multibar.y()(value, v);
+                    });
+                  });
+
+                series.values.forEach(function(value, v) {
+                  if (v > 0) {
+                    value.y += series.values[v - 1].y;
+                  }
+                });
+
+              }
+
+              return series;
+            })
+            .filter(function(d) {
+              return !d.disabled;
+            })
+            .map(function(series, s) {
+              series.seri = s;
+              series.values
+                .forEach(function(value, v) {
+                  value.seri = series.seri;
+                });
+              return series;
+            });
+      lineData = lineData.length ? lineData : [{values: []}];
+
+      var groupData = properties.groupData,
+          groupLabels = groupData.map(function(d) {
+            return [].concat(d.l)[0] || chart.strings().noLabel;
           });
 
-      var dataGroup = properties.groupData,
-          groupLabels = dataGroup.map(function(d) {
-            return [].concat(d.l)[0] || chart.strings().noLabel;
-          }),
-          quotaValue = properties.quota || 0,
-          quotaLabel = properties.quotaLabel || '',
-          targetQuotaValue = properties.targetQuota || 0,
+      var quotaValue = properties.quota || 0,
+          quotaLabel = properties.quotaLabel || '';
+
+      var targetQuotaValue = properties.targetQuota || 0,
           targetQuotaLabel = properties.targetQuotaLabel || '';
 
-      dataBars = dataBars.length ? dataBars : [{values: []}];
-      dataLines = dataLines.length ? dataLines : [{values: []}];
+      //------------------------------------------------------------
+      // Legend data
 
-      // line legend data
-      var lineLegendData = data.filter(function(d) {
-            return d.type === 'line';
-          });
+      var barLegendData = data
+            .filter(function(d) {
+              return !d.type || d.type === 'bar';
+            });
+
+      var lineLegendData = data
+            .filter(function(d) {
+              return d.type === 'line';
+            });
       lineLegendData.push({
         'key': quotaLabel,
         'type': 'dash',
         'color': '#444',
-        'series': lineLegendData.length,
-        'values': {'series': lineLegendData.length, 'x': 0, 'y': 0}
+        'seriesIndex': lineLegendData.length,
+        'values': {'seriesIndex': lineLegendData.length, 'x': 0, 'y': 0}
       });
       if (targetQuotaValue > 0) {
         lineLegendData.push({
           'key': targetQuotaLabel,
           'type': 'dash',
           'color': '#777',
-          'series': lineLegendData.length,
-          'values': {'series': lineLegendData.length + 1, 'x': 0, 'y': 0}
+          'seriesIndex': lineLegendData.length,
+          'values': {'seriesIndex': lineLegendData.length + 1, 'x': 0, 'y': 0}
         });
       }
 
-      var seriesX = data.filter(function(d) {
-            return !d.disabled;
-          }).map(function(d) {
-            return d.valuesOrig.map(function(d, i) {
-              return getX(d, i);
+      var seriesX = data
+            .filter(function(d) {
+              return !d.disabled;
+            })
+            .map(function(d) {
+              return d._values.map(function(d, i) {
+                return getX(d, i);
+              });
             });
-          });
 
-      var seriesY = data.map(function(d) {
-            return d.valuesOrig.map(function(d, i) {
-              return getY(d, i);
+      var seriesY = data
+            .map(function(d) {
+              return d._values.map(function(d, i) {
+                return getY(d, i);
+              });
             });
-          });
 
       // set title display option
       showTitle = showTitle && properties.title;
@@ -414,7 +482,6 @@ sucrose.models.paretoChart = function() {
         }
 
         if (showLegend) {
-
           // bar series legend
           barLegend
             .id('barlegend_' + chart.id())
@@ -422,11 +489,7 @@ sucrose.models.paretoChart = function() {
             .align('left')
             .height(availableHeight - innerMargin.top);
           barLegend_wrap
-            .datum(
-              data.filter(function(d) {
-                return d.type === 'bar';
-              })
-            )
+            .datum(barLegendData)
             .call(barLegend);
 
           maxBarLegendWidth = barLegend.calcMaxWidth();
@@ -475,19 +538,21 @@ sucrose.models.paretoChart = function() {
           .forceY(forceY)
           .id(chart.id());
         bars_wrap
-          .datum(dataBars)
+          .datum(barData)
           .call(multibar);
 
+        var outerPadding = x(1) + x.bandwidth() / (multibar.stacked() || lineData.length === 1 ? 2 : 4);
+
         // Main Line Chart
-        lines1
-          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        linesBackground
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
           .width(innerWidth)
           .height(innerHeight)
           .forceY(forceY)
           .useVoronoi(false)
           .id('outline_' + chart.id());
-        lines2
-          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        lines
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
           .width(innerWidth)
           .height(innerHeight)
           .forceY(forceY)
@@ -497,22 +562,25 @@ sucrose.models.paretoChart = function() {
           .sizeDomain([pointSize, pointSize])
           .id('foreground_' + chart.id());
         lines_wrap1
-          .datum(dataLines)
-          .call(lines1);
+          .datum(lineData)
+          .call(linesBackground);
         lines_wrap2
-          .datum(dataLines)
-          .call(lines2);
+          .datum(lineData)
+          .call(lines);
 
         // Axes
         xAxis_wrap
           .call(xAxis);
 
         yAxis_wrap
-          .style('opacity', dataBars.length ? 1 : 0)
+          .style('opacity', barData.length ? 1 : 0)
           .call(yAxis);
 
         var xAxisMargin = xAxis.margin();
         var yAxisMargin = yAxis.margin();
+
+        var quotaTextWidth = 0,
+            quotaTextHeight = 14;
 
         function setInnerMargins() {
           innerMargin.left = Math.max(quotaTextWidth, xAxisMargin.left, yAxisMargin.left);
@@ -535,9 +603,6 @@ sucrose.models.paretoChart = function() {
         quota_wrap.selectAll('line').remove();
         yAxis_wrap.selectAll('text.sc-quota-value').remove();
         yAxis_wrap.selectAll('text.sc-target-quota-value').remove();
-
-        var quotaTextWidth = 0,
-          quotaTextHeight = 14;
 
         // Target Quota Line
         if (targetQuotaValue > 0) {
@@ -624,6 +689,7 @@ sucrose.models.paretoChart = function() {
 
         //------------------------------------------------------------
         // Recalculate final dimensions based on new Axis size
+        outerPadding = x(1) + x.bandwidth() / (multibar.stacked() ? 2 : lineData.length * 2);
 
         xAxisMargin = xAxis.margin();
         yAxisMargin = yAxis.margin();
@@ -633,7 +699,6 @@ sucrose.models.paretoChart = function() {
         //------------------------------------------------------------
         // Recall Main Chart Components based on final dimensions
 
-        var lOffset = x(1) + x.bandwidth() / (multibar.stacked() || dataLines.length === 1 ? 2 : 4);
         var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
 
         multibar
@@ -645,21 +710,21 @@ sucrose.models.paretoChart = function() {
           .call(multibar);
 
 
-        lines1
-          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        linesBackground
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
           .width(innerWidth)
           .height(innerHeight);
-        lines2
-          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        lines
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
           .width(innerWidth)
           .height(innerHeight);
 
         lines_wrap1
           .attr('transform', transform)
-          .call(lines1);
+          .call(linesBackground);
         lines_wrap2
           .attr('transform', transform)
-          .call(lines2);
+          .call(lines);
 
 
         quota_wrap
@@ -681,9 +746,10 @@ sucrose.models.paretoChart = function() {
 
         if (targetQuotaValue > 0) {
 
-          quota_wrap.select('line.sc-quota-target')
+          quota_wrap.selectAll('line.sc-quota-target')
             .attr('x2', innerWidth)
             .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
+
           yAxis_wrap.select('text.sc-target-quota-value')
             .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
 
@@ -700,7 +766,7 @@ sucrose.models.paretoChart = function() {
 
         if (quotaValue > 0) {
 
-          quota_wrap.select('line.sc-quota-line')
+          quota_wrap.selectAll('line.sc-quota-line')
             .attr('x2', innerWidth)
             .attr('transform', 'translate(0,' + y(quotaValue) + ')');
           yAxis_wrap.select('text.sc-quota-value')
@@ -755,7 +821,7 @@ sucrose.models.paretoChart = function() {
       //------------------------------------------------------------
 
       barLegend.dispatch.on('legendClick', function(d, i) {
-        var selectedSeries = d.series;
+        var selectedSeries = d.seriesIndex;
 
         //swap bar disabled
         d.disabled = !d.disabled;
@@ -783,7 +849,7 @@ sucrose.models.paretoChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, dataGroup);
+          tooltip = showTooltip(eo, that.parentNode, groupData);
         }
       });
 
@@ -803,7 +869,7 @@ sucrose.models.paretoChart = function() {
       dispatch.on('changeState', function(eo) {
         if (typeof eo.disabled !== 'undefined') {
           data.forEach(function(series, i) {
-          series.disabled = eo.disabled[i];
+            series.disabled = eo.disabled[i];
           });
           state.disabled = eo.disabled;
         }
@@ -839,15 +905,15 @@ sucrose.models.paretoChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  lines2.dispatch.on('elementMouseover.tooltip', function(eo) {
+  lines.dispatch.on('elementMouseover.tooltip', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  lines2.dispatch.on('elementMousemove.tooltip', function(e) {
+  lines.dispatch.on('elementMousemove.tooltip', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  lines2.dispatch.on('elementMouseout.tooltip', function() {
+  lines.dispatch.on('elementMouseout.tooltip', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -869,8 +935,8 @@ sucrose.models.paretoChart = function() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.lines1 = lines1;
-  chart.lines2 = lines2;
+  chart.linesBackground = linesBackground;
+  chart.lines = lines;
   chart.multibar = multibar;
   chart.barLegend = barLegend;
   chart.lineLegend = lineLegend;
@@ -945,9 +1011,9 @@ sucrose.models.paretoChart = function() {
     multibar.fill(barFill);
     multibar.classes(barClasses);
 
-    lines2.color(lineColor);
-    lines2.fill(lineColor);
-    lines2.classes(lineClasses);
+    lines.color(lineColor);
+    lines.fill(lineColor);
+    lines.classes(lineClasses);
 
     barLegend.color(barColor);
     barLegend.classes(barClasses);
@@ -959,9 +1025,7 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.x = function(_) {
-    if (!arguments.length) {
-      return getX;
-    }
+    if (!arguments.length) { return getX; }
     getX = _;
     lines.x(_);
     multibar.x(_);
@@ -969,9 +1033,7 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.y = function(_) {
-    if (!arguments.length) {
-      return getY;
-    }
+    if (!arguments.length) { return getY; }
     getY = _;
     lines.y(_);
     multibar.y(_);
@@ -979,9 +1041,7 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -991,137 +1051,87 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showControls = function(_) {
-    if (!arguments.length) {
-      return false;
-    }
+    if (!arguments.length) { return false; }
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltipBar = function(_) {
-    if (!arguments.length) {
-      return tooltipBar;
-    }
+    if (!arguments.length) { return tooltipBar; }
     tooltipBar = _;
     return chart;
   };
 
   chart.tooltipLine = function(_) {
-    if (!arguments.length) {
-      return tooltipLine;
-    }
+    if (!arguments.length) { return tooltipLine; }
     tooltipLine = _;
     return chart;
   };
 
   chart.tooltipQuota = function(_) {
-    if (!arguments.length) {
-      return tooltipQuota;
-    }
+    if (!arguments.length) { return tooltipQuota; }
     tooltipQuota = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.clipEdge = function(_) {
-    if (!arguments.length) {
-      return clipEdge;
-    }
+    if (!arguments.length) { return clipEdge; }
     clipEdge = _;
     multibar.clipEdge(_);
-    lines1.clipEdge(_);
-    lines2.clipEdge(_);
+    linesBackground.clipEdge(_);
+    lines.clipEdge(_);
     return chart;
   };
 
-  chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
-    delay = _;
-    multibar.delay(_);
-    lines1.delay(_);
-    lines2.delay(_);
+  chart.state = function(_) {
+    if (!arguments.length) { return state; }
+    state = _;
     return chart;
-  };
-
-  chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
-    duration = _;
-    multibar.duration(_);
-    lines1.duration(_);
-    lines2.duration(_);
-    return chart;
-  };
-
-	chart.state = function(_) {
-	  if (!arguments.length) {
-	    return state;
-	  }
-	  state = _;
-	  return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -1131,22 +1141,36 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
     multibar.direction(_);
-  	xAxis.direction(_);
+    xAxis.direction(_);
     yAxis.direction(_);
     barLegend.direction(_);
     lineLegend.direction(_);
     return chart;
   };
 
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    multibar.duration(_);
+    linesBackground.duration(_);
+    lines.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    multibar.delay(_);
+    linesBackground.delay(_);
+    lines.delay(_);
+    return chart;
+  };
+
   chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
+    if (!arguments.length) { return seriesClick; }
     seriesClick = _;
     return chart;
   };
@@ -1156,12 +1180,10 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.locality = function(_) {
-    if (!arguments.length) {
-      return locality;
-    }
+    if (!arguments.length) { return locality; }
     locality = sucrose.utils.buildLocality(_);
     multibar.locality(_);
-    lines1.locality(_);
+    linesBackground.locality(_);
     return chart;
   };
   //============================================================

@@ -32,8 +32,8 @@ sucrose.models.gaugeChart = function() {
       legend = sucrose.models.legend().align('center');
 
   var tooltipContent = function(key, x, y, e, graph) {
-        return '<h3>' + key + ' - ' + x + '</h3>' +
-               '<p>' + y + '</p>';
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -57,8 +57,8 @@ sucrose.models.gaugeChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
-      var availableWidth = width || parseInt(container.style('width'), 10) || 960,
-          availableHeight = height || parseInt(container.style('height'), 10) || 400;
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
 
       var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
@@ -73,24 +73,10 @@ sucrose.models.gaugeChart = function() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var noDataText = d && d.length ? [] : [chart.strings().noData];
-        var noData_bind = container.selectAll('.sc-no-data').data(noDataText);
-        var noData_entr = noData_bind.enter().append('text')
-              .attr('class', 'sucrose sc-no-data')
-              .attr('dy', '-.7em')
-              .style('text-anchor', 'middle');
-        noData_bind.exit().remove();
-        var noData = container.selectAll('.sc-no-data').merge(noData_entr);
-        noData
-          .attr('x', margin.left + availableWidth / 2)
-          .attr('y', margin.top + availableHeight / 2)
-          .text(sucrose.identity);
-
-        if (noDataText.length) {
-          return true;
-          container.select('.sucrose.sc-wrap').remove();
-        }
-        return false;
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -131,11 +117,9 @@ sucrose.models.gaugeChart = function() {
         modelData = [{values: []}]; // safety array
       }
 
-      var totalCount = d3.sum(modelData, function(d) { return d.count; });
-      properties.count = properties.count || totalCount;
+      properties.count = d3.sum(modelData, function(d) { return d.count; });
 
-      var totalAmount = d3.sum(modelData, function(d) { return d.value; });
-      properties.total = properties.value || totalAmount;
+      properties.total = d3.sum(modelData, function(d) { return d.value; });
 
       // set title display option
       showTitle = showTitle && properties.title.length;
@@ -146,10 +130,31 @@ sucrose.models.gaugeChart = function() {
       //------------------------------------------------------------
       // Display No Data message if there's nothing to show.
 
-      if (!totalAmount) {
+      if (!properties.total) {
         displayNoData();
         return chart;
       }
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
 
       //------------------------------------------------------------
       // Main chart draw
@@ -157,15 +162,31 @@ sucrose.models.gaugeChart = function() {
       chart.render = function() {
 
         // Chart layout variables
-        var renderWidth, renderHeight, innerMargin, innerWidth, innerHeight;
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
 
-        renderWidth = width || parseInt(container.style('width'), 10) || 960;
-        renderHeight = height || parseInt(container.style('height'), 10) || 400;
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
 
         // Header variables
         var maxLegendWidth = 0,
@@ -173,36 +194,6 @@ sucrose.models.gaugeChart = function() {
             titleBBox = {width: 0, height: 0},
             legendHeight = 0,
             trans = '';
-
-        //------------------------------------------------------------
-        // Setup containers and skeleton of chart
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
-        wrap.select('.sc-background')
-          .attr('width', renderWidth)
-          .attr('height', renderHeight);
-
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
-        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-        //------------------------------------------------------------
-        // Title & Legend
 
         title_wrap.select('.sc-title').remove();
 
@@ -403,9 +394,7 @@ sucrose.models.gaugeChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -415,73 +404,55 @@ sucrose.models.gaugeChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -491,9 +462,7 @@ sucrose.models.gaugeChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
     legend.direction(_);
@@ -501,18 +470,14 @@ sucrose.models.gaugeChart = function() {
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     model.duration(_);
     return chart;
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
     return chart;
