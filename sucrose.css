@@ -290,10 +290,11 @@ svg.sc-chart .calc-text-strings {
   fill: #1257b7;
   text-decoration: underline;
 }
-.sc-lineLegend .sc-series {
+.sc-line-legend .sc-series {
   cursor: default;
+  pointer-events: none;
 }
-.sc-lineLegend .sc-series text {
+.sc-line-legend .sc-series text {
   cursor: default;
 }
 /**********
@@ -486,7 +487,7 @@ text.sc-pie-hole-label {
 /**********
 * Bubble
 */
-.sc-bubbleChart .sc-scatter.sc-single-point .sc-groups .sc-point {
+.sc-chart-bubble .sc-scatter.sc-single-point .sc-group .sc-point {
   fill-opacity: 1;
   stroke-opacity: 1;
 }
@@ -507,25 +508,25 @@ text.sc-pie-hole-label {
   opacity: 0;
   stroke-width: 12px;
 }
-.sc-chart-pareto .sc-y.sc-axis .domain {
+.sc-chart-pareto .sc-axis-y .domain {
   display: none;
 }
-.sc-chart-pareto .sc-y.sc-axis text.sc-quota-value,
-.sc-chart-pareto .sc-y.sc-axis text.sc-target-quota-value {
+.sc-chart-pareto .sc-axis-y text.sc-quota-value,
+.sc-chart-pareto .sc-axis-y text.sc-target-quota-value {
   font-weight: bold;
 }
-.sc-chart-pareto .sc-line .sc-groups path {
+.sc-chart-pareto .sc-line .sc-group path {
   stroke-width: 4px;
 }
-.sc-chart-pareto .sc-line .sc-scatter .sc-groups .sc-point {
+.sc-chart-pareto .sc-lines-wrap1 .sc-line .sc-group path {
+  stroke-width: 6px;
+}
+.sc-chart-pareto .sc-scatter .sc-group .sc-point {
   fill-opacity: 1;
   stroke-opacity: 1;
   stroke-width: 2px;
 }
-.sc-chart-pareto .sc-linesWrap1 .sc-line .sc-groups path {
-  stroke-width: 6px;
-}
-.sc-chart-pareto .sc-linesWrap2 .sc-scatter .sc-groups circle {
+.sc-chart-pareto .sc-lines-wrap2 .sc-scatter .sc-group circle {
   stroke: #fff;
 }
 /**********
@@ -700,7 +701,7 @@ text.sc-pie-hole-label {
 .sc-chart-globe svg {
   pointer-events: all;
 }
-.sc-chart-globe .sc-chartBackground {
+.sc-chart-globe .sc-chart-background {
   fill: #555;
 }
 .sc-chart-globe .sphere {

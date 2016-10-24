@@ -1020,7 +1020,7 @@ sucrose.models.axis = function() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-axis').data([data]);
       var wrap_entr = wrap_bind.enter()
-            .append('g').attr('class', 'sucrose sc-wrap sc-axis')
+            .append('g').attr('class', 'sc-wrap sc-axis')
             .append('g').attr('class', 'sc-axis-inner');
       var wrap = container.select('.sc-axis-inner').merge(wrap_entr);
 
@@ -2707,46 +2707,46 @@ sucrose.models.scroll = function() {
         } else {
 
           scrollWrap
-              .on("mousedown.zoom", null)
-              .on("mousewheel.zoom", null)
-              .on("mousemove.zoom", null)
-              .on("DOMMouseScroll.zoom", null)
-              .on("dblclick.zoom", null)
-              .on("touchstart.zoom", null)
-              .on("touchmove.zoom", null)
-              .on("touchend.zoom", null)
-              .on("wheel.zoom", null);
+              .on('mousedown.zoom', null)
+              .on('mousewheel.zoom', null)
+              .on('mousemove.zoom', null)
+              .on('DOMMouseScroll.zoom', null)
+              .on('dblclick.zoom', null)
+              .on('touchstart.zoom', null)
+              .on('touchmove.zoom', null)
+              .on('touchend.zoom', null)
+              .on('wheel.zoom', null);
           scrollTarget
-              .on("mousedown.zoom", null)
-              .on("mousewheel.zoom", null)
-              .on("mousemove.zoom", null)
-              .on("DOMMouseScroll.zoom", null)
-              .on("dblclick.zoom", null)
-              .on("touchstart.zoom", null)
-              .on("touchmove.zoom", null)
-              .on("touchend.zoom", null)
-              .on("wheel.zoom", null);
+              .on('mousedown.zoom', null)
+              .on('mousewheel.zoom', null)
+              .on('mousemove.zoom', null)
+              .on('DOMMouseScroll.zoom', null)
+              .on('dblclick.zoom', null)
+              .on('touchstart.zoom', null)
+              .on('touchmove.zoom', null)
+              .on('touchend.zoom', null)
+              .on('wheel.zoom', null);
 
           scrollWrap
-              .on("mousedown.drag", null)
-              .on("mousewheel.drag", null)
-              .on("mousemove.drag", null)
-              .on("DOMMouseScroll.drag", null)
-              .on("dblclick.drag", null)
-              .on("touchstart.drag", null)
-              .on("touchmove.drag", null)
-              .on("touchend.drag", null)
-              .on("wheel.drag", null);
+              .on('mousedown.drag', null)
+              .on('mousewheel.drag', null)
+              .on('mousemove.drag', null)
+              .on('DOMMouseScroll.drag', null)
+              .on('dblclick.drag', null)
+              .on('touchstart.drag', null)
+              .on('touchmove.drag', null)
+              .on('touchend.drag', null)
+              .on('wheel.drag', null);
           scrollTarget
-              .on("mousedown.drag", null)
-              .on("mousewheel.drag", null)
-              .on("mousemove.drag", null)
-              .on("DOMMouseScroll.drag", null)
-              .on("dblclick.drag", null)
-              .on("touchstart.drag", null)
-              .on("touchmove.drag", null)
-              .on("touchend.drag", null)
-              .on("wheel.drag", null);
+              .on('mousedown.drag', null)
+              .on('mousewheel.drag', null)
+              .on('mousemove.drag', null)
+              .on('DOMMouseScroll.drag', null)
+              .on('dblclick.drag', null)
+              .on('touchstart.drag', null)
+              .on('touchmove.drag', null)
+              .on('touchend.drag', null)
+              .on('wheel.drag', null);
         }
       };
 
@@ -3463,7 +3463,7 @@ sucrose.models.scatter = function() {
           // add event handlers to points instead voronoi paths
           series.selectAll('.sc-point')
             //.data(dataWithPoints)
-            // .style('pointer-events', 'auto') // recativate events, disabled by css
+            .style('pointer-events', 'auto') // recaptivate events, disabled by css
             .on('mouseover', function(d, i) {
               if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
               var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
@@ -3474,6 +3474,7 @@ sucrose.models.scatter = function() {
               dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
+              console.log(d)
               if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
               var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
               dispatch.call('elementMouseout', this, eo);
@@ -6801,8 +6802,8 @@ sucrose.models.gaugeChart = function() {
       legend = sucrose.models.legend().align('center');
 
   var tooltipContent = function(key, x, y, e, graph) {
-        return '<h3>' + key + ' - ' + x + '</h3>' +
-               '<p>' + y + '</p>';
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -6826,8 +6827,8 @@ sucrose.models.gaugeChart = function() {
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
-      var availableWidth = width || parseInt(container.style('width'), 10) || 960,
-          availableHeight = height || parseInt(container.style('height'), 10) || 400;
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
 
       var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
@@ -6842,24 +6843,10 @@ sucrose.models.gaugeChart = function() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var noDataText = d && d.length ? [] : [chart.strings().noData];
-        var noData_bind = container.selectAll('.sc-no-data').data(noDataText);
-        var noData_entr = noData_bind.enter().append('text')
-              .attr('class', 'sucrose sc-no-data')
-              .attr('dy', '-.7em')
-              .style('text-anchor', 'middle');
-        noData_bind.exit().remove();
-        var noData = container.selectAll('.sc-no-data').merge(noData_entr);
-        noData
-          .attr('x', margin.left + availableWidth / 2)
-          .attr('y', margin.top + availableHeight / 2)
-          .text(sucrose.identity);
-
-        if (noDataText.length) {
-          return true;
-          container.select('.sucrose.sc-wrap').remove();
-        }
-        return false;
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -6900,11 +6887,9 @@ sucrose.models.gaugeChart = function() {
         modelData = [{values: []}]; // safety array
       }
 
-      var totalCount = d3.sum(modelData, function(d) { return d.count; });
-      properties.count = properties.count || totalCount;
+      properties.count = d3.sum(modelData, function(d) { return d.count; });
 
-      var totalAmount = d3.sum(modelData, function(d) { return d.value; });
-      properties.total = properties.value || totalAmount;
+      properties.total = d3.sum(modelData, function(d) { return d.value; });
 
       // set title display option
       showTitle = showTitle && properties.title.length;
@@ -6915,10 +6900,31 @@ sucrose.models.gaugeChart = function() {
       //------------------------------------------------------------
       // Display No Data message if there's nothing to show.
 
-      if (!totalAmount) {
+      if (!properties.total) {
         displayNoData();
         return chart;
       }
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
 
       //------------------------------------------------------------
       // Main chart draw
@@ -6926,15 +6932,31 @@ sucrose.models.gaugeChart = function() {
       chart.render = function() {
 
         // Chart layout variables
-        var renderWidth, renderHeight, innerMargin, innerWidth, innerHeight;
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
 
-        renderWidth = width || parseInt(container.style('width'), 10) || 960;
-        renderHeight = height || parseInt(container.style('height'), 10) || 400;
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
 
         // Header variables
         var maxLegendWidth = 0,
@@ -6942,36 +6964,6 @@ sucrose.models.gaugeChart = function() {
             titleBBox = {width: 0, height: 0},
             legendHeight = 0,
             trans = '';
-
-        //------------------------------------------------------------
-        // Setup containers and skeleton of chart
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
-        wrap.select('.sc-background')
-          .attr('width', renderWidth)
-          .attr('height', renderHeight);
-
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
-        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-        //------------------------------------------------------------
-        // Title & Legend
 
         title_wrap.select('.sc-title').remove();
 
@@ -7172,9 +7164,7 @@ sucrose.models.gaugeChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -7184,73 +7174,55 @@ sucrose.models.gaugeChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -7260,9 +7232,7 @@ sucrose.models.gaugeChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
     legend.direction(_);
@@ -7270,18 +7240,14 @@ sucrose.models.gaugeChart = function() {
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     model.duration(_);
     return chart;
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
     return chart;
@@ -7327,6 +7293,7 @@ sucrose.models.globeChart = function() {
       tooltip = null,
       tooltips = true,
       initialTilt = 0,
+      initialRotate = 100,
       x,
       y,
       state = {},
@@ -7338,6 +7305,9 @@ sucrose.models.globeChart = function() {
       showLabels = true,
       autoSpin = false,
       showGraticule = true,
+      world_map = [],
+      country_map = {},
+      country_labels = {},
       color = function(d, i) { return sucrose.utils.defaultColor()(d, i); },
       classes = function(d, i) { return 'sc-country-' + i; },
       fill = color,
@@ -7348,14 +7318,9 @@ sucrose.models.globeChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var projection = d3.geo.orthographic()
-        .clipAngle(90)
-        .precision(0.1);
-
-  var path = d3.geo.path();
-
-  var graticule = d3.geo.graticule();
-
+  var projection = d3.geoOrthographic().precision(0.1);
+  var path = d3.geoPath().projection(projection);
+  var graticule = d3.geoGraticule();
   var colorLimit = 0;
 
   function tooltipContent(d) {
@@ -7380,10 +7345,14 @@ sucrose.models.globeChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          node = d3.select('#' + id + ' svg').node(),
-          container = d3.select(this);
+          container = d3.select(this),
+          node = d3.select('#' + id + ' svg').node();
+
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
 
       var tooltips0 = tooltips,
           m0, n0, o0;
@@ -7401,10 +7370,7 @@ sucrose.models.globeChart = function() {
       // Globe variables
       var world,
           active_country = false,
-          world_map = [],
-          country_map = {},
-          country_label = {},
-          world_view = {rotate: [100, initialTilt], scale: 1, zoom: 1},
+          world_view = {rotate: [initialRotate, initialTilt], scale: 1, zoom: 1},
           country_view = {rotate: [null, null], scale: null, zoom: null},
           iRotation;
 
@@ -7421,30 +7387,12 @@ sucrose.models.globeChart = function() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        if (d && d.length) {
-          container.selectAll('.sc-no-data').remove();
-          return false;
-        }
-
-        container.select('.sucrose.sc-wrap').remove();
-
-        var w = width || parseInt(container.style('width'), 10) || 960,
-            h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
-
-        noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-no-data')
-          .attr('dy', '-.7em')
-          .style('text-anchor', 'middle');
-
-        noDataText
-          .attr('x', margin.left + w / 2)
-          .attr('y', margin.top + h / 2)
-          .text(function(d) {
-            return d;
-          });
-
-        return true;
+        var hasData = d && d.length,
+            x, y;
+        if (hasData) return false;
+        x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -7459,60 +7407,95 @@ sucrose.models.globeChart = function() {
       //------------------------------------------------------------
       // Setup svgs and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-globeChart').data([1]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-globeChart');
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-globe');
       var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      g_entr.append('defs');
+      wrap_entr.append('defs');
       var defs = wrap.select('defs');
 
-
-
-
-      g_entr.append('svg:rect')
-        .attr('class', 'sc-chartBackground')
+      wrap_entr.append('svg:rect')
+        .attr('class', 'sc-chart-background')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-      var backg = wrap.select('.sc-chartBackground');
+      var backg = wrap.select('.sc-chart-background');
 
-      var globeEnter = g_entr.append('g')
-            .attr('class', 'sc-globe');
-      var globeChart = wrap.select('.sc-globe');
+      var globe_entr = wrap_entr.append('g').attr('class', 'sc-globe');
+      var globe = wrap.select('.sc-globe');
 
-      globeEnter.append('path')
+      globe_entr.append('path')
         .datum({type: 'Sphere'})
         .attr('class', 'sphere');
       var sphere = d3.select('.sphere');
 
       if (showGraticule) {
-        globeEnter.append('path')
+        globe_entr.append('path')
           .datum(graticule)
           .attr('class', 'graticule');
         var grid = d3.select('.graticule');
       }
 
       // zoom and pan
-      var zoom = d3.zoom();
-      zoom
-        .on('zoom', function () {
-          var scale = calcScale(d3.event.scale);
-          projection.scale(scale);
-          refresh();
-        });
-      globeChart.call(zoom);
-
-      globeChart
-        .on('mousedown', mousedown);
-
-      wrap
-        .on('mousemove', mousemove)
-        .on('mouseup', mouseup);
+      var zoom = d3.zoom()
+            .on('start', zoomStart)
+            .on('zoom', zoomMove)
+            .on('end', zoomEnd);
+      globe.call(zoom);
 
       sphere
         .on('click', function () {
           unLoadCountry();
         });
+
+      function zoomStart() {
+        m0 = normalizeOffset(d3.event.sourceEvent);
+        n0 = projection.invert(m0);
+        o0 = projection.rotate();
+
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+          tooltips = false;
+        }
+
+        if (autoSpin) {
+          clearInterval(iRotation);
+        }
+      }
+
+      function zoomMove() {
+        if (!m0) {
+          return;
+        }
+        var scale = calcScale(d3.event.transform.k);
+        var m1, n1, o1;
+
+        m1 = normalizeOffset(d3.event.sourceEvent);
+        n1 = projection.invert(m1);
+
+        if (!n1[0]) {
+          return;
+        }
+
+        o1 = [o0[0] + n1[0] - n0[0], (country_view.rotate[1] || world_view.rotate[1])];
+        o0 = [o1[0], o1[1]];
+
+        projection
+          .rotate(o1)
+          .scale(scale);
+
+        refresh();
+      }
+
+      function zoomEnd() {
+        m0 = null;
+        tooltips = tooltips0;
+      }
+
+      function normalizeOffset(e) {
+        var rect = node.getBoundingClientRect(),
+            offsetX = (e ? e.clientX || 0 : 0) - rect.left,
+            offsetY = (e ? e.clientY || 0 : 0) - rect.top;
+        return [offsetX, offsetY];
+      }
 
       //------------------------------------------------------------
       // Main chart draw methods
@@ -7524,7 +7507,7 @@ sucrose.models.globeChart = function() {
       chart.resize = function () {
         var scale, translate;
         calcDimensions();
-        scale = calcScale(zoom.scale());
+        scale = calcScale(projection.scale());
         translate = calcTranslate();
         backg
           .attr('width', availableWidth)
@@ -7540,9 +7523,9 @@ sucrose.models.globeChart = function() {
         calcDimensions();
 
         projection
-          .scale(calcScale(1))
           .translate(calcTranslate())
-          .rotate(world_view.rotate);
+          .rotate(world_view.rotate)
+          .scale(calcScale(world_view.scale));
 
         path.projection(projection);
 
@@ -7565,25 +7548,11 @@ sucrose.models.globeChart = function() {
 
       chart.render();
 
-      queue()
-        .defer(d3.json, 'data/geo/world-countries-topo-110.json')
-        .defer(d3.json, 'data/geo/usa-states-topo-110.json')
-        .defer(d3.json, 'data/geo/cldr_en.json')
-        .await(function (error, world, country, labels) {
-          if (error) {
-            return;
-          }
+      loadChart(world_map, 'countries');
 
-          world_map = topojson.feature(world, world.objects.countries).features;
-          country_map['USA'] = topojson.feature(country, country.objects.states).features;
-          country_label = labels;
-
-          loadChart(world_map, 'countries');
-
-          if (autoSpin) {
-            iRotation = setInterval(spin, 10);
-          }
-        });
+      if (autoSpin) {
+        iRotation = setInterval(spin, 10);
+      }
 
       //------------------------------------------------------------
       // Internal functions
@@ -7608,21 +7577,23 @@ sucrose.models.globeChart = function() {
       function loadChart(data, type) {
         colorLimit = results._total;
 
-        world = globeEnter.append('g')
-            .attr('class', type)
-          .selectAll('path')
-            .data(data)
-          .enter().append('path')
-            .attr('d', clip)
-            .attr('class', classes)
-            .style('fill', function (d, i) {
-              d.amount = amount(d);
-              return fill(d, d.properties.mapcolor13 || i);
-            });
+        var world_bind = globe_entr.append('g').attr('class', type)
+              .selectAll('path').data(data);
+        var world_entr = world_bind.enter().append('path')
+              .attr('d', clip)
+              .attr('class', classes)
+              .style('fill', function (d, i) {
+                d.amount = amount(d);
+                return fill(d, d.properties.mapcolor13 || i);
+              });
+        world = globe.selectAll('path').merge(world_entr);
 
-        world
+        world_entr
           .on('click', loadCountry)
           .on('mouseover', function (d, i, j) {
+            if (!d.properties) {
+              return;
+            }
             var eo = buildEventObject(d3.event, d, i, j);
             dispatch.call('tooltipShow', this, eo);
           })
@@ -7638,7 +7609,7 @@ sucrose.models.globeChart = function() {
           var eo = {
               point: d,
               e: e,
-              name: (country_label[d.properties.iso_a2] || d.properties.name),
+              name: (country_labels[d.properties.iso_a2] || d.properties.name),
               amount: amount(d)
           };
           return eo;
@@ -7661,31 +7632,25 @@ sucrose.models.globeChart = function() {
           sucrose.tooltip.cleanup();
         }
 
-        world_view = {
-          rotate: projection.rotate(),
-          scale: projection.scale(),
-          zoom: zoom.scale()
-        };
-
-        var centroid = d3.geo.centroid(d);
-        projection.rotate([-centroid[0], -centroid[1]]);
-
+        var centroid = d3.geoCentroid(d);
         var bounds = path.bounds(d);
         var hscale = availableWidth  / (bounds[1][0] - bounds[0][0]);
         var vscale = availableHeight / (bounds[1][1] - bounds[0][1]);
+        var scale = Math.min(availableWidth * hscale, availableHeight * vscale) / 2;
+        var rotate = [-centroid[0], -centroid[1]];
 
-        if (availableWidth * hscale < availableHeight * vscale) {
-          projection.scale(availableWidth * hscale / 2);
-          zoom.scale(hscale);
-        } else {
-          projection.scale(availableHeight * vscale / 2);
-          zoom.scale(vscale);
-        }
+        world_view = {
+          rotate: projection.rotate(),
+          scale: projection.scale()
+        };
+
+        projection
+          .rotate(rotate)
+          .scale(scale);
 
         country_view = {
           rotate: projection.rotate(),
-          scale: projection.scale(),
-          zoom: zoom.scale()
+          scale: projection.scale()
         };
 
         // Flatten the results and include the state-level
@@ -7693,13 +7658,10 @@ sucrose.models.globeChart = function() {
         var obj = region_results(d);
         obj.parent = results;
         results = obj;
-
         colorLimit = results._total;
 
         active_country = d3.select(this);
-
         loadChart(country_map[d.id], 'states');
-
         active_country.style('display', 'none');
 
         refresh();
@@ -7709,15 +7671,23 @@ sucrose.models.globeChart = function() {
         if (!active_country) {
           return;
         }
+
+        projection
+          .rotate(world_view.rotate)
+          .scale(world_view.scale);
+
+        country_view = {
+          rotate: [null, null],
+          scale: null
+        };
+
         results = results.parent;
         colorLimit = results._total;
+
         active_country.style('display', 'inline');
         d3.select('.states').remove();
         active_country = false;
-        country_view = {rotate: [null, null], scale: null, zoom: null};
-        projection.rotate(world_view.rotate);
-        projection.scale(world_view.scale);
-        zoom.scale(world_view.zoom);
+
         refresh();
       }
 
@@ -7733,15 +7703,6 @@ sucrose.models.globeChart = function() {
         return region_results(d)._total || 0;
       }
 
-      function clip(d) {
-        return path(d) || 'M0,0Z';
-      }
-
-      function refresh(duration) {
-        globeChart.selectAll('path')
-          .attr('d', clip);
-      }
-
       function spin() {
         var o0 = projection.rotate(),
             m1 = [10, 0],
@@ -7754,58 +7715,18 @@ sucrose.models.globeChart = function() {
         refresh();
       }
 
+      function refresh(duration) {
+        globe.selectAll('path')
+          .attr('d', clip);
+      }
+
+      function clip(d) {
+        return path(d) || 'M0,0Z';
+      }
+
       //============================================================
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
-
-      function mousedown() {
-        d3.event.preventDefault();
-
-        m0 = normalizeOffset(d3.event);
-        n0 = projection.invert(m0);
-        o0 = projection.rotate();
-
-        if (tooltips) {
-          sucrose.tooltip.cleanup();
-          tooltips = false;
-        }
-
-        if (autoSpin) {
-          clearInterval(iRotation);
-        }
-      }
-
-      function normalizeOffset(e) {
-        var rect = node.getBoundingClientRect(),
-            offsetX = e.clientX - rect.left,
-            offsetY = e.clientY - rect.top;
-        return [offsetX, offsetY];
-      }
-
-      function mousemove() {
-        var m1, n1, o1;
-
-        if (!m0) {
-          return;
-        }
-
-        m1 = normalizeOffset(d3.event);
-        n1 = projection.invert(m1);
-
-        if (!n1[0]) {
-          return;
-        }
-
-        o1 = [o0[0] + n1[0] - n0[0], (country_view.rotate[1] || world_view.rotate[1])];
-        o0 = [o1[0], o1[1]];
-
-        rotate(o1);
-      }
-
-      function mouseup() {
-        m0 = null;
-        tooltips = tooltips0;
-      }
 
       dispatch.on('tooltipShow', function(eo) {
           if (tooltips) {
@@ -8048,6 +7969,29 @@ sucrose.models.globeChart = function() {
     return chart;
   };
 
+  chart.worldMap = function(_) {
+    if (!arguments.length) {
+      return world_map;
+    }
+    world_map = _;
+    return chart;
+  };
+
+  chart.countryMap = function(_) {
+    if (!arguments.length) {
+      return country_map;
+    }
+    country_map = _;
+    return chart;
+  };
+
+  chart.countryLabels = function(_) {
+    if (!arguments.length) {
+      return country_labels;
+    }
+    country_labels = _;
+    return chart;
+  };
   //============================================================
 
   return chart;
@@ -8118,7 +8062,7 @@ sucrose.models.line = function() {
             .duration(duration)
             .ease(d3.easeLinear);
 
-	  var id = scatter.id();
+      var id = scatter.id();
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
@@ -9109,7 +9053,7 @@ sucrose.models.lineChart = function() {
   });
 
   model.dispatch.on('elementMouseout.tooltip', function(eo) {
-	// need eo for removing hover class on element
+    // need eo for removing hover class on element
     dispatch.call('tooltipHide', this, eo);
   });
 
@@ -10235,7 +10179,7 @@ sucrose.models.multiBar = function() {
                 x: Math.round(x(getX(d, i))),
                 y: Math.round(y(d.y0))
               } :
-              { x: Math.round(d.seriesIndex * barThickness() + x(getX(d, i))),
+              { x: Math.round(d.seri * barThickness() + x(getX(d, i))),
                 y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
               };
           return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
@@ -10802,12 +10746,12 @@ sucrose.models.multiBarChart = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      delay = 0,
-      duration = 0,
       tooltip = null,
       tooltips = true,
       x,
       y,
+      delay = 0,
+      duration = 0,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
@@ -10885,9 +10829,10 @@ sucrose.models.multiBarChart = function() {
           groupCount = 0,
           totalAmount = 0,
           hasData = false,
-          baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32,
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32;
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
@@ -11012,8 +10957,17 @@ sucrose.models.multiBarChart = function() {
         });
       });
 
-      seriesData = data.filter(function(series, s) {
+      seriesData = data
+        .filter(function(series, s) {
           return !series.disabled && (!series.type || series.type === 'bar');
+        })
+        .map(function(series, s) {
+          series.seri = s;
+          series.values
+            .forEach(function(value, v) {
+              value.seri = series.seri;
+            });
+          return series;
         });
 
       seriesCount = seriesData.length;
@@ -11024,16 +10978,17 @@ sucrose.models.multiBarChart = function() {
           group.total = 0;
           group._height = 0;
           // only sum enabled series
-          seriesData.forEach(function(series, s) {
-            series.values
-              .filter(function(value, v) {
-                return value.group === g;
-              })
-              .forEach(function(value, v) {
-                group.total += value.y;
-                group._height += Math.abs(value.y);
-              });
-          });
+          seriesData
+            .forEach(function(series, s) {
+              series.values
+                .filter(function(value, v) {
+                  return value.group === g;
+                })
+                .forEach(function(value, v) {
+                  group.total += value.y;
+                  group._height += Math.abs(value.y);
+                });
+            });
           return group;
         });
 
@@ -11062,6 +11017,7 @@ sucrose.models.multiBarChart = function() {
             })
             .map(function(value, v) {
               return {
+                'seri': series.seri,
                 'seriesIndex': value.seriesIndex,
                 'group': value.group,
                 'color': value.color,
@@ -11758,41 +11714,31 @@ sucrose.models.multiBarChart = function() {
   };
 
   chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
+    if (!arguments.length) { return seriesClick; }
     seriesClick = _;
     return chart;
   };
 
   chart.vertical = function(_) {
-    if (!arguments.length) {
-      return vertical;
-    }
+    if (!arguments.length) { return vertical; }
     vertical = _;
     return chart;
   };
 
   chart.allowScroll = function(_) {
-    if (!arguments.length) {
-      return scrollEnabled;
-    }
+    if (!arguments.length) { return scrollEnabled; }
     scrollEnabled = _;
     return chart;
   };
 
   chart.overflowHandler = function(_) {
-    if (!arguments.length) {
-      return overflowHandler;
-    }
+    if (!arguments.length) { return overflowHandler; }
     overflowHandler = sucrose.functor(_);
     return chart;
   };
 
   chart.hideEmptyGroups = function(_) {
-    if (!arguments.length) {
-      return hideEmptyGroups;
-    }
+    if (!arguments.length) { return hideEmptyGroups; }
     hideEmptyGroups = _;
     return chart;
   };
@@ -11843,12 +11789,12 @@ sucrose.models.paretoChart = function() {
       .clipEdge(false)
       .withLine(true)
       .nice(false),
-    lines1 = sucrose.models.line()
+    linesBackground = sucrose.models.line()
       .color(function(d, i) { return '#FFF'; })
       .fill(function(d, i) { return '#FFF'; })
       .useVoronoi(false)
       .nice(false),
-    lines2 = sucrose.models.line()
+    lines = sucrose.models.line()
       .useVoronoi(false)
       .color('data')
       .nice(false),
@@ -11873,10 +11819,10 @@ sucrose.models.paretoChart = function() {
         return '<p>' + e.key + ': <b>' + y + '</b></p>';
       };
 
-  var showTooltip = function(eo, offsetElement, dataGroup) {
+  var showTooltip = function(eo, offsetElement, groupData) {
         var key = eo.series.key,
-            per = (eo.point.y * 100 / dataGroup[eo.pointIndex].t).toFixed(1),
-            amt = lines2.y()(eo.point, eo.pointIndex),
+            per = (eo.point.y * 100 / groupData[eo.pointIndex].t).toFixed(1),
+            amt = lines.y()(eo.point, eo.pointIndex),
             content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
 
         return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
@@ -11955,7 +11901,7 @@ sucrose.models.paretoChart = function() {
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
-      function displayNoData (d) {
+      function displayNoData(d) {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
@@ -12009,95 +11955,163 @@ sucrose.models.paretoChart = function() {
         container.call(chart);
       };
 
-      var dataBars = data
-          .filter(function(d) {
-            return !d.disabled && (!d.type || d.type === 'bar');
-          })
-          .map(function(series, s) {
-            series.seriesIndex = s;
-            series.values.forEach(function(value, v) {
-              // do not eval d.active because it can be false
-              value.seriesIndex = series.seriesIndex;
-              value.active = typeof series.active !== 'undefined' ? series.active : '';
-            });
-            return series;
+      // add series index to each data point for reference
+      data.forEach(function(series, s) {
+        // make sure untrimmed values array exists
+        // and set immutable series values
+        if (!series._values) {
+          series._values = series.values.map(function(value, v) {
+            return {
+              'x': Array.isArray(value) ? value[0] : value.x,
+              'y': Array.isArray(value) ? value[1] : value.y
+            };
           });
+        }
+      });
 
-      var dataLines = data
-          .filter(function(d) {
-            return !d.disabled && d.type === 'line';
-          })
-         .map(function(series, s) {
-            series.seriesIndex = s;
-            if (!multibar.stacked()) {
-              series.values = series.valuesOrig.map(function(v, i) {
-                return {'series': v.series, 'x': (v.x + v.series * 0.25 - i * 0.25), 'y': v.y};
-              });
-            } else {
-              series.values.map(function(v) {
-                v.y = 0;
-              });
-              dataBars
-                .map(function(v, i) {
-                  v.values.map(function(v, i) {
-                    series.values[i].y += v.y;
-                  });
+      var barData = data
+            .filter(function(d) {
+              return !d.type || d.type === 'bar';
+            })
+            .map(function(series, s) {
+              series.seriesIndex = s;
+
+              series.values = series._values.map(function(value, v) {
+                  return {
+                      'group': v,
+                      'seriesIndex': series.seriesIndex,
+                      'color': typeof series.color !== 'undefined' ? series.color : '',
+                      'x': multibar.x()(value, v),
+                      'y': multibar.y()(value, v),
+                      'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
+                      'active': typeof series.active !== 'undefined' ? series.active : '' // do not eval d.active because it can be false
+                    };
                 });
-              series.values.map(function(v, i) {
-                if (i > 0) {
-                  v.y += series.values[i - 1].y;
-                }
-              });
-            }
-            return series;
+
+              return series;
+            })
+            .filter(function(d) {
+              return !d.disabled;
+            })
+            .map(function(series, s) {
+              series.seri = s;
+              series.values
+                .forEach(function(value, v) {
+                  value.seri = series.seri;
+                });
+              return series;
+            });
+      barData = barData.length ? barData : [{values: []}];
+
+      var lineData = data
+            .filter(function(d) {
+              return d.type === 'line';
+            })
+            .map(function(series, s) {
+              series.seriesIndex = s;
+
+              if (!multibar.stacked()) {
+
+                series.values = series._values.map(function(value, v) {
+                  return {
+                    'seriesIndex': series.seriesIndex,
+                    'color': typeof series.color !== 'undefined' ? series.color : '',
+                    'x': lines.x()(value, v) + (series.seriesIndex - v) * 0.25,
+                    'y': lines.y()(value, v)
+                  };
+                });
+
+              } else {
+
+                series.values.forEach(function(value) {
+                  value.y = 0;
+                });
+
+                barData.map(function(barSeries) {
+                    barSeries.values.map(function(value, v) {
+                      series.values[v].y += multibar.y()(value, v);
+                    });
+                  });
+
+                series.values.forEach(function(value, v) {
+                  if (v > 0) {
+                    value.y += series.values[v - 1].y;
+                  }
+                });
+
+              }
+
+              return series;
+            })
+            .filter(function(d) {
+              return !d.disabled;
+            })
+            .map(function(series, s) {
+              series.seri = s;
+              series.values
+                .forEach(function(value, v) {
+                  value.seri = series.seri;
+                });
+              return series;
+            });
+      lineData = lineData.length ? lineData : [{values: []}];
+
+      var groupData = properties.groupData,
+          groupLabels = groupData.map(function(d) {
+            return [].concat(d.l)[0] || chart.strings().noLabel;
           });
 
-      var dataGroup = properties.groupData,
-          groupLabels = dataGroup.map(function(d) {
-            return [].concat(d.l)[0] || chart.strings().noLabel;
-          }),
-          quotaValue = properties.quota || 0,
-          quotaLabel = properties.quotaLabel || '',
-          targetQuotaValue = properties.targetQuota || 0,
+      var quotaValue = properties.quota || 0,
+          quotaLabel = properties.quotaLabel || '';
+
+      var targetQuotaValue = properties.targetQuota || 0,
           targetQuotaLabel = properties.targetQuotaLabel || '';
 
-      dataBars = dataBars.length ? dataBars : [{values: []}];
-      dataLines = dataLines.length ? dataLines : [{values: []}];
+      //------------------------------------------------------------
+      // Legend data
 
-      // line legend data
-      var lineLegendData = data.filter(function(d) {
-            return d.type === 'line';
-          });
+      var barLegendData = data
+            .filter(function(d) {
+              return !d.type || d.type === 'bar';
+            });
+
+      var lineLegendData = data
+            .filter(function(d) {
+              return d.type === 'line';
+            });
       lineLegendData.push({
         'key': quotaLabel,
         'type': 'dash',
         'color': '#444',
-        'series': lineLegendData.length,
-        'values': {'series': lineLegendData.length, 'x': 0, 'y': 0}
+        'seriesIndex': lineLegendData.length,
+        'values': {'seriesIndex': lineLegendData.length, 'x': 0, 'y': 0}
       });
       if (targetQuotaValue > 0) {
         lineLegendData.push({
           'key': targetQuotaLabel,
           'type': 'dash',
           'color': '#777',
-          'series': lineLegendData.length,
-          'values': {'series': lineLegendData.length + 1, 'x': 0, 'y': 0}
+          'seriesIndex': lineLegendData.length,
+          'values': {'seriesIndex': lineLegendData.length + 1, 'x': 0, 'y': 0}
         });
       }
 
-      var seriesX = data.filter(function(d) {
-            return !d.disabled;
-          }).map(function(d) {
-            return d.valuesOrig.map(function(d, i) {
-              return getX(d, i);
+      var seriesX = data
+            .filter(function(d) {
+              return !d.disabled;
+            })
+            .map(function(d) {
+              return d._values.map(function(d, i) {
+                return getX(d, i);
+              });
             });
-          });
 
-      var seriesY = data.map(function(d) {
-            return d.valuesOrig.map(function(d, i) {
-              return getY(d, i);
+      var seriesY = data
+            .map(function(d) {
+              return d._values.map(function(d, i) {
+                return getY(d, i);
+              });
             });
-          });
 
       // set title display option
       showTitle = showTitle && properties.title;
@@ -12217,7 +12231,6 @@ sucrose.models.paretoChart = function() {
         }
 
         if (showLegend) {
-
           // bar series legend
           barLegend
             .id('barlegend_' + chart.id())
@@ -12225,11 +12238,7 @@ sucrose.models.paretoChart = function() {
             .align('left')
             .height(availableHeight - innerMargin.top);
           barLegend_wrap
-            .datum(
-              data.filter(function(d) {
-                return d.type === 'bar';
-              })
-            )
+            .datum(barLegendData)
             .call(barLegend);
 
           maxBarLegendWidth = barLegend.calcMaxWidth();
@@ -12278,19 +12287,21 @@ sucrose.models.paretoChart = function() {
           .forceY(forceY)
           .id(chart.id());
         bars_wrap
-          .datum(dataBars)
+          .datum(barData)
           .call(multibar);
 
+        var outerPadding = x(1) + x.bandwidth() / (multibar.stacked() || lineData.length === 1 ? 2 : 4);
+
         // Main Line Chart
-        lines1
-          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        linesBackground
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
           .width(innerWidth)
           .height(innerHeight)
           .forceY(forceY)
           .useVoronoi(false)
           .id('outline_' + chart.id());
-        lines2
-          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        lines
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
           .width(innerWidth)
           .height(innerHeight)
           .forceY(forceY)
@@ -12300,22 +12311,25 @@ sucrose.models.paretoChart = function() {
           .sizeDomain([pointSize, pointSize])
           .id('foreground_' + chart.id());
         lines_wrap1
-          .datum(dataLines)
-          .call(lines1);
+          .datum(lineData)
+          .call(linesBackground);
         lines_wrap2
-          .datum(dataLines)
-          .call(lines2);
+          .datum(lineData)
+          .call(lines);
 
         // Axes
         xAxis_wrap
           .call(xAxis);
 
         yAxis_wrap
-          .style('opacity', dataBars.length ? 1 : 0)
+          .style('opacity', barData.length ? 1 : 0)
           .call(yAxis);
 
         var xAxisMargin = xAxis.margin();
         var yAxisMargin = yAxis.margin();
+
+        var quotaTextWidth = 0,
+            quotaTextHeight = 14;
 
         function setInnerMargins() {
           innerMargin.left = Math.max(quotaTextWidth, xAxisMargin.left, yAxisMargin.left);
@@ -12338,9 +12352,6 @@ sucrose.models.paretoChart = function() {
         quota_wrap.selectAll('line').remove();
         yAxis_wrap.selectAll('text.sc-quota-value').remove();
         yAxis_wrap.selectAll('text.sc-target-quota-value').remove();
-
-        var quotaTextWidth = 0,
-          quotaTextHeight = 14;
 
         // Target Quota Line
         if (targetQuotaValue > 0) {
@@ -12427,6 +12438,7 @@ sucrose.models.paretoChart = function() {
 
         //------------------------------------------------------------
         // Recalculate final dimensions based on new Axis size
+        outerPadding = x(1) + x.bandwidth() / (multibar.stacked() ? 2 : lineData.length * 2);
 
         xAxisMargin = xAxis.margin();
         yAxisMargin = yAxis.margin();
@@ -12436,7 +12448,6 @@ sucrose.models.paretoChart = function() {
         //------------------------------------------------------------
         // Recall Main Chart Components based on final dimensions
 
-        var lOffset = x(1) + x.bandwidth() / (multibar.stacked() || dataLines.length === 1 ? 2 : 4);
         var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
 
         multibar
@@ -12448,21 +12459,21 @@ sucrose.models.paretoChart = function() {
           .call(multibar);
 
 
-        lines1
-          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        linesBackground
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
           .width(innerWidth)
           .height(innerHeight);
-        lines2
-          .margin({top: 0, right: lOffset, bottom: 0, left: lOffset})
+        lines
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
           .width(innerWidth)
           .height(innerHeight);
 
         lines_wrap1
           .attr('transform', transform)
-          .call(lines1);
+          .call(linesBackground);
         lines_wrap2
           .attr('transform', transform)
-          .call(lines2);
+          .call(lines);
 
 
         quota_wrap
@@ -12484,9 +12495,10 @@ sucrose.models.paretoChart = function() {
 
         if (targetQuotaValue > 0) {
 
-          quota_wrap.select('line.sc-quota-target')
+          quota_wrap.selectAll('line.sc-quota-target')
             .attr('x2', innerWidth)
             .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
+
           yAxis_wrap.select('text.sc-target-quota-value')
             .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
 
@@ -12503,7 +12515,7 @@ sucrose.models.paretoChart = function() {
 
         if (quotaValue > 0) {
 
-          quota_wrap.select('line.sc-quota-line')
+          quota_wrap.selectAll('line.sc-quota-line')
             .attr('x2', innerWidth)
             .attr('transform', 'translate(0,' + y(quotaValue) + ')');
           yAxis_wrap.select('text.sc-quota-value')
@@ -12558,7 +12570,7 @@ sucrose.models.paretoChart = function() {
       //------------------------------------------------------------
 
       barLegend.dispatch.on('legendClick', function(d, i) {
-        var selectedSeries = d.series;
+        var selectedSeries = d.seriesIndex;
 
         //swap bar disabled
         d.disabled = !d.disabled;
@@ -12586,7 +12598,7 @@ sucrose.models.paretoChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, dataGroup);
+          tooltip = showTooltip(eo, that.parentNode, groupData);
         }
       });
 
@@ -12606,7 +12618,7 @@ sucrose.models.paretoChart = function() {
       dispatch.on('changeState', function(eo) {
         if (typeof eo.disabled !== 'undefined') {
           data.forEach(function(series, i) {
-          series.disabled = eo.disabled[i];
+            series.disabled = eo.disabled[i];
           });
           state.disabled = eo.disabled;
         }
@@ -12642,15 +12654,15 @@ sucrose.models.paretoChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  lines2.dispatch.on('elementMouseover.tooltip', function(eo) {
+  lines.dispatch.on('elementMouseover.tooltip', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  lines2.dispatch.on('elementMousemove.tooltip', function(e) {
+  lines.dispatch.on('elementMousemove.tooltip', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  lines2.dispatch.on('elementMouseout.tooltip', function() {
+  lines.dispatch.on('elementMouseout.tooltip', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -12672,8 +12684,8 @@ sucrose.models.paretoChart = function() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.lines1 = lines1;
-  chart.lines2 = lines2;
+  chart.linesBackground = linesBackground;
+  chart.lines = lines;
   chart.multibar = multibar;
   chart.barLegend = barLegend;
   chart.lineLegend = lineLegend;
@@ -12748,9 +12760,9 @@ sucrose.models.paretoChart = function() {
     multibar.fill(barFill);
     multibar.classes(barClasses);
 
-    lines2.color(lineColor);
-    lines2.fill(lineColor);
-    lines2.classes(lineClasses);
+    lines.color(lineColor);
+    lines.fill(lineColor);
+    lines.classes(lineClasses);
 
     barLegend.color(barColor);
     barLegend.classes(barClasses);
@@ -12762,9 +12774,7 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.x = function(_) {
-    if (!arguments.length) {
-      return getX;
-    }
+    if (!arguments.length) { return getX; }
     getX = _;
     lines.x(_);
     multibar.x(_);
@@ -12772,9 +12782,7 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.y = function(_) {
-    if (!arguments.length) {
-      return getY;
-    }
+    if (!arguments.length) { return getY; }
     getY = _;
     lines.y(_);
     multibar.y(_);
@@ -12782,9 +12790,7 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -12794,137 +12800,87 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showControls = function(_) {
-    if (!arguments.length) {
-      return false;
-    }
+    if (!arguments.length) { return false; }
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltipBar = function(_) {
-    if (!arguments.length) {
-      return tooltipBar;
-    }
+    if (!arguments.length) { return tooltipBar; }
     tooltipBar = _;
     return chart;
   };
 
   chart.tooltipLine = function(_) {
-    if (!arguments.length) {
-      return tooltipLine;
-    }
+    if (!arguments.length) { return tooltipLine; }
     tooltipLine = _;
     return chart;
   };
 
   chart.tooltipQuota = function(_) {
-    if (!arguments.length) {
-      return tooltipQuota;
-    }
+    if (!arguments.length) { return tooltipQuota; }
     tooltipQuota = _;
     return chart;
   };
 
   chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
+    if (!arguments.length) { return tooltip; }
     tooltip = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.clipEdge = function(_) {
-    if (!arguments.length) {
-      return clipEdge;
-    }
+    if (!arguments.length) { return clipEdge; }
     clipEdge = _;
     multibar.clipEdge(_);
-    lines1.clipEdge(_);
-    lines2.clipEdge(_);
+    linesBackground.clipEdge(_);
+    lines.clipEdge(_);
     return chart;
   };
 
-  chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
-    delay = _;
-    multibar.delay(_);
-    lines1.delay(_);
-    lines2.delay(_);
+  chart.state = function(_) {
+    if (!arguments.length) { return state; }
+    state = _;
     return chart;
-  };
-
-  chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
-    duration = _;
-    multibar.duration(_);
-    lines1.duration(_);
-    lines2.duration(_);
-    return chart;
-  };
-
-	chart.state = function(_) {
-	  if (!arguments.length) {
-	    return state;
-	  }
-	  state = _;
-	  return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -12934,22 +12890,36 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
     multibar.direction(_);
-  	xAxis.direction(_);
+    xAxis.direction(_);
     yAxis.direction(_);
     barLegend.direction(_);
     lineLegend.direction(_);
     return chart;
   };
 
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    multibar.duration(_);
+    linesBackground.duration(_);
+    lines.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    multibar.delay(_);
+    linesBackground.delay(_);
+    lines.delay(_);
+    return chart;
+  };
+
   chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
+    if (!arguments.length) { return seriesClick; }
     seriesClick = _;
     return chart;
   };
@@ -12959,12 +12929,10 @@ sucrose.models.paretoChart = function() {
   };
 
   chart.locality = function(_) {
-    if (!arguments.length) {
-      return locality;
-    }
+    if (!arguments.length) { return locality; }
     locality = sucrose.utils.buildLocality(_);
     multibar.locality(_);
-    lines1.locality(_);
+    linesBackground.locality(_);
     return chart;
   };
   //============================================================
@@ -16491,10 +16459,16 @@ sucrose.models.tree = function() {
   {
     selection.each(function(data) {
 
-      var diagonal = d3.svg.diagonal()
-            .projection(function(d) {
-              return [getX(d), getY(d)];
-            });
+      // var diagonal = d3.svg.diagonal()
+      //       .projection(function(d) {
+      //         return [getX(d), getY(d)];
+      //       });
+      var diagonal = function(d) {
+        return "M" + d.y + "," + d.x
+            + "C" + (d.y + d.parent.y) / 2 + "," + d.x
+            + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
+            + " " + d.parent.y + "," + d.parent.x;
+      };
 
       var zoom = null;
       chart.setZoom = function() {
@@ -16547,11 +16521,11 @@ sucrose.models.tree = function() {
 
       // Compute the new tree layout.
       var tree = d3.tree()
-            .size(null)
-            .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
-            .separation(function separation(a, b) {
-              return a.parent == b.parent ? 1 : 1;
-            });
+            .size([700,500])
+            // .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
+            // .separation(function separation(a, b) {
+            //   return a.parent == b.parent ? 1 : 1;
+            // });
 
       data.x0 = data.x0 || 0;
       data.y0 = data.y0 || 0;
@@ -16716,8 +16690,8 @@ sucrose.models.tree = function() {
             d._children = null;
           }
         }
-
-        nodes = tree.nodes(_data);
+console.log(_data)
+        nodes = tree(_data);
         var root = nodes[0];
 
         nodes.forEach(function(d) {

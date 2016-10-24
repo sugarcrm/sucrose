@@ -110,46 +110,46 @@ sucrose.models.scroll = function() {
         } else {
 
           scrollWrap
-              .on("mousedown.zoom", null)
-              .on("mousewheel.zoom", null)
-              .on("mousemove.zoom", null)
-              .on("DOMMouseScroll.zoom", null)
-              .on("dblclick.zoom", null)
-              .on("touchstart.zoom", null)
-              .on("touchmove.zoom", null)
-              .on("touchend.zoom", null)
-              .on("wheel.zoom", null);
+              .on('mousedown.zoom', null)
+              .on('mousewheel.zoom', null)
+              .on('mousemove.zoom', null)
+              .on('DOMMouseScroll.zoom', null)
+              .on('dblclick.zoom', null)
+              .on('touchstart.zoom', null)
+              .on('touchmove.zoom', null)
+              .on('touchend.zoom', null)
+              .on('wheel.zoom', null);
           scrollTarget
-              .on("mousedown.zoom", null)
-              .on("mousewheel.zoom", null)
-              .on("mousemove.zoom", null)
-              .on("DOMMouseScroll.zoom", null)
-              .on("dblclick.zoom", null)
-              .on("touchstart.zoom", null)
-              .on("touchmove.zoom", null)
-              .on("touchend.zoom", null)
-              .on("wheel.zoom", null);
+              .on('mousedown.zoom', null)
+              .on('mousewheel.zoom', null)
+              .on('mousemove.zoom', null)
+              .on('DOMMouseScroll.zoom', null)
+              .on('dblclick.zoom', null)
+              .on('touchstart.zoom', null)
+              .on('touchmove.zoom', null)
+              .on('touchend.zoom', null)
+              .on('wheel.zoom', null);
 
           scrollWrap
-              .on("mousedown.drag", null)
-              .on("mousewheel.drag", null)
-              .on("mousemove.drag", null)
-              .on("DOMMouseScroll.drag", null)
-              .on("dblclick.drag", null)
-              .on("touchstart.drag", null)
-              .on("touchmove.drag", null)
-              .on("touchend.drag", null)
-              .on("wheel.drag", null);
+              .on('mousedown.drag', null)
+              .on('mousewheel.drag', null)
+              .on('mousemove.drag', null)
+              .on('DOMMouseScroll.drag', null)
+              .on('dblclick.drag', null)
+              .on('touchstart.drag', null)
+              .on('touchmove.drag', null)
+              .on('touchend.drag', null)
+              .on('wheel.drag', null);
           scrollTarget
-              .on("mousedown.drag", null)
-              .on("mousewheel.drag", null)
-              .on("mousemove.drag", null)
-              .on("DOMMouseScroll.drag", null)
-              .on("dblclick.drag", null)
-              .on("touchstart.drag", null)
-              .on("touchmove.drag", null)
-              .on("touchend.drag", null)
-              .on("wheel.drag", null);
+              .on('mousedown.drag', null)
+              .on('mousewheel.drag', null)
+              .on('mousemove.drag', null)
+              .on('DOMMouseScroll.drag', null)
+              .on('dblclick.drag', null)
+              .on('touchstart.drag', null)
+              .on('touchmove.drag', null)
+              .on('touchend.drag', null)
+              .on('wheel.drag', null);
         }
       };
 
