@@ -113,8 +113,6 @@ var sucroseCharts = function () {
           chart[k](v);
       }
     }
-
-    configs[type]._format(chart);
   }
 
   var configs = {
@@ -154,7 +152,7 @@ var sucroseCharts = function () {
     },
     multibar: {
       stacked: true,
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         chart
           .valueFormat(function (d) {
             return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
@@ -180,12 +178,13 @@ var sucroseCharts = function () {
 
         chart.yAxis
           .tickFormat(chart.multibar.valueFormat());
+        callback(chart);
       }
     },
     line: {
       useVoronoi: true,
       clipEdge: false,
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         chart
           .tooltipContent(function (key, x, y, e, graph) {
             var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
@@ -197,6 +196,7 @@ var sucroseCharts = function () {
             }
             return content;
           });
+        callback(chart);
       }
     },
     pie: {
@@ -212,7 +212,7 @@ var sucroseCharts = function () {
       //       r = Math.min(n.clientWidth * 0.25, n.clientHeight * 0.4);
       //   return Math.max(r, 75);
       // }
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         chart
           .tooltipContent(function (key, x, y, e, graph) {
             var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
@@ -221,12 +221,13 @@ var sucroseCharts = function () {
                    '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                    '<p>Percent: <b>' + percent + '%</b></p>';
           });
+        callback(chart);
       }
     },
     funnel: {
       minLabelWidth: null,
       wrapLabels: null,
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         chart
           // .fmtCount(function (d) {
           // })
@@ -245,10 +246,11 @@ var sucroseCharts = function () {
                    '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                    '<p>Percent: <b>' + percent + '%</b></p>';
           });
+        callback(chart);
       }
     },
     bubble: {
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         chart
           .x(function (d) { return d3.timeParse('%Y-%m-%d')(d.x); })
           .y(function (d) { return d.y; })
@@ -265,12 +267,13 @@ var sucroseCharts = function () {
                    '<p>Probability: <b>' + e.point.probability + '%</b></p>' +
                    '<p>Account: <b>' + e.point.account_name + '</b></p>';
           });
+        callback(chart);
       }
     },
     treemap: {
       showLegend: false,
       showTitle: false,
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         chart
           .leafClick(function (d) {
             alert('leaf clicked');
@@ -290,12 +293,13 @@ var sucroseCharts = function () {
           //   }
           //   return tt;
           // })
+        callback(chart);
       }
     },
     pareto: {
       stacked: true,
       clipEdge: false,
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         chart
           .valueFormat(function (d) {
             return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
@@ -345,22 +349,24 @@ var sucroseCharts = function () {
 
               container.call(chart);
           });
+        callback(chart);
       }
     },
     gauge: {
       ringWidth: 50,
       maxValue: 9,
       transitionMs: 4000,
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         chart
           .x(function (d) { return d.key; })
           .y(function (d) { return d.y; });
+        callback(chart);
       }
     },
     area: {
       tooltips: true,
       useVoronoi: false,
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         // chart
           // .x(function (d) { return d[0]; })
           // .y(function (d) { return d[1]; })
@@ -376,12 +382,13 @@ var sucroseCharts = function () {
 
         // chart.xAxis
         //   .tickFormat(function (d) { return d3.timeFormat('%x')(new Date(d)); });
+        callback(chart);
       }
     },
     tree: {
       horizontal: false,
       duration: 500,
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
         chart
           .nodeSize({'width': 124, 'height': 56})
           .nodeRenderer(function (content, d, w, h) {
@@ -433,11 +440,28 @@ var sucroseCharts = function () {
                  d3.select(this).classed('hover', false);
               });
           });
+        callback(chart);
       }
     },
     globe: {
       showTitle: false,
-      _format: function format(chart) {
+      _format: function format(chart, callback) {
+        d3.queue()
+          .defer(d3.json, 'data/geo/world-countries-topo-110.json')
+          .defer(d3.json, 'data/geo/usa-states-topo-110.json')
+          .defer(d3.json, 'data/geo/cldr_en.json')
+          .await(function (error, world, country, labels) {
+            if (error) {
+              return;
+            }
+
+            chart
+              .worldMap(topojson.feature(world, world.objects.countries).features)
+              .countryMap({'USA': topojson.feature(country, country.objects.states).features})
+              .countryLabels(labels);
+
+            callback(chart);
+          });
       }
     }
   };
@@ -465,7 +489,8 @@ var sucroseCharts = function () {
       return sucrose.models[this.getChartModel(type)]();
     },
     getConfig: function(type, chart, settings) {
-      return applyConfigurationSettings(getDefaultConfiguration(type, chart), settings);
+      var defaultConfig = getDefaultConfiguration(type, chart);
+      return applyConfigurationSettings(defaultConfig, settings);
     },
     get: function (type, locality) {
       var settings = {
@@ -475,15 +500,20 @@ var sucroseCharts = function () {
       var config = this.getConfig(type, chart, settings);
 
       configureChart(type, chart, config);
+      configs[type]._format(chart, function(d) { return; });
 
       // chart.transition().duration(500)
       // chart.legend.showAll(true);
 
       return chart;
     },
-
-    exportToString: function(type) {
-      return configs[type]._format.toString().replace(/\n      /g, '\n');
+    formatToString: function(type) {
+      return configs[type]._format.toString()
+        .replace(/\n      /g, '\n');
+    },
+    configureToString: function() {
+      return configureChart.toString()
+        .replace('function configureChart(type, chart, config)', 'function configure()');
     }
   };
 

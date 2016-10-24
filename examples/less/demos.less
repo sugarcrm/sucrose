@@ -688,6 +688,9 @@ a.success:hover { color: darken(@successText, 10%); }
 /* Responsive
 -------------------------------------------------- */
 @media print, screen and (max-width: 720px) {
+  h2 {
+    font-size: 18px;
+  }
   .chart-selector {
     button {
       display: block;
@@ -740,9 +743,6 @@ a.success:hover { color: darken(@successText, 10%); }
   }
 }
 @media print, screen and (max-width: 480px) {
-  h2 {
-    font-size: 18px;
-  }
   h3 {
     font-size: 16px;
   }
