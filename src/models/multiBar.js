@@ -1,4 +1,4 @@
-sucrose.models.multiBar = function() {
+sucrose.multiBar = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -12,7 +12,7 @@ sucrose.models.multiBar = function() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      locality = sucrose.utils.buildLocality(),
+      locality = sucrose.buildLocality(),
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
       stacked = true,
       barColor = null, // adding the ability to set the color for each rather than the whole group
@@ -29,7 +29,7 @@ sucrose.models.multiBar = function() {
       xDomain,
       yDomain,
       nice = false,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return sucrose.defaultColor()(d, d.seriesIndex); },
       fill = color,
       textureFill = false,
       barColor = null, // adding the ability to set the color for each rather than the whole group
@@ -144,14 +144,14 @@ sucrose.models.multiBar = function() {
         minSeries = seriesExtents[0];
         maxSeries = seriesExtents[1];
 
-        labelLengths = sucrose.utils.stringSetLengths(
+        labelLengths = sucrose.stringSetLengths(
             labelData,
             container,
             valueFormat,
             'sc-label-value'
           );
 
-        labelThickness = sucrose.utils.stringSetThickness(
+        labelThickness = sucrose.stringSetThickness(
             ['Xy'],
             container,
             valueFormat,
@@ -271,7 +271,7 @@ sucrose.models.multiBar = function() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return sucrose.utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+        return sucrose.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -291,7 +291,7 @@ sucrose.models.multiBar = function() {
 
 
       if (textureFill) {
-        var mask = sucrose.utils.createTexture(defs_entr, id);
+        var mask = sucrose.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
@@ -404,7 +404,7 @@ sucrose.models.multiBar = function() {
             .attr(dimX, barThickness)
             .style('fill', function(d, i) {
               var backColor = fill(d),
-                  foreColor = sucrose.utils.getTextContrast(backColor, i);
+                  foreColor = sucrose.getTextContrast(backColor, i);
               return foreColor;
             });
       }
@@ -561,7 +561,7 @@ sucrose.models.multiBar = function() {
               }
               // var backColor = d3.select(this.previousSibling).style('fill'),
               var backColor = fill(d),
-                  textColor = sucrose.utils.getTextContrast(backColor, i);
+                  textColor = sucrose.getTextContrast(backColor, i);
               return textColor;
             })
             .style('fill-opacity', function(d, i) {
@@ -820,7 +820,7 @@ sucrose.models.multiBar = function() {
     if (!arguments.length) {
       return barColor;
     }
-    barColor = sucrose.utils.getColor(_);
+    barColor = sucrose.getColor(_);
     return chart;
   };
 
@@ -930,7 +930,7 @@ sucrose.models.multiBar = function() {
     if (!arguments.length) {
       return locality;
     }
-    locality = sucrose.utils.buildLocality(_);
+    locality = sucrose.buildLocality(_);
     return chart;
   };
 

@@ -1,4 +1,4 @@
-sucrose.models.multiBarChart = function() {
+sucrose.multiBarChart = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -38,14 +38,13 @@ sucrose.models.multiBarChart = function() {
   var useScroll = false,
       scrollOffset = 0;
 
-  var model = multibar = sucrose.models.multiBar()
-        .stacked(false)
-        .clipEdge(false),
-      xAxis = sucrose.models.axis(),//.orient('bottom'),
-      yAxis = sucrose.models.axis(),//.orient('left'),
-      controls = sucrose.models.legend().color(['#444']),
-      legend = sucrose.models.legend(),
-      scroll = sucrose.models.scroll();
+  var multibar = sucrose.multiBar().stacked(false).clipEdge(false);
+  var model = multibar;
+  var xAxis = sucrose.axis(); //.orient('bottom'),
+  var yAxis = sucrose.axis(); //.orient('left'),
+  var controls = sucrose.legend().color(['#444']);
+  var legend = sucrose.legend();
+  var scroll = sucrose.scroll();
 
   var tooltipContent = function(eo, graph) {
         var key = eo.group.label,
@@ -90,7 +89,7 @@ sucrose.models.multiBarChart = function() {
       var seriesData = [],
           seriesCount = 0,
           groupData = [],
-          groupLabels = [].
+          groupLabels = [],
           groupCount = 0,
           totalAmount = 0,
           hasData = false,
@@ -105,18 +104,18 @@ sucrose.models.multiBarChart = function() {
                           groupLabels[i] || d:
                           d;
             var label = xIsDatetime ?
-                          sucrose.utils.dateFormat(value, '%x', chart.locality()) :
+                          sucrose.dateFormat(value, '%x', chart.locality()) :
                           value;
             var width = Math.max(vertical ?
                           baseDimension * 2 :
                           availableWidth * 0.2, 75);
             return !noEllipsis ?
-                      sucrose.utils.stringEllipsify(label, container, width) :
+                      sucrose.stringEllipsify(label, container, width) :
                       label;
           };
 
       var yValueFormat = function(d) {
-            return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return sucrose.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -132,7 +131,7 @@ sucrose.models.multiBarChart = function() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -445,7 +444,7 @@ sucrose.models.multiBarChart = function() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -505,7 +504,7 @@ sucrose.models.multiBarChart = function() {
           controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
         }
         if (showLegend) {
-          var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = sucrose.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -829,7 +828,7 @@ sucrose.models.multiBarChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -853,7 +852,7 @@ sucrose.models.multiBarChart = function() {
         break;
       case 'data':
         color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');

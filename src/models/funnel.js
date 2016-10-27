@@ -1,4 +1,4 @@
-sucrose.models.funnel = function() {
+sucrose.funnel = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -16,11 +16,11 @@ sucrose.models.funnel = function() {
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
       fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
-      locality = sucrose.utils.buildLocality(),
+      locality = sucrose.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return sucrose.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -63,7 +63,7 @@ sucrose.models.funnel = function() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return sucrose.utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+        return sucrose.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -146,7 +146,7 @@ sucrose.models.funnel = function() {
       // Definitions
 
       if (textureFill) {
-        var mask = sucrose.utils.createTexture(defs_entr, id);
+        var mask = sucrose.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
@@ -203,7 +203,6 @@ sucrose.models.funnel = function() {
 //                 v.key = s.key;
 //                 v.seriesIndex = s.seriesIndex;
 //                 v.index = j;
-//                 // console.log(v)
 //                 return v;
 //               });
 //             },
@@ -545,7 +544,7 @@ sucrose.models.funnel = function() {
             dy = parseFloat(lbl.attr('dy')),
             maxWidth = fnWidth(d);
 
-        lbl.text(sucrose.utils.stringEllipsify(text, container, maxWidth))
+        lbl.text(sucrose.stringEllipsify(text, container, maxWidth))
           .call(fmtLabel, dy);
       }
 
@@ -586,7 +585,6 @@ sucrose.models.funnel = function() {
         // (h + b/r/2)(h + b/r/2) = v/r + b/r/2*b/r/2;
         // h + b/r/2 = Math.sqrt(v/r + b/r/2*b/r/2);
         // h  = Math.abs(Math.sqrt(v/r + b/r/2*b/r/2)) - b/r/2;
-        // console.log(d._bottom, d._top)
         var y0 = d._bottom,
             y1 = d._top,
             w0 = w / 2 - r * y0,
@@ -755,11 +753,11 @@ sucrose.models.funnel = function() {
 
       function fmtFill(d, i, j) {
         var backColor = d3.select(this.parentNode).style('fill');
-        return sucrose.utils.getTextContrast(backColor, i);
+        return sucrose.getTextContrast(backColor, i);
       }
 
       function fmtDirection(d) {
-        var m = sucrose.utils.isRTLChar(d.slice(-1)),
+        var m = sucrose.isRTLChar(d.slice(-1)),
             dir = m ? 'rtl' : 'ltr';
         return 'ltr';
       }
@@ -971,7 +969,7 @@ sucrose.models.funnel = function() {
     if (!arguments.length) {
       return locality;
     }
-    locality = sucrose.utils.buildLocality(_);
+    locality = sucrose.buildLocality(_);
     return chart;
   };
 

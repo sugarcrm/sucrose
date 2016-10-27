@@ -1,4 +1,4 @@
-sucrose.models.gauge = function() {
+sucrose.gauge = function() {
   /* original inspiration for this chart type is at http://bl.ocks.org/3202712 */
   //============================================================
   // Public Variables with Default Settings
@@ -17,12 +17,12 @@ sucrose.models.gauge = function() {
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
       fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
-      locality = sucrose.utils.buildLocality(),
+      locality = sucrose.buildLocality(),
       direction = 'ltr',
       clipEdge = true,
       delay = 0,
       duration = 720,
-      color = function (d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); },
+      color = function (d, i) { return sucrose.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function (d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -56,7 +56,7 @@ sucrose.models.gauge = function() {
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         var params = {x: 0, y: 0, r: radius, s: ringWidth / 100, u: 'userSpaceOnUse'};
-        return sucrose.utils.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
+        return sucrose.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
       };
 
       var radius = Math.min((availableWidth / 2), availableHeight) / ((100 + labelInset) / 100),
@@ -282,7 +282,7 @@ sucrose.models.gauge = function() {
 
       function calcOdomBoxSize(wrap) {
         var bbox = wrap.select('.sc-odomText').node().getBoundingClientRect();
-        wrap.select('.sc-odomBox').attr('d', sucrose.utils.roundedRectangle(
+        wrap.select('.sc-odomBox').attr('d', sucrose.roundedRectangle(
             -bbox.width / 2,
             -bbox.height + prop(1.5),
             bbox.width + prop(4),
@@ -475,7 +475,7 @@ sucrose.models.gauge = function() {
     if (!arguments.length) {
       return locality;
     }
-    locality = sucrose.utils.buildLocality(_);
+    locality = sucrose.buildLocality(_);
     return chart;
   };
 

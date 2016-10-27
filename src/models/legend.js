@@ -1,4 +1,4 @@
-sucrose.models.legend = function() {
+sucrose.legend = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -31,7 +31,7 @@ sucrose.models.legend = function() {
         return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
       },
       color = function(d) {
-        return sucrose.utils.defaultColor()(d, d.seriesIndex);
+        return sucrose.defaultColor()(d, d.seriesIndex);
       },
       classes = function(d) {
         return 'sc-series sc-series-' + d.seriesIndex;
@@ -98,7 +98,7 @@ sucrose.models.legend = function() {
 
       wrap_entr.append('rect').attr('class', 'sc-legend-background');
       var back = wrap.select('.sc-legend-background');
-      var backFilter = sucrose.utils.dropShadow('legend_back_' + id, defs, {blur: 2});
+      var backFilter = sucrose.dropShadow('legend_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('text').attr('class', 'sc-legend-link');
       var link = wrap.select('.sc-legend-link');
@@ -734,7 +734,7 @@ sucrose.models.legend = function() {
     if (!arguments.length) {
       return color;
     }
-    color = sucrose.utils.getColor(_);
+    color = sucrose.getColor(_);
     return legend;
   };
 

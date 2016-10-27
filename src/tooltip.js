@@ -6,9 +6,9 @@
 // http://www.jacklmoore.com/notes/mouse-position/
 
 
-(function() {
+(function(sucrose) {
 
-  var sctooltip = window.sucrose.tooltip = {};
+  var sctooltip = sucrose.tooltip = {};
 
   sctooltip.show = function(evt, content, gravity, dist, container, classes) {
 
@@ -160,4 +160,4 @@
     tooltip.className = class_name;
   };
 
-})();
+})(sucrose);

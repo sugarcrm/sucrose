@@ -1,23 +1,23 @@
 
-sucrose.models.lineWithFocusChart = function() {
+sucrose.lineWithFocusChart = function() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var lines = sucrose.models.line()
-    , lines2 = sucrose.models.line()
-    , xAxis = sucrose.models.axis()
-    , yAxis = sucrose.models.axis()
-    , x2Axis = sucrose.models.axis()
-    , y2Axis = sucrose.models.axis()
-    , legend = sucrose.models.legend()
+  var lines = sucrose.line()
+    , lines2 = sucrose.line()
+    , xAxis = sucrose.axis()
+    , yAxis = sucrose.axis()
+    , x2Axis = sucrose.axis()
+    , y2Axis = sucrose.axis()
+    , legend = sucrose.legend()
     , brush = d3.svg.brush()
     ;
 
   var margin = {top: 30, right: 30, bottom: 30, left: 60}
     , margin2 = {top: 0, right: 30, bottom: 20, left: 60}
-    , color = sucrose.utils.defaultColor()
+    , color = sucrose.defaultColor()
     , width = null
     , height = null
     , height2 = 100
@@ -507,7 +507,7 @@ sucrose.models.lineWithFocusChart = function() {
 
   chart.color = function(_) {
     if (!arguments.length) return color;
-    color =sucrose.utils.getColor(_);
+    color =sucrose.getColor(_);
     legend.color(color);
     return chart;
   };

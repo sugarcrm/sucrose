@@ -1,5 +1,5 @@
 
-sucrose.models.table = function () {
+sucrose.table = function () {
 
   //============================================================
   // Public Variables with Default Settings
@@ -17,7 +17,7 @@ sucrose.models.table = function () {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      color = sucrose.utils.getColor(['#000']);
+      color = sucrose.getColor(['#000']);
 
   //============================================================
 
@@ -59,7 +59,7 @@ sucrose.models.table = function () {
         var hasData = d && d.length && d.filter(function (d) { return d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
       // Check to see if there's nothing to show.
       if (displayNoData(data)) {
@@ -281,7 +281,7 @@ sucrose.models.table = function () {
 
   chart.color = function (_) {
     if (!arguments.length) return color;
-    color = sucrose.utils.getColor(_);
+    color = sucrose.getColor(_);
     return chart;
   };
 

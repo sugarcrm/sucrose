@@ -1,5 +1,5 @@
 
-sucrose.models.tree = function() {
+sucrose.tree = function() {
 
   // issues: 1. zoom slider doesn't zoom on chart center
   // orientation
@@ -30,7 +30,7 @@ sucrose.models.tree = function() {
     horizontal = false;
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-    color = function (d, i) { return sucrose.utils.defaultColor()(d, i); },
+    color = function (d, i) { return sucrose.defaultColor()(d, i); },
     fill = function(d, i) { return color(d,i); },
     gradient = function(d, i) { return color(d,i); },
 
@@ -47,10 +47,10 @@ sucrose.models.tree = function() {
     getId = function(d) { return d.id; },
 
     fillGradient = function(d, i) {
-        return sucrose.utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+        return sucrose.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
     },
     useClass = false,
-    valueFormat = sucrose.utils.numberFormatSI,
+    valueFormat = sucrose.numberFormatSI,
     showLabels = true,
     dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 
@@ -60,10 +60,16 @@ sucrose.models.tree = function() {
   {
     selection.each(function(data) {
 
-      var diagonal = d3.svg.diagonal()
-            .projection(function(d) {
-              return [getX(d), getY(d)];
-            });
+      // var diagonal = d3.svg.diagonal()
+      //       .projection(function(d) {
+      //         return [getX(d), getY(d)];
+      //       });
+      var diagonal = function(d) {
+        return "M" + d.y + "," + d.x
+            + "C" + (d.y + d.parent.y) / 2 + "," + d.x
+            + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
+            + " " + d.parent.y + "," + d.parent.x;
+      };
 
       var zoom = null;
       chart.setZoom = function() {
@@ -96,7 +102,7 @@ sucrose.models.tree = function() {
 
       var defs_entr = wrap_entr.append('defs');
       var defs = wrap.select('defs').merge(defs_entr);
-      var nodeShadow = sucrose.utils.dropShadow('node_back_' + id, defs, {blur: 2});
+      var nodeShadow = sucrose.dropShadow('node_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('svg:rect')
             .attr('class', 'sc-chartBackground')
@@ -116,11 +122,11 @@ sucrose.models.tree = function() {
 
       // Compute the new tree layout.
       var tree = d3.tree()
-            .size(null)
-            .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
-            .separation(function separation(a, b) {
-              return a.parent == b.parent ? 1 : 1;
-            });
+            .size([700,500])
+            // .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
+            // .separation(function separation(a, b) {
+            //   return a.parent == b.parent ? 1 : 1;
+            // });
 
       data.x0 = data.x0 || 0;
       data.y0 = data.y0 || 0;
@@ -285,8 +291,8 @@ sucrose.models.tree = function() {
             d._children = null;
           }
         }
-
-        nodes = tree.nodes(_data);
+console.log(_data)
+        nodes = tree(_data);
         var root = nodes[0];
 
         nodes.forEach(function(d) {

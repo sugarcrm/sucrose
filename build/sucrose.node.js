@@ -1,10 +1,19 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var d3 = require('d3');
+var d3 = require('d3fc-rebind');
+var sucrose = require('./sucrose.js');
+
 exports.version = sucrose.version;
 exports.dev = sucrose.dev;
 
+exports.functor = sucrose.functor;
 exports.strip = sucrose.strip;
 exports.identity = sucrose.identity;
-exports.functor = sucrose.functor;
 exports.daysInMonth = sucrose.daysInMonth;
+
 exports.windowSize = sucrose.windowSize;
 exports.windowResize = sucrose.windowResize;
 exports.windowUnResize = sucrose.windowUnResize;
@@ -71,7 +80,3 @@ exports.paretoChart = sucrose.paretoChart;
 exports.pieChart = sucrose.pieChart;
 exports.stackedAreaChart = sucrose.stackedAreaChart;
 exports.treemapChart = sucrose.treemapChart;
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-})));

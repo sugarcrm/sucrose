@@ -24,206 +24,197 @@
 
     <script src="d3.min.js"></script>
     <script src="d3fc-rebind.min.js"></script>
-
-    <script src="src/core.js"></script>
-    <script src="src/tooltip.js"></script>
-    <script src="src/utils.js"></script>
-    <script src="src/models/axis.js"></script>
-    <script src="src/models/legend.js"></script>
-    <script src="src/models/scroll.js"></script>
-    <script src="src/models/multibar.js"></script>
-    <script src="src/models/multibarChart.js"></script>
-
+    <script src="sucrose.min.js"></script>
 
     <script>
 var type = 'multibar';
-// var data1 = {
-//   "properties": {
-//     "title": "Forecasting for Q1 2012",
-//     "yDataType": "currency",
-//     "groups": [
-//       {
-//         "label": "Mark Gibson"
-//       },
-//       {
-//         "label": "Terence Li"
-//       },
-//       {
-//         "label": "James Joplin"
-//       },
-//       {
-//         "label": "Amy McCray"
-//       },
-//       {
-//         "label": "My Opps"
-//       }
-//     ]
-//   },
-//   "data": [
-//     {
-//       "key": "Qualified",
-//       "values": [
-//         {
-//           "x": 1,
-//           "y": 50
-//         },
-//         {
-//           "x": 2,
-//           "y": 80
-//         },
-//         {
-//           "x": 3,
-//           "y": 0
-//         },
-//         {
-//           "x": 4,
-//           "y": 100
-//         },
-//         {
-//           "x": 5,
-//           "y": 100
-//         }
-//       ]
-//     },
-//     {
-//       "key": "Proposal",
-//       "values": [
-//         {
-//           "x": 1,
-//           "y": 50
-//         },
-//         {
-//           "x": 2,
-//           "y": 80
-//         },
-//         {
-//           "x": 3,
-//           "y": 0
-//         },
-//         {
-//           "x": 4,
-//           "y": 100
-//         },
-//         {
-//           "x": 5,
-//           "y": 90
-//         }
-//       ]
-//     },
-//     {
-//       "key": "Negotiation",
-//       "values": [
-//         {
-//           "x": 1,
-//           "y": 10
-//         },
-//         {
-//           "x": 2,
-//           "y": 50
-//         },
-//         {
-//           "x": 3,
-//           "y": 0
-//         },
-//         {
-//           "x": 4,
-//           "y": 40
-//         },
-//         {
-//           "x": 5,
-//           "y": 40
-//         }
-//       ]
-//     },
-//     {
-//       "key": "Closed",
-//       "values": [
-//         {
-//           "x": 1,
-//           "y": 0
-//         },
-//         {
-//           "x": 2,
-//           "y": 0
-//         },
-//         {
-//           "x": 3,
-//           "y": 0
-//         },
-//         {
-//           "x": 4,
-//           "y": 0
-//         },
-//         {
-//           "x": 5,
-//           "y": 0
-//         }
-//       ]
-//     }
-//   ]
-// };
 var data1 = {
   "properties": {
-    "title": "Opportunities Won/Lost by Industry",
+    "title": "Forecasting for Q1 2012",
+    "yDataType": "currency",
     "groups": [
-      {"label": "Info Tech"},
-      {"label": "Discretionary"},
-      {"label": "Health Care"},
-      {"label": "Consumer"},
-      {"label": "Financials"},
-      {"label": "Industrials"},
-      {"label": "Energy"},
-      {"label": "Materials"},
-      {"label": "Telecomm"}
+      {
+        "label": "Mark Gibson"
+      },
+      {
+        "label": "Terence Li"
+      },
+      {
+        "label": "James Joplin"
+      },
+      {
+        "label": "Amy McCray"
+      },
+      {
+        "label": "My Opps"
+      }
     ]
   },
   "data": [
     {
-      "key": "Lost",
-      "color": "#d62728",
-      "classes": "sc-fill00",
+      "key": "Qualified",
       "values": [
-        {"x": 1, "y": -1.8746444827653},
-        {"x": 2, "y": -8.0961543492239},
-        {"x": 3, "y": -0.57072943117674},
-        {"x": 4, "y": -2.4174010336624},
-        {"x": 5, "y": -0.72009071426284},
-        {"x": 6, "y": -0.77154485523777},
-        {"x": 7, "y": -0.90152097798131},
-        {"x": 8, "y": -0.91445417330854},
-        {"x": 9, "y": -0.055746319141851}
+        {
+          "x": 1,
+          "y": 50
+        },
+        {
+          "x": 2,
+          "y": 80
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 100
+        },
+        {
+          "x": 5,
+          "y": 100
+        }
       ]
     },
     {
-      "key": "Won",
-      "color": "#1f77b4",
-      "classes": "sc-fill02",
+      "key": "Proposal",
       "values": [
-        {"x": 1, "y": 25.307646510375},
-        {"x": 2, "y": 16.756779544553},
-        {"x": 3, "y": 18.451534877007},
-        {"x": 4, "y": 8.6142352811805},
-        {"x": 5, "y": 7.8082472075876},
-        {"x": 6, "y": 5.259101026956},
-        {"x": 7, "y": 0.30947953487127},
-        {"x": 8, "y": 0},
-        {"x": 9, "y": 0}
+        {
+          "x": 1,
+          "y": 50
+        },
+        {
+          "x": 2,
+          "y": 80
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 100
+        },
+        {
+          "x": 5,
+          "y": 90
+        }
+      ]
+    },
+    {
+      "key": "Negotiation",
+      "values": [
+        {
+          "x": 1,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 50
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 40
+        },
+        {
+          "x": 5,
+          "y": 40
+        }
+      ]
+    },
+    {
+      "key": "Closed",
+      "values": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
       ]
     }
   ]
-}
-;
-var data2 = {
-  "properties": {
-    "title": "Total is 3780.00",
-    "groups": [
-      {"label": "Red"},
-      {"label": "Yellow"},
-      {"label": "Green"}
-    ]
-  },
-  "data": []
 };
+// var data1 = {
+//   "properties": {
+//     "title": "Opportunities Won/Lost by Industry",
+//     "groups": [
+//       {"label": "Info Tech"},
+//       {"label": "Discretionary"},
+//       {"label": "Health Care"},
+//       {"label": "Consumer"},
+//       {"label": "Financials"},
+//       {"label": "Industrials"},
+//       {"label": "Energy"},
+//       {"label": "Materials"},
+//       {"label": "Telecomm"}
+//     ]
+//   },
+//   "data": [
+//     {
+//       "key": "Lost",
+//       "color": "#d62728",
+//       "classes": "sc-fill00",
+//       "values": [
+//         {"x": 1, "y": -1.8746444827653},
+//         {"x": 2, "y": -8.0961543492239},
+//         {"x": 3, "y": -0.57072943117674},
+//         {"x": 4, "y": -2.4174010336624},
+//         {"x": 5, "y": -0.72009071426284},
+//         {"x": 6, "y": -0.77154485523777},
+//         {"x": 7, "y": -0.90152097798131},
+//         {"x": 8, "y": -0.91445417330854},
+//         {"x": 9, "y": -0.055746319141851}
+//       ]
+//     },
+//     {
+//       "key": "Won",
+//       "color": "#1f77b4",
+//       "classes": "sc-fill02",
+//       "values": [
+//         {"x": 1, "y": 25.307646510375},
+//         {"x": 2, "y": 16.756779544553},
+//         {"x": 3, "y": 18.451534877007},
+//         {"x": 4, "y": 8.6142352811805},
+//         {"x": 5, "y": 7.8082472075876},
+//         {"x": 6, "y": 5.259101026956},
+//         {"x": 7, "y": 0.30947953487127},
+//         {"x": 8, "y": 0},
+//         {"x": 9, "y": 0}
+//       ]
+//     }
+//   ]
+// }
+// ;
+// var data2 = {
+//   "properties": {
+//     "title": "Total is 3780.00",
+//     "groups": [
+//       {"label": "Red"},
+//       {"label": "Yellow"},
+//       {"label": "Green"}
+//     ]
+//   },
+//   "data": []
+// };
 
 var data = data1;
 
@@ -344,7 +335,7 @@ var config = {
   "tooltips": true,
   "width": null,
   "stacked": true,
-  "gradient": [],
+  // "gradient": [],
   "locale": "ru",
   "showLabels": true,
   "showValues": "0",
@@ -356,7 +347,7 @@ var config = {
   ],
   "colorOptions": {}
 };
-var chart = sucrose.models.multiBarChart();
+var chart = sucrose.multiBarChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
@@ -415,16 +406,16 @@ function configure(chart) {
 function format(chart) {
   chart
     .valueFormat(function (d) {
-      return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+      return sucrose.numberFormatSI(d, 0, yIsCurrency, chart.locality());
     })
     .tooltipContent(function (eo, graph) {
       var key = eo.group.label,
           y = eo.point.y,
           x = (typeof eo.group._height !== 'undefined') ?
                 Math.abs(y * 100 / eo.group._height).toFixed(1) :
-                xAxis.tickFormat()(eo.point.x);
-      var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-          percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
+                chart.xAxis.tickFormat()(eo.point.x);
+      var val = sucrose.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+          percent = sucrose.numberFormatRound(x, 2, false, chart.locality());
       return '<p>Outcome: <b>' + key + '</b></p>' +
              '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
              '<p>Percentage: <b>' + percent + '%</b></p>';

@@ -1,6 +1,6 @@
 {
   "name": "sucrose",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Interactive Charts for Business Applications",
   "keywords": [
     "charts",
@@ -11,6 +11,7 @@
     "canvas"
   ],
   "homepage": "http://sucrose.io/",
+  "license": "Apache-2.0",
   "author": {
     "name": "Henry Rogers",
     "url": "https://github.com/hhrogersii"
@@ -21,20 +22,29 @@
       "url": "https://github.com/tshubbard"
     }
   ],
+  "main": "build/sucrose.node.js",
+  "browser": "build/sucrose.js",
+  "module": "index",
+  "jsnext:main": "index",
   "repository": {
     "type": "git",
     "url": "https://github.com/sugarcrm/sucrose.git"
   },
+  "scripts": {
+    "test": "tape 'test/**/*-test.js'"
+  },
   "dependencies": {
     "d3": "^4.2.1",
+    "d3fc-rebind": "^4.0.1",
     "topojson": "^1.6.26"
   },
   "devDependencies": {
     "clean-css": "^3.4.8",
-    "d3fc-rebind": "^4.0.1",
+    "jshint": "^2.9.4",
     "less": "^2.6.0",
     "less-plugin-clean-css": "^1.5.1",
+    "rollup": "^0.36.3",
+    "tape": "^4.6.2",
     "uglify-js": "2.6.1"
-  },
-  "license": "Apache-2.0"
+  }
 }

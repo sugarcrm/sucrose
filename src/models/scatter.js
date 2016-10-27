@@ -1,4 +1,4 @@
-sucrose.models.scatter = function() {
+sucrose.scatter = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -8,7 +8,7 @@ sucrose.models.scatter = function() {
       width = 960,
       height = 500,
       margin = {top: 0, right: 0, bottom: 0, left: 0},
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); }, // chooses color
+      color = function(d, i) { return sucrose.defaultColor()(d, d.seriesIndex); }, // chooses color
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       x = d3.scaleLinear(),
@@ -35,7 +35,7 @@ sucrose.models.scatter = function() {
         return z(getZ(d, i));
       },
       getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
-      locality = sucrose.utils.buildLocality(),
+      locality = sucrose.buildLocality(),
       onlyCircles = true, // Set to false to use shapes
 
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
@@ -186,7 +186,7 @@ sucrose.models.scatter = function() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
-        return sucrose.utils.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
+        return sucrose.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
       wrap_entr.append('g').attr('class', 'sc-group');
@@ -438,7 +438,6 @@ sucrose.models.scatter = function() {
               dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
-              console.log(d)
               if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
               var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
               dispatch.call('elementMouseout', this, eo);
@@ -713,7 +712,7 @@ sucrose.models.scatter = function() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = sucrose.utils.buildLocality(_);
+    locality = sucrose.buildLocality(_);
     return chart;
   };
 

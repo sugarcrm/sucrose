@@ -1,14 +1,9 @@
 
-var sucrose = window.sucrose || {};
-
-sucrose.version = '0.0.1a';
+sucrose.version = version;
 sucrose.dev = false; //set false when in production
-
-window.sucrose = sucrose;
 
 sucrose.tooltip = {}; // For the tooltip system
 sucrose.utils = {}; // Utility subsystem
-sucrose.models = {}; //stores all the possible models/components
 sucrose.charts = {}; //stores all the ready to use charts
 sucrose.graphs = []; //stores all the graphs currently on the page
 sucrose.logs = {}; //stores some statistics and potential error messages
@@ -44,7 +39,6 @@ sucrose.log = function() {
   return arguments[arguments.length - 1];
 };
 
-
 sucrose.render = function render(step) {
   step = step || 1; // number of graphs to generate in each timeout loop
 
@@ -78,18 +72,3 @@ sucrose.addGraph = function(obj) {
 
   if (!sucrose.render.active) sucrose.render();
 };
-
-sucrose.strip = function(s) { return s.replace(/(\s|&)/g,''); };
-
-sucrose.identity = function(d) { return d; };
-
-sucrose.functor = function functor(v) {
-  return typeof v === "function" ? v : function() {
-    return v;
-  };
-};
-
-sucrose.daysInMonth = function(month, year) {
-  return (new Date(year, month+1, 0)).getDate();
-};
-

@@ -1,4 +1,4 @@
-sucrose.models.stackedArea = function() {
+sucrose.stackedArea = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -15,7 +15,7 @@ sucrose.models.stackedArea = function() {
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
-      locality = sucrose.utils.buildLocality(),
+      locality = sucrose.buildLocality(),
       style = 'stack',
       offset = 'zero',
       order = 'default',
@@ -23,7 +23,7 @@ sucrose.models.stackedArea = function() {
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
       xDomain = null, // Override x domain (skips the calculation from data)
       yDomain = null, // Override y domain
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return sucrose.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function(d, i) { return 'sc-area sc-series-' + d.seriesIndex; },
       dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -68,7 +68,7 @@ sucrose.models.stackedArea = function() {
 
       // gradient constructor function
       chart.gradient = function(d, i, p) {
-        return sucrose.utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+        return sucrose.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -408,7 +408,7 @@ sucrose.models.stackedArea = function() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = sucrose.utils.buildLocality(_);
+    locality = sucrose.buildLocality(_);
     return chart;
   };
   chart.clipEdge = function(_) {

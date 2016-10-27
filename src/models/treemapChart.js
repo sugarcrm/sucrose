@@ -1,5 +1,5 @@
 
-sucrose.models.treemapChart = function() {
+sucrose.treemapChart = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -26,8 +26,9 @@ sucrose.models.treemapChart = function() {
       },
       dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
 
-  var treemap = sucrose.models.treemap(),
-      legend = sucrose.models.legend();
+  var treemap = sucrose.treemap(),
+      model = treemap,
+      legend = sucrose.legend();
 
 
   //============================================================
@@ -36,7 +37,7 @@ sucrose.models.treemapChart = function() {
 
   var tooltipContent = function(point) {
         var tt = '<h3>' + point.data.name + '</h3>' +
-                 '<p>' + sucrose.utils.numberFormatSI(point.value) + '</p>';
+                 '<p>' + sucrose.numberFormatSI(point.value) + '</p>';
         return tt;
       };
 
@@ -274,7 +275,7 @@ sucrose.models.treemapChart = function() {
         params = arguments[1] || {};
     var color = function(d, i) {
           var c = (type === 'data' && d.color) ? {color: d.color} : {};
-          return sucrose.utils.getColor(colorArray)(c, i);
+          return sucrose.getColor(colorArray)(c, i);
         };
     var classes = function(d, i) {
           return 'sc-child';

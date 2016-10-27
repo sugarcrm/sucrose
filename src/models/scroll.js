@@ -1,5 +1,5 @@
 
-sucrose.models.scroll = function() {
+sucrose.scroll = function() {
 
   //============================================================
   // Public Variables

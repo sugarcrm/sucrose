@@ -1,4 +1,4 @@
-sucrose.models.pie = function() {
+sucrose.pie = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -15,11 +15,11 @@ sucrose.models.pie = function() {
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
       fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
-      locality = sucrose.utils.buildLocality(),
+      locality = sucrose.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return sucrose.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
@@ -55,10 +55,10 @@ sucrose.models.pie = function() {
 
   var startAngle = function(d) {
         // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
-        return d.startAngle * arcDegrees / 360 + sucrose.utils.angleToRadians(rotateDegrees);
+        return d.startAngle * arcDegrees / 360 + sucrose.angleToRadians(rotateDegrees);
       };
   var endAngle = function(d) {
-        return d.endAngle * arcDegrees / 360 + sucrose.utils.angleToRadians(rotateDegrees);
+        return d.endAngle * arcDegrees / 360 + sucrose.angleToRadians(rotateDegrees);
       };
 
   var fixedRadius = function(chart) { return null; };
@@ -86,7 +86,7 @@ sucrose.models.pie = function() {
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
-        return sucrose.utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
+        return sucrose.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -96,7 +96,7 @@ sucrose.models.pie = function() {
           doLabels = showLabels && pieLabelsOutside ? true : false;
 
       if (doLabels) {
-        labelLengths = sucrose.utils.stringSetLengths(
+        labelLengths = sucrose.stringSetLengths(
             data,
             container,
             fmtKey,
@@ -125,7 +125,7 @@ sucrose.models.pie = function() {
       // Definitions
 
       if (textureFill) {
-        var mask = sucrose.utils.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
+        var mask = sucrose.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
 
       //------------------------------------------------------------
@@ -333,7 +333,7 @@ sucrose.models.pie = function() {
           })
           .style('fill', function(d, i) {
             var backColor = d3.select(this.parentNode).style('fill');
-            return sucrose.utils.getTextContrast(backColor, i);
+            return sucrose.getTextContrast(backColor, i);
           });
       }
 
@@ -383,7 +383,7 @@ sucrose.models.pie = function() {
                   bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
                   rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
               if (rW < 0) {
-                var label = sucrose.utils.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
+                var label = sucrose.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
                 d3.select(this).select('text').text(label);
               }
             }
@@ -768,7 +768,7 @@ sucrose.models.pie = function() {
     if (!arguments.length) {
       return locality;
     }
-    locality = sucrose.utils.buildLocality(_);
+    locality = sucrose.buildLocality(_);
     return chart;
   };
 

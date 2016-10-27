@@ -1,4 +1,4 @@
-sucrose.models.pieChart = function() {
+sucrose.pieChart = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -28,9 +28,10 @@ sucrose.models.pieChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var model = pie = sucrose.models.pie(),
-      controls = sucrose.models.legend().align('center'),
-      legend = sucrose.models.legend().align('center');
+  var pie = sucrose.pie(),
+      model = pie,
+      controls = sucrose.legend().align('center'),
+      legend = sucrose.legend().align('center');
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -80,7 +81,7 @@ sucrose.models.pieChart = function() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -246,7 +247,7 @@ sucrose.models.pieChart = function() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -262,7 +263,7 @@ sucrose.models.pieChart = function() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = sucrose.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -420,7 +421,7 @@ sucrose.models.pieChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -444,7 +445,7 @@ sucrose.models.pieChart = function() {
         break;
       case 'data':
         color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');

@@ -1,5 +1,5 @@
 
-sucrose.models.treemap = function() {
+sucrose.treemap = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -17,7 +17,7 @@ sucrose.models.treemap = function() {
       clipEdge = true, // if true, masks lines within x and y scale
       duration = 500,
       leafClick = function() { return false; },
-      // color = function(d, i) { return sucrose.utils.defaultColor()(d, i); },
+      // color = function(d, i) { return sucrose.defaultColor()(d, i); },
       color = d3.scaleOrdinal().range(
                 d3.schemeCategory20.map(function(c) {
                   c = d3.rgb(c);
@@ -76,7 +76,7 @@ sucrose.models.treemap = function() {
       // Set up the gradient constructor function
       chart.gradient = function(d, i, p) {
         var iColor = (d.parent.colorIndex || NODES.indexOf(groupBy(d.parent)) || i);
-        return sucrose.utils.colorLinearGradient(
+        return sucrose.colorLinearGradient(
           d,
           id + '-' + i,
           p,

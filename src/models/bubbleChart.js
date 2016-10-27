@@ -1,4 +1,4 @@
-sucrose.models.bubbleChart = function() {
+sucrose.bubbleChart = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -43,23 +43,24 @@ sucrose.models.bubbleChart = function() {
   var xValueFormat = function(d, labels, isDate) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)] || d;
-          return isDate ? sucrose.utils.dateFormat(val, 'MMM', chart.locality()) : val;
+          return isDate ? sucrose.dateFormat(val, 'MMM', chart.locality()) : val;
       };
   var yValueFormat = function(d, labels, isCurrency) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)].key || d;
-          return sucrose.utils.numberFormatSI(val, 2, isCurrency, chart.locality());
+          return sucrose.numberFormatSI(val, 2, isCurrency, chart.locality());
       };
 
-  var model = scatter = sucrose.models.scatter()
+  var scatter = sucrose.scatter()
         .padData(true)
         .padDataOuter(-1)
         .size(function(d) { return d.y; })
         .sizeRange([256, 1024])
         .singlePoint(true),
-      xAxis = sucrose.models.axis(),
-      yAxis = sucrose.models.axis(),
-      legend = sucrose.models.legend()
+      model = scatter,
+      xAxis = sucrose.axis(),
+      yAxis = sucrose.axis(),
+      legend = sucrose.legend()
         .align('center')
         .key(function(d) { return d.key + '%'; });
 
@@ -118,7 +119,7 @@ sucrose.models.bubbleChart = function() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -367,7 +368,7 @@ sucrose.models.bubbleChart = function() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -383,7 +384,7 @@ sucrose.models.bubbleChart = function() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = sucrose.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -448,7 +449,7 @@ sucrose.models.bubbleChart = function() {
           .margin(innerMargin)
           .tickFormat(function(d, i) {
             var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
-            return sucrose.utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
+            return sucrose.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
           });
         yAxis_wrap
           .call(yAxis);
@@ -611,7 +612,7 @@ sucrose.models.bubbleChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -635,7 +636,7 @@ sucrose.models.bubbleChart = function() {
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return d.classes ? 'inherit' : d.color || sucrose.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');

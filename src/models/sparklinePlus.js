@@ -1,11 +1,11 @@
 
-sucrose.models.sparklinePlus = function() {
+sucrose.sparklinePlus = function() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var sparkline = sucrose.models.sparkline();
+  var sparkline = sucrose.sparkline();
 
   var margin = {top: 15, right: 100, bottom: 10, left: 50}
     , width = null

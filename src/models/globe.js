@@ -1,5 +1,5 @@
 
-sucrose.models.globeChart = function() {
+sucrose.globeChart = function() {
 
   // http://cldr.unicode.org/
   // http://www.geonames.org/countries/
@@ -49,7 +49,7 @@ sucrose.models.globeChart = function() {
       world_map = [],
       country_map = {},
       country_labels = {},
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, i); },
+      color = function(d, i) { return sucrose.defaultColor()(d, i); },
       classes = function(d, i) { return 'sc-country-' + i; },
       fill = color,
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
@@ -121,7 +121,7 @@ sucrose.models.globeChart = function() {
       chart.container = this;
 
       var fillGradient = function(d, i) {
-            return sucrose.utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+            return sucrose.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
           };
 
       //------------------------------------------------------------
@@ -133,7 +133,7 @@ sucrose.models.globeChart = function() {
         if (hasData) return false;
         x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -531,7 +531,7 @@ sucrose.models.globeChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, i);
+          return sucrose.defaultColor()(d, i);
         };
     var classes = function(d, i) {
           return 'sc-country-' + i + (d.classes ? ' ' + d.classes : '');

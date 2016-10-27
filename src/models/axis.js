@@ -1,4 +1,4 @@
-sucrose.models.axis = function() {
+sucrose.axis = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -21,6 +21,8 @@ sucrose.models.axis = function() {
       tickPadding = 4,
       valueFormat = function(d) { return d; },
       axisLabelDistance = 8; //The larger this number is, the closer the axis label is to the axis.
+
+  var tickValues, tickSubdivide, tickSize, tickPadding, tickFormat, tickSizeInner, tickSizeOuter;
 
   // Public Read-only Variables
   //------------------------------------------------------------
@@ -494,7 +496,7 @@ sucrose.models.axis = function() {
         tickText.each(function(d, i) {
           var textContent = axis.tickFormat()(d, i, selection, true),
               textNode = d3.select(this),
-              isDate = sucrose.utils.isValidDate(textContent),
+              isDate = sucrose.isValidDate(textContent),
               textArray = (textContent && textContent !== '' ? isDate ? textContent : textContent.replace('/', '/ ') : []).split(' '),
               i = 0,
               l = textArray.length,

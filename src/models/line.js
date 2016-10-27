@@ -1,10 +1,10 @@
-sucrose.models.line = function() {
+sucrose.line = function() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var scatter = sucrose.models.scatter();
+  var scatter = sucrose.scatter();
 
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = 960,
@@ -19,7 +19,7 @@ sucrose.models.line = function() {
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return sucrose.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
 
@@ -68,7 +68,7 @@ sucrose.models.line = function() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return sucrose.utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+        return sucrose.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------

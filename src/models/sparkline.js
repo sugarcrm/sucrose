@@ -1,5 +1,5 @@
 
-sucrose.models.sparkline = function() {
+sucrose.sparkline = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -13,7 +13,7 @@ sucrose.models.sparkline = function() {
     , y = d3.scaleLinear()
     , getX = function(d) { return d.x }
     , getY = function(d) { return d.y }
-    , color = sucrose.utils.getColor(['#000'])
+    , color = sucrose.getColor(['#000'])
     , xDomain
     , yDomain
     ;
@@ -169,7 +169,7 @@ sucrose.models.sparkline = function() {
 
   chart.color = function(_) {
     if (!arguments.length) return color;
-    color = sucrose.utils.getColor(_);
+    color = sucrose.getColor(_);
     return chart;
   };
 

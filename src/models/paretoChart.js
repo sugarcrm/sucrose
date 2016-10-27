@@ -1,4 +1,4 @@
-sucrose.models.paretoChart = function() {
+sucrose.paretoChart = function() {
   //'use strict';
   //============================================================
   // Public Variables with Default Settings
@@ -28,33 +28,33 @@ sucrose.models.paretoChart = function() {
       },
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      locality = sucrose.utils.buildLocality(),
+      locality = sucrose.buildLocality(),
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var multibar = sucrose.models.multiBar()
+  var multibar = sucrose.multiBar()
       .stacked(true)
       .clipEdge(false)
       .withLine(true)
       .nice(false),
-    linesBackground = sucrose.models.line()
+    linesBackground = sucrose.line()
       .color(function(d, i) { return '#FFF'; })
       .fill(function(d, i) { return '#FFF'; })
       .useVoronoi(false)
       .nice(false),
-    lines = sucrose.models.line()
+    lines = sucrose.line()
       .useVoronoi(false)
       .color('data')
       .nice(false),
-    xAxis = sucrose.models.axis(),
-    yAxis = sucrose.models.axis(),
-    barLegend = sucrose.models.legend()
+    xAxis = sucrose.axis(),
+    yAxis = sucrose.axis(),
+    barLegend = sucrose.legend()
       .align('left')
       .position('middle'),
-    lineLegend = sucrose.models.legend()
+    lineLegend = sucrose.legend()
       .align('right')
       .position('middle');
 
@@ -131,16 +131,16 @@ sucrose.models.paretoChart = function() {
                           groupLabels[i] || d:
                           d;
             var label = xIsDatetime ?
-                          sucrose.utils.dateFormat(value, '%x', chart.locality()) :
+                          sucrose.dateFormat(value, '%x', chart.locality()) :
                           value;
             var width = Math.max(baseDimension * 2, 75);
             return !noEllipsis ?
-                      sucrose.utils.stringEllipsify(label, container, width) :
+                      sucrose.stringEllipsify(label, container, width) :
                       label;
           };
 
       var yValueFormat = function(d) {
-            return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return sucrose.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -156,7 +156,7 @@ sucrose.models.paretoChart = function() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -477,7 +477,7 @@ sucrose.models.paretoChart = function() {
             .attr('fill', 'black')
             .text(properties.title);
 
-          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -951,7 +951,7 @@ sucrose.models.paretoChart = function() {
     var type = arguments[0],
       params = arguments[1] || {};
     var barColor = function(d, i) {
-      return sucrose.utils.defaultColor()(d, d.seriesIndex);
+      return sucrose.defaultColor()(d, d.seriesIndex);
     };
     var barClasses = function(d, i) {
       return 'sc-series sc-series-' + d.seriesIndex;
@@ -991,7 +991,7 @@ sucrose.models.paretoChart = function() {
         break;
       case 'data':
         barColor = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return d.classes ? 'inherit' : d.color || sucrose.defaultColor()(d, d.seriesIndex);
         };
         barClasses = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -1181,7 +1181,7 @@ sucrose.models.paretoChart = function() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = sucrose.utils.buildLocality(_);
+    locality = sucrose.buildLocality(_);
     multibar.locality(_);
     linesBackground.locality(_);
     return chart;

@@ -23,8 +23,8 @@
 
     <script src="d3.min.js"></script>
     <script src="topojson.min.js"></script>
-    <script src="sucrose.js"></script>
-    <script src="src/models/globe.js"></script>
+    <script src="sucrose.min.js"></script>
+    <!-- <script src="src/models/globe.js"></script> -->
 
     <script>
 var type = 'globe';
@@ -52,16 +52,15 @@ var data = {
   ]
 };
 var config = {
-  "colorData": "default",
-  "height": null,
   "id": "chart_",
+  "width": null,
+  "height": null,
   "margin": {
     "top": 10,
     "right": 10,
     "bottom": 10,
     "left": 10
   },
-  "showTitle": false,
   "strings": {
     "legend": {
       "close": "Hide legend",
@@ -75,15 +74,13 @@ var config = {
     "noLabel": "undefined"
   },
   "tooltips": true,
-  "width": null,
-  "gradient": [
-    "0",
-    "vertical",
-    "middle"
-  ],
+  // "gradient": [
+  //   "0",
+  //   "vertical",
+  //   "middle"
+  // ],
   "direction": "ltr",
   "locale": "en",
-  "auto_spin": 0,
   "locality": {
     "label": "English (US)",
     "decimal": ".",
@@ -168,10 +165,13 @@ var config = {
     "d": "%-d",
     "E": "%a"
   },
-  "colorOptions": {}
+  "colorData": "default",
+  "colorOptions": {},
+  "showTitle": false,
+  "auto_spin": 0
 };
 var chart = sucrose.models.globeChart();
-
+console.log(chart)
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 

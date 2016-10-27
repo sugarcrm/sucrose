@@ -1,4 +1,4 @@
-sucrose.models.lineChart = function() {
+sucrose.lineChart = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -31,13 +31,14 @@ sucrose.models.lineChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var model = lines = sucrose.models.line()
+  var lines = sucrose.line()
         .clipEdge(true),
-      xAxis = sucrose.models.axis(),
-      yAxis = sucrose.models.axis(),
-      legend = sucrose.models.legend()
+      model = lines,
+      xAxis = sucrose.axis(),
+      yAxis = sucrose.axis(),
+      legend = sucrose.legend()
         .align('right'),
-      controls = sucrose.models.legend()
+      controls = sucrose.legend()
         .align('left')
         .color(['#444']);
 
@@ -83,7 +84,7 @@ sucrose.models.lineChart = function() {
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
             var label = xIsDatetime ?
-                          sucrose.utils.dateFormat(d, '%x', chart.locality()) :
+                          sucrose.dateFormat(d, '%x', chart.locality()) :
                           isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
                             d :
                             xTickLabels[parseInt(d, 10)];
@@ -91,7 +92,7 @@ sucrose.models.lineChart = function() {
           };
 
       var yValueFormat = function(d) {
-            return sucrose.utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return sucrose.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -107,7 +108,7 @@ sucrose.models.lineChart = function() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -148,9 +149,9 @@ sucrose.models.lineChart = function() {
 
       // TODO: what if the dimension is a numerical range?
       // xValuesAreDates = xTickLabels.length ?
-      //       sucrose.utils.isValidDate(xTickLabels[0]) :
-      //       sucrose.utils.isValidDate(model.x()(data[0].values[0]));
-      // xValuesAreDates = isArrayData && sucrose.utils.isValidDate(data[0].values[0][0]);
+      //       sucrose.isValidDate(xTickLabels[0]) :
+      //       sucrose.isValidDate(model.x()(data[0].values[0]));
+      // xValuesAreDates = isArrayData && sucrose.isValidDate(data[0].values[0][0]);
 
       // SAVE FOR LATER
       // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
@@ -377,7 +378,7 @@ sucrose.models.lineChart = function() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = sucrose.utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -430,7 +431,7 @@ sucrose.models.lineChart = function() {
           controlsHeight = controls.height();
         }
         if (showLegend) {
-          var legendLinkBBox = sucrose.utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = sucrose.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -716,7 +717,7 @@ sucrose.models.lineChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -740,7 +741,7 @@ sucrose.models.lineChart = function() {
         break;
       case 'data':
         color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.seriesIndex);
+          return sucrose.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
