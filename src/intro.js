@@ -1,6 +1,5 @@
 // http://sucrose.io Version 0.0.2. Copyright 2016 SugarCRM, Inc.
-(
-function (global, factory) {
+(function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ?
     factory(exports, require('d3'), require('d3fc-rebind')) :
     typeof define === 'function' && define.amd ?
@@ -12,10 +11,11 @@ function (global, factory) {
           global.fc
         )
       );
-}
-(this,
-  (function (exports, d3, fc)
-    {'use strict';
+} (this, (function (exports, d3, fc) {
+
+'use strict';
+
+var sucrose = sucrose || {};
 
 var version = "0.0.2";
-var sucrose = sucrose || {};
+var dev = false; //set false when in production

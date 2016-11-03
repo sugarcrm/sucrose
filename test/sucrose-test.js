@@ -14,12 +14,12 @@ tape("version matches package.json", function(test) {
 // Utilities
 
 tape("sucrose.strip(string+padding) returns string", function(test) {
-  test.equal(sucrose.strip("d "), "d");
-  test.equal(sucrose.strip("d&"), "d");
+  test.equal(sucrose.utils.strip("d "), "d");
+  test.equal(sucrose.utils.strip("d&"), "d");
   test.end();
 });
 
 tape("sucrose.identity(d) returns d", function(test) {
-  test.equal(sucrose.identity("d"), "d");
+  test.equal(sucrose.utils.identity("d"), "d");
   test.end();
 });

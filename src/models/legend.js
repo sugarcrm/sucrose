@@ -1,4 +1,7 @@
-sucrose.legend = function() {
+// import d3 from 'd3';
+import utils from '../utils.js';
+
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -31,7 +34,7 @@ sucrose.legend = function() {
         return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
       },
       color = function(d) {
-        return sucrose.defaultColor()(d, d.seriesIndex);
+        return utils.defaultColor()(d, d.seriesIndex);
       },
       classes = function(d) {
         return 'sc-series sc-series-' + d.seriesIndex;
@@ -98,7 +101,7 @@ sucrose.legend = function() {
 
       wrap_entr.append('rect').attr('class', 'sc-legend-background');
       var back = wrap.select('.sc-legend-background');
-      var backFilter = sucrose.dropShadow('legend_back_' + id, defs, {blur: 2});
+      var backFilter = utils.dropShadow('legend_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('text').attr('class', 'sc-legend-link');
       var link = wrap.select('.sc-legend-link');
@@ -109,7 +112,7 @@ sucrose.legend = function() {
       mask_entr.append('g').attr('class', 'sc-group');
       var g = wrap.select('.sc-group');
 
-      var series_bind = g.selectAll('.sc-series').data(sucrose.identity, function(d) { return d.seriesIndex; });
+      var series_bind = g.selectAll('.sc-series').data(utils.identity, function(d) { return d.seriesIndex; });
       series_bind.exit().remove();
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
             .on('mouseover', function(d, i) {
@@ -554,7 +557,7 @@ sucrose.legend = function() {
               var zoom = d3.zoom()
                     .on('zoom', panLegend);
               var drag = d3.drag()
-                    .subject(sucrose.identity)
+                    .subject(utils.identity)
                     .on('drag', panLegend);
 
               back.call(zoom);
@@ -734,7 +737,7 @@ sucrose.legend = function() {
     if (!arguments.length) {
       return color;
     }
-    color = sucrose.getColor(_);
+    color = utils.getColor(_);
     return legend;
   };
 
@@ -846,4 +849,4 @@ sucrose.legend = function() {
 
 
   return legend;
-};
+}

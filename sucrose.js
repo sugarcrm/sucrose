@@ -2,8 +2,7 @@
  * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
  */
 // http://sucrose.io Version 0.0.2. Copyright 2016 SugarCRM, Inc.
-(
-function (global, factory) {
+(function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ?
     factory(exports, require('d3'), require('d3fc-rebind')) :
     typeof define === 'function' && define.amd ?
@@ -15,86 +14,93 @@ function (global, factory) {
           global.fc
         )
       );
-}
-(this,
-  (function (exports, d3, fc)
-    {'use strict';
+} (this, (function (exports, d3, fc) {
 
-var version = "0.0.2";
+'use strict';
+
 var sucrose = sucrose || {};
 
-sucrose.version = version;
-sucrose.dev = false; //set false when in production
-
+var version = "0.0.2";
+var dev = false; //set false when in production
 sucrose.tooltip = {}; // For the tooltip system
-sucrose.utils = {}; // Utility subsystem
-sucrose.charts = {}; //stores all the ready to use charts
-sucrose.graphs = []; //stores all the graphs currently on the page
-sucrose.logs = {}; //stores some statistics and potential error messages
+var charts = {}; //stores all the ready to use charts
 
-sucrose.dispatch = d3.dispatch('render_start', 'render_end');
+var dispatch = d3.dispatch('render_start', 'render_end');
 
 // *************************************************************************
 //  Development render timers - disabled if dev = false
 
-if (sucrose.dev) {
-  sucrose.dispatch.on('render_start', function(e) {
-    sucrose.logs.startTime = +new Date();
+var logs = {}; //stores some statistics and potential error messages
+
+if (dev) {
+  dispatch.on('render_start', function(e) {
+    logs.startTime = +new Date();
   });
 
-  sucrose.dispatch.on('render_end', function(e) {
-    sucrose.logs.endTime = +new Date();
-    sucrose.logs.totalTime = sucrose.logs.endTime - sucrose.logs.startTime;
-    sucrose.log('total', sucrose.logs.totalTime); // used for development, to keep track of graph generation times
+  dispatch.on('render_end', function(e) {
+    logs.endTime = +new Date();
+    logs.totalTime = logs.endTime - logs.startTime;
+    log('total', logs.totalTime); // used for development, to keep track of graph generation times
   });
 }
 
-// ********************************************
-//  Public Core NV functions
-
 // Logs all arguments, and returns the last so you can test things in place
-sucrose.log = function() {
-  if (sucrose.dev && console.log && console.log.apply)
+var log = function() {
+  if (dev && console.log && console.log.apply)
     console.log.apply(console, arguments)
-  else if (sucrose.dev && console.log && Function.prototype.bind) {
+  else if (dev && console.log && Function.prototype.bind) {
     var log = Function.prototype.bind.call(console.log, console);
     log.apply(console, arguments);
   }
   return arguments[arguments.length - 1];
 };
 
-sucrose.render = function render(step) {
+// ********************************************
+//  Public core functions
+
+var graphs = []; //stores all the graphs currently on the page
+
+var render = function render(step) {
   step = step || 1; // number of graphs to generate in each timeout loop
 
-  sucrose.render.active = true;
-  sucrose.dispatch.call('render_start', this);
+  render.active = true;
+  dispatch.call('render_start', this);
 
   setTimeout(function() {
     var chart, graph;
 
-    for (var i = 0; i < step && (graph = sucrose.render.queue[i]); i++) {
+    for (var i = 0; i < step && (graph = render.queue[i]); i += 1) {
       chart = graph.generate();
-      if (typeof graph.callback == typeof(Function)) graph.callback(chart);
-      sucrose.graphs.push(chart);
+      if (typeof graph.callback === typeof(Function)) {
+        graph.callback(chart);
+      }
+      graphs.push(chart);
     }
 
-    sucrose.render.queue.splice(0, i);
+    render.queue.splice(0, i);
 
-    if (sucrose.render.queue.length) setTimeout(arguments.callee, 0);
-    else { sucrose.render.active = false; sucrose.dispatch.call('render_end', this); }
+    if (render.queue.length) {
+      setTimeout(arguments.callee, 0);
+    } else {
+      render.active = false;
+      sucrose.dispatch.call('render_end', this);
+    }
   }, 0);
 };
 
-sucrose.render.active = false;
-sucrose.render.queue = [];
+render.active = false;
+render.queue = [];
 
-sucrose.addGraph = function(obj) {
-  if (typeof arguments[0] === typeof(Function))
+var addGraph = function(obj) {
+  if (typeof arguments[0] === typeof(Function)) {
     obj = {generate: arguments[0], callback: arguments[1]};
+  }
 
-  sucrose.render.queue.push(obj);
+  render.queue.push(obj);
 
-  if (!sucrose.render.active) sucrose.render();
+  if (!render.active) {
+    render();
+  }
 };
 
 /*****
@@ -259,26 +265,27 @@ sucrose.addGraph = function(obj) {
   };
 
 })(sucrose);
+var utils = {};
 
-sucrose.strip = function(s) {
+utils.strip = function(s) {
   return s.replace(/(\s|&)/g,'');
 };
 
-sucrose.identity = function(d) {
+utils.identity = function(d) {
   return d;
 };
 
-sucrose.functor = function functor(v) {
+utils.functor = function functor(v) {
   return typeof v === "function" ? v : function() {
     return v;
   };
 };
 
-sucrose.daysInMonth = function(month, year) {
+utils.daysInMonth = function(month, year) {
   return (new Date(year, month+1, 0)).getDate();
 };
 
-sucrose.windowSize = function () {
+utils.windowSize = function () {
     // Sane defaults
     var size = {width: 640, height: 480};
 
@@ -306,7 +313,7 @@ sucrose.windowSize = function () {
 
 // Easy way to bind multiple functions to window.onresize
 // TODO: give a way to remove a function after its bound, other than removing alkl of them
-// sucrose.windowResize = function (fun)
+// utils.windowResize = function (fun)
 // {
 //   var oldresize = window.onresize;
 
@@ -316,7 +323,7 @@ sucrose.windowSize = function () {
 //   }
 // }
 
-sucrose.windowResize = function (fun) {
+utils.windowResize = function (fun) {
   if (window.attachEvent) {
       window.attachEvent('onresize', fun);
   }
@@ -328,7 +335,7 @@ sucrose.windowResize = function (fun) {
   }
 };
 
-sucrose.windowUnResize = function (fun) {
+utils.windowUnResize = function (fun) {
   if (window.detachEvent) {
       window.detachEvent('onresize', fun);
   }
@@ -340,7 +347,7 @@ sucrose.windowUnResize = function (fun) {
   }
 };
 
-sucrose.resizeOnPrint = function (fn) {
+utils.resizeOnPrint = function (fn) {
     if (window.matchMedia) {
         var mediaQueryList = window.matchMedia('print');
         mediaQueryList.addListener(function (mql) {
@@ -357,7 +364,7 @@ sucrose.resizeOnPrint = function (fn) {
     //window.attachEvent("onafterprint", fn);
 };
 
-sucrose.unResizeOnPrint = function (fn) {
+utils.unResizeOnPrint = function (fn) {
     if (window.matchMedia) {
         var mediaQueryList = window.matchMedia('print');
         mediaQueryList.removeListener(function (mql) {
@@ -375,10 +382,10 @@ sucrose.unResizeOnPrint = function (fn) {
 // Backwards compatible way to implement more d3-like coloring of graphs.
 // If passed an array, wrap it in a function which implements the old default
 // behavior
-sucrose.getColor = function (color) {
+utils.getColor = function (color) {
     if (!arguments.length) {
       //if you pass in nothing, get default colors back
-      return sucrose.defaultColor();
+      return utils.defaultColor();
     }
 
     if (Array.isArray(color)) {
@@ -397,7 +404,7 @@ sucrose.getColor = function (color) {
 };
 
 // Default color chooser uses the index of an object as before.
-sucrose.defaultColor = function () {
+utils.defaultColor = function () {
     var colors = d3.scaleOrdinal(d3.schemeCategory20).range();
     return function (d, i) {
       return d.color || colors[i % colors.length];
@@ -407,7 +414,7 @@ sucrose.defaultColor = function () {
 
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
-sucrose.customTheme = function (dictionary, getKey, defaultColors) {
+utils.customTheme = function (dictionary, getKey, defaultColors) {
   getKey = getKey || function (series) { return series.key; }; // use default series.key if getKey is undefined
   defaultColors = defaultColors || d3.scaleOrdinal(d3.schemeCategory20).range(); //default color function
 
@@ -431,7 +438,7 @@ sucrose.customTheme = function (dictionary, getKey, defaultColors) {
 // From the PJAX example on d3js.org, while this is not really directly needed
 // it's a very cool method for doing pjax, I may expand upon it a little bit,
 // open to suggestions on anything that may be useful
-sucrose.pjax = function (links, content) {
+utils.pjax = function (links, content) {
   d3.selectAll(links).on("click", function () {
     history.pushState(this.href, this.textContent, this.href);
     load(this.href);
@@ -442,7 +449,7 @@ sucrose.pjax = function (links, content) {
     d3.html(href, function (fragment) {
       var target = d3.select(content).node();
       target.parentNode.replaceChild(d3.select(fragment).select(content).node(), target);
-      sucrose.pjax(links, content);
+      utils.pjax(links, content);
     });
   }
 
@@ -453,7 +460,7 @@ sucrose.pjax = function (links, content) {
 
 /* Numbers that are undefined, null or NaN, convert them to zeros.
 */
-sucrose.NaNtoZero = function(n) {
+utils.NaNtoZero = function(n) {
     if (typeof n !== 'number'
         || isNaN(n)
         || n === null
@@ -463,7 +470,7 @@ sucrose.NaNtoZero = function(n) {
 };
 
 /*
-Snippet of code you can insert into each sucrose.models.* to give you the ability to
+Snippet of code you can insert into each utils.models.* to give you the ability to
 do things like:
 chart.options({
   showXAxis: true,
@@ -471,9 +478,9 @@ chart.options({
 });
 
 To enable in the chart:
-chart.options = sucrose.optionsFunc.bind(chart);
+chart.options = utils.optionsFunc.bind(chart);
 */
-sucrose.optionsFunc = function(args) {
+utils.optionsFunc = function(args) {
     if (args) {
       d3.map(args).forEach((function(key,value) {
         if (typeof this[key] === "function") {
@@ -488,14 +495,14 @@ sucrose.optionsFunc = function(args) {
 //SUGAR ADDITIONS
 
 //gradient color
-sucrose.colorLinearGradient = function (d, i, p, c, defs) {
+utils.colorLinearGradient = function (d, i, p, c, defs) {
   var id = 'lg_gradient_' + i;
   var grad = defs.select('#' + id);
   if ( grad.empty() )
   {
     if (p.position === 'middle')
     {
-      sucrose.createLinearGradient( id, p, defs, [
+      utils.createLinearGradient( id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '20%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
@@ -505,7 +512,7 @@ sucrose.colorLinearGradient = function (d, i, p, c, defs) {
     }
     else
     {
-      sucrose.createLinearGradient( id, p, defs, [
+      utils.createLinearGradient( id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '100%','stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 }
@@ -519,7 +526,7 @@ sucrose.colorLinearGradient = function (d, i, p, c, defs) {
 // id:dynamic id for arc
 // radius:outer edge of gradient
 // stops: an array of attribute objects
-sucrose.createLinearGradient = function (id, params, defs, stops) {
+utils.createLinearGradient = function (id, params, defs, stops) {
   var x2 = params.orientation === 'horizontal' ? '0%' : '100%';
   var y2 = params.orientation === 'horizontal' ? '100%' : '0%';
   var attrs, stop;
@@ -544,12 +551,12 @@ sucrose.createLinearGradient = function (id, params, defs, stops) {
   }
 };
 
-sucrose.colorRadialGradient = function (d, i, p, c, defs) {
+utils.colorRadialGradient = function (d, i, p, c, defs) {
   var id = 'rg_gradient_' + i;
   var grad = defs.select('#' + id);
   if ( grad.empty() )
   {
-    sucrose.createRadialGradient( id, p, defs, [
+    utils.createRadialGradient( id, p, defs, [
       { 'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
       { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1 }
     ]);
@@ -557,7 +564,7 @@ sucrose.colorRadialGradient = function (d, i, p, c, defs) {
   return 'url(#' + id + ')';
 };
 
-sucrose.createRadialGradient = function (id, params, defs, stops) {
+utils.createRadialGradient = function (id, params, defs, stops) {
   var attrs, stop;
   var grad = defs.append('radialGradient')
         .attr('id', id)
@@ -579,7 +586,7 @@ sucrose.createRadialGradient = function (id, params, defs, stops) {
   }
 };
 
-sucrose.getAbsoluteXY = function (element) {
+utils.getAbsoluteXY = function (element) {
   var viewportElement = document.documentElement;
   var box = element.getBoundingClientRect();
   var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
@@ -591,7 +598,7 @@ sucrose.getAbsoluteXY = function (element) {
 };
 
 // Creates a rectangle with rounded corners
-sucrose.roundedRectangle = function (x, y, width, height, radius) {
+utils.roundedRectangle = function (x, y, width, height, radius) {
   return "M" + x + "," + y +
        "h" + (width - radius * 2) +
        "a" + radius + "," + radius + " 0 0 1 " + radius + "," + radius +
@@ -604,7 +611,7 @@ sucrose.roundedRectangle = function (x, y, width, height, radius) {
        "z";
 };
 
-sucrose.dropShadow = function (id, defs, options) {
+utils.dropShadow = function (id, defs, options) {
   var opt = options || {}
     , h = opt.height || '130%'
     , o = opt.offset || 2
@@ -649,7 +656,7 @@ sucrose.dropShadow = function (id, defs, options) {
 //   fill="yellow" filter="url(#f1)" />
 // </svg>
 
-sucrose.stringSetLengths = function(_data, _container, _format, classes, styles) {
+utils.stringSetLengths = function(_data, _container, _format, classes, styles) {
   var lengths = [],
       txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -665,7 +672,7 @@ sucrose.stringSetLengths = function(_data, _container, _format, classes, styles)
   return lengths;
 };
 
-sucrose.stringSetThickness = function(_data, _container, _format, classes, styles) {
+utils.stringSetThickness = function(_data, _container, _format, classes, styles) {
   var thicknesses = [],
       txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -681,12 +688,12 @@ sucrose.stringSetThickness = function(_data, _container, _format, classes, style
   return thicknesses;
 };
 
-sucrose.maxStringSetLength = function(_data, _container, _format) {
-  var lengths = sucrose.stringSetLengths(_data, _container, _format);
+utils.maxStringSetLength = function(_data, _container, _format) {
+  var lengths = utils.stringSetLengths(_data, _container, _format);
   return d3.max(lengths);
 };
 
-sucrose.stringEllipsify = function(_string, _container, _length) {
+utils.stringEllipsify = function(_string, _container, _length) {
   var txt = _container.select('.tmp-text-strings').select('text'),
       str = _string,
       len = 0,
@@ -710,7 +717,7 @@ sucrose.stringEllipsify = function(_string, _container, _length) {
   return str + (strLen > _length ? '...' : '');
 };
 
-sucrose.getTextBBox = function(text, floats) {
+utils.getTextBBox = function(text, floats) {
   var bbox = text.node().getBoundingClientRect(),
       size = {
         width: floats ? bbox.width : parseInt(bbox.width, 10),
@@ -719,7 +726,7 @@ sucrose.getTextBBox = function(text, floats) {
   return size;
 };
 
-sucrose.getTextContrast = function(c, i, callback) {
+utils.getTextContrast = function(c, i, callback) {
   var back = c,
       backLab = d3.lab(back),
       backLumen = backLab.l,
@@ -734,28 +741,28 @@ sucrose.getTextContrast = function(c, i, callback) {
   return text;
 };
 
-sucrose.isRTLChar = function(c) {
+utils.isRTLChar = function(c) {
   var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
       rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
   return rtlCharReg_.test(c);
 };
 
-sucrose.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
-  var angleInRadians = sucrose.angleToRadians(angleInDegrees);
+utils.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
+  var angleInRadians = utils.angleToRadians(angleInDegrees);
   var x = centerX + radius * Math.cos(angleInRadians);
   var y = centerY + radius * Math.sin(angleInRadians);
   return [x, y];
 };
 
-sucrose.angleToRadians = function(angleInDegrees) {
+utils.angleToRadians = function(angleInDegrees) {
   return angleInDegrees * Math.PI / 180.0;
 };
 
-sucrose.angleToDegrees = function(angleInRadians) {
+utils.angleToDegrees = function(angleInRadians) {
   return angleInRadians * 180.0 / Math.PI;
 };
 
-sucrose.createTexture = function(defs, id, x, y) {
+utils.createTexture = function(defs, id, x, y) {
   var texture = '#sc-diagonalHatch-' + id,
       mask = '#sc-textureMask-' + id;
 
@@ -790,7 +797,7 @@ sucrose.createTexture = function(defs, id, x, y) {
   return mask;
 };
 
-// sucrose.numberFormatSI = function(d, p, c, l) {
+// utils.numberFormatSI = function(d, p, c, l) {
 //     var fmtr, spec, si;
 //     if (isNaN(d)) {
 //         return d;
@@ -810,7 +817,7 @@ sucrose.createTexture = function(defs, id, x, y) {
 //     return fmtr(spec)(d);
 // };
 
-sucrose.numberFormatSI = function(d, p, c, l) {
+utils.numberFormatSI = function(d, p, c, l) {
     var fmtr, spec;
     if (isNaN(d) || d === 0) {
         return d;
@@ -833,7 +840,7 @@ sucrose.numberFormatSI = function(d, p, c, l) {
     return fmtr(spec)(d);
 };
 
-sucrose.numberFormatRound = function(d, p, c, l) {
+utils.numberFormatRound = function(d, p, c, l) {
     var fmtr, spec;
     if (isNaN(d)) {
       return d;
@@ -845,7 +852,7 @@ sucrose.numberFormatRound = function(d, p, c, l) {
     return fmtr(spec)(d);
 };
 
-sucrose.isValidDate = function(d) {
+utils.isValidDate = function(d) {
     var testDate;
     if (!d) {
       return false;
@@ -854,7 +861,7 @@ sucrose.isValidDate = function(d) {
     return testDate instanceof Date && !isNaN(testDate.valueOf());
 };
 
-sucrose.dateFormat = function(d, p, l) {
+utils.dateFormat = function(d, p, l) {
     var date, locale, spec, fmtr;
     date = new Date(d);
     if (!(date instanceof Date) || isNaN(date.valueOf())) {
@@ -867,7 +874,7 @@ sucrose.dateFormat = function(d, p, l) {
     } else {
       // Ensure locality object has all needed properties
       // TODO: this is expensive so consider removing
-      locale = sucrose.buildLocality(l);
+      locale = utils.buildLocality(l);
       fmtr = d3.timeFormatLocale(locale).format;
       spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
       // TODO: if not explicit pattern provided, we should use .multi()
@@ -875,7 +882,7 @@ sucrose.dateFormat = function(d, p, l) {
     return fmtr(spec)(date);
 };
 
-sucrose.buildLocality = function(l, d) {
+utils.buildLocality = function(l, d) {
     var locale = l || {},
         deep = !!d,
         unfer = function(a) {
@@ -925,7 +932,7 @@ sucrose.buildLocality = function(l, d) {
     return definition;
 }
 
-sucrose.displayNoData = function (hasData, container, label, x, y) {
+utils.displayNoData = function (hasData, container, label, x, y) {
   var data = hasData ? [] : [label];
   var noData_bind = container.selectAll('.sc-no-data').data(data);
   var noData_entr = noData_bind.enter().append('text')
@@ -938,7 +945,7 @@ sucrose.displayNoData = function (hasData, container, label, x, y) {
     noData
       .attr('x', x)
       .attr('y', y)
-      .text(sucrose.identity);
+      .text(utils.identity);
     container.selectAll('.sc-chart-wrap').remove();
     return true;
   } else {
@@ -1796,7 +1803,7 @@ sucrose.legend = function() {
         return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
       },
       color = function(d) {
-        return sucrose.defaultColor()(d, d.seriesIndex);
+        return utils.defaultColor()(d, d.seriesIndex);
       },
       classes = function(d) {
         return 'sc-series sc-series-' + d.seriesIndex;
@@ -1863,7 +1870,7 @@ sucrose.legend = function() {
 
       wrap_entr.append('rect').attr('class', 'sc-legend-background');
       var back = wrap.select('.sc-legend-background');
-      var backFilter = sucrose.dropShadow('legend_back_' + id, defs, {blur: 2});
+      var backFilter = utils.dropShadow('legend_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('text').attr('class', 'sc-legend-link');
       var link = wrap.select('.sc-legend-link');
@@ -1874,7 +1881,7 @@ sucrose.legend = function() {
       mask_entr.append('g').attr('class', 'sc-group');
       var g = wrap.select('.sc-group');
 
-      var series_bind = g.selectAll('.sc-series').data(sucrose.identity, function(d) { return d.seriesIndex; });
+      var series_bind = g.selectAll('.sc-series').data(utils.identity, function(d) { return d.seriesIndex; });
       series_bind.exit().remove();
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
             .on('mouseover', function(d, i) {
@@ -2319,7 +2326,7 @@ sucrose.legend = function() {
               var zoom = d3.zoom()
                     .on('zoom', panLegend);
               var drag = d3.drag()
-                    .subject(sucrose.identity)
+                    .subject(utils.identity)
                     .on('drag', panLegend);
 
               back.call(zoom);
@@ -2499,7 +2506,7 @@ sucrose.legend = function() {
     if (!arguments.length) {
       return color;
     }
-    color = sucrose.getColor(_);
+    color = utils.getColor(_);
     return legend;
   };
 
@@ -4601,11 +4608,11 @@ sucrose.funnel = function() {
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
       fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
-      locality = sucrose.buildLocality(),
+      locality = utils.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return utils.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -4648,7 +4655,7 @@ sucrose.funnel = function() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return sucrose.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -4731,7 +4738,7 @@ sucrose.funnel = function() {
       // Definitions
 
       if (textureFill) {
-        var mask = sucrose.createTexture(defs_entr, id);
+        var mask = utils.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
@@ -5129,7 +5136,7 @@ sucrose.funnel = function() {
             dy = parseFloat(lbl.attr('dy')),
             maxWidth = fnWidth(d);
 
-        lbl.text(sucrose.stringEllipsify(text, container, maxWidth))
+        lbl.text(utils.stringEllipsify(text, container, maxWidth))
           .call(fmtLabel, dy);
       }
 
@@ -5338,11 +5345,11 @@ sucrose.funnel = function() {
 
       function fmtFill(d, i, j) {
         var backColor = d3.select(this.parentNode).style('fill');
-        return sucrose.getTextContrast(backColor, i);
+        return utils.getTextContrast(backColor, i);
       }
 
       function fmtDirection(d) {
-        var m = sucrose.isRTLChar(d.slice(-1)),
+        var m = utils.isRTLChar(d.slice(-1)),
             dir = m ? 'rtl' : 'ltr';
         return 'ltr';
       }
@@ -5431,7 +5438,7 @@ sucrose.funnel = function() {
     if (!arguments.length) {
       return gradient;
     }
-    gradient = _;
+    chart.gradient = _;
     return chart;
   };
 
@@ -5474,7 +5481,7 @@ sucrose.funnel = function() {
     if (!arguments.length) {
       return getY;
     }
-    getY = sucrose.functor(_);
+    getY = utils.functor(_);
     return chart;
   };
 
@@ -5554,7 +5561,7 @@ sucrose.funnel = function() {
     if (!arguments.length) {
       return locality;
     }
-    locality = sucrose.buildLocality(_);
+    locality = utils.buildLocality(_);
     return chart;
   };
 
@@ -5693,7 +5700,7 @@ sucrose.funnelChart = function() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -5859,7 +5866,7 @@ sucrose.funnelChart = function() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -5875,7 +5882,7 @@ sucrose.funnelChart = function() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = sucrose.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -6032,7 +6039,7 @@ sucrose.funnelChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -6056,7 +6063,7 @@ sucrose.funnelChart = function() {
         break;
       case 'data':
         color = function(d, i) {
-          return sucrose.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -17933,54 +17940,17 @@ sucrose.treemapChart = function() {
 
   return chart;
 };
-exports.version = sucrose.version;
-exports.dev = sucrose.dev;
+// From intro
+exports.version = version;
+exports.dev = dev;
 
-exports.strip = sucrose.strip;
-exports.identity = sucrose.identity;
-exports.functor = sucrose.functor;
-exports.daysInMonth = sucrose.daysInMonth;
-exports.windowSize = sucrose.windowSize;
-exports.windowResize = sucrose.windowResize;
-exports.windowUnResize = sucrose.windowUnResize;
-exports.resizeOnPrint = sucrose.resizeOnPrint;
-exports.unResizeOnPrint = sucrose.unResizeOnPrint;
-exports.getColor = sucrose.getColor;
-exports.defaultColor = sucrose.defaultColor;
-exports.customTheme = sucrose.customTheme;
-exports.pjax = sucrose.pjax;
-exports.NaNtoZero = sucrose.NaNtoZero;
-exports.optionsFunc = sucrose.optionsFunc;
-exports.colorLinearGradient = sucrose.colorLinearGradient;
-exports.createLinearGradient = sucrose.createLinearGradient;
-exports.colorRadialGradient = sucrose.colorRadialGradient;
-exports.createRadialGradient = sucrose.createRadialGradient;
-exports.getAbsoluteXY = sucrose.getAbsoluteXY;
-exports.roundedRectangle = sucrose.roundedRectangle;
-exports.dropShadow = sucrose.dropShadow;
-exports.stringSetLengths = sucrose.stringSetLengths;
-exports.stringSetThickness = sucrose.stringSetThickness;
-exports.maxStringSetLength = sucrose.maxStringSetLength;
-exports.stringEllipsify = sucrose.stringEllipsify;
-exports.getTextBBox = sucrose.getTextBBox;
-exports.getTextContrast = sucrose.getTextContrast;
-exports.isRTLChar = sucrose.isRTLChar;
-exports.polarToCartesian = sucrose.polarToCartesian;
-exports.angleToRadians = sucrose.angleToRadians;
-exports.angleToDegrees = sucrose.angleToDegrees;
-exports.createTexture = sucrose.createTexture;
-exports.numberFormatSI = sucrose.numberFormatSI;
-exports.numberFormatRound = sucrose.numberFormatRound;
-exports.isValidDate = sucrose.isValidDate;
-exports.dateFormat = sucrose.dateFormat;
-exports.buildLocality = sucrose.buildLocality;
-exports.displayNoData = sucrose.displayNoData
-
-exports.log = sucrose.log;
-exports.logs = sucrose.logs;
+// From core
+exports.dispatch = dispatch;
+exports.render = render;
+exports.addGraph = addGraph;
 exports.tooltip = sucrose.tooltip;
-exports.dispatch = sucrose.dispatch;
 
+exports.utils = utils;
 exports.axis = sucrose.axis;
 exports.funnel = sucrose.funnel;
 exports.gauge = sucrose.gauge;

@@ -1,4 +1,7 @@
-sucrose.funnel = function() {
+// import d3 from 'd3';
+import utils from '../utils.js';
+
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -16,11 +19,11 @@ sucrose.funnel = function() {
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
       fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
-      locality = sucrose.buildLocality(),
+      locality = utils.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return utils.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -63,7 +66,7 @@ sucrose.funnel = function() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return sucrose.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -146,7 +149,7 @@ sucrose.funnel = function() {
       // Definitions
 
       if (textureFill) {
-        var mask = sucrose.createTexture(defs_entr, id);
+        var mask = utils.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
@@ -197,15 +200,16 @@ sucrose.funnel = function() {
 
       //------------------------------------------------------------
       // Append polygons for funnel
-// function(s, i) {
-//               return s.values.map(function(v, j) {
-//                 v.disabled = s.disabled;
-//                 v.key = s.key;
-//                 v.seriesIndex = s.seriesIndex;
-//                 v.index = j;
-//                 return v;
-//               });
-//             },
+      // Save for later...
+      // function(s, i) {
+      //   return s.values.map(function(v, j) {
+      //     v.disabled = s.disabled;
+      //     v.key = s.key;
+      //     v.seriesIndex = s.seriesIndex;
+      //     v.index = j;
+      //     return v;
+      //   });
+      // },
 
       var slice_bind = series.selectAll('g.sc-slice')
             .data(function(d) { return d.values; }, function(d) { return d.seriesIndex; });
@@ -544,7 +548,7 @@ sucrose.funnel = function() {
             dy = parseFloat(lbl.attr('dy')),
             maxWidth = fnWidth(d);
 
-        lbl.text(sucrose.stringEllipsify(text, container, maxWidth))
+        lbl.text(utils.stringEllipsify(text, container, maxWidth))
           .call(fmtLabel, dy);
       }
 
@@ -753,11 +757,11 @@ sucrose.funnel = function() {
 
       function fmtFill(d, i, j) {
         var backColor = d3.select(this.parentNode).style('fill');
-        return sucrose.getTextContrast(backColor, i);
+        return utils.getTextContrast(backColor, i);
       }
 
       function fmtDirection(d) {
-        var m = sucrose.isRTLChar(d.slice(-1)),
+        var m = utils.isRTLChar(d.slice(-1)),
             dir = m ? 'rtl' : 'ltr';
         return 'ltr';
       }
@@ -846,7 +850,7 @@ sucrose.funnel = function() {
     if (!arguments.length) {
       return gradient;
     }
-    gradient = _;
+    chart.gradient = _;
     return chart;
   };
 
@@ -889,7 +893,7 @@ sucrose.funnel = function() {
     if (!arguments.length) {
       return getY;
     }
-    getY = sucrose.functor(_);
+    getY = utils.functor(_);
     return chart;
   };
 
@@ -969,7 +973,7 @@ sucrose.funnel = function() {
     if (!arguments.length) {
       return locality;
     }
-    locality = sucrose.buildLocality(_);
+    locality = utils.buildLocality(_);
     return chart;
   };
 
@@ -1024,4 +1028,4 @@ sucrose.funnel = function() {
   //============================================================
 
   return chart;
-};
+}
