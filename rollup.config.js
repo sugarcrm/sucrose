@@ -10,7 +10,7 @@ export default {
   dest: 'build2/sucrose.js',
   format: 'umd',
   sourceMap: 'inline',
-  external: ['d3'],
+  external: ['d3', 'd3fc-rebind'],
   plugins: [
    resolve({
       jsnext: true,
@@ -31,5 +31,6 @@ export default {
   ],
   globals: {
     d3: 'd3',
+    'd3fc-rebind': 'fc',
   },
 };
