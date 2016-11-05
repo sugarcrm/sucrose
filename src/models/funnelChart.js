@@ -1,9 +1,9 @@
-// import d3 from 'd3';
+import d3 from 'd3';
 import utils from '../utils.js';
-import legend from './legend.js';
-import funnel from './funnel.js';
+// import * as models from './models.js';
+// import funnel as models.funnel from './models.js';
 
-export default function() {
+export function funnelChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -33,10 +33,10 @@ export default function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var funnel = sucrose.funnel(),
+  var funnel = models.funnel(),
       model = funnel,
-      controls = sucrose.legend().align('center'),
-      legend = sucrose.legend().align('center');
+      controls = models.legend().align('center'),
+      legend = models.legend().align('center');
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -49,7 +49,7 @@ export default function() {
             x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
 
-        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart) { return; };
@@ -349,13 +349,13 @@ export default function() {
 
       dispatch.on('tooltipMove', function(e) {
         if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e);
+          tooltip.position(that.parentNode, tooltip, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 

@@ -1,4 +1,10 @@
-sucrose.bubbleChart = function() {
+import d3 from 'd3';
+import utils from '../utils.js';
+import legend from './legend.js';
+import axis from './axis.js';
+import scatter from './scatter.js';
+
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -807,4 +813,4 @@ sucrose.bubbleChart = function() {
   //============================================================
 
   return chart;
-};
+}

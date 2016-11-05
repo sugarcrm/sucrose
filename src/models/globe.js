@@ -1,5 +1,7 @@
+import d3 from 'd3';
+import utils from '../utils.js';
 
-sucrose.globeChart = function() {
+export default function() {
 
   // http://cldr.unicode.org/
   // http://www.geonames.org/countries/
@@ -736,4 +738,4 @@ sucrose.globeChart = function() {
   //============================================================
 
   return chart;
-};
+}

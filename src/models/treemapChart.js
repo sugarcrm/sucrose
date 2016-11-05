@@ -1,5 +1,9 @@
+import d3 from 'd3';
+import utils from '../utils.js';
+import legend from './legend.js';
+import treemap from './treemap.js';
 
-sucrose.treemapChart = function() {
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -396,4 +400,4 @@ sucrose.treemapChart = function() {
   //============================================================
 
   return chart;
-};
+}

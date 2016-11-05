@@ -1,4 +1,7 @@
-sucrose.scatter = function() {
+import d3 from 'd3';
+import utils from '../utils.js';
+
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -719,4 +722,4 @@ sucrose.scatter = function() {
   //============================================================
 
   return chart;
-};
+}

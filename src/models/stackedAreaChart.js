@@ -1,4 +1,10 @@
-sucrose.stackedAreaChart = function() {
+import d3 from 'd3';
+import utils from '../utils.js';
+import legend from './legend.js';
+import axis from './axis.js';
+import stacked from './stackedArea.js';
+
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings

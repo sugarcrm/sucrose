@@ -1,5 +1,5 @@
 // Rollup plugins
-import babel from 'rollup-plugin-babel';
+// import babel from 'rollup-plugin-babel';
 // import eslint from 'rollup-plugin-eslint';
 import resolve from 'rollup-plugin-node-resolve';
 // import commonjs from 'rollup-plugin-commonjs';
@@ -11,8 +11,9 @@ export default {
   format: 'umd',
   sourceMap: 'inline',
   external: ['d3', 'd3fc-rebind'],
+  treeshake: false,
   plugins: [
-   resolve({
+    resolve({
       jsnext: true,
       main: true,
       browser: true,
@@ -23,11 +24,11 @@ export default {
     //     'src/styles/**',
     //   ]
     // }),
-    babel({
-      // exclude: 'node_modules/**',
-      babelrc: false,
-      presets: ['es2015-rollup'],
-    }),
+    // babel({
+    //   // exclude: 'node_modules/**',
+    //   babelrc: false,
+    //   presets: ['es2015-rollup'],
+    // }),
   ],
   globals: {
     d3: 'd3',

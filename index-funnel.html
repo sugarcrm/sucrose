@@ -24,12 +24,11 @@
     </div>
 
     <script src="d3.min.js"></script>
-    <!-- <script src="d3fc-rebind.min.js"></script> -->
+    <script src="d3fc-rebind.min.js"></script>
 
     <script src="build2/sucrose.js"></script>
 
     <script>
-console.log(sucrose)
 var type = 'funnel';
 var data = {
   "properties": {
@@ -237,7 +236,7 @@ var config = {
   ],
   "colorOptions": {}
 };
-var chart = sucrose.funnelChart();
+var chart = sucrose.charts.funnelChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
@@ -318,19 +317,19 @@ function format(chart) {
 }
 
 window.onload = function () {
-    // configure(chart);
-    // format(chart);
+    configure(chart);
+    format(chart);
 
-    // // Bind D3 chart to SVG element
-    // d3.select('#chart_ svg')
-    //     .attr('class', 'sucrose sc-chart')
-    //     .datum(data).call(chart);
+    // Bind D3 chart to SVG element
+    d3.select('#chart_ svg')
+        .attr('class', 'sucrose sc-chart')
+        .datum(data).call(chart);
 
-    // // Dismiss tooltips
-    // d3.select('#chart_').on('click', chart.dispatch.chartClick);
+    // Dismiss tooltips
+    d3.select('#chart_').on('click', chart.dispatch.chartClick);
 
-    // // Rebind window resizer
-    // window.addEventListener('resize', chart.render);
+    // Rebind window resizer
+    window.addEventListener('resize', chart.render);
 };
     </script>
   </body>

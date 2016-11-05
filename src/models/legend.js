@@ -1,7 +1,8 @@
-// import d3 from 'd3';
+import d3 from 'd3';
 import utils from '../utils.js';
+// import scroll from './scroll.js';
 
-export default function() {
+export function legend() {
 
   //============================================================
   // Public Variables with Default Settings

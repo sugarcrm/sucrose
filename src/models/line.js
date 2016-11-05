@@ -1,4 +1,8 @@
-sucrose.line = function() {
+import d3 from 'd3';
+import utils from '../utils.js';
+import scatter from './scatter.js';
+
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -360,4 +364,4 @@ sucrose.line = function() {
   //============================================================
 
   return chart;
-};
+}

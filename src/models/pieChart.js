@@ -1,4 +1,9 @@
-sucrose.pieChart = function() {
+import d3 from 'd3';
+import utils from '../utils.js';
+import legend from './legend.js';
+import pie from './pie.js';
+
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings

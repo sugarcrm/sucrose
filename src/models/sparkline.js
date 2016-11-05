@@ -1,5 +1,7 @@
+import d3 from 'd3';
+import utils from '../utils.js';
 
-sucrose.sparkline = function() {
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings

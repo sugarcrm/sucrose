@@ -1,7 +1,7 @@
-// import d3 from 'd3';
+import d3 from 'd3';
 import utils from '../utils.js';
 
-export default function() {
+export function funnel() {
 
   //============================================================
   // Public Variables with Default Settings

@@ -1,4 +1,7 @@
-sucrose.gauge = function() {
+import d3 from 'd3';
+import utils from '../utils.js';
+
+export default function() {
   /* original inspiration for this chart type is at http://bl.ocks.org/3202712 */
   //============================================================
   // Public Variables with Default Settings

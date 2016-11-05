@@ -1,5 +1,7 @@
+import d3 from 'd3';
+import utils from '../utils.js';
 
-sucrose.tree = function() {
+export default function() {
 
   // issues: 1. zoom slider doesn't zoom on chart center
   // orientation
@@ -608,4 +610,4 @@ console.log(_data)
   //============================================================
 
   return chart;
-};
+}

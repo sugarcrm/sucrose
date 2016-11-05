@@ -1,4 +1,11 @@
-sucrose.paretoChart = function() {
+import d3 from 'd3';
+import utils from '../utils.js';
+import legend from './legend.js';
+import axis from './axis.js';
+import line from './line.js';
+import multibar from './multibar.js';
+
+export default function() {
   //'use strict';
   //============================================================
   // Public Variables with Default Settings

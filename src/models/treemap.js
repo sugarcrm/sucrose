@@ -1,5 +1,7 @@
+import d3 from 'd3';
+import utils from '../utils.js';
 
-sucrose.treemap = function() {
+export default function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -504,4 +506,4 @@ sucrose.treemap = function() {
 
 
   return chart;
-};
+}

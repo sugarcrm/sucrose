@@ -1,5 +1,7 @@
+import d3 from 'd3';
+import utils from '../utils.js';
 
-sucrose.scroll = function() {
+export default function() {
 
   //============================================================
   // Public Variables
@@ -436,4 +438,4 @@ sucrose.scroll = function() {
   //============================================================
 
   return scroll;
-};
+}
