@@ -155,7 +155,7 @@ var sucroseCharts = function () {
       _format: function format(chart, callback) {
         chart
           .valueFormat(function (d) {
-            return sucrose.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+            return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
           .tooltipContent(function (eo, graph) {
             var key = eo.group.label,
@@ -164,8 +164,8 @@ var sucroseCharts = function () {
                       Math.abs(y * 100 / eo.group._height).toFixed(1) :
                       xAxis.tickFormat()(eo.point.x);
 
-            var val = sucrose.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-                percent = sucrose.numberFormatRound(x, 2, false, chart.locality());
+            var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+                percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
             return '<p>Key: <b>' + key + '</b></p>' +
                    '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                    '<p>Percentage: <b>' + percent + '%</b></p>';
@@ -187,12 +187,12 @@ var sucroseCharts = function () {
       _format: function format(chart, callback) {
         chart
           .tooltipContent(function (key, x, y, e, graph) {
-            var val = sucrose.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+            var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
             var content = '<p>Category: <b>' + key + '</b></p>' +
                           '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>',
                 dateCheck = new Date(x);
             if (dateCheck instanceof Date && !isNaN(dateCheck.valueOf())) {
-              content += '<p>Date: <b>' + sucrose.dateFormat(x, '%x', chart.locality()) + '</b></p>';
+              content += '<p>Date: <b>' + sucrose.utils.dateFormat(x, '%x', chart.locality()) + '</b></p>';
             }
             return content;
           });
@@ -215,8 +215,8 @@ var sucroseCharts = function () {
       _format: function format(chart, callback) {
         chart
           .tooltipContent(function (key, x, y, e, graph) {
-            var val = sucrose.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-                percent = sucrose.numberFormatRound(x, 2, false, chart.locality());
+            var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+                percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
             return '<p>Stage: <b>' + key + '</b></p>' +
                    '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                    '<p>Percent: <b>' + percent + '%</b></p>';
@@ -234,14 +234,14 @@ var sucroseCharts = function () {
           // .fmtKey(function (d) {
           // })
           .fmtValue(function (d) {
-              return sucrose.numberFormatSI(chart.getValue()(d), 0, yIsCurrency, chart.locality());
+              return sucrose.utils.numberFormatSI(chart.getValue()(d), 0, yIsCurrency, chart.locality());
           })
           .fmtCount(function (d) {
-              return d.count ? ' (' + sucrose.numberFormatSI(d.count, 0, false, chart.locality()) + ')' : '';
+              return d.count ? ' (' + sucrose.utils.numberFormatSI(d.count, 0, false, chart.locality()) + ')' : '';
           })
           .tooltipContent(function (key, x, y, e, graph) {
-            var val = sucrose.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-                percent = sucrose.numberFormatRound(x, 2, false, chart.locality());
+            var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+                percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
             return '<p>Stage: <b>' + key + '</b></p>' +
                    '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                    '<p>Percent: <b>' + percent + '%</b></p>';
@@ -302,21 +302,21 @@ var sucroseCharts = function () {
       _format: function format(chart, callback) {
         chart
           .valueFormat(function (d) {
-            return sucrose.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+            return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
           .tooltipBar(function (key, x, y, e, graph) {
-            var val = sucrose.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality()),
-                percent = sucrose.numberFormatRound(x, 2, false, chart.locality());
+            var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality()),
+                percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
             return '<p><b>' + key + '</b></p>' +
                    '<p><b>' + val + '</b></p>' +
                    '<p><b>' + percent + '%</b></p>';
           })
           .tooltipLine(function (key, x, y, e, graph) {
-            var val = sucrose.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+            var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
             return '<p><p>' + key + ': <b>' + val + '</b></p>';
           })
           .tooltipQuota(function (key, x, y, e, graph) {
-            var val = sucrose.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+            var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
             return '<p>' + e.key + ': <b>' + val + '</b></p>';
           })
           .seriesClick(function (data, eo, chart, container) {
@@ -426,7 +426,7 @@ var sucroseCharts = function () {
             var container = d3.select('#chart_ svg');
             d.selectAll('text').text(function () {
               var text = d3.select(this).text();
-              return sucrose.stringEllipsify(text, container, 96);
+              return sucrose.utils.stringEllipsify(text, container, 96);
             });
             d.selectAll('image')
               .on('error', function (d) {
@@ -486,7 +486,7 @@ var sucroseCharts = function () {
       return model;
     },
     getChart: function(type) {
-      return sucrose[this.getChartModel(type)]();
+      return sucrose.charts[this.getChartModel(type)]();
     },
     getConfig: function(type, chart, settings) {
       var defaultConfig = getDefaultConfiguration(type, chart);

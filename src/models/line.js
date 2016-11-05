@@ -1,6 +1,6 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import scatter from './scatter.js';
+import * as models from './models.js';
 
 export default function() {
 
@@ -8,7 +8,7 @@ export default function() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var scatter = sucrose.scatter();
+  var scatter = models.scatter();
 
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = 960,
@@ -23,7 +23,7 @@ export default function() {
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
-      color = function(d, i) { return sucrose.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
 
@@ -72,7 +72,7 @@ export default function() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return sucrose.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -357,7 +357,7 @@ export default function() {
 
   chart.isArea = function(_) {
     if (!arguments.length) { return isArea; }
-    isArea = sucrose.functor(_);
+    isArea = utils.functor(_);
     return chart;
   };
 

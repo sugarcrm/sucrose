@@ -19,7 +19,7 @@ export default function() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      color = sucrose.getColor(['#000']);
+      color = utils.getColor(['#000']);
 
   //============================================================
 
@@ -61,7 +61,7 @@ export default function() {
         var hasData = d && d.length && d.filter(function (d) { return d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
       // Check to see if there's nothing to show.
       if (displayNoData(data)) {
@@ -259,13 +259,13 @@ export default function() {
 
   chart.x = function (_) {
     if (!arguments.length) return getX;
-    getX = sucrose.functor(_);
+    getX = utils.functor(_);
     return chart;
   };
 
   chart.y = function (_) {
     if (!arguments.length) return getY;
-    getY = sucrose.functor(_);
+    getY = utils.functor(_);
     return chart;
   };
 
@@ -283,7 +283,7 @@ export default function() {
 
   chart.color = function (_) {
     if (!arguments.length) return color;
-    color = sucrose.getColor(_);
+    color = utils.getColor(_);
     return chart;
   };
 

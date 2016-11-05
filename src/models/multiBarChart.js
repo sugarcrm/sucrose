@@ -1,9 +1,6 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import legend from './legend.js';
-import axis from './axis.js';
-import multibar from './multibar.js';
-import scroll from './scroll.js';
+import * as models from './models.js';
 
 export default function() {
 
@@ -45,13 +42,13 @@ export default function() {
   var useScroll = false,
       scrollOffset = 0;
 
-  var multibar = sucrose.multiBar().stacked(false).clipEdge(false);
+  var multibar = models.multiBar().stacked(false).clipEdge(false);
   var model = multibar;
-  var xAxis = sucrose.axis(); //.orient('bottom'),
-  var yAxis = sucrose.axis(); //.orient('left'),
-  var controls = sucrose.legend().color(['#444']);
-  var legend = sucrose.legend();
-  var scroll = sucrose.scroll();
+  var xAxis = models.axis(); //.orient('bottom'),
+  var yAxis = models.axis(); //.orient('left'),
+  var controls = models.legend().color(['#444']);
+  var legend = models.legend();
+  var scroll = models.scroll();
 
   var tooltipContent = function(eo, graph) {
         var key = eo.group.label,
@@ -111,18 +108,18 @@ export default function() {
                           groupLabels[i] || d:
                           d;
             var label = xIsDatetime ?
-                          sucrose.dateFormat(value, '%x', chart.locality()) :
+                          utils.dateFormat(value, '%x', chart.locality()) :
                           value;
             var width = Math.max(vertical ?
                           baseDimension * 2 :
                           availableWidth * 0.2, 75);
             return !noEllipsis ?
-                      sucrose.stringEllipsify(label, container, width) :
+                      utils.stringEllipsify(label, container, width) :
                       label;
           };
 
       var yValueFormat = function(d) {
-            return sucrose.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -138,7 +135,7 @@ export default function() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -451,7 +448,7 @@ export default function() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -511,7 +508,7 @@ export default function() {
           controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
         }
         if (showLegend) {
-          var legendLinkBBox = sucrose.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -835,7 +832,7 @@ export default function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -859,7 +856,7 @@ export default function() {
         break;
       case 'data':
         color = function(d, i) {
-          return sucrose.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -1004,7 +1001,7 @@ export default function() {
 
   chart.overflowHandler = function(_) {
     if (!arguments.length) { return overflowHandler; }
-    overflowHandler = sucrose.functor(_);
+    overflowHandler = utils.functor(_);
     return chart;
   };
 

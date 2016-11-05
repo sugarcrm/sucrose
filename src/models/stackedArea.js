@@ -18,7 +18,7 @@ export default function() {
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
-      locality = sucrose.buildLocality(),
+      locality = utils.buildLocality(),
       style = 'stack',
       offset = 'zero',
       order = 'default',
@@ -26,7 +26,7 @@ export default function() {
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
       xDomain = null, // Override x domain (skips the calculation from data)
       yDomain = null, // Override y domain
-      color = function(d, i) { return sucrose.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function(d, i) { return 'sc-area sc-series-' + d.seriesIndex; },
       dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -71,7 +71,7 @@ export default function() {
 
       // gradient constructor function
       chart.gradient = function(d, i, p) {
-        return sucrose.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -411,7 +411,7 @@ export default function() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = sucrose.buildLocality(_);
+    locality = utils.buildLocality(_);
     return chart;
   };
   chart.clipEdge = function(_) {

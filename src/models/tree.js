@@ -32,7 +32,7 @@ export default function() {
     horizontal = false;
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-    color = function (d, i) { return sucrose.defaultColor()(d, i); },
+    color = function (d, i) { return utils.defaultColor()(d, i); },
     fill = function(d, i) { return color(d,i); },
     gradient = function(d, i) { return color(d,i); },
 
@@ -49,10 +49,10 @@ export default function() {
     getId = function(d) { return d.id; },
 
     fillGradient = function(d, i) {
-        return sucrose.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+        return utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
     },
     useClass = false,
-    valueFormat = sucrose.numberFormatSI,
+    valueFormat = utils.numberFormatSI,
     showLabels = true,
     dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 
@@ -98,13 +98,13 @@ export default function() {
       var wrap_entr = wrap_bind.enter().append('g')
             .attr('class', 'sucrose sc-wrap sc-treeChart')
             .attr('id', 'sc-chart-' + id);
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
 
       wrap.call(zoom);
 
       var defs_entr = wrap_entr.append('defs');
       var defs = wrap.select('defs').merge(defs_entr);
-      var nodeShadow = sucrose.dropShadow('node_back_' + id, defs, {blur: 2});
+      var nodeShadow = utils.dropShadow('node_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('svg:rect')
             .attr('class', 'sc-chartBackground')
@@ -293,7 +293,7 @@ export default function() {
             d._children = null;
           }
         }
-console.log(_data)
+        //console.log(_data)
         nodes = tree(_data);
         var root = nodes[0];
 
@@ -506,7 +506,7 @@ console.log(_data)
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = sucrose.functor(_);
+    getY = utils.functor(_);
     return chart;
   };
 

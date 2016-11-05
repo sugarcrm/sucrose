@@ -15,7 +15,7 @@ export default function() {
     , y = d3.scaleLinear()
     , getX = function(d) { return d.x }
     , getY = function(d) { return d.y }
-    , color = sucrose.getColor(['#000'])
+    , color = utils.getColor(['#000'])
     , xDomain
     , yDomain
     ;
@@ -47,7 +47,7 @@ export default function() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-sparkline').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparkline');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
       var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
@@ -129,13 +129,13 @@ export default function() {
 
   chart.x = function(_) {
     if (!arguments.length) return getX;
-    getX = sucrose.functor(_);
+    getX = utils.functor(_);
     return chart;
   };
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = sucrose.functor(_);
+    getY = utils.functor(_);
     return chart;
   };
 
@@ -171,7 +171,7 @@ export default function() {
 
   chart.color = function(_) {
     if (!arguments.length) return color;
-    color = sucrose.getColor(_);
+    color = utils.getColor(_);
     return chart;
   };
 

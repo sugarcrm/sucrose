@@ -423,7 +423,7 @@ export default function() {
     if (!arguments.length) {
       return panHandler;
     }
-    panHandler = sucrose.functor(_);
+    panHandler = utils.functor(_);
     return scroll;
   };
 

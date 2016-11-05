@@ -1,7 +1,6 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import legend from './legend.js';
-import pie from './pie.js';
+import * as models from './models.js';
 
 export default function() {
 
@@ -33,10 +32,10 @@ export default function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var pie = sucrose.pie(),
+  var pie = models.pie(),
       model = pie,
-      controls = sucrose.legend().align('center'),
-      legend = sucrose.legend().align('center');
+      controls = models.legend().align('center'),
+      legend = models.legend().align('center');
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -86,7 +85,7 @@ export default function() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -252,7 +251,7 @@ export default function() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -268,7 +267,7 @@ export default function() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = sucrose.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -426,7 +425,7 @@ export default function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -450,7 +449,7 @@ export default function() {
         break;
       case 'data':
         color = function(d, i) {
-          return sucrose.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');

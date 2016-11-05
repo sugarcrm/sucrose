@@ -15,7 +15,7 @@ export default function() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      locality = sucrose.buildLocality(),
+      locality = utils.buildLocality(),
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
       stacked = true,
       barColor = null, // adding the ability to set the color for each rather than the whole group
@@ -32,7 +32,7 @@ export default function() {
       xDomain,
       yDomain,
       nice = false,
-      color = function(d, i) { return sucrose.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
       fill = color,
       textureFill = false,
       barColor = null, // adding the ability to set the color for each rather than the whole group
@@ -147,14 +147,14 @@ export default function() {
         minSeries = seriesExtents[0];
         maxSeries = seriesExtents[1];
 
-        labelLengths = sucrose.stringSetLengths(
+        labelLengths = utils.stringSetLengths(
             labelData,
             container,
             valueFormat,
             'sc-label-value'
           );
 
-        labelThickness = sucrose.stringSetThickness(
+        labelThickness = utils.stringSetThickness(
             ['Xy'],
             container,
             valueFormat,
@@ -274,7 +274,7 @@ export default function() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return sucrose.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -294,12 +294,12 @@ export default function() {
 
 
       if (textureFill) {
-        var mask = sucrose.createTexture(defs_entr, id);
+        var mask = utils.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
 
-      var series_bind = wrap.selectAll('.sc-series').data(sucrose.identity);
+      var series_bind = wrap.selectAll('.sc-series').data(utils.identity);
       var series_entr = series_bind.enter().append('g')
             .attr('class', classes)
             .style('stroke-opacity', 1e-6)
@@ -407,7 +407,7 @@ export default function() {
             .attr(dimX, barThickness)
             .style('fill', function(d, i) {
               var backColor = fill(d),
-                  foreColor = sucrose.getTextContrast(backColor, i);
+                  foreColor = utils.getTextContrast(backColor, i);
               return foreColor;
             });
       }
@@ -564,7 +564,7 @@ export default function() {
               }
               // var backColor = d3.select(this.previousSibling).style('fill'),
               var backColor = fill(d),
-                  textColor = sucrose.getTextContrast(backColor, i);
+                  textColor = utils.getTextContrast(backColor, i);
               return textColor;
             })
             .style('fill-opacity', function(d, i) {
@@ -823,7 +823,7 @@ export default function() {
     if (!arguments.length) {
       return barColor;
     }
-    barColor = sucrose.getColor(_);
+    barColor = utils.getColor(_);
     return chart;
   };
 
@@ -933,7 +933,7 @@ export default function() {
     if (!arguments.length) {
       return locality;
     }
-    locality = sucrose.buildLocality(_);
+    locality = utils.buildLocality(_);
     return chart;
   };
 

@@ -1,12 +1,10 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3'), require('d3fc-rebind')) :
-  typeof define === 'function' && define.amd ? define(['exports', 'd3', 'd3fc-rebind'], factory) :
-  (factory((global.sucrose = global.sucrose || {}),global.d3,global.fc));
-}(this, (function (exports,d3,d3fcRebind) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
+  typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
+  (factory((global.sucrose = global.sucrose || {}),global.d3));
+}(this, (function (exports,d3) { 'use strict';
 
 d3 = 'default' in d3 ? d3['default'] : d3;
-
-// import * as d3 from 'd3';
 
 var utils = {};
 
@@ -24,12 +22,679 @@ utils.functor = function functor(v) {
   };
 };
 
+utils.daysInMonth = function(month, year) {
+  return (new Date(year, month+1, 0)).getDate();
+};
 
-// export {utils as default};
+utils.windowSize = function () {
+  // Sane defaults
+  var size = {width: 640, height: 480};
 
-// import scroll from './scroll.js';
+  // Earlier IE uses Doc.body
+  if (document.body && document.body.offsetWidth) {
+      size.width = document.body.offsetWidth;
+      size.height = document.body.offsetHeight;
+  }
 
-function legend() {
+  // IE can use depending on mode it is in
+  if (document.compatMode === 'CSS1Compat' &&
+      document.documentElement &&
+      document.documentElement.offsetWidth ) {
+      size.width = document.documentElement.offsetWidth;
+      size.height = document.documentElement.offsetHeight;
+  }
+
+  // Most recent browsers use
+  if (window.innerWidth && window.innerHeight) {
+      size.width = window.innerWidth;
+      size.height = window.innerHeight;
+  }
+  return (size);
+};
+
+// Easy way to bind multiple functions to window.onresize
+// TODO: give a way to remove a function after its bound, other than removing alkl of them
+// utils.windowResize = function (fun)
+// {
+//   var oldresize = window.onresize;
+
+//   window.onresize = function (e) {
+//     if (typeof oldresize == 'function') oldresize(e);
+//     fun(e);
+//   }
+// }
+
+utils.windowResize = function (fun) {
+  if (window.attachEvent) {
+      window.attachEvent('onresize', fun);
+  }
+  else if (window.addEventListener) {
+      window.addEventListener('resize', fun, true);
+  }
+  else {
+      //The browser does not support Javascript event binding
+  }
+};
+
+utils.windowUnResize = function (fun) {
+  if (window.detachEvent) {
+      window.detachEvent('onresize', fun);
+  }
+  else if (window.removeEventListener) {
+      window.removeEventListener('resize', fun, true);
+  }
+  else {
+      //The browser does not support Javascript event binding
+  }
+};
+
+utils.resizeOnPrint = function (fn) {
+  if (window.matchMedia) {
+      var mediaQueryList = window.matchMedia('print');
+      mediaQueryList.addListener(function (mql) {
+          if (mql.matches) {
+              fn();
+          }
+      });
+  } else if (window.attachEvent) {
+    window.attachEvent("onbeforeprint", fn);
+  } else {
+    window.onbeforeprint = fn;
+  }
+  //TODO: allow for a second call back to undo using
+  //window.attachEvent("onafterprint", fn);
+};
+
+utils.unResizeOnPrint = function (fn) {
+  if (window.matchMedia) {
+      var mediaQueryList = window.matchMedia('print');
+      mediaQueryList.removeListener(function (mql) {
+          if (mql.matches) {
+              fn();
+          }
+      });
+  } else if (window.detachEvent) {
+    window.detachEvent("onbeforeprint", fn);
+  } else {
+    window.onbeforeprint = null;
+  }
+};
+
+// Backwards compatible way to implement more d3-like coloring of graphs.
+// If passed an array, wrap it in a function which implements the old default
+// behavior
+utils.getColor = function (color) {
+  if (!arguments.length) {
+    //if you pass in nothing, get default colors back
+    return utils.defaultColor();
+  }
+
+  if (Array.isArray(color)) {
+    return function (d, i) {
+      return d.color || color[i % color.length];
+    };
+  } else if (Object.prototype.toString.call(color) === '[object String]') {
+    return function(s) {
+      return d.color || '#' + color.replace('#', '');
+    }
+  } else {
+    return color;
+      // can't really help it if someone passes rubbish as color
+      // or color is already a function
+  }
+};
+
+// Default color chooser uses the index of an object as before.
+utils.defaultColor = function () {
+  var colors = d3.scaleOrdinal(d3.schemeCategory20).range();
+  return function (d, i) {
+    return d.color || colors[i % colors.length];
+  };
+};
+
+
+// Returns a color function that takes the result of 'getKey' for each series and
+// looks for a corresponding color from the dictionary,
+utils.customTheme = function (dictionary, getKey, defaultColors) {
+  getKey = getKey || function (series) { return series.key; }; // use default series.key if getKey is undefined
+  defaultColors = defaultColors || d3.scaleOrdinal(d3.schemeCategory20).range(); //default color function
+
+  var defIndex = defaultColors.length; //current default color (going in reverse)
+
+  return function (series, index) {
+    var key = getKey(series);
+
+    if (!defIndex) defIndex = defaultColors.length; //used all the default colors, start over
+
+    if (typeof dictionary[key] !== "undefined") {
+      return (typeof dictionary[key] === "function") ? dictionary[key]() : dictionary[key];
+    } else {
+      return defaultColors[--defIndex]; // no match in dictionary, use default color
+    }
+  };
+};
+
+
+
+// From the PJAX example on d3js.org, while this is not really directly needed
+// it's a very cool method for doing pjax, I may expand upon it a little bit,
+// open to suggestions on anything that may be useful
+utils.pjax = function (links, content) {
+  d3.selectAll(links).on("click", function () {
+    history.pushState(this.href, this.textContent, this.href);
+    load(this.href);
+    d3.event.preventDefault();
+  });
+
+  function load(href) {
+    d3.html(href, function (fragment) {
+      var target = d3.select(content).node();
+      target.parentNode.replaceChild(d3.select(fragment).select(content).node(), target);
+      utils.pjax(links, content);
+    });
+  }
+
+  d3.select(window).on("popstate", function () {
+    if (d3.event.state) { load(d3.event.state); }
+  });
+};
+
+/* Numbers that are undefined, null or NaN, convert them to zeros.
+*/
+utils.NaNtoZero = function(n) {
+  if (typeof n !== 'number'
+      || isNaN(n)
+      || n === null
+      || n === Infinity) return 0;
+
+  return n;
+};
+
+/*
+Snippet of code you can insert into each utils.models.* to give you the ability to
+do things like:
+chart.options({
+  showXAxis: true,
+  tooltips: true
+});
+
+To enable in the chart:
+chart.options = utils.optionsFunc.bind(chart);
+*/
+utils.optionsFunc = function(args) {
+  if (args) {
+    d3.map(args).forEach((function(key,value) {
+      if (typeof this[key] === "function") {
+         this[key](value);
+      }
+    }).bind(this));
+  }
+  return this;
+};
+
+
+//SUGAR ADDITIONS
+
+//gradient color
+utils.colorLinearGradient = function (d, i, p, c, defs) {
+  var id = 'lg_gradient_' + i;
+  var grad = defs.select('#' + id);
+  if ( grad.empty() )
+  {
+    if (p.position === 'middle')
+    {
+      utils.createLinearGradient( id, p, defs, [
+        { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
+        { 'offset': '20%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
+        { 'offset': '50%', 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
+        { 'offset': '80%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
+        { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 }
+      ]);
+    }
+    else
+    {
+      utils.createLinearGradient( id, p, defs, [
+        { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
+        { 'offset': '50%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
+        { 'offset': '100%','stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 }
+      ]);
+    }
+  }
+  return 'url(#'+ id +')';
+};
+
+// defs:definition container
+// id:dynamic id for arc
+// radius:outer edge of gradient
+// stops: an array of attribute objects
+utils.createLinearGradient = function (id, params, defs, stops) {
+  var x2 = params.orientation === 'horizontal' ? '0%' : '100%';
+  var y2 = params.orientation === 'horizontal' ? '100%' : '0%';
+  var attrs, stop;
+  var grad = defs.append('linearGradient')
+        .attr('id', id)
+        .attr('x1', '0%')
+        .attr('y1', '0%')
+        .attr('x2', x2 )
+        .attr('y2', y2 )
+        //.attr('gradientUnits', 'userSpaceOnUse')objectBoundingBox
+        .attr('spreadMethod', 'pad');
+  for (var i=0; i<stops.length; i+=1)
+  {
+    attrs = stops[i];
+    stop = grad.append('stop');
+    for (var a in attrs)
+    {
+      if ( attrs.hasOwnProperty(a) ) {
+        stop.attr(a, attrs[a]);
+      }
+    }
+  }
+};
+
+utils.colorRadialGradient = function (d, i, p, c, defs) {
+  var id = 'rg_gradient_' + i;
+  var grad = defs.select('#' + id);
+  if ( grad.empty() )
+  {
+    utils.createRadialGradient( id, p, defs, [
+      { 'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
+      { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1 }
+    ]);
+  }
+  return 'url(#' + id + ')';
+};
+
+utils.createRadialGradient = function (id, params, defs, stops) {
+  var attrs, stop;
+  var grad = defs.append('radialGradient')
+        .attr('id', id)
+        .attr('r', params.r)
+        .attr('cx', params.x)
+        .attr('cy', params.y)
+        .attr('gradientUnits', params.u)
+        .attr('spreadMethod', 'pad');
+  for (var i=0; i<stops.length; i+=1)
+  {
+    attrs = stops[i];
+    stop = grad.append('stop');
+    for (var a in attrs)
+    {
+      if ( attrs.hasOwnProperty(a) ) {
+        stop.attr(a, attrs[a]);
+      }
+    }
+  }
+};
+
+utils.getAbsoluteXY = function (element) {
+  var viewportElement = document.documentElement;
+  var box = element.getBoundingClientRect();
+  var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
+  var scrollTop = viewportElement.scrollTop + document.body.scrollTop;
+  var x = box.left + scrollLeft;
+  var y = box.top + scrollTop;
+
+  return {'left': x, 'top': y};
+};
+
+// Creates a rectangle with rounded corners
+utils.roundedRectangle = function (x, y, width, height, radius) {
+  return "M" + x + "," + y +
+       "h" + (width - radius * 2) +
+       "a" + radius + "," + radius + " 0 0 1 " + radius + "," + radius +
+       "v" + (height - 2 - radius * 2) +
+       "a" + radius + "," + radius + " 0 0 1 " + -radius + "," + radius +
+       "h" + (radius * 2 - width) +
+       "a" + -radius + "," + radius + " 0 0 1 " + -radius + "," + -radius +
+       "v" + ( -height + radius * 2 + 2 ) +
+       "a" + radius + "," + radius + " 0 0 1 " + radius + "," + -radius +
+       "z";
+};
+
+utils.dropShadow = function (id, defs, options) {
+  var opt = options || {}
+    , h = opt.height || '130%'
+    , o = opt.offset || 2
+    , b = opt.blur || 1;
+
+  if (defs.select('#' + id).empty()) {
+    var filter = defs.append('filter')
+          .attr('id',id)
+          .attr('height',h);
+    var offset = filter.append('feOffset')
+          .attr('in','SourceGraphic')
+          .attr('result','offsetBlur')
+          .attr('dx',o)
+          .attr('dy',o); //how much to offset
+    var color = filter.append('feColorMatrix')
+          .attr('in','offsetBlur')
+          .attr('result','matrixOut')
+          .attr('type','matrix')
+          .attr('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0');
+    var blur = filter.append('feGaussianBlur')
+          .attr('in','matrixOut')
+          .attr('result','blurOut')
+          .attr('stdDeviation',b); //stdDeviation is how much to blur
+    var merge = filter.append('feMerge');
+        merge.append('feMergeNode'); //this contains the offset blurred image
+        merge.append('feMergeNode')
+          .attr('in','SourceGraphic'); //this contains the element that the filter is applied to
+  }
+  return 'url(#' + id + ')';
+};
+// <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+//   <defs>
+//     <filter id="f1" x="0" y="0" width="200%" height="200%">
+//       <feOffset result="offOut" in="SourceGraphic" dx="20" dy="20" />
+//       <feColorMatrix result="matrixOut" in="offOut" type="matrix"
+//       values="0.2 0 0 0 0 0 0.2 0 0 0 0 0 0.2 0 0 0 0 0 1 0" />
+//       <feGaussianBlur result="blurOut" in="matrixOut" stdDeviation="10" />
+//       <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+//     </filter>
+//   </defs>
+//   <rect width="90" height="90" stroke="green" stroke-width="3"
+//   fill="yellow" filter="url(#f1)" />
+// </svg>
+
+utils.stringSetLengths = function(_data, _container, _format, classes, styles) {
+  var lengths = [],
+      txt = _container.select('.tmp-text-strings').select('text');
+  if (txt.empty()) {
+    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
+  }
+  txt.classed(classes, true);
+  txt.style('display', 'inline');
+  _data.forEach(function(d, i) {
+      txt.text(_format(d, i));
+      lengths.push(txt.node().getBoundingClientRect().width);
+    });
+  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
+  return lengths;
+};
+
+utils.stringSetThickness = function(_data, _container, _format, classes, styles) {
+  var thicknesses = [],
+      txt = _container.select('.tmp-text-strings').select('text');
+  if (txt.empty()) {
+    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
+  }
+  txt.classed(classes, true);
+  txt.style('display', 'inline');
+  _data.forEach(function(d, i) {
+      txt.text(_format(d, i));
+      thicknesses.push(txt.node().getBoundingClientRect().height);
+    });
+  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
+  return thicknesses;
+};
+
+utils.maxStringSetLength = function(_data, _container, _format) {
+  var lengths = utils.stringSetLengths(_data, _container, _format);
+  return d3.max(lengths);
+};
+
+utils.stringEllipsify = function(_string, _container, _length) {
+  var txt = _container.select('.tmp-text-strings').select('text'),
+      str = _string,
+      len = 0,
+      ell = 0,
+      strLen = 0;
+  if (txt.empty()) {
+    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
+  }
+  txt.style('display', 'inline');
+  txt.text('...');
+  ell = txt.node().getBoundingClientRect().width;
+  txt.text(str);
+  len = txt.node().getBoundingClientRect().width;
+  strLen = len;
+  while (len > _length && len > 30) {
+    str = str.slice(0, -1);
+    txt.text(str);
+    len = txt.node().getBoundingClientRect().width + ell;
+  }
+  txt.text('');
+  return str + (strLen > _length ? '...' : '');
+};
+
+utils.getTextBBox = function(text, floats) {
+  var bbox = text.node().getBoundingClientRect(),
+      size = {
+        width: floats ? bbox.width : parseInt(bbox.width, 10),
+        height: floats ? bbox.height : parseInt(bbox.height, 10)
+      };
+  return size;
+};
+
+utils.getTextContrast = function(c, i, callback) {
+  var back = c,
+      backLab = d3.lab(back),
+      backLumen = backLab.l,
+      textLumen = backLumen > 60 ?
+        backLab.darker(4 + (backLumen - 75) / 25).l : // (50..100)[1 to 3.5]
+        backLab.brighter(4 + (18 - backLumen) / 25).l, // (0..50)[3.5..1]
+      textLab = d3.lab(textLumen, 0, 0),
+      text = textLab.toString();
+  if (callback) {
+    callback(backLab, textLab);
+  }
+  return text;
+};
+
+utils.isRTLChar = function(c) {
+  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
+      rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
+  return rtlCharReg_.test(c);
+};
+
+utils.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
+  var angleInRadians = utils.angleToRadians(angleInDegrees);
+  var x = centerX + radius * Math.cos(angleInRadians);
+  var y = centerY + radius * Math.sin(angleInRadians);
+  return [x, y];
+};
+
+utils.angleToRadians = function(angleInDegrees) {
+  return angleInDegrees * Math.PI / 180.0;
+};
+
+utils.angleToDegrees = function(angleInRadians) {
+  return angleInRadians * 180.0 / Math.PI;
+};
+
+utils.createTexture = function(defs, id, x, y) {
+  var texture = '#sc-diagonalHatch-' + id,
+      mask = '#sc-textureMask-' + id;
+
+  defs
+    .append('pattern')
+      .attr('id', 'sc-diagonalHatch-' + id)
+      .attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', 8)
+      .attr('height', 8)
+      .append('path')
+        .attr('d', 'M-1,1 l2,-2 M0,8 l8,-8 M7,9 l1,-1')
+        .attr('class', 'texture-line')
+        // .attr('class', classes)
+        // .attr('stroke', fill)
+        .attr('stroke', '#fff')
+        .attr('stroke-linecap', 'square');
+
+  defs
+    .append('mask')
+      .attr('id', 'sc-textureMask-' + id)
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .append('rect')
+        .attr('x', x || 0)
+        .attr('y', y || -1)
+        .attr('width', '100%')
+        .attr('height', '100%')
+        .attr('fill', 'url(' + texture + ')');
+
+  return mask;
+};
+
+// utils.numberFormatSI = function(d, p, c, l) {
+//     var fmtr, spec, si;
+//     if (isNaN(d)) {
+//         return d;
+//     }
+//     p = typeof p === 'undefined' ? 2 : p;
+//     c = typeof c === 'undefined' ? false : !!c;
+//     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+//     // d = d3.round(d, p);
+//     d = Math.round(d * 10 * p) / 10 * p;
+//     spec = c ? '$,' : ',';
+//     if (c && d < 1000 && d !== parseInt(d, 10)) {
+//         spec += '.2f';
+//     }
+//     if (d < 1 && d > -1) {
+//         spec += '.2s';
+//     }
+//     return fmtr(spec)(d);
+// };
+
+utils.numberFormatSI = function(d, p, c, l) {
+  var fmtr, spec;
+  if (isNaN(d) || d === 0) {
+      return d;
+  }
+  p = typeof p === 'undefined' ? 2 : p;
+  c = typeof c === 'undefined' ? false : !!c;
+  fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  spec = c ? '$,' : ',';
+  // spec += '.' + 2 + 'r';
+  if (c && d < 1000 && d !== parseInt(d, 10)) {
+    spec += '.2s';
+  } else if (Math.abs(d) > 1 && Math.abs(d) <= 1000) {
+    d = p === 0 ? Math.round(d) : Math.round(d * 10 * p) / (10 * p);
+  } else {
+    spec += '.' + p + 's';
+  }
+  if (d > -1 && d < 1) {
+    return fmtr(spec)(d);
+  }
+  return fmtr(spec)(d);
+};
+
+utils.numberFormatRound = function(d, p, c, l) {
+  var fmtr, spec;
+  if (isNaN(d)) {
+    return d;
+  }
+  c = typeof c === 'undefined' ? false : !!c;
+  p = typeof p === 'undefined' ? c ? 2 : 0 : p;
+  fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  spec = c ? '$,.' + p + 'f' : ',';
+  return fmtr(spec)(d);
+};
+
+utils.isValidDate = function(d) {
+  var testDate;
+  if (!d) {
+    return false;
+  }
+  testDate = new Date(d);
+  return testDate instanceof Date && !isNaN(testDate.valueOf());
+};
+
+utils.dateFormat = function(d, p, l) {
+  var date, locale, spec, fmtr;
+  date = new Date(d);
+  if (!(date instanceof Date) || isNaN(date.valueOf())) {
+    return d;
+  }
+  if (l && l.hasOwnProperty('timeFormat')) {
+    // Use rebuilt locale
+    spec = p.indexOf('%') !== -1 ? p : '%x';
+    fmtr = l.timeFormat;
+  } else {
+    // Ensure locality object has all needed properties
+    // TODO: this is expensive so consider removing
+    locale = utils.buildLocality(l);
+    fmtr = d3.timeFormatLocale(locale).format;
+    spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
+    // TODO: if not explicit pattern provided, we should use .multi()
+  }
+  return fmtr(spec)(date);
+};
+
+utils.buildLocality = function(l, d) {
+  var locale = l || {};
+  var deep = !!d;
+  var unfer = function(a) {
+        return a.join('|').split('|').map(function(b) {
+          return !(b) ? '' : isNaN(b) ? b : +b;
+        });
+      };
+  var definition = {
+        'decimal': '.',
+        'thousands': ',',
+        'grouping': [3],
+        'currency': ['$', ''],
+        'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
+        'date': '%b %-d, %Y', //%x
+        'time': '%-I:%M:%S', //%X
+        'periods': ['AM', 'PM'],
+        'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        // Custom patterns
+        'full': '%A, %c',
+        'long': '%c',
+        'medium': '%x, %X %p',
+        'short': '%-m/%-d/%y, %-I:%M %p',
+        'yMMMEd': '%a, %x',
+        'yMEd': '%a, %-m/%-d/%Y',
+        'yMMMMd': '%B %-d, %Y',
+        'yMMMd': '%x',
+        'yMd': '%-m/%-d/%Y',
+        'yMMMM': '%B %Y',
+        'yMMM': '%b %Y',
+        'MMMd': '%b %-d',
+        'MMMM': '%B',
+        'MMM': '%b',
+        'y': '%Y'
+      };
+
+  for (var key in locale) {
+    var d;
+    if (l.hasOwnProperty(key)) {
+      d = locale[key];
+      definition[key] = !deep || !Array.isArray(d) ? d : unfer(d);
+    }
+  }
+
+  return definition;
+}
+
+utils.displayNoData = function (hasData, container, label, x, y) {
+  var data = hasData ? [] : [label];
+  var noData_bind = container.selectAll('.sc-no-data').data(data);
+  var noData_entr = noData_bind.enter().append('text')
+        .attr('class', 'sc-no-data')
+        .attr('dy', '-.7em')
+        .style('text-anchor', 'middle');
+  var noData = container.selectAll('.sc-no-data').merge(noData_entr);
+  noData_bind.exit().remove();
+  if (!!data.length) {
+    noData
+      .attr('x', x)
+      .attr('y', y)
+      .text(utils.identity);
+    container.selectAll('.sc-chart-wrap').remove();
+    return true;
+  } else {
+    return false;
+  }
+};
+
+var legend = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -159,7 +824,7 @@ function legend() {
       series
           .attr('class', classes)
           .attr('fill', color)
-          .attr('stroke', color)
+          .attr('stroke', color);
       series_entr
         .append('rect')
           .attr('x', (diameter + textGap) / -2)
@@ -877,9 +1542,828 @@ function legend() {
 
 
   return legend;
-}
+};
 
-function funnel() {
+var axis = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var scale = d3.scaleLinear(),
+      axisLabelText = null,
+      showMaxMin = true,
+      highlightZero = true,
+      direction = 'ltr',
+      orient = 'bottom',
+      wrapTicks = false,
+      staggerTicks = false,
+      rotateTicks = 30, //one of (rotateTicks, staggerTicks, wrapTicks)
+      reduceXTicks = false, // if false a tick will show for every data point
+      rotateYLabel = true,
+      hasRangeBand = false,
+      textAnchor = null,
+      ticks = null,
+      tickPadding = 4,
+      valueFormat = function(d) { return d; },
+      axisLabelDistance = 8; //The larger this number is, the closer the axis label is to the axis.
+
+  var tickValues, tickSubdivide, tickSize, tickPadding, tickFormat, tickSizeInner, tickSizeOuter;
+
+  // Public Read-only Variables
+  //------------------------------------------------------------
+  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+      thickness = 0;
+
+  var axis = d3.axisBottom();
+
+  // Private Variables
+  //------------------------------------------------------------
+  var scale0;
+
+  //============================================================
+
+  function chart(selection) {
+    selection.each(function(data) {
+
+      var container = d3.select(this);
+      var scaleCalc = axis.scale().copy();
+      var marginCalc = {top: 0, right: 0, bottom: 0, left: 0};
+      var extent = getRangeExtent();
+      var scaleWidth = Math.abs(extent[1] - extent[0]);
+
+      // Private
+      scale0 = scale0 || axis.scale();
+
+      var vertical = orient === 'left' || orient === 'right' ? true : false,
+          reflect = orient === 'left' || orient === 'top' ? -1 : 1,
+          maxLabelWidth = 0,
+          maxLabelHeight = 0,
+          tickGap = 6,
+          tickSpacing = 0,
+          labelThickness = 0;
+
+      var tickDimensions = [],
+          tickDimensionsHash = {},
+          tickValueArray = [],
+          minTickDimensions = {},
+          maxTickDimensions = {};
+
+      //------------------------------------------------------------
+      // reset public readonly variables
+      thickness = 0;
+
+      if (ticks !== null) {
+        axis.ticks(ticks);
+      } else if (vertical) {
+        axis.ticks(Math.ceil(scaleWidth / 48));
+      } else {
+        axis.ticks(Math.ceil(scaleWidth / 100));
+      }
+
+      // test to see if rotateTicks was passed as a boolean
+      if (rotateTicks && !isFinite(String(rotateTicks))) {
+        rotateTicks = 30;
+      }
+
+      // ordinal scales do not have max-min values
+      if (hasRangeBand) {
+        showMaxMin = false;
+      }
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-axis').data([data]);
+      var wrap_entr = wrap_bind.enter()
+            .append('g').attr('class', 'sc-wrap sc-axis')
+            .append('g').attr('class', 'sc-axis-inner');
+      var wrap = container.select('.sc-axis-inner').merge(wrap_entr);
+
+      wrap.call(axis);
+
+      // Axis ticks
+      var axisTicks = wrap.selectAll('g.tick');
+
+      // Min Max ticks
+      var axisMaxMin_data = showMaxMin ? d3.extent(scale.domain()) : [];
+      var axisMaxMin_bind = wrap.selectAll('g.sc-axisMaxMin').data(axisMaxMin_data);
+      var axisMaxMin_entr = axisMaxMin_bind.enter().append('g').attr('class', 'sc-axisMaxMin');
+      axisMaxMin_bind.exit().remove();
+      var axisMaxMin = wrap.selectAll('g.sc-axisMaxMin').merge(axisMaxMin_entr);
+
+      axisMaxMin_entr.append('text').style('opacity', 0);
+      axisMaxMin_entr.append('line').style('opacity', 0);
+
+      if (showMaxMin) {
+        axisMaxMin.select('text')
+          .text(function(d, i, selection) {
+            return axis.tickFormat()(d, i, selection, false);
+          });
+      }
+
+      // Get all axes and maxmin tick text for text handling functions
+      var tickText = wrap.selectAll('g.tick, g.sc-axisMaxMin').select('text')
+            .filter(function(d) {
+              return this.getBoundingClientRect().width;
+            })
+            .each(function(d, i) {
+              tickValueArray.push(d3.select(this).text());
+            });
+
+      // Axis label
+      var axisLabel_data = !!axisLabelText ? [axisLabelText] : [];
+      var axisLabel_bind = wrap.selectAll('text.sc-axislabel').data(axisLabel_data);
+      var axisLabel_entr = axisLabel_bind.enter().append('text').attr('class', 'sc-axislabel');
+      axisLabel_bind.exit().remove();
+      var axisLabel = wrap.selectAll('text.sc-axislabel').merge(axisLabel_entr);
+
+      axisLabel
+        .text(utils.identity);
+
+      //------------------------------------------------------------
+      // Tick label handling
+
+      var wrapSucceeded = false,
+          staggerSucceeded = false,
+          rotateSucceeded = false;
+
+      if (vertical) {
+        resetTicks();
+
+        tickText
+          .style('text-anchor', rtlTextAnchor(textAnchor || (isMirrored() ? 'start' : 'end')));
+      } else {
+        //Not needed but keep for now
+        // if (reduceXTicks) {
+        //   axisTicks.each(function(d, i) {
+        //       d3.select(this).selectAll('text,line')
+        //         .style('opacity', i % Math.ceil(data[0].values.length / (scaleWidth / 100)) !== 0 ? 0 : 1);
+        //     });
+        // }
+        resetTicks();
+        recalcMargin();
+
+        if (labelCollision(1)) {
+
+          // if wrap is enabled, try it first (for ordinal scales only)
+          if (wrapTicks) {
+            resetTicks();
+            handleWrap();
+            recalcMargin();
+            handleWrap();
+            // check to see if we still have collisions
+            if (!labelCollision(1)) {
+              wrapSucceeded = true;
+            }
+          }
+
+          // wrapping failed so fall back to stagger if enabled
+          if (!wrapSucceeded && staggerTicks) {
+            resetTicks();
+            handleStagger();
+            recalcMargin();
+            handleStagger();
+            // check to see if we still have collisions
+            if (!labelCollision(2)) {
+              staggerSucceeded = true;
+            }
+          }
+
+          // if we still have a collision
+          // add a test in the following if block to support opt-out of rotate method
+          if (!wrapSucceeded && !staggerSucceeded) {
+            if (!rotateTicks) {
+              rotateTicks = 30;
+            }
+            resetTicks();
+            handleRotation(rotateTicks);
+            recalcMargin(rotateTicks);
+            handleRotation(rotateTicks);
+            rotateSucceeded = true;
+          }
+        }
+      }
+
+      //------------------------------------------------------------
+      // Min Max values
+
+      if (showMaxMin) {
+
+        // only show max line
+        axisMaxMin.select('line')
+          .attr('x1', 0)
+          .attr('y1', 0)
+          .attr('y2', vertical ? 0 : (axis.tickSize() - marginCalc.bottom) * reflect)
+          .attr('x2', vertical ? axis.tickSize() * reflect : 0)
+          .style('opacity', function(d, i) {
+            return isMirrored() ? (i ? 0 : 1) : (i ? 1 : 0);
+          });
+
+        //check if max and min overlap other values, if so, hide the values that overlap
+        axisTicks.each(function(d, i) {
+            var tick = d3.select(this),
+                dim = tickDimensionsHash['key-' + d.toString()],
+                collision = false;
+
+            if (vertical) {
+              collision = dim.bottom > minTickDimensions.top || dim.top < maxTickDimensions.bottom;
+              tick.select('line')
+                .style('opacity', 1 - collision);
+            } else if (rotateSucceeded) {
+              collision = false;
+            } else if (staggerSucceeded) {
+              collision = (dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap) &&
+                          (dim.bottom < minTickDimensions.top || dim.top > maxTickDimensions.bottom);
+            } else {
+              collision = dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap;
+            }
+
+            tick.select('text')
+              .style('opacity', 1 - collision);
+            // accounts for minor floating point errors... though could be problematic if the scale is EXTREMELY SMALL
+            // if (d < 1e-10 && d > -1e-10) { // Don't remove the ZERO line!!
+            //   tick.select('line')
+            //     .style('opacity', 0);
+            // }
+          });
+
+      } else {
+
+        //highlight zero line ... Maybe should not be an option and should just be in CSS?
+        axisTicks
+          .filter(function(d) {
+            // this is because sometimes the 0 tick is a very small fraction, TODO: think of cleaner technique
+            // return !parseFloat(Math.round(d * 100000) / 1000000);
+            return scaleCalc(d) === extent[0 + isMirrored()];
+          })
+          .classed('zero', highlightZero);
+
+        // hide zero line if same as domain line
+        axisTicks.select('line')
+          .style('opacity', function(d, i) {
+            return scaleCalc(d) === extent[0 + isMirrored()] ? 0 : 1;
+          });
+
+      }
+
+      //------------------------------------------------------------
+      // Axis label
+
+      if (!!axisLabelText) {
+        var axisLabelX = vertical ?
+              rotateYLabel ? scaleWidth / -2 : (thickness + axisLabelDistance) * reflect :
+              scaleWidth / 2;
+        var axisLabelY = vertical ?
+              rotateYLabel ? (thickness + axisLabelDistance) * reflect : scaleWidth / 2 :
+              (thickness + axisLabelDistance) * reflect;
+
+        axisLabel
+          .attr('x', axisLabelX)
+          .attr('y', axisLabelY)
+          .attr('dy', (0.355 + 0.355 * reflect) + 'em')
+          .attr('transform', vertical && rotateYLabel ? 'rotate(-90)' : '')
+          .style('text-anchor', vertical && !rotateYLabel ? rtlTextAnchor('end') : 'middle');
+
+        axisLabel.each(function(d, i) {
+          labelThickness += vertical ?
+            parseInt(this.getBoundingClientRect().width / 1.3, 10) :
+            parseInt(this.getBoundingClientRect().height / 1.3, 10);
+        });
+        thickness += labelThickness + axisLabelDistance;
+      }
+
+      //------------------------------------------------------------
+      // Set final margins
+
+      //store old scales for use in transitions on update
+      scale0 = scale.copy();
+      margin = {top: marginCalc.top, right: marginCalc.right, bottom: marginCalc.bottom, left: marginCalc.left};
+      margin[orient] = thickness;
+
+      //------------------------------------------------------------
+      // Private functions
+
+      function getStepInterval() {
+        return scaleCalc.range().length > 1 ? Math.abs(scaleCalc.range()[1] - scaleCalc.range()[0]) : 0;
+      }
+
+      function getPaddingRatio() {
+        return scaleCalc.range().length > 1 ? Math.max(0.25, 1 - d3.round(scaleCalc.bandwidth() / getStepInterval(), 2)) : 0;
+      }
+
+      function getRangeExtent() {
+        return typeof scaleCalc.rangeExtent === 'function' ? scaleCalc.rangeExtent() : scaleCalc.range();
+      }
+
+      function getBarWidth() {
+        return hasRangeBand ? scaleCalc.bandwidth() : 0;
+      }
+
+      function getOuterPadding() {
+        return hasRangeBand ? scaleCalc.range()[0] : 0;
+      }
+
+      function getOuterPaddingRatio() {
+        return getOuterPadding() / getTickSpacing();
+      }
+
+      function getTickSpacing() {
+        var tickSpacing = 0,
+            tickArray;
+        if (hasRangeBand) {
+          tickSpacing = scaleCalc.range().length > 1 ? Math.abs(scaleCalc.range()[1] - scaleCalc.range()[0]) : d3.max(getRangeExtent()) / 2;
+        } else {
+          tickArray = scaleCalc.ticks(axisTicks.size());
+          tickSpacing = scaleCalc(tickArray[tickArray.length - 1]) - scaleCalc(tickArray[tickArray.length - 2]);
+        }
+        return tickSpacing;
+      }
+
+      function rtlTextAnchor(anchor) {
+        if (direction === 'rtl') {
+          if (anchor === 'start') {
+            return 'end';
+          } else if (anchor === 'end') {
+            return 'start';
+          }
+        }
+        return anchor;
+      }
+
+      function isMirrored() {
+        return orient !== 'left' && orient !== 'bottom';
+      }
+
+      function setThickness(s) {
+        s = s || 1;
+        thickness = axis.tickPadding() + (vertical ? maxLabelWidth : maxLabelHeight) * s;
+      }
+
+      // Calculate the longest tick width and height
+      function calcMaxLabelSizes() {
+        calcTickLabelSizes();
+
+        maxLabelWidth = d3.max(tickDimensions, function(d) { return d.width; });
+        maxLabelHeight = d3.max(tickDimensions, function(d) { return d.height; });
+      }
+
+      function calcTickLabelSizes() {
+        tickDimensions = [];
+        tickDimensionsHash = {};
+
+        // reposition max/min ticks before calculating bbox
+        if (showMaxMin) {
+          axisMaxMin
+            .style('opacity', 1)
+            .attr('transform', function(d, i) {
+              var trans = vertical ? '0,' + scaleCalc(d) : scaleCalc(d) + ',0';
+              return 'translate(' + trans + ')';
+            });
+        }
+
+        tickText.each(function(d, i) { //TODO: make everything relative to domain path
+            var bbox = this.getBoundingClientRect();
+            if (bbox.width > 0) {
+              tickDimensions.push({
+                key: d,
+                width: parseInt(bbox.width, 10),
+                height: parseInt(bbox.height / 1.2, 10),
+                left: bbox.left,
+                right: bbox.right,
+                top: bbox.top,
+                bottom: bbox.bottom
+              });
+            }
+          });
+
+        tickDimensions.sort(function(a, b) {
+            return a.key - b.key;
+          })
+          .forEach(function(d, i) {
+            d.index = i;
+            tickDimensionsHash['key-' + d.key.toString()] = d;
+          });
+        minTickDimensions = tickDimensions[0];
+        maxTickDimensions = tickDimensions[tickDimensions.length - 1];
+      }
+
+      function labelCollision(s) {
+        // {0}   [2]   [4]   {6}
+        //    [1]   [3]   [5]
+        calcTickLabelSizes();
+        var skip = showMaxMin ? 2 : s || 1;
+        // this resets the maxLabelWidth for label collision detection
+        for (var i = (showMaxMin ? 1 : 0), l = tickDimensions.length - skip; i < l; i += 1) {
+          if (tickDimensions[i].right + tickGap > tickDimensions[i + s].left) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function recalcMargin(a) {
+        var normRotation = a ? (a + 180) % 180 : 0, // Normalize rotation: (-30 + 360) % 360 = 330; (30 + 360) % 360 = 30
+            isRotatedLeft = normRotation > 90,
+            dMin = null,
+            dMax = null;
+
+        // increase margins for min/max
+        tickDimensions.forEach(function(d, i) {
+          var isMin = dMin === null || d.left <= dMin,
+              isMax = dMax === null || d.right >= dMax,
+              textWidth = 0,
+              tickPosition = 0,
+              availableSpace = 0,
+              textWidth = 0;
+
+          if (!isMin && !isMax) {
+            return;
+          }
+
+          textWidth = normRotation ? d.width - 6 : d.width / 2; // 6 is the cos(textHeight) @ 30
+          tickPosition = scaleCalc(d.key) + (hasRangeBand * getBarWidth() / 2);
+          if (isMin && (!normRotation || isRotatedLeft)) {
+            dMin = d.left;
+            availableSpace = Math.abs(extent[0] - tickPosition);
+            marginCalc.left = Math.max(textWidth - availableSpace, 0);
+          }
+          if (isMax && (!normRotation || !isRotatedLeft)) {
+            dMax = d.right;
+            availableSpace = Math.abs(extent[1] - tickPosition);
+            marginCalc.right = Math.max(textWidth - availableSpace, 0);
+          }
+        });
+        // modify scale range
+        if (!hasRangeBand) { //TODO: can we get rid of this for bar chart?
+          var change = margin.right - Math.max(margin.right, marginCalc.right);
+              change += margin.left - Math.max(margin.left, marginCalc.left);
+          var newExtent = [extent[0], extent[1] + change]; // reduce operable width of axis by margins
+
+          scaleCalc.range(newExtent);
+          extent = getRangeExtent();
+          scaleWidth = Math.abs(extent[1] - extent[0]);
+
+          axis
+            .scale(scaleCalc);
+          wrap.call(axis);
+        }
+      }
+
+      function resetTicks() {
+        marginCalc = {top: 0, right: 0, bottom: 0, left: 0};
+
+        scaleCalc = scale.copy();
+        extent = getRangeExtent();
+        scaleWidth = Math.abs(extent[1] - extent[0]);
+
+        axis
+          .scale(scale);
+
+        wrap.call(axis);
+
+        tickText.selectAll('tspan').remove();
+        tickText
+          .attr('dy', vertical ? '.32em' : 0.355 + 0.355 * reflect + 'em')
+          .attr('x', vertical ? axis.tickPadding() * reflect : 0)
+          .attr('y', vertical ? 0 : axis.tickPadding() * reflect)
+          .attr('transform', 'translate(0,0)')
+          .text(function(d, i) { return tickValueArray[i]; })
+          .style('text-anchor', 'middle')
+          .style('opacity', 1);
+
+        calcMaxLabelSizes();
+        setThickness();
+      }
+
+      function handleWrap() {
+        var tickSpacing = getTickSpacing();
+
+        tickText.each(function(d, i) {
+          var textContent = axis.tickFormat()(d, i, selection, true),
+              textNode = d3.select(this),
+              isDate = utils.isValidDate(textContent),
+              textArray = (textContent && textContent !== '' ? isDate ? textContent : textContent.replace('/', '/ ') : []).split(' '),
+              i = 0,
+              l = textArray.length,
+              dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
+
+          // reset the tick text conent
+          this.textContent = '';
+
+          var textString,
+              textSpan = textNode.append('tspan')
+                .text(textArray[i] + ' ')
+                .attr('dy', dy + 'em')
+                .attr('x', 0);
+
+          // reset vars
+          i += 1;
+          dy = 1; // TODO: wrong. fails on reflect with 3 lines of wrap
+
+          while (i < l) {
+            textSpan = textNode.append('tspan')
+              .text(textArray[i] + ' ')
+              .attr('dy', dy + 'em')
+              .attr('x', 0);
+
+            i += 1;
+
+            while (i < l) {
+              textString = textSpan.text();
+              textSpan.text(textString + ' ' + textArray[i]);
+              //TODO: this is different than collision test
+              if (this.getBoundingClientRect().width <= tickSpacing) {
+                i += 1;
+              } else {
+                textSpan.text(textString);
+                break;
+              }
+            }
+          }
+        });
+
+        calcMaxLabelSizes();
+        setThickness();
+      }
+
+      function handleStagger() {
+        tickText
+          .attr('transform', function(d, i) {
+            var yOffset = tickDimensionsHash['key-' + d.toString()].index % 2 * (maxLabelHeight + 2);
+            return 'translate(0,' + yOffset + ')';
+          });
+
+        calcMaxLabelSizes();
+        setThickness(2);
+      }
+
+      function handleRotation(a) {
+        // 0..90 = IV, 90..180 = III, 180..270 = IV, 270..360 = III
+        // 0..-90 = III, -90..-180 = IV, -180..-270 = III, -270..-360 = IV
+        // Normalize rotation: (-30 + 180) % 180 = 150; (30 + 180) % 180 = 30
+        var normRotation = (a + 180) % 180,
+            isLeft = normRotation > 90,
+            angle = (normRotation - (isLeft ? 180 : 0)) * reflect,
+            tickAnchor = rtlTextAnchor(isLeft ? 'end' : 'start'),
+            //Convert to radians before calculating sin.
+            cos = Math.abs(Math.cos(a * Math.PI / 180));
+
+        //Rotate all tickText
+        tickText
+          .attr('transform', function(d, i, j) {
+            return 'translate(0,' + (axis.tickPadding() * reflect) + ') rotate(' + angle + ')';
+          })
+          .attr('y', '0')
+          .style('text-anchor', tickAnchor);
+
+        calcMaxLabelSizes();
+        setThickness();
+        thickness += cos * 11;
+      }
+
+      //------------------------------------------------------------
+      // Public functions
+
+      chart.resizeTickLines = function(dim) {
+        wrap.selectAll('g.tick, g.sc-axisMaxMin').select('line')
+          .attr(vertical ? 'x2' : 'y2', dim * reflect);
+      };
+
+      chart.labelThickness = function() {
+        return labelThickness;
+      };
+
+    });
+
+    return chart;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.axis = axis;
+
+  // fc.rebind(chart, axis, 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
+  fc.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands'); //these are also accessible by chart.scale(), but added common ones directly for ease of use
+
+  // read only
+  chart.width = function(_) {
+    if (!arguments.length) {
+      return thickness;
+    }
+    return chart;
+  };
+
+  // read only
+  chart.height = function(_) {
+    if (!arguments.length) {
+      return thickness;
+    }
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    margin = _;
+    return chart;
+  };
+
+  chart.ticks = function(_) {
+    if (!arguments.length) {
+      return ticks;
+    }
+    ticks = _;
+    return chart;
+  };
+
+  chart.axisLabel = function(_) {
+    if (!arguments.length) {
+      return axisLabelText;
+    }
+    axisLabelText = _;
+    return chart;
+  };
+
+  chart.showMaxMin = function(_) {
+    if (!arguments.length) {
+      return showMaxMin;
+    }
+    showMaxMin = _;
+    return chart;
+  };
+
+  chart.highlightZero = function(_) {
+    if (!arguments.length) {
+      return highlightZero;
+    }
+    highlightZero = _;
+    return chart;
+  };
+
+  chart.wrapTicks = function(_) {
+    if (!arguments.length) {
+      return wrapTicks;
+    }
+    wrapTicks = _;
+    return chart;
+  };
+
+  chart.rotateTicks = function(_) {
+    if (!arguments.length) {
+      return rotateTicks;
+    }
+    rotateTicks = _;
+    return chart;
+  };
+
+  chart.staggerTicks = function(_) {
+    if (!arguments.length) {
+      return staggerTicks;
+    }
+    staggerTicks = _;
+    return chart;
+  };
+
+  chart.reduceXTicks = function(_) {
+    if (!arguments.length) {
+      return reduceXTicks;
+    }
+    reduceXTicks = _;
+    return chart;
+  };
+
+  chart.rotateYLabel = function(_) {
+    if (!arguments.length) {
+      return rotateYLabel;
+    }
+    rotateYLabel = _;
+    return chart;
+  };
+
+  chart.axisLabelDistance = function(_) {
+    if (!arguments.length) {
+      return axisLabelDistance;
+    }
+    axisLabelDistance = _;
+    return chart;
+  };
+
+  chart.maxLabelWidth = function(_) {
+    if (!arguments.length) {
+      return maxLabelWidth;
+    }
+    maxLabelWidth = _;
+    return chart;
+  };
+
+  chart.textAnchor = function(_) {
+    if (!arguments.length) {
+      return textAnchor;
+    }
+    textAnchor = _;
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    return chart;
+  };
+
+  chart.orient = function(_) {
+    if (!arguments.length) {
+      return orient;
+    }
+    orient = _;
+    axis = orient === 'bottom' ? d3.axisBottom() :
+           orient === 'right' ? d3.axisRight() :
+           orient === 'left' ? d3.axisLeft() :
+           orient === 'top' ? d3.axisTop() : d3.axisBottom();
+    return chart;
+  };
+
+  // d3 properties extended
+  chart.scale = function(_) {
+    if (!arguments.length) {
+      return scale;
+    }
+    scale = _;
+    axis.scale(scale);
+    hasRangeBand = typeof scale.padding === 'function';
+    fc.rebind(chart, scale, 'domain', 'range', 'rangeBand', 'rangeBands');
+    return chart;
+  };
+  chart.valueFormat = function(_) {
+    if (!arguments.length) {
+      return valueFormat;
+    }
+    valueFormat = _;
+    axis.tickFormat(valueFormat);
+    return chart;
+  };
+  chart.tickValues = function(_) {
+    if (!arguments.length) {
+      return tickValues;
+    }
+    tickValues = _;
+    axis.tickValues(_);
+    return chart;
+  };
+  chart.tickSize = function(_) {
+    if (!arguments.length) {
+      return tickSize;
+    }
+    tickSize = _;
+    axis.tickSize(_);
+    return chart;
+  };
+  chart.tickPadding = function(_) {
+    if (!arguments.length) {
+      return tickPadding;
+    }
+    tickPadding = _;
+    axis.tickPadding(_);
+    return chart;
+  };
+  chart.tickFormat = function(_) {
+    if (!arguments.length) {
+      return tickFormat;
+    }
+    tickFormat = _;
+    axis.tickFormat(_);
+    return chart;
+  };
+  chart.tickSizeInner = function(_) {
+    if (!arguments.length) {
+      return tickSizeInner;
+    }
+    tickSizeInner = _;
+    axis.tickSizeInner(_);
+    return chart;
+  };
+  chart.tickSizeOuter = function(_) {
+    if (!arguments.length) {
+      return tickSizeOuter;
+    }
+    tickSizeOuter = _;
+    axis.tickSizeOuter(_);
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var funnel = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -1906,23 +3390,6707 @@ function funnel() {
   //============================================================
 
   return chart;
-}
+};
 
-// export {default as gauge} from './gauge.js';
-// export {default as line} from './line.js';
-// export {default as multiBar} from './multiBar.js';
-// export {default as pie} from './pie.js';
-// export {default as scatter} from './scatter.js';
-// export {default as scroll} from './scroll.js';
-// export {default as stackedArea} from './stackedArea.js';
-// export {default as table} from './table.js';
-// export {default as tree} from './tree.js';
-// export {default as treemap} from './treemap.js';
+var gauge = function() {
+  /* original inspiration for this chart type is at http://bl.ocks.org/3202712 */
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
 
-// import * as models from './models.js';
-// import funnel as models.funnel from './models.js';
+  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = null,
+      height = null,
+      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
+      getX = function(d) { return d.key; },
+      getY = function(d) { return d.y; },
+      getKey = function(d) { return typeof d.key === 'undefined' ? d : d.key; },
+      getValue = function(d, i) { return isNaN(d.value) ? d : d.value; },
+      getCount = function(d, i) { return isNaN(d.count) ? d : d.count; },
+      getValues = function(d) { return d.values; },
+      fmtKey = function(d) { return getKey(d); },
+      fmtValue = function(d) { return getValue(d); },
+      fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
+      locality = utils.buildLocality(),
+      direction = 'ltr',
+      clipEdge = true,
+      delay = 0,
+      duration = 720,
+      color = function (d, i) { return utils.defaultColor()(d, d.seriesIndex); },
+      fill = color,
+      classes = function (d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
-function funnelChart() {
+  var ringWidth = 50,
+      showLabels = true,
+      showPointer = true,
+      pointerWidth = 5,
+      pointerTailLength = 5,
+      pointerHeadLength = 90,
+      pointerValue = 0,
+      minValue = 0,
+      maxValue = 10,
+      minAngle = -90,
+      maxAngle = 90,
+      labelInset = 10;
+
+  //colorScale = d3.scaleLinear().domain([0, .5, 1].map(d3.interpolate(min, max))).range(["green", "yellow", "red"]);
+
+  //============================================================
+  // Update chart
+
+  function chart(selection) {
+
+    selection.each(function(data) {
+
+      var availableWidth = width - margin.left - margin.right,
+          availableHeight = height - margin.top - margin.bottom,
+          container = d3.select(this);
+
+      //set up the gradient constructor function
+      chart.gradient = function(d, i) {
+        var params = {x: 0, y: 0, r: radius, s: ringWidth / 100, u: 'userSpaceOnUse'};
+        return utils.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
+      };
+
+      var radius = Math.min((availableWidth / 2), availableHeight) / ((100 + labelInset) / 100),
+          range = maxAngle - minAngle,
+          scale = d3.scaleLinear().range([0, 1]).domain([minValue, maxValue]),
+          previousTick = 0,
+          arcData = data.map( function(d, i){
+            var rtn = {
+                  key: d.key,
+                  seriesIndex: d.seriesIndex,
+                  y0: previousTick,
+                  y1: d.y,
+                  color: d.color,
+                  classes: d.classes,
+                  values: d.values
+                };
+            previousTick = d.y;
+            return rtn;
+          }),
+          prop = function(d) { return d * radius / 100; };
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class','sc-wrap sc-gauge');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+
+      var defs_entr = wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var gauge_wrap = wrap.select('.sc-group');
+
+      wrap_entr.append('g').attr('class', 'sc-labels');
+      var labels_wrap = wrap.select('.sc-labels');
+
+      wrap_entr.append('g').attr('class', 'sc-pointer');
+      var pointer_wrap = wrap.select('.sc-pointer');
+
+      var odometer_entr = wrap_entr.append('g').attr('class', 'sc-odometer');
+      var odometer_wrap = wrap.select('.sc-odometer');
+
+      wrap.attr('transform', 'translate('+ (margin.left/2 + margin.right/2 + prop(labelInset)) +','+ (margin.top + prop(labelInset)) +')');
+
+      //------------------------------------------------------------
+      // Append major data series grouping containers
+
+      gauge_wrap.attr('transform', centerTx);
+
+      var series_bind = gauge_wrap.selectAll('.sc-series').data(arcData);
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
+      series_bind.exit().remove();
+      var series = gauge_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series_entr
+        .style('stroke', '#FFF')
+        .style('stroke-width', 2)
+        .style('stroke-opacity', 0)
+        .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
+          d3.select(this).classed('hover', true);
+        })
+        .on('mouseout', function(d, i, j) {
+          d3.select(this).classed('hover', false);
+        });
+
+      series
+        .attr('class', function(d) { return classes(d, d.seriesIndex); })
+        .attr('fill', function(d) { return fill(d, d.seriesIndex); })
+        .classed('sc-active', function(d) { return d.active === 'active'; })
+        .classed('sc-inactive', function(d) { return d.active === 'inactive'; });
+
+      //------------------------------------------------------------
+      // Gauge arcs
+
+      var pieArc = d3.arc()
+            .innerRadius(prop(ringWidth))
+            .outerRadius(radius)
+            .startAngle(function(d, i) {
+              return deg2rad(newAngle(d.y0));
+            })
+            .endAngle(function(d, i) {
+              return deg2rad(newAngle(d.y1));
+            });
+
+      var slice_bind = series.selectAll('g.sc-slice').data(
+            function(s, i) {
+              return s.values.map(function(v, j) {
+                v.y0 = s.y0;
+                v.y1 = s.y1;
+                return v;
+              });
+            },
+            function(d) { return d.seriesIndex; }
+          );
+      slice_bind.exit().remove();
+      var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
+      var slices = series.selectAll('g.sc-slice').merge(slice_entr);
+
+      slice_entr.append('path')
+          .attr('class', 'sc-base')
+          .attr('d', pieArc)
+          .on('mouseover', function(d, i) {
+            d3.select(this).classed('hover', true);
+            var eo = buildEventObject(d3.event, d, i);
+            dispatch.call('elementMouseover', this, eo);
+          })
+          .on('mousemove', function(d, i) {
+            var e = d3.event;
+            dispatch.call('elementMousemove', this, e);
+          })
+          .on('mouseout', function(d, i) {
+            d3.select(this).classed('hover', false);
+            dispatch.call('elementMouseout', this);
+          })
+          .on('click', function(d, i) {
+            d3.event.stopPropagation();
+            var eo = buildEventObject(d3.event, d, i);
+            dispatch.call('elementClick', this, eo);
+          })
+          .on('dblclick', function(d, i) {
+            d3.event.stopPropagation();
+            var eo = buildEventObject(d3.event, d, i);
+            dispatch.call('elementDblClick', this, eo);
+          });
+
+      slices.select('.sc-base')
+        .attr('d', pieArc)
+        .style('stroke-opacity', 1);
+
+      function buildEventObject(e, d, i) {
+        return {
+          point: d,
+          index: i,
+          e: d3.event,
+          id: id
+        };
+      }
+
+      //------------------------------------------------------------
+      // Gauge labels
+
+      var labelData = [0].concat(data.map(getY));
+
+      labels_wrap.attr('transform', centerTx);
+
+      var labels_bind = labels_wrap.selectAll('text').data(labelData);
+      var labels_entr = labels_bind.enter().append('text');
+      labels_bind.exit().remove();
+      var labels = labels_wrap.selectAll('text').merge(labels_entr);
+
+      labels
+        .attr('transform', function(d) {
+          return 'rotate(' + newAngle(d) + ') translate(0,' + (prop(-1.5) - radius) + ')';
+        })
+        .text(utils.identity)
+        .style('text-anchor', 'middle')
+        .style('font-size', prop(0.6) + 'em');
+
+      if (showPointer) {
+
+        //------------------------------------------------------------
+        // Gauge pointer
+
+        var pointerData = [
+              [     Math.round(prop(pointerWidth) / 2), 0],
+              [ 0, -Math.round(prop(pointerHeadLength))  ],
+              [    -Math.round(prop(pointerWidth) / 2), 0],
+              [ 0,  Math.round(prop(pointerWidth))       ],
+              [     Math.round(prop(pointerWidth) / 2), 0]
+            ];
+
+        pointer_wrap.attr('transform', centerTx);
+
+        var pointer_bind = pointer_wrap.selectAll('path').data([pointerData]);
+        var pointer_entr = pointer_bind.enter().append('path')
+              .attr('transform', 'rotate(' + minAngle + ')');
+        pointer_bind.exit().remove();
+        var pointer = pointer_wrap.selectAll('path').merge(pointer_entr);
+        pointer.attr('d', d3.line());
+
+        //------------------------------------------------------------
+        // Odometer readout
+
+        odometer_entr.append('text')
+          .attr('class', 'sc-odom sc-odomText')
+          .attr('x', 0)
+          .attr('y', 0 )
+          .style('text-anchor', 'middle')
+          .style('stroke', 'none')
+          .style('fill', 'black');
+
+        odometer_wrap.select('.sc-odomText')
+          .style('font-size', prop(0.7) + 'em')
+          .text(pointerValue);
+
+        odometer_entr.insert('path','.sc-odomText')
+          .attr('class', 'sc-odom sc-odomBox')
+          .attr('fill', '#EFF')
+          .attr('stroke','black')
+          .attr('stroke-width','2px')
+          .attr('opacity', 0.8);
+
+        odometer_wrap.call(calcOdomBoxSize);
+
+      } else {
+        pointer_wrap.selectAll('path').remove();
+        odometer_wrap.select('.sc-odomText').remove();
+        odometer_wrap.select('.sc-odomBox').remove();
+      }
+
+      //------------------------------------------------------------
+      // private functions
+      function setGaugePointer(d) {
+        pointerValue = d;
+        pointer.transition()
+          .duration(duration)
+          .ease(d3.easeElastic)
+          .attr('transform', 'rotate(' + newAngle(d) + ')');
+        odometer_wrap.select('.sc-odomText')
+          .text(pointerValue);
+        odometer_wrap.call(calcOdomBoxSize);
+      }
+
+      function calcOdomBoxSize(wrap) {
+        var bbox = wrap.select('.sc-odomText').node().getBoundingClientRect();
+        wrap.select('.sc-odomBox').attr('d', utils.roundedRectangle(
+            -bbox.width / 2,
+            -bbox.height + prop(1.5),
+            bbox.width + prop(4),
+            bbox.height + prop(2),
+            prop(2)
+          ));
+        wrap.attr('transform', 'translate(' + radius + ',' + (margin.top + prop(70) + bbox.height) + ')');
+      }
+
+      function deg2rad(deg) {
+        return deg * Math.PI / 180;
+      }
+
+      function newAngle(d) {
+        return minAngle + (scale(d) * range);
+      }
+
+      // Center translation
+      function centerTx() {
+        return 'translate(' + radius + ',' + radius + ')';
+      }
+
+      chart.setGaugePointer = setGaugePointer;
+
+    });
+
+    return chart;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+
+  chart.id = function(_) {
+    if (!arguments.length) {
+      return id;
+    }
+    id = _;
+    return chart;
+  };
+
+  chart.color = function(_) {
+    if (!arguments.length) {
+      return color;
+    }
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) {
+      return fill;
+    }
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) {
+      return classes;
+    }
+    classes = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) {
+      return gradient;
+    }
+    gradient = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) {
+      return getX;
+    }
+    getX = _;
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) {
+      return getY;
+    }
+    getY = utils.functor(_);
+    return chart;
+  };
+
+  chart.getKey = function(_) {
+    if (!arguments.length) {
+      return getKey;
+    }
+    getKey = _;
+    return chart;
+  };
+
+  chart.getValue = function(_) {
+    if (!arguments.length) {
+      return getValue;
+    }
+    getValue = _;
+    return chart;
+  };
+
+  chart.getCount = function(_) {
+    if (!arguments.length) {
+      return getCount;
+    }
+    getCount = _;
+    return chart;
+  };
+
+  chart.fmtKey = function(_) {
+    if (!arguments.length) {
+      return fmtKey;
+    }
+    fmtKey = _;
+    return chart;
+  };
+
+  chart.fmtValue = function(_) {
+    if (!arguments.length) {
+      return fmtValue;
+    }
+    fmtValue = _;
+    return chart;
+  };
+
+  chart.fmtCount = function(_) {
+    if (!arguments.length) {
+      return fmtCount;
+    }
+    fmtCount = _;
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = utils.buildLocality(_);
+    return chart;
+  };
+
+  chart.values = function(_) {
+    if (!arguments.length) {
+      return getValues;
+    }
+    getValues = _;
+    return chart;
+  };
+
+  // GAUGE
+
+  chart.showLabels = function(_) {
+    if (!arguments.length) {
+      return showLabels;
+    }
+    showLabels = _;
+    return chart;
+  };
+
+  chart.labelThreshold = function(_) {
+    if (!arguments.length) {
+      return labelThreshold;
+    }
+    labelThreshold = _;
+    return chart;
+  };
+
+  chart.ringWidth = function(_) {
+    if (!arguments.length) {
+      return ringWidth;
+    }
+    ringWidth = _;
+    return chart;
+  };
+  chart.pointerWidth = function(_) {
+    if (!arguments.length) {
+      return pointerWidth;
+    }
+    pointerWidth = _;
+    return chart;
+  };
+  chart.pointerTailLength = function(_) {
+    if (!arguments.length) {
+      return pointerTailLength;
+    }
+    pointerTailLength = _;
+    return chart;
+  };
+  chart.pointerHeadLength = function(_) {
+    if (!arguments.length) {
+      return pointerHeadLength;
+    }
+    pointerHeadLength = _;
+    return chart;
+  };
+  chart.setPointer = function(_) {
+    if (!arguments.length) {
+      return chart.setGaugePointer;
+    }
+    chart.setGaugePointer(_);
+    return chart;
+  };
+  chart.showPointer = function(_) {
+    if (!arguments.length) {
+      return showPointer;
+    }
+    showPointer = _;
+    return chart;
+  };
+  chart.minValue = function(_) {
+    if (!arguments.length) {
+      return minValue;
+    }
+    minValue = _;
+    return chart;
+  };
+  chart.maxValue = function(_) {
+    if (!arguments.length) {
+      return maxValue;
+    }
+    maxValue = _;
+    return chart;
+  };
+  chart.minAngle = function(_) {
+    if (!arguments.length) {
+      return minAngle;
+    }
+    minAngle = _;
+    return chart;
+  };
+  chart.maxAngle = function(_) {
+    if (!arguments.length) {
+      return maxAngle;
+    }
+    maxAngle = _;
+    return chart;
+  };
+  chart.labelInset = function(_) {
+    if (!arguments.length) {
+      return labelInset;
+    }
+    labelInset = _;
+    return chart;
+  };
+  chart.isRendered = function(_) {
+    return (svg !== undefined);
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var line$$1 = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var scatter$$1 = scatter();
+
+  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = 960,
+      height = 500,
+      getX = function(d) { return d.x; }, // accessor to get the x value from a data point
+      getY = function(d) { return d.y; }, // accessor to get the y value from a data point
+      x, //can be accessed via chart.xScale()
+      y, //can be accessed via chart.yScale()
+      defined = function(d, i) { return !isNaN(getY(d, i)) && getY(d, i) !== null; }, // allows a line to be not continuous when it is not defined
+      isArea = function(d) { return (d && d.area) || false; }, // decides if a line is an area or just a line
+      interpolate = 'linear', // controls the line interpolation
+      clipEdge = false, // if true, masks lines within x and y scale
+      delay = 0, // transition
+      duration = 300, // transition
+      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
+      fill = color,
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
+
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  // var x0, y0; //used to store previous scales
+
+  //============================================================
+
+  function chart(selection) {
+    selection.each(function(data) {
+
+      var container = d3.select(this);
+
+      var availableWidth = width - margin.left - margin.right,
+          availableHeight = height - margin.top - margin.bottom;
+
+      var curve =
+            interpolate === 'linear' ? d3.curveLinear :
+            interpolate === 'cardinal' ? d3.curveCardinal :
+            interpolate === 'monotone' ? d3.curveMonotoneX :
+            interpolate === 'basis' ? d3.curveBasis : d3.natural;
+
+      var area = d3.area()
+            .curve(curve)
+            .defined(defined)
+            .x(function(d, i) { return x(getX(d, i)); })
+            .y0(function(d, i) { return y(getY(d, i)); })
+            .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); });
+
+      var zero = d3.area()
+            .curve(curve)
+            .defined(defined)
+            .x(function(d, i) { return x(getX(d, i)); })
+            .y0(function(d, i) { return y(0); })
+            .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); });
+
+      var tran = d3.transition('scatter')
+            .duration(duration)
+            .ease(d3.easeLinear);
+
+      var id = scatter$$1.id();
+
+      //set up the gradient constructor function
+      chart.gradient = function(d, i, p) {
+        return utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+      };
+
+      //------------------------------------------------------------
+      // Setup Scales
+
+      x = scatter$$1.xScale();
+      y = scatter$$1.yScale();
+      // x0 = x.copy();
+      // y0 = y.copy();
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-line').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-line');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+
+      var defs_entr = wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
+
+      wrap_entr.append('g').attr('class', 'sc-scatter-wrap');
+      var scatter_wrap = wrap.select('.sc-scatter-wrap');
+
+      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      //------------------------------------------------------------
+
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id)
+        .append('rect');
+
+      wrap.select('#sc-edge-clip-' + id + ' rect')
+        .attr('width', availableWidth)
+        .attr('height', availableHeight);
+
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+      scatter_wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      //------------------------------------------------------------
+      // Series
+
+      var series_bind = group_wrap.selectAll('g.sc-series').data(data, function(d) { return d.seriesIndex; });
+      var series_entr = series_bind.enter().append('g')
+            .attr('class', 'sc-series')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series
+        .classed('hover', function(d) { return d.hover; })
+        .attr('class', classes)
+        .attr('fill', color)
+        .attr('stroke', color);
+      series
+        .transition(tran)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 0.5);
+      series_bind.exit()
+        .transition(tran)
+          .style('stroke-opacity', 1e-6)
+          .style('fill-opacity', 1e-6)
+          .remove();
+
+      //------------------------------------------------------------
+      // Points
+
+      scatter$$1
+        .clipEdge(clipEdge)
+        .width(availableWidth)
+        .height(availableHeight);
+      scatter_wrap.call(scatter$$1);
+
+      //------------------------------------------------------------
+      // Areas
+
+      var areas_bind = series.selectAll('path.sc-area').data(function(d) { return isArea(d) ? [d] : []; }); // this is done differently than lines because I need to check if series is an area
+      var areas_entr = areas_bind.enter().append('path').attr('class', 'sc-area sc-enter');
+      var areas = series.selectAll('.sc-area').merge(areas_entr);
+
+      areas
+        .filter(function(d) {
+          return d3.select(this).classed('sc-enter');
+        })
+        .attr('d', function(d) {
+          return zero.apply(this, [d.values]);
+        });
+
+      areas
+        .transition(tran)
+          .attr('d', function(d) {
+            return area.apply(this, [d.values]);
+          })
+          .on('end', function(d) {
+            d3.select(this).classed('sc-enter', false);
+          });
+
+      // we need this exit remove call here to support
+      // toggle between lines and areas
+      areas_bind.exit().remove();
+
+      series_bind.exit()
+        .transition(tran).selectAll('.sc-area')
+          .attr('d', function(d) {
+            return zero.apply(this, [d.values]);
+          })
+          .remove();
+
+      //------------------------------------------------------------
+      // Lines
+
+      function lineData(d) {
+        // if there are no values, return null
+        if (!d.values || !d.values.length) {
+          return [null];
+        }
+        // if there is more than one point, return all values
+        if (d.values.length > 1) {
+          return [d.values];
+        }
+        // if there is only one single point in data array
+        // extend it horizontally in both directions
+        var values = x.domain().map(function(x, i) {
+            // if data point is array, then it should be returned as an array
+            // the getX and getY methods handle the internal mechanics of positioning
+            if (Array.isArray(d.values[0])) {
+              return [x, d.values[0][1]];
+            } else {
+              // sometimes the line data point is an object
+              // so the values should be returned as an array of objects
+              var newValue = JSON.parse(JSON.stringify(d.values[0]));
+              newValue.x = x;
+              return newValue;
+            }
+          });
+        return [values];
+      }
+
+      var lines_bind = series.selectAll('path.sc-line')
+            .data(lineData, function(d) { return d.seriesIndex; });
+      var lines_entr = lines_bind.enter().append('path')
+            .attr('class', 'sc-line sc-enter');
+      var lines = series.selectAll('.sc-line').merge(lines_entr);
+
+      lines
+        .filter(function(d) {
+          return d3.select(this).classed('sc-enter');
+        })
+        .attr('d',
+          d3.line()
+            .curve(curve)
+            .defined(defined)
+            .x(function(d, i) { return x(getX(d, i)); })
+            .y(function(d, i) { return y(0); })
+        );
+      lines
+        .transition(tran)
+          .attr('d',
+            d3.line()
+              .curve(curve)
+              .defined(defined)
+              .x(function(d, i) { return x(getX(d, i)); })
+              .y(function(d, i) { return y(getY(d, i)); })
+          )
+          .on('end', function(d) {
+            d3.select(this).classed('sc-enter', false);
+          });
+      series_bind.exit()
+        .transition(tran).selectAll('.sc-line')
+          .attr('d',
+            d3.line()
+              .curve(curve)
+              .defined(defined)
+              .x(function(d, i) { return x(getX(d, i)); })
+              .y(function(d, i) { return y(0); })
+          )
+          .remove();
+
+      //store old scales for use in transitions on update
+      // x0 = x.copy();
+      // y0 = y.copy();
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = scatter$$1.dispatch;
+  chart.scatter = scatter$$1;
+
+  fc.rebind(chart, scatter$$1, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
+
+  chart.color = function(_) {
+    if (!arguments.length) { return color; }
+    color = _;
+    scatter$$1.color(color);
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) { return fill; }
+    fill = _;
+    scatter$$1.fill(fill);
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) { return classes; }
+    classes = _;
+    scatter$$1.classes(classes);
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) { return gradient; }
+    gradient = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) { return getX; }
+    getX = _;
+    scatter$$1.x(_);
+    return chart;
+  };
+  chart.y = function(_) {
+    if (!arguments.length) { return getY; }
+    getY = _;
+    scatter$$1.y(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    return chart;
+  };
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    scatter$$1.duration(_);
+    return chart;
+  };
+
+  chart.clipEdge = function(_) {
+    if (!arguments.length) { return clipEdge; }
+    clipEdge = _;
+    return chart;
+  };
+
+  chart.interpolate = function(_) {
+    if (!arguments.length) { return interpolate; }
+    interpolate = _;
+    return chart;
+  };
+
+  chart.defined = function(_) {
+    if (!arguments.length) { return defined; }
+    defined = _;
+    return chart;
+  };
+
+  chart.isArea = function(_) {
+    if (!arguments.length) { return isArea; }
+    isArea = utils.functor(_);
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var multiBar = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = 960,
+      height = 500,
+      x = d3.scaleBand(),
+      y = d3.scaleLinear(),
+      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
+      getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      locality = utils.buildLocality(),
+      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
+      stacked = true,
+      barColor = null, // adding the ability to set the color for each rather than the whole group
+      disabled, // used in conjunction with barColor to communicate to multiBarChart what series are disabled
+      showValues = false,
+      valueFormat = function(d) { return d; },
+      withLine = false,
+      vertical = true,
+      baseDimension = 60,
+      direction = 'ltr',
+      clipEdge = false, // if true, masks bars within x and y scale
+      delay = 0, // transition
+      duration = 300, // transition
+      xDomain,
+      yDomain,
+      nice = false,
+      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
+      fill = color,
+      textureFill = false,
+      barColor = null, // adding the ability to set the color for each rather than the whole group
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var x0,
+      y0; //used to store previous scales
+
+  //============================================================
+
+  function chart(selection) {
+    selection.each(function(data) {
+
+      // baseDimension = stacked ? vertical ? 72 : 30 : 20;
+
+      var container = d3.select(this),
+          orientation = vertical ? 'vertical' : 'horizontal',
+          availableWidth = width - margin.left - margin.right,
+          availableHeight = height - margin.top - margin.bottom,
+          dimX = vertical ? 'width' : 'height',
+          dimY = vertical ? 'height' : 'width',
+          dimLabel = vertical ? 'width' : 'height',
+          valX = vertical ? 'x' : 'y',
+          valY = vertical ? 'y' : 'x',
+          seriesCount = 0,
+          groupCount = 0,
+          minSeries = 0,
+          maxSeries = data.length - 1,
+          verticalLabels = false,
+          labelPosition = showValues,
+          labelLengths = [],
+          labelThickness = 0;
+
+      function barLength(d, i) {
+        return Math.max(Math.round(Math.abs(y(getY(d, i)) - y(0))), 0);
+      }
+      function barThickness() {
+        return x.bandwidth() / (stacked ? 1 : data.length);
+      }
+      function sign(bool) {
+        return bool ? 1 : -1;
+      }
+
+      if (stacked) {
+        // var stack = d3.stack()
+        //      .offset('zero')
+        //      .keys(data.map(function(d) { return d.key; }))
+        //      .value(function(d) { return d.key; });
+        // data = stack(data);
+        // stacked bars can't have label position 'top'
+        if (labelPosition === 'top' || labelPosition === true) {
+          labelPosition = 'end';
+        }
+      } else if (labelPosition) {
+        // grouped bars can't have label position 'total'
+        if (labelPosition === 'total') {
+          labelPosition = 'top';
+        } else if (labelPosition === true) {
+          labelPosition = 'end';
+        }
+        verticalLabels = vertical;
+      }
+
+      //------------------------------------------------------------
+      // HACK for negative value stacking
+      if (stacked) {
+        var groupTotals = [];
+        data[0].values.map(function(d, i) {
+          var posBase = 0,
+              negBase = 0;
+          data.map(function(d) {
+            var f = d.values[i];
+            f.size = Math.abs(f.y);
+            if (f.y < 0) {
+              f.y0 = negBase - (vertical ? 0 : f.size);
+              negBase -= f.size;
+            } else {
+              f.y0 = posBase + (vertical ? f.size : 0);
+              posBase += f.size;
+            }
+          });
+          groupTotals[i] = {neg: negBase, pos: posBase};
+        });
+      }
+
+      //------------------------------------------------------------
+      // Setup Scales
+
+      // remap and flatten the data for use in calculating the scales' domains
+      var seriesData = d3.merge(data.map(function(d) {
+              return d.values.map(function(d, i) {
+                return {x: getX(d, i), y: getY(d, i), y0: d.y0, y0: d.y0};
+              });
+            }));
+
+      groupCount = data[0].values.length;
+      seriesCount = data.length;
+
+      if (showValues) {
+        var labelData = labelPosition === 'total' && stacked ?
+              groupTotals.map(function(d) { return d.neg; }).concat(
+                groupTotals.map(function(d) { return d.pos; })
+              ) :
+              seriesData.map(getY);
+
+        var seriesExtents = d3.extent(data.map(function(d, i) { return d.seriesIndex; }));
+        minSeries = seriesExtents[0];
+        maxSeries = seriesExtents[1];
+
+        labelLengths = utils.stringSetLengths(
+            labelData,
+            container,
+            valueFormat,
+            'sc-label-value'
+          );
+
+        labelThickness = utils.stringSetThickness(
+            ['Xy'],
+            container,
+            valueFormat,
+            'sc-label-value'
+          )[0];
+      }
+
+      chart.resetDimensions = function(w, h) {
+        width = w;
+        height = h;
+        availableWidth = w - margin.left - margin.right;
+        availableHeight = h - margin.top - margin.bottom;
+        resetScale();
+      };
+
+      function unique(x) {
+        return x.reverse()
+                .filter(function (e, i, x) { return x.indexOf(e, i+1) === -1; })
+                .reverse();
+      }
+
+      function resetScale() {
+        var xDomain = xDomain || unique(seriesData.map(getX));
+        var maxX = vertical ? availableWidth : availableHeight,
+            maxY = vertical ? availableHeight : availableWidth;
+
+        var boundsWidth = stacked ? baseDimension : baseDimension * seriesCount + baseDimension,
+            gap = baseDimension * (stacked ? 0.25 : 1),
+            outerPadding = Math.max(0.25, (maxX - (groupCount * boundsWidth) - gap) / (2 * boundsWidth));
+
+        x .domain(xDomain)
+          .range([0, maxX])
+          .paddingInner(withLine ? 0.3 : 0.25)
+          .paddingOuter(outerPadding);
+
+        var yDomain = yDomain || d3.extent(seriesData.map(function(d) {
+                var posOffset = (vertical ? 0 : d.y),
+                    negOffset = (vertical ? d.y : 0);
+                return stacked ? (d.y > 0 ? d.y0 + posOffset : d.y0 + negOffset) : d.y;
+              }).concat(forceY));
+
+        var yRange = vertical ? [availableHeight, 0] : [0, availableWidth];
+
+        // initial set of y scale based on full dimension
+        y .domain(yDomain)
+          .range(yRange);
+
+
+        if (showValues) {
+          // this must go here because barThickness varies
+          if (vertical && stacked && d3.max(labelLengths) + 8 > barThickness()) {
+            verticalLabels = true;
+          }
+          //       vlbl   hlbl
+          // vrt:   N      Y
+          // hrz:   N      N
+          dimLabel = vertical && !verticalLabels ? 'labelHeight' : 'labelWidth';
+        }
+
+        //------------------------------------------------------------
+        // recalculate y.range if grouped and show values
+
+        if (labelPosition === 'top' || labelPosition === 'total') {
+          var maxBarLength = maxY,
+              minBarLength = 0,
+              maxValuePadding = 0,
+              minValuePadding = 0,
+              gap = vertical ? verticalLabels ? 2 : -2 : 2;
+
+          labelData.forEach(function(d, i) {
+            var labelDim = labelPosition === 'total' && stacked && vertical && !verticalLabels ? labelThickness : labelLengths[i];
+            if (vertical && d > 0 || !vertical && d < 0) {
+              if (y(d) - labelDim < minBarLength) {
+                minBarLength = y(d) - labelDim;
+                minValuePadding = labelDim;
+              }
+            } else {
+              if (y(d) + labelDim > maxBarLength) {
+                maxBarLength = y(d) + labelDim;
+                maxValuePadding = labelDim;
+              }
+            }
+          });
+
+          if (vertical) {
+            y.range([
+              maxY - (y.domain()[0] < 0 ? maxValuePadding + gap + 2 : 0),
+                      y.domain()[1] > 0 ? minValuePadding + gap : 0
+            ]);
+          } else {
+            y.range([
+                      y.domain()[0] < 0 ? minValuePadding + gap + 4 : 0,
+              maxY - (y.domain()[1] > 0 ? maxValuePadding + gap : 0)
+            ]);
+          }
+        }
+
+        if (nice) {
+          y.nice();
+        }
+
+        x0 = x0 || x;
+        y0 = y0 || y;
+      }
+
+      resetScale();
+
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-multibar').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+
+      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      //set up the gradient constructor function
+      chart.gradient = function(d, i, p) {
+        return utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+      };
+
+      //------------------------------------------------------------
+      // Definitions
+
+      var defs_entr = wrap_entr.append('defs');
+
+      if (clipEdge) {
+        defs_entr.append('clipPath')
+          .attr('id', 'sc-edge-clip-' + id)
+          .append('rect');
+        wrap.select('#sc-edge-clip-' + id + ' rect')
+          .attr('width', availableWidth)
+          .attr('height', availableHeight);
+      }
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+
+      if (textureFill) {
+        var mask = utils.createTexture(defs_entr, id);
+      }
+
+      //------------------------------------------------------------
+
+      var series_bind = wrap.selectAll('.sc-series').data(utils.identity);
+      var series_entr = series_bind.enter().append('g')
+            .attr('class', classes)
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
+      series_bind.exit().remove();
+      var series = wrap.selectAll('.sc-series').merge(series_entr);
+
+      // series_bind.exit()
+      //   .style('stroke-opacity', 1e-6)
+      //   .style('fill-opacity', 1e-6)
+      //     .selectAll('g.sc-bar')
+      //       .attr('y', function(d) {
+      //         return stacked ? y0(d.y0) : y0(0);
+      //       })
+      //       .attr(dimX, 0)
+      //       .remove();
+
+      series
+        .attr('fill', fill)
+        .attr('class', function(d,i) { return classes(d,i); })
+        .classed('hover', function(d) { return d.hover; })
+        .classed('sc-active', function(d) { return d.active === 'active'; })
+        .classed('sc-inactive', function(d) { return d.active === 'inactive'; })
+        .style('stroke-opacity', 1)
+        .style('fill-opacity', 1);
+
+      series
+        .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
+          d3.select(this).classed('hover', true);
+        })
+        .on('mouseout', function(d, i, j) {
+          d3.select(this).classed('hover', false);
+        });
+
+      //------------------------------------------------------------
+
+      var bars_bind = series.selectAll('.sc-bar').data(function(d) { return d.values; });
+      var bars_entr = bars_bind.enter().append('g')
+            .attr('class', 'sc-bar');
+      bars_bind.exit().remove();
+      var bars = series.selectAll('.sc-bar').merge(bars_entr);
+
+      // The actual bar rectangle
+      bars_entr.append('rect')
+        .attr('class', 'sc-base')
+        .style('fill', 'inherit')
+        .attr('x', 0)
+        .attr('y', 0);
+
+      if (textureFill) {
+        // For on click active bars
+        bars_entr.append('rect')
+          .attr('class', 'sc-texture')
+          .attr('x', 0)
+          .attr('y', 0)
+          .style('mask', 'url(' + mask + ')');
+      }
+
+      // For label background
+      bars_entr.append('rect')
+        .attr('class', 'sc-label-box')
+        .attr('x', 0)
+        .attr('y', 0)
+        .attr('width', 0)
+        .attr('height', 0)
+        .attr('rx', 2)
+        .attr('ry', 2)
+        .style('fill', 'transparent')
+        .style('stroke-width', 0)
+        .style('fill-opacity', 0);
+
+      // For label text
+      var barText_entr = bars_entr.append('text') // TODO: should this be inside labelPosition?
+        .attr('class', 'sc-label-value');
+      var barText = bars.select('.sc-label-value').merge(barText_entr);
+
+      //------------------------------------------------------------
+
+      bars
+        .attr('class', function(d, i) {
+          return 'sc-bar ' + (getY(d, i) < 0 ? 'negative' : 'positive');
+        })
+        .attr('transform', function(d, i) {
+          var trans = stacked ? {
+                x: Math.round(x(getX(d, i))),
+                y: Math.round(y(d.y0))
+              } :
+              { x: Math.round(d.seri * barThickness() + x(getX(d, i))),
+                y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
+              };
+          return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
+        });
+
+      bars
+        .select('rect.sc-base')
+          .attr(valX, 0)
+          .attr(dimY, barLength)
+          .attr(dimX, barThickness);
+
+      if (textureFill) {
+        bars
+          .select('rect.sc-texture')
+            .attr(valX, 0)
+            .attr(dimY, barLength)
+            .attr(dimX, barThickness)
+            .style('fill', function(d, i) {
+              var backColor = fill(d),
+                  foreColor = utils.getTextContrast(backColor, i);
+              return foreColor;
+            });
+      }
+
+      //------------------------------------------------------------
+      // Assign events
+
+      function buildEventObject(e, d, i) {
+        return {
+            value: getY(d, i),
+            point: d,
+            series: data[d.seriesIndex],
+            pointIndex: i,
+            seriesIndex: d.seriesIndex,
+            groupIndex: d.group,
+            id: id,
+            e: e
+          };
+      }
+
+      bars
+        .on('mouseover', function(d, i) { //TODO: figure out why j works above, but not here
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementMouseover', this, eo);
+        })
+        .on('mousemove', function(d, i) {
+          var e = d3.event;
+          dispatch.call('elementMousemove', this, e);
+        })
+        .on('mouseout', function(d, i) {
+          dispatch.call('elementMouseout', this);
+        })
+        .on('click', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementClick', this, eo);
+        })
+        .on('dblclick', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementDblClick', this, eo);
+        });
+
+      //------------------------------------------------------------
+      // Bar text: begin, middle, end, top
+
+      if (showValues) {
+
+          barText
+            .text(function(d, i) {
+              var val = labelPosition === 'total' && stacked ?
+                getY(d, i) < 0 ?
+                  groupTotals[i].neg :
+                  groupTotals[i].pos :
+                getY(d, i);
+              return valueFormat(val);
+            })
+            .each(function(d, i) {
+              var bbox = this.get_bindingClientRect();
+              d.labelWidth = Math.floor(bbox.width) + 4;
+              d.labelHeight = Math.floor(bbox.height);
+              d.barLength = barLength(d, i);
+              d.barThickness = barThickness();
+            });
+
+          barText
+            .attr('dy', '0.35em')
+            .attr('text-anchor', function(d, i) {
+              var anchor = 'middle',
+                  negative = getY(d, i) < 0;
+              if (vertical && !verticalLabels) {
+                anchor = 'middle';
+              } else {
+                switch (labelPosition) {
+                  case 'start':
+                    anchor = negative ? 'end' : 'start';
+                    break;
+                  case 'middle':
+                    anchor = 'middle';
+                    break;
+                  case 'end':
+                    anchor = negative ? 'start' : 'end';
+                    break;
+                  case 'top':
+                  case 'total':
+                    anchor = negative ? 'end' : 'start';
+                    break;
+                }
+                anchor = direction === 'rtl' && anchor !== 'middle' ? anchor === 'start' ? 'end' : 'start' : anchor;
+              }
+              return anchor;
+            })
+            .attr('transform', 'rotate(' + (verticalLabels ? -90 : 0) + ' 0,0)')
+            .attr('x', function(d, i) {
+              var offset = 0,
+                  negative = getY(d, i) < 0 ? -1 : 1,
+                  shift = negative < 0,
+                  padding = (4 + (verticalLabels || !vertical) * 2) * negative;
+
+              if (vertical && !verticalLabels) {
+                offset = d.barThickness / 2;
+              } else {
+                switch (labelPosition) {
+                  case 'start':
+                    // vrt: neg 0 , pos -1
+                    // hrz: neg 1 , pos  0
+                    offset = d.barLength * (shift - verticalLabels) + padding;
+                    break;
+                  case 'middle':
+                    offset = d.barLength * (verticalLabels ? -1 : 1) / 2;
+                    break;
+                  case 'end':
+                    // vrt: neg -1 , pos 0.
+                    // hrz: neg  0 , pos 1;
+                    offset = d.barLength * (!verticalLabels - shift) - padding;
+                    break;
+                  case 'top':
+                  case 'total':
+                    offset = d.barLength * (!verticalLabels - shift) + 2 * negative;
+                    break;
+                }
+              }
+              return offset;
+            })
+            .attr('y', function(d, i) {
+              var offset = 0,
+                  negative = getY(d, i) < 0 ? -1 : 1,
+                  shift = negative < 0,
+                  padding = (d.labelHeight / 2 + (4 + verticalLabels * 2) * (labelPosition === 'total' ? 0 : 1)) * negative;
+
+              if (vertical && !verticalLabels) {
+                switch (labelPosition) {
+                  case 'start':
+                    offset = d.barLength * (1 - shift) - padding;
+                    break;
+                  case 'middle':
+                    offset = d.barLength / 2;
+                    break;
+                  case 'end':
+                    offset = d.barLength * (0 + shift) + padding;
+                    break;
+                  case 'total':
+                    offset = d.barLength * (0 + shift) + padding * -1;
+                    break;
+                }
+              } else {
+                offset = d.barThickness / 2;
+              }
+              return offset;
+            })
+            .style('fill', function(d, i, j) {
+              if (labelPosition === 'top' || labelPosition === 'total') {
+                return '#000';
+              }
+              // var backColor = d3.select(this.previousSibling).style('fill'),
+              var backColor = fill(d),
+                  textColor = utils.getTextContrast(backColor, i);
+              return textColor;
+            })
+            .style('fill-opacity', function(d, i) {
+              if (labelPosition === 'total') {
+                if (d.seriesIndex !== minSeries && d.seriesIndex !== maxSeries) {
+                  return 0;
+                }
+                var y = getY(d, i);
+                return (y <  0 && groupTotals[i].neg === d.y0 + (vertical ? y : 0)) ||
+                       (y >= 0 && groupTotals[i].pos === d.y0 + (vertical ? 0 : y)) ? 1 : 0;
+              } else {
+                var lengthOverlaps = d.barLength < (!vertical || verticalLabels ? d.labelWidth : d.labelHeight) + 8,
+                    thicknessOverlaps = d.barThickness < (!vertical || verticalLabels ? d.labelHeight : d.labelWidth) + 4;
+                return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
+              }
+            });
+
+          function getLabelBoxOffset(d, i, s, gap) {
+            var offset = 0,
+                negative = getY(d, i) < 0 ? -1 : 1,
+                shift = s === negative < 0 ? 1 : 0,
+                barLength = d.barLength - d[dimLabel];
+            if (s ? vertical : !vertical) {
+              offset = (d.barThickness - (verticalLabels === s ? d.labelHeight : d.labelWidth)) / 2;
+            } else {
+              switch (labelPosition) {
+                case 'start':
+                  offset = barLength * (0 + shift) + gap * negative;
+                  break;
+                case 'middle':
+                  offset = barLength / 2;
+                  break;
+                case 'end':
+                  offset = barLength * (1 - shift) - gap * negative;
+                  break;
+                case 'top':
+                  offset = d.barLength * (1 - shift) - d.labelWidth * (0 + shift);
+                  break;
+                case 'total':
+                  offset = d.barLength * (1 - shift) - (verticalLabels === s ? d.labelHeight : d.labelWidth) * (0 + shift);
+                  break;
+              }
+            }
+
+            return offset;
+          }
+
+          //------------------------------------------------------------
+          // Label background box
+          // bars.filter(function(d, i) {
+          //     return labelPosition === 'total' && stacked ? (d.seriesIndex !== minSeries && d.seriesIndex !== maxSeries) : false;
+          //   })
+          //   .select('rect.sc-label-box')
+          //       .style('fill-opacity', 0);
+          if (labelPosition === 'total' && stacked) {
+            bars.select('rect.sc-label-box')
+              .style('fill-opacity', 0);
+          }
+          bars.filter(function(d, i) {
+              return labelPosition === 'total' && stacked ? (d.seriesIndex === minSeries || d.seriesIndex === maxSeries) : true;
+            })
+            .select('rect.sc-label-box')
+                .attr('x', function(d, i) {
+                  return getLabelBoxOffset(d, i, true, 4);
+                })
+                .attr('y', function(d, i) {
+                  return getLabelBoxOffset(d, i, false, -4);
+                })
+                .attr('width', function(d, i) {
+                  return verticalLabels ? d.labelHeight : d.labelWidth;
+                })
+                .attr('height', function(d, i) {
+                  return verticalLabels ? d.labelWidth : d.labelHeight;
+                })
+                .style('fill', function(d, i) {
+                  return labelPosition === 'top' || labelPosition === 'total' ? '#fff' : fill(d, i);
+                })
+                .style('fill-opacity', function(d, i) {
+                  var lengthOverlaps = d.barLength < (!vertical || verticalLabels ? d.labelWidth : d.labelHeight) + 8,
+                      thicknessOverlaps = d.barThickness < (!vertical || verticalLabels ? d.labelHeight : d.labelWidth) + 4;
+                  return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
+                });
+
+      } else {
+        barText
+          .text('')
+          .style('fill-opacity', 0);
+
+        bars
+          .select('rect.label-box')
+            .style('fill-opacity', 0);
+      }
+
+      // TODO: fix way of passing in a custom color function
+      // if (barColor) {
+      //   if (!disabled) {
+      //     disabled = data.map(function() { return true; });
+      //   }
+      //   bars
+      //     //.style('fill', barColor)
+      //     //.style('stroke', barColor)
+      //     //.style('fill', function(d,i,j) { return d3.rgb(barColor(d,i)).darker(j).toString(); })
+      //     //.style('stroke', function(d,i,j) { return d3.rgb(barColor(d,i)).darker(j).toString(); })
+      //     .style('fill', function(d, i, j) {
+      //       return d3.rgb(barColor(d, i))
+      //                .darker(disabled.map(function(d, i) { return i; })
+      //                .filter(function(d, i) { return !disabled[i]; })[j])
+      //                .toString();
+      //     })
+      //     .style('stroke', function(d, i, j) {
+      //       return d3.rgb(barColor(d, i))
+      //                .darker(disabled.map(function(d, i) { return i; })
+      //                .filter(function(d, i) { return !disabled[i]; })[j])
+      //                .toString();
+      //     });
+      // }
+
+      //store old scales for use in transitions on update
+      x0 = x.copy();
+      y0 = y.copy();
+
+    });
+
+    return chart;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+
+  chart.color = function(_) {
+    if (!arguments.length) {
+      return color;
+    }
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) {
+      return fill;
+    }
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) {
+      return classes;
+    }
+    classes = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) {
+      return gradient;
+    }
+    gradient = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) {
+      return getX;
+    }
+    getX = _;
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) {
+      return getY;
+    }
+    getY = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = _;
+    return chart;
+  };
+
+  chart.xScale = function(_) {
+    if (!arguments.length) {
+      return x;
+    }
+    x = _;
+    return chart;
+  };
+
+  chart.yScale = function(_) {
+    if (!arguments.length) {
+      return y;
+    }
+    y = _;
+    return chart;
+  };
+
+  chart.xDomain = function(_) {
+    if (!arguments.length) {
+      return xDomain;
+    }
+    xDomain = _;
+    return chart;
+  };
+
+  chart.yDomain = function(_) {
+    if (!arguments.length) {
+      return yDomain;
+    }
+    yDomain = _;
+    return chart;
+  };
+
+  chart.forceY = function(_) {
+    if (!arguments.length) {
+      return forceY;
+    }
+    forceY = _;
+    return chart;
+  };
+
+  chart.stacked = function(_) {
+    if (!arguments.length) {
+      return stacked;
+    }
+    stacked = _;
+    return chart;
+  };
+
+  chart.barColor = function(_) {
+    if (!arguments.length) {
+      return barColor;
+    }
+    barColor = utils.getColor(_);
+    return chart;
+  };
+
+  chart.disabled = function(_) {
+    if (!arguments.length) {
+      return disabled;
+    }
+    disabled = _;
+    return chart;
+  };
+
+  chart.id = function(_) {
+    if (!arguments.length) {
+      return id;
+    }
+    id = _;
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    return chart;
+  };
+
+  chart.clipEdge = function(_) {
+    if (!arguments.length) {
+      return clipEdge;
+    }
+    clipEdge = _;
+    return chart;
+  };
+
+  chart.showValues = function(_) {
+    if (!arguments.length) {
+      return showValues;
+    }
+    showValues = isNaN(parseInt(_, 10)) ? _ : parseInt(_, 10) && true || false;
+    return chart;
+  };
+
+  chart.valueFormat = function(_) {
+    if (!arguments.length) {
+      return valueFormat;
+    }
+    valueFormat = _;
+    return chart;
+  };
+
+  chart.withLine = function(_) {
+    if (!arguments.length) {
+      return withLine;
+    }
+    withLine = _;
+    return chart;
+  };
+
+  chart.vertical = function(_) {
+    if (!arguments.length) {
+      return vertical;
+    }
+    vertical = _;
+    return chart;
+  };
+
+  chart.baseDimension = function(_) {
+    if (!arguments.length) {
+      return baseDimension;
+    }
+    baseDimension = _;
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    return chart;
+  };
+
+  chart.nice = function(_) {
+    if (!arguments.length) {
+      return nice;
+    }
+    nice = _;
+    return chart;
+  };
+
+  chart.textureFill = function(_) {
+    if (!arguments.length) return textureFill;
+    textureFill = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = utils.buildLocality(_);
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var pie = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = 500,
+      height = 500,
+      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
+      getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      getKey = function(d) { return d.key; },
+      getValue = function(d, i) { return d.value; },
+      fmtKey = function(d) { return getKey(d.series || d); },
+      fmtValue = function(d) { return getValue(d.series || d); },
+      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
+      locality = utils.buildLocality(),
+      direction = 'ltr',
+      delay = 0,
+      duration = 0,
+      color = function(d, i) { return utils.defaultColor()(d.series, d.seriesIndex); },
+      fill = color,
+      textureFill = false,
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
+
+  var showLabels = true,
+      showLeaders = true,
+      pieLabelsOutside = true,
+      donutLabelsOutside = true,
+      labelThreshold = 0.01, //if slice percentage is under this, don't show label
+      donut = false,
+      hole = false,
+      labelSunbeamLayout = false,
+      leaderLength = 20,
+      textOffset = 5,
+      arcDegrees = 360,
+      rotateDegrees = 0,
+      donutRatio = 0.447,
+      minRadius = 75,
+      maxRadius = 250;
+
+  var holeFormat = function(hole_wrap, data) {
+        var hole_bind = hole_wrap.selectAll('.sc-hole-container').data(data),
+            hole_entr = hole_bind.enter().append('g').attr('class', 'sc-hole-container');
+        hole_entr.append('text')
+          .text(data)
+          .attr('class', 'sc-pie-hole-value')
+          .attr('dy', '.35em')
+          .attr('text-anchor', 'middle')
+          .style('font-size', '50px');
+        hole_bind.exit().remove();
+      };
+
+  var startAngle = function(d) {
+        // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
+        return d.startAngle * arcDegrees / 360 + utils.angleToRadians(rotateDegrees);
+      };
+  var endAngle = function(d) {
+        return d.endAngle * arcDegrees / 360 + utils.angleToRadians(rotateDegrees);
+      };
+
+  var fixedRadius = function(chart) { return null; };
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  // Setup the Pie chart and choose the data element
+  var pie = d3.pie()
+        .sort(null)
+        .value(getValue);
+
+  //============================================================
+  // Update chart
+
+  function chart(selection) {
+
+    selection.each(function(data) {
+
+      var availableWidth = width - margin.left - margin.right,
+          availableHeight = height - margin.top - margin.bottom,
+          container = d3.select(this);
+
+      //set up the gradient constructor function
+      chart.gradient = function(d, i) {
+        var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
+        return utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
+      };
+
+      //------------------------------------------------------------
+      // recalculate width and height based on label length
+
+      var labelLengths = [],
+          doLabels = showLabels && pieLabelsOutside ? true : false;
+
+      if (doLabels) {
+        labelLengths = utils.stringSetLengths(
+            data,
+            container,
+            fmtKey,
+            'sc-label'
+          );
+      }
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-pie');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+
+      var defs_entr = wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
+
+      wrap_entr.append('g').attr('class', 'sc-hole-wrap');
+      var hole_wrap = wrap.select('.sc-hole-wrap');
+
+      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      //------------------------------------------------------------
+      // Definitions
+
+      if (textureFill) {
+        var mask = utils.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
+      }
+
+      //------------------------------------------------------------
+      // Append major data series grouping containers
+
+      var series_bind = group_wrap.selectAll('.sc-series').data(pie);
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
+      series_bind.exit().remove();
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series_entr
+        .style('stroke', '#FFF')
+        .style('stroke-width', 2)
+        .style('stroke-opacity', 0)
+        .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
+          d3.select(this).classed('hover', true);
+        })
+        .on('mouseout', function(d, i, j) {
+          d3.select(this).classed('hover', false);
+        });
+
+      series
+        .attr('class', function(d) { return classes(d.data, d.data.seriesIndex); })
+        .attr('fill', function(d) { return fill(d.data, d.data.seriesIndex); })
+        .classed('sc-active', function(d) { return d.data.active === 'active'; })
+        .classed('sc-inactive', function(d) { return d.data.active === 'inactive'; });
+
+      //------------------------------------------------------------
+      // Append polygons for funnel
+
+      var slice_bind = series.selectAll('g.sc-slice').data(
+            // I wish we didn't have to do this :-(
+            function(s, i) {
+              return s.data.values.map(function(v, j) {
+                v.endAngle = s.endAngle;
+                v.padAngle = s.padAngle;
+                v.startAngle = s.startAngle;
+                return v;
+              });
+            },
+            function(d) { return d.seriesIndex; }
+          );
+      slice_bind.exit().remove();
+      var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
+      var slices = series.selectAll('g.sc-slice').merge(slice_entr);
+
+      slice_entr.append('path')
+        .attr('class', 'sc-base')
+        .each(function(d, i) {
+          this._current = d;
+        });
+
+      if (textureFill) {
+        slice_entr.append('path')
+          .attr('class', 'sc-texture')
+          .each(function(d, i) {
+            this._current = d;
+          })
+          .style('mask', 'url(' + mask + ')');
+      }
+
+      slice_entr
+        .on('mouseover', function(d, i) {
+          d3.select(this).classed('hover', true);
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementMouseover', this, eo);
+        })
+        .on('mousemove', function(d, i) {
+          var e = d3.event;
+          dispatch.call('elementMousemove', this, e);
+        })
+        .on('mouseout', function(d, i) {
+          d3.select(this).classed('hover', false);
+          dispatch.call('elementMouseout', this);
+        })
+        .on('click', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementClick', this, eo);
+        })
+        .on('dblclick', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementDblClick', this, eo);
+        });
+
+      //------------------------------------------------------------
+      // Append containers for labels
+
+      slice_entr.append('g')
+        .attr('class', 'sc-label')
+        .attr('transform', 'translate(0,0)');
+
+      slice_entr.select('.sc-label')
+        .append('rect')
+        .style('fill-opacity', 0)
+        .style('stroke-opacity', 0);
+      slice_entr.select('.sc-label')
+        .append('text')
+        .style('fill-opacity', 0);
+
+      slice_entr.append('polyline')
+        .attr('class', 'sc-label-leader')
+        .style('stroke-opacity', 0);
+
+      //------------------------------------------------------------
+      // UPDATE
+
+      var maxWidthRadius = availableWidth / 2,
+          maxHeightRadius = availableHeight / 2,
+          extWidths = [],
+          extHeights = [],
+          verticalShift = 0,
+          verticalReduction = doLabels ? 5 : 0,
+          horizontalShift = 0,
+          horizontalReduction = leaderLength + textOffset;
+
+      // side effect :: resets extWidths, extHeights
+      slices.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
+
+      // Donut Hole Text
+      hole_wrap.call(holeFormat, hole ? [hole] : []);
+
+      if (hole) {
+        var heightHoleHalf = hole_wrap.node().getBoundingClientRect().height * 0.30,
+            heightPieHalf = Math.abs(maxHeightRadius * d3.min(extHeights)),
+            holeOffset = Math.round(heightHoleHalf - heightPieHalf);
+
+        if (holeOffset > 0) {
+          verticalReduction += holeOffset;
+          verticalShift -= holeOffset / 2;
+        }
+      }
+
+      var offsetHorizontal = availableWidth / 2,
+          offsetVertical = availableHeight / 2;
+
+      //first adjust the leaderLength to be proportional to radius
+      if (doLabels) {
+        leaderLength = Math.max(Math.min(Math.min(calcMaxRadius()) / 12, 20), 10);
+      }
+
+      if (fixedRadius(chart)) {
+        minRadius = fixedRadius(chart);
+        maxRadius = fixedRadius(chart);
+      }
+
+      var labelRadius = Math.min(Math.max(calcMaxRadius(), minRadius), maxRadius),
+          pieRadius = labelRadius - (doLabels ? leaderLength : 0);
+
+      offsetVertical += ((d3.max(extHeights) - d3.min(extHeights)) / 2 + d3.min(extHeights)) * ((labelRadius + verticalShift) / offsetVertical);
+      offsetHorizontal += ((d3.max(extWidths) - d3.min(extWidths)) / 2 - d3.max(extWidths)) * (labelRadius / offsetHorizontal);
+      offsetVertical += verticalShift / 2;
+
+      group_wrap
+        .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
+      hole_wrap
+        .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
+      group_wrap.select(mask)
+        .attr('x', -pieRadius / 2)
+        .attr('y', -pieRadius / 2);
+
+      var pieArc = d3.arc()
+            .innerRadius(donut ? pieRadius * donutRatio : 0)
+            .outerRadius(pieRadius)
+            .startAngle(startAngle)
+            .endAngle(endAngle);
+
+      var labelArc = d3.arc()
+            .innerRadius(0)
+            .outerRadius(pieRadius)
+            .startAngle(startAngle)
+            .endAngle(endAngle);
+
+      if (pieLabelsOutside) {
+        if (!donut || donutLabelsOutside) {
+          labelArc
+            .innerRadius(labelRadius)
+            .outerRadius(labelRadius);
+        } else {
+          labelArc
+            .outerRadius(pieRadius * donutRatio);
+        }
+      }
+
+      // removed d3 transition in MACAROON-133 because
+      // there is a "Maximum call stack size exceeded at Date.toString" error
+      // in PMSE that stops d3 from calling transitions
+      // this may be a logger issue or some recursion somewhere in PMSE
+      // slices.select('path').transition().duration(duration)
+      //   .attr('d', arc)
+      //   .attrTween('d', arcTween);
+
+      slices.select('.sc-base')
+        .attr('d', pieArc)
+        .style('stroke-opacity', function(d) {
+          return startAngle(d) === endAngle(d) ? 0 : 1;
+        });
+
+      if (textureFill) {
+        slices.select('.sc-texture')
+          .attr('d', pieArc)
+          .style('stroke-opacity', function(d) {
+            return startAngle(d) === endAngle(d) ? 0 : 1;
+          })
+          .style('fill', function(d, i) {
+            var backColor = d3.select(this.parentNode).style('fill');
+            return utils.getTextContrast(backColor, i);
+          });
+      }
+
+      //------------------------------------------------------------
+      // Update label containers
+
+      if (showLabels) {
+        // This does the normal label
+        slices.select('.sc-label')
+          .attr('transform', function(d) {
+            if (labelSunbeamLayout) {
+              d.outerRadius = pieRadius + 10; // Set Outer Coordinate
+              d.innerRadius = pieRadius + 15; // Set Inner Coordinate
+              var rotateAngle = (startAngle(d) + endAngle(d)) / 2 * (180 / Math.PI);
+              rotateAngle += 90 * alignedRight(d, labelArc);
+              return 'translate(' + labelArc.centroid(d) + ') rotate(' + rotateAngle + ')';
+            } else {
+              var labelsPosition = labelArc.centroid(d),
+                  leadOffset = showLeaders ? (leaderLength + textOffset) * alignedRight(d, labelArc) : 0;
+              return 'translate(' + [labelsPosition[0] + leadOffset, labelsPosition[1]] + ')';
+            }
+          });
+
+        slices.select('.sc-label text')
+          .text(fmtKey)
+          .attr('dy', '.35em')
+          .style('fill', '#555')
+          .style('fill-opacity', labelOpacity)
+          .style('text-anchor', function(d) {
+            //center the text on it's origin or begin/end if orthogonal aligned
+            //labelSunbeamLayout ? ((d.startAngle + d.endAngle) / 2 < Math.PI ? 'start' : 'end') : 'middle'
+            if (!pieLabelsOutside) {
+              return 'middle';
+            }
+            var anchor = alignedRight(d, labelArc) === 1 ? 'start' : 'end';
+            if (direction === 'rtl') {
+              anchor = anchor === 'start' ? 'end' : 'start';
+            }
+            return anchor;
+          });
+
+        slices
+          .each(function(d, i) {
+            if (labelLengths[i] > minRadius || labelRadius === minRadius) {
+              var theta = (startAngle(d) + endAngle(d)) / 2,
+                  sin = Math.abs(Math.sin(theta)),
+                  bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
+                  rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
+              if (rW < 0) {
+                var label = utils.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
+                d3.select(this).select('text').text(label);
+              }
+            }
+          });
+
+        if (!pieLabelsOutside) {
+          slices.select('.sc-label')
+            .each(function(d) {
+              if (!labelOpacity(d)) {
+                return;
+              }
+              var slice = d3.select(this),
+                  textBox = slice.select('text').node().getBoundingClientRect();
+              slice.select('rect')
+                .attr('rx', 3)
+                .attr('ry', 3)
+                .attr('width', textBox.width + 10)
+                .attr('height', textBox.height + 10)
+                .attr('transform', function() {
+                  return 'translate(' + [textBox.x - 5, textBox.y - 5] + ')';
+                })
+                .style('fill', '#FFF')
+                .style('fill-opacity', labelOpacity);
+            });
+        } else if (showLeaders) {
+          slices.select('.sc-label-leader')
+            .attr('points', function(d) {
+              if (!labelOpacity(d)) {
+                // canvg needs at least 2 points because the lib doesnt have
+                // any defensive code around an array with 1 element, it expects 2+ els
+                return '0,0 0,0';
+              }
+              var outerArc = d3.arc()
+                    .innerRadius(pieRadius)
+                    .outerRadius(pieRadius)
+                    .startAngle(startAngle)
+                    .endAngle(endAngle);
+              var leadOffset = showLeaders ? leaderLength * alignedRight(d, outerArc) : 0,
+                  outerArcPoints = outerArc.centroid(d),
+                  labelArcPoints = labelArc.centroid(d),
+                  leadArcPoints = [labelArcPoints[0] + leadOffset, labelArcPoints[1]];
+              return outerArcPoints + ' ' + labelArcPoints + ' ' + leadArcPoints;
+            })
+            .style('stroke', '#AAA')
+            .style('fill', 'none')
+            .style('stroke-opacity', labelOpacity);
+        }
+      } else {
+        slices.select('.sc-label-leader').style('stroke-opacity', 0);
+        slices.select('.sc-label rect').style('fill-opacity', 0);
+        slices.select('.sc-label text').style('fill-opacity', 0);
+      }
+
+      //------------------------------------------------------------
+      // Utility functions
+
+      function buildEventObject(e, d, i) {
+        return {
+          id: id,
+          key: fmtKey(d),
+          value: fmtValue(d),
+          count: fmtCount(d),
+          data: d,
+          series: d.series,
+          e: e
+        };
+      }
+
+      // calculate max and min height of slice vertices
+      function calcScalars(slices, maxWidth, maxHeight) {
+        var widths = [],
+            heights = [],
+            Pi = Math.PI,
+            twoPi = 2 * Math.PI,
+            north = 0,
+            east = Math.PI / 2,
+            south = Math.PI,
+            west = 3 * Math.PI / 2,
+            norm = 0;
+
+        function normalize(a) {
+          return (a + norm) % twoPi;
+        }
+
+        slices.each(function(d, i) {
+          var aStart = (startAngle(d) + twoPi) % twoPi,
+              aEnd = (endAngle(d) + twoPi) % twoPi;
+
+          var wStart = Math.round(Math.sin(aStart) * 10000) / 10000,
+              wEnd = Math.round(Math.sin(aEnd) * 10000) / 10000,
+              hStart = Math.round(Math.cos(aStart) * 10000) / 10000,
+              hEnd = Math.round(Math.cos(aEnd) * 10000) / 10000;
+
+          // if angles go around the horn, normalize
+          norm = aEnd < aStart ? twoPi - aStart : 0;
+
+          if (aEnd === aStart) {
+            aStart = 0;
+            aEnd = twoPi;
+          } else {
+            aStart = normalize(aStart);
+            aEnd = normalize(aEnd);
+          }
+
+          north = normalize(north);
+          east = normalize(east);
+          south = normalize(south);
+          west = normalize(west);
+
+          // North
+          if (aStart % twoPi === 0 || aEnd % twoPi === 0) {
+            heights.push(maxHeight);
+            if (donut) {
+              heights.push(maxHeight * donutRatio);
+            }
+          }
+          // East
+          if (aStart <= east && aEnd >= east) {
+            widths.push(maxWidth);
+            if (donut) {
+              widths.push(maxWidth * donutRatio);
+            }
+          }
+          // South
+          if (aStart <= south && aEnd >= south) {
+            heights.push(-maxHeight);
+            if (donut) {
+              heights.push(-maxHeight * donutRatio);
+            }
+          }
+          // West
+          if (aStart <= west && aEnd >= west) {
+            widths.push(-maxWidth);
+            if (donut) {
+              widths.push(-maxWidth * donutRatio);
+            }
+          }
+
+          widths.push(maxWidth * wStart);
+          widths.push(maxWidth * wEnd);
+          if (donut) {
+            widths.push(maxWidth * donutRatio * wStart);
+            widths.push(maxWidth * donutRatio * wEnd);
+          } else {
+            widths.push(0);
+          }
+
+          heights.push(maxHeight * hStart);
+          heights.push(maxHeight * hEnd);
+          if (donut) {
+            heights.push(maxHeight * donutRatio * hStart);
+            heights.push(maxHeight * donutRatio * hEnd);
+          } else {
+            heights.push(0);
+          }
+        });
+
+        extWidths = d3.extent(widths);
+        extHeights = d3.extent(heights);
+
+        // scale up height radius to fill extents
+        maxWidthRadius *= availableWidth / (d3.max(extWidths) - d3.min(extWidths));
+        maxHeightRadius *= availableHeight / (d3.max(extHeights) - d3.min(extHeights));
+      }
+
+      // reduce width radius for width of labels
+      function calcMaxRadius() {
+        var widthRadius = [maxWidthRadius],
+            heightRadius = [maxHeightRadius + leaderLength];
+
+        series.select('.sc-base').each(function(d, i) {
+          if (!labelOpacity(d)) {
+            return;
+          }
+
+          var theta = (startAngle(d) + endAngle(d)) / 2,
+              sin = Math.sin(theta),
+              cos = Math.cos(theta),
+              bW = maxWidthRadius - horizontalReduction - labelLengths[i],
+              bH = maxHeightRadius - verticalReduction,
+              rW = sin ? bW / sin : bW, //don't divide by zero, fool
+              rH = cos ? bH / cos : bH;
+
+          widthRadius.push(rW);
+          heightRadius.push(rH);
+        });
+
+        var radius = d3.min(widthRadius.concat(heightRadius).concat([]), function(d) { return Math.abs(d); });
+
+        return radius;
+      }
+
+      function labelOpacity(d) {
+        var percent = (endAngle(d) - startAngle(d)) / (2 * Math.PI);
+        return percent > labelThreshold ? 1 : 0;
+      }
+
+      function alignedRight(d, arc) {
+        var circ = Math.PI * 2,
+            midArc = ((startAngle(d) + endAngle(d)) / 2 + circ) % circ;
+        return midArc > 0 && midArc < Math.PI ? 1 : -1;
+      }
+
+      function arcTween(d) {
+        if (!donut) {
+          d.innerRadius = 0;
+        }
+        var i = d3.interpolate(this._current, d);
+        this._current = i(0);
+
+        return function(t) {
+          var iData = i(t);
+          return pieArc(iData);
+        };
+      }
+
+      function tweenPie(b) {
+        b.innerRadius = 0;
+        var i = d3.interpolate({startAngle: 0, endAngle: 0}, b);
+        return function(t) {
+          return pieArc(i(t));
+        };
+      }
+
+    });
+
+    return chart;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+
+  chart.id = function(_) {
+    if (!arguments.length) {
+      return id;
+    }
+    id = _;
+    return chart;
+  };
+
+  chart.color = function(_) {
+    if (!arguments.length) {
+      return color;
+    }
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) {
+      return fill;
+    }
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) {
+      return classes;
+    }
+    classes = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) {
+      return gradient;
+    }
+    gradient = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) {
+      return getX;
+    }
+    getX = _;
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) {
+      return getY;
+    }
+    getY = utils.functor(_);
+    return chart;
+  };
+
+  chart.getKey = function(_) {
+    if (!arguments.length) {
+      return getKey;
+    }
+    getKey = _;
+    return chart;
+  };
+
+  chart.getValue = function(_) {
+    if (!arguments.length) {
+      return getValue;
+    }
+    getValue = _;
+    return chart;
+  };
+
+  chart.fmtKey = function(_) {
+    if (!arguments.length) {
+      return fmtKey;
+    }
+    fmtKey = _;
+    return chart;
+  };
+
+  chart.fmtValue = function(_) {
+    if (!arguments.length) {
+      return fmtValue;
+    }
+    fmtValue = _;
+    return chart;
+  };
+
+  chart.fmtCount = function(_) {
+    if (!arguments.length) {
+      return fmtCount;
+    }
+    fmtCount = _;
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) {
+      return locality;
+    }
+    locality = utils.buildLocality(_);
+    return chart;
+  };
+
+  chart.values = function(_) {
+    if (!arguments.length) {
+      return getValues;
+    }
+    getValues = _;
+    return chart;
+  };
+
+  chart.textureFill = function(_) {
+    if (!arguments.length) {
+      return textureFill;
+    }
+    textureFill = _;
+    return chart;
+  };
+
+  // PIE
+
+  chart.showLabels = function(_) {
+    if (!arguments.length) {
+      return showLabels;
+    }
+    showLabels = _;
+    return chart;
+  };
+
+  chart.labelSunbeamLayout = function(_) {
+    if (!arguments.length) {
+      return labelSunbeamLayout;
+    }
+    labelSunbeamLayout = _;
+    return chart;
+  };
+
+  chart.donutLabelsOutside = function(_) {
+    if (!arguments.length) {
+      return donutLabelsOutside;
+    }
+    donutLabelsOutside = _;
+    return chart;
+  };
+
+  chart.pieLabelsOutside = function(_) {
+    if (!arguments.length) {
+      return pieLabelsOutside;
+    }
+    pieLabelsOutside = _;
+    return chart;
+  };
+
+  chart.showLeaders = function(_) {
+    if (!arguments.length) {
+      return showLeaders;
+    }
+    showLeaders = _;
+    return chart;
+  };
+
+  chart.donut = function(_) {
+    if (!arguments.length) {
+      return donut;
+    }
+    donut = _;
+    return chart;
+  };
+
+  chart.hole = function(_) {
+    if (!arguments.length) {
+      return hole;
+    }
+    hole = _;
+    return chart;
+  };
+
+  chart.holeFormat = function(_) {
+    if (!arguments.length) {
+      return holeFormat;
+    }
+    holeFormat = utils.functor(_);
+    return chart;
+  };
+
+  chart.donutRatio = function(_) {
+    if (!arguments.length) {
+      return donutRatio;
+    }
+    donutRatio = _;
+    return chart;
+  };
+
+  chart.startAngle = function(_) {
+    if (!arguments.length) {
+      return startAngle;
+    }
+    startAngle = _;
+    return chart;
+  };
+
+  chart.endAngle = function(_) {
+    if (!arguments.length) {
+      return endAngle;
+    }
+    endAngle = _;
+    return chart;
+  };
+
+  chart.labelThreshold = function(_) {
+    if (!arguments.length) {
+      return labelThreshold;
+    }
+    labelThreshold = _;
+    return chart;
+  };
+
+  chart.arcDegrees = function(_) {
+    if (!arguments.length) {
+      return arcDegrees;
+    }
+    arcDegrees = Math.max(Math.min(_, 360), 1);
+    return chart;
+  };
+
+  chart.rotateDegrees = function(_) {
+    if (!arguments.length) {
+      return rotateDegrees;
+    }
+    rotateDegrees = _ % 360;
+    return chart;
+  };
+
+  chart.minRadius = function(_) {
+    if (!arguments.length) {
+      return minRadius;
+    }
+    minRadius = _;
+    return chart;
+  };
+
+  chart.maxRadius = function(_) {
+    if (!arguments.length) {
+      return maxRadius;
+    }
+    maxRadius = _;
+    return chart;
+  };
+
+  chart.fixedRadius = function(_) {
+    if (!arguments.length) {
+      return fixedRadius;
+    }
+    fixedRadius = utils.functor(_);
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var scatter = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
+      width = 960,
+      height = 500,
+      margin = {top: 0, right: 0, bottom: 0, left: 0},
+      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); }, // chooses color
+      fill = color,
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
+      x = d3.scaleLinear(),
+      y = d3.scaleLinear(),
+      z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
+      getX = function(d) { return d.x; }, // accessor to get the x value
+      getY = function(d) { return d.y; }, // accessor to get the y value
+      getZ = function(d) { return d.size || 1; }, // accessor to get the point size, set by public method .size()
+      forceX = [], // List of numbers to Force into the X scale (ie. 0, or a max / min, etc.)
+      forceY = [], // List of numbers to Force into the Y scale
+      forceZ = [], // List of numbers to Force into the Size scale
+      xDomain = null, // Override x domain (skips the calculation from data)
+      yDomain = null, // Override y domain
+      zDomain = null, // Override point size domain
+      zRange = [1 * 1 * Math.PI, 5 * 5 * Math.PI],
+      circleRadius = function(d, i) {
+        // a = pi*r^2
+        // a / pi = r^2
+        // sqrt(a / pi) = r
+        // 1 = 1 * pi , 5 = 25 * pi
+        return Math.sqrt(z(getZ(d, i)) / Math.PI);
+      }, // function to get the radius for voronoi point clips
+      symbolSize = function(d, i) {
+        return z(getZ(d, i));
+      },
+      getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
+      locality = utils.buildLocality(),
+      onlyCircles = true, // Set to false to use shapes
+
+      interactive = true, // If true, plots a voronoi overlay for advanced point intersection
+      pointActive = function(d) { return !d.notActive; }, // any points that return false will be filtered out
+      padData = false, // If true, adds half a data points width to front and back, for lining up a line chart with a bar chart
+      padDataOuter = 0.1, //outerPadding to imitate ordinal scale outer padding
+      clipEdge = false, // if true, masks points within x and y scale
+      delay = 0,
+      duration = 300,
+      useVoronoi = true,
+      clipVoronoi = true, // if true, masks each point with a circle... can turn off to slightly increase performance
+      singlePoint = false,
+      dispatch = d3.dispatch('elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove'),
+      nice = false;
+
+  //============================================================
+
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var x0, y0, z0, // used to store previous scales
+      timeoutID,
+      needsUpdate = false; // Flag for when the points are visually updating, but the interactive layer is behind, to disable tooltips
+
+  //============================================================
+
+
+  function chart(selection) {
+    selection.each(function(data) {
+
+      var availableWidth = width - margin.left - margin.right,
+          availableHeight = height - margin.top - margin.bottom,
+          container = d3.select(this);
+
+      var t = d3.transition('scatter')
+          .duration(duration)
+          .ease(d3.easeLinear);
+
+      needsUpdate = true;
+
+      //------------------------------------------------------------
+      // Setup Scales
+
+      // remap and flatten the data for use in calculating the scales' domains
+      var seriesData = (xDomain && yDomain && zDomain) ? [] : // if we know xDomain and yDomain and zDomain, no need to calculate.... if Size is constant remember to set zDomain to speed up performance
+            d3.merge(
+              data.map(function(d) {
+                return d.values.map(function(d, i) {
+                  return { x: getX(d, i), y: getY(d, i), size: getZ(d, i) };
+                });
+              })
+            );
+
+      chart.resetDimensions = function(w, h) {
+        width = w;
+        height = h;
+        availableWidth = w - margin.left - margin.right;
+        availableHeight = h - margin.top - margin.bottom;
+        resetScale();
+      };
+
+      function resetScale() {
+        x.domain(xDomain || d3.extent(seriesData.map(function(d) { return d.x; }).concat(forceX)));
+        y.domain(yDomain || d3.extent(seriesData.map(function(d) { return d.y; }).concat(forceY)));
+
+        if (padData && data[0]) {
+          if (padDataOuter === -1) {
+            // shift range so that largest bubble doesn't cover scales
+            var largestPossible = Math.sqrt(zRange[1] / Math.PI);
+            x.range([
+              0 + largestPossible,
+              availableWidth - largestPossible
+            ]);
+            y.range([
+              availableHeight - largestPossible,
+              0 + largestPossible
+            ]);
+          } else if (padDataOuter < 1) {
+            // adjust range to line up with value bars
+            x.range([
+              (availableWidth * padDataOuter + availableWidth) / (2 * data[0].values.length),
+              availableWidth - availableWidth * (1 + padDataOuter) / (2 * data[0].values.length)
+            ]);
+            y.range([availableHeight, 0]);
+          } else {
+            x.range([
+              padDataOuter,
+              availableWidth - padDataOuter
+            ]);
+            y.range([
+              availableHeight - padDataOuter,
+              padDataOuter
+            ]);
+          }
+          // From original sucrose
+          //x.range([
+          //   availableWidth * .5 / data[0].values.length,
+          //   availableWidth * (data[0].values.length - .5) / data[0].values.length
+          // ]);
+        } else {
+          x.range([0, availableWidth]);
+          y.range([availableHeight, 0]);
+        }
+
+        if (nice) {
+          y.nice();
+        }
+
+        // If scale's domain don't have a range, slightly adjust to make one... so a chart can show a single data point
+        singlePoint = (x.domain()[0] === x.domain()[1] || y.domain()[0] === y.domain()[1]);
+
+        if (x.domain()[0] === x.domain()[1]) {
+          x.domain()[0] ?
+              x.domain([x.domain()[0] - x.domain()[0] * 0.1, x.domain()[1] + x.domain()[1] * 0.1]) :
+              x.domain([-1, 1]);
+        }
+
+        if (y.domain()[0] === y.domain()[1]) {
+          y.domain()[0] ?
+              y.domain([y.domain()[0] - y.domain()[0] * 0.1, y.domain()[1] + y.domain()[1] * 0.1]) :
+              y.domain([-1, 1]);
+        }
+
+        z.domain(zDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceZ)))
+         .range(zRange);
+
+        if (z.domain().length < 2) {
+          z.domain([0, z.domain()]);
+        }
+
+        x0 = x0 || x;
+        y0 = y0 || y;
+        z0 = z0 || z;
+      }
+
+      resetScale();
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-scatter');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+
+      var defs_entr = wrap_entr.append('defs');
+
+      //set up the gradient constructor function
+      chart.gradient = function(d, i) {
+        return utils.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
+      };
+
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
+
+      wrap_entr.append('g').attr('class', 'sc-point-paths');
+      var paths_wrap = wrap.select('.sc-point-paths');
+
+      wrap
+        .classed('sc-single-point', singlePoint)
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      //------------------------------------------------------------
+
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-edge-clip-' + id)
+        .append('rect');
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-points-clip-' + id)
+        .attr('class', 'sc-point-clips');
+
+      wrap.select('#sc-edge-clip-' + id + ' rect')
+          .attr('width', availableWidth)
+          .attr('height', availableHeight);
+
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      //------------------------------------------------------------
+      // Series
+
+      var series_bind = group_wrap.selectAll('.sc-series')
+            .data(utils.identity, function(d) { return d.seriesIndex; });
+      var series_entr = series_bind.enter().append('g')
+            .attr('class', 'sc-series')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series
+        .attr('class', function(d, i) { return classes(d, d.seriesIndex); })
+        .attr('fill', function(d, i) { return fill(d, d.seriesIndex); })
+        .attr('stroke', function(d, i) { return fill(d, d.seriesIndex); })
+        .classed('hover', function(d) { return d.hover; });
+      series
+        .transition(t)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 0.5);
+      series_bind.exit()
+        .transition(t)
+          .style('stroke-opacity', 1e-6)
+          .style('fill-opacity', 1e-6)
+          .remove();
+
+      //------------------------------------------------------------
+      // Interactive Layer
+
+      if (onlyCircles) {
+
+        var points_bind = series.selectAll('circle.sc-point')
+              .data(function(d) { return d.values; });
+        var points_entr = points_bind.enter().append('circle')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('r', circleRadius);
+        var points = series.selectAll('.sc-point').merge(points_entr);
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('cx', function(d, i) {
+            return x(getX(d, i));
+          })
+          .attr('cy', function(d, i) {
+            return y(0);
+          });
+        points
+          .transition(t)
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(getY(d, i)); })
+            .on('end', function(d) {
+              d3.select(this).classed('sc-enter', false);
+            });
+
+        series_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(0); })
+            .remove();
+
+      } else {
+
+        var points_bind = series.selectAll('path.sc-point').data(function(d) { return d.values; });
+        var points_enter = points_bind.enter().append('path')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('d',
+                d3.svg.symbol()
+                  .type(getShape)
+                  .size(symbolSize)
+              );
+        var points = series.selectAll('.sc-point').merge(points_entr);
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('transform', function(d, i) {
+            return 'translate(' + x0(getX(d, i)) + ',' + y(0) + ')';
+          });
+        points
+          .transition(t)
+            .attr('transform', function(d, i) {
+              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
+            })
+            .attr('d',
+              d3.svg.symbol()
+                .type(getShape)
+                .size(symbolSize)
+            );
+
+        series_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('transform', function(d, i) {
+              return 'translate(' + x(getX(d, i)) + ',' + y(0) + ')';
+            })
+            .remove();
+
+      }
+
+      function buildEventObject(e, d, i, s) {
+        return {
+            series: s,
+            point: s.values[i],
+            pointIndex: i,
+            seriesIndex: s.seriesIndex,
+            id: id,
+            e: e
+          };
+      }
+
+      function updateInteractiveLayer() {
+
+        if (!interactive) {
+          return false;
+        }
+
+        //inject series and point index for reference into voronoi
+        if (useVoronoi === true) {
+
+          var vertices = d3.merge(data.map(function(group, groupIndex) {
+              return group.values
+                .map(function(point, pointIndex) {
+                  // *Adding noise to make duplicates very unlikely
+                  // *Injecting series and point index for reference
+                  /* *Adding a 'jitter' to the points, because there's an issue in d3.geom.voronoi.
+                   */
+                  var pX = getX(point, pointIndex);
+                  var pY = getY(point, pointIndex);
+
+                  return [x(pX) + Math.random() * 1e-4,
+                          y(pY) + Math.random() * 1e-4,
+                      groupIndex,
+                      pointIndex, point]; //temp hack to add noise until I think of a better way so there are no duplicates
+                })
+                .filter(function(pointArray, pointIndex) {
+                  return pointActive(pointArray[4], pointIndex); // Issue #237.. move filter to after map, so pointIndex is correct!
+                });
+            })
+          );
+
+          if (clipVoronoi) {
+            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle').data(vertices);
+            var clips_entr = clips_bind.enter().append('circle');
+            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle').merge(clips_entr);
+
+            clips
+              .attr('cx', function(d) { return d[0] })
+              .attr('cy', function(d) { return d[1] })
+              .attr('r', function(d, i) {
+                return circleRadius(d[4], i);
+              });
+            clips_bind.exit().remove();
+
+            paths_wrap
+                .attr('clip-path', 'url(#sc-points-clip-' + id + ')');
+          }
+
+          if (vertices.length <= 3) {
+            // Issue #283 - Adding 2 dummy points to the voronoi b/c voronoi requires min 3 points to work
+            vertices.push([x.range()[0] - 20, y.range()[0] - 20, null, null]);
+            vertices.push([x.range()[1] + 20, y.range()[1] + 20, null, null]);
+            vertices.push([x.range()[0] - 20, y.range()[0] + 20, null, null]);
+            vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null]);
+          }
+
+          var voronoi = d3.voronoi()
+                .extent([[-10, -10], [width + 10, height + 10]])
+                .polygons(vertices)
+                .map(function(d, i) {
+                  return {
+                    'data': d,
+                    'seriesIndex': vertices[i][2],
+                    'pointIndex': vertices[i][3]
+                  };
+                })
+                .filter(function(d) { return d.seriesIndex !== null; });
+
+          var paths_bind = paths_wrap.selectAll('path').data(voronoi);
+          var paths_entr = paths_bind.enter().append('path').attr('class', function(d, i) { return 'sc-path-' + i; });
+          var paths = paths_wrap.selectAll('path').merge(paths_entr);
+
+          paths
+            .attr('d', function(d) { return d ? 'M' + d.data.join('L') + 'Z' : null; });
+          paths_bind.exit().remove();
+
+          paths
+            .on('mouseover', function(d) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
+            })
+            .on('click', function(d) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementClick', this, eo);
+            });
+
+        } else {
+
+          // add event handlers to points instead voronoi paths
+          series.selectAll('.sc-point')
+            //.data(dataWithPoints)
+            .style('pointer-events', 'auto') // recaptivate events, disabled by css
+            .on('mouseover', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
+            })
+            .on('click', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementClick', this, eo);
+            });
+
+        }
+
+        needsUpdate = false;
+      }
+
+      // Delay updating the invisible interactive layer for smoother animation
+      clearTimeout(timeoutID); // stop repeat calls to updateInteractiveLayer
+      timeoutID = setTimeout(updateInteractiveLayer, 300);
+
+      //store old scales for use in transitions on update
+      x0 = x.copy();
+      y0 = y.copy();
+      z0 = z.copy();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      dispatch.on('elementMouseover.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', true);
+        }
+      });
+
+      dispatch.on('elementMouseout.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', false);
+        }
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+
+  chart.id = function(_) {
+    if (!arguments.length) { return id; }
+    id = _;
+    return chart;
+  };
+  chart.color = function(_) {
+    if (!arguments.length) { return color; }
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) { return fill; }
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) { return classes; }
+    classes = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) { return gradient; }
+    gradient = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) { return getX; }
+    getX = utils.functor(_);
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) { return getY; }
+    getY = utils.functor(_);
+    return chart;
+  };
+
+  chart.z = function(_) {
+    if (!arguments.length) { return getZ; }
+    getZ = utils.functor(_);
+    return chart;
+  };
+
+  chart.xScale = function(_) {
+    if (!arguments.length) { return x; }
+    x = _;
+    return chart;
+  };
+
+  chart.yScale = function(_) {
+    if (!arguments.length) { return y; }
+    y = _;
+    return chart;
+  };
+
+  chart.zScale = function(_) {
+    if (!arguments.length) { return z; }
+    z = _;
+    return chart;
+  };
+
+  chart.xDomain = function(_) {
+    if (!arguments.length) { return xDomain; }
+    xDomain = _;
+    return chart;
+  };
+
+  chart.yDomain = function(_) {
+    if (!arguments.length) { return yDomain; }
+    yDomain = _;
+    return chart;
+  };
+
+  chart.zDomain = function(_) {
+    if (!arguments.length) { return zDomain; }
+    zDomain = _;
+    return chart;
+  };
+
+  chart.forceX = function(_) {
+    if (!arguments.length) { return forceX; }
+    forceX = _;
+    return chart;
+  };
+
+  chart.forceY = function(_) {
+    if (!arguments.length) { return forceY; }
+    forceY = _;
+    return chart;
+  };
+
+  chart.forceZ = function(_) {
+    if (!arguments.length) { return forceZ; }
+    forceZ = _;
+    return chart;
+  };
+
+  chart.size = function(_) {
+    if (!arguments.length) { return getZ; }
+    getZ = utils.functor(_);
+    return chart;
+  };
+
+  chart.sizeRange = function(_) {
+    if (!arguments.length) { return zRange; }
+    zRange = _;
+    return chart;
+  };
+  chart.sizeDomain = function(_) {
+    if (!arguments.length) { return sizeDomain; }
+    zDomain = _;
+    return chart;
+  };
+
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.interactive = function(_) {
+    if (!arguments.length) { return interactive; }
+    interactive = _;
+    return chart;
+  };
+
+  chart.pointActive = function(_) {
+    if (!arguments.length) { return pointActive; }
+    pointActive = _;
+    return chart;
+  };
+
+  chart.padData = function(_) {
+    if (!arguments.length) { return padData; }
+    padData = _;
+    return chart;
+  };
+
+  chart.padDataOuter = function(_) {
+    if (!arguments.length) { return padDataOuter; }
+    padDataOuter = _;
+    return chart;
+  };
+
+  chart.clipEdge = function(_) {
+    if (!arguments.length) { return clipEdge; }
+    clipEdge = _;
+    return chart;
+  };
+
+  chart.clipVoronoi = function(_) {
+    if (!arguments.length) { return clipVoronoi; }
+    clipVoronoi = _;
+    return chart;
+  };
+
+  chart.useVoronoi = function(_) {
+    if (!arguments.length) { return useVoronoi; }
+    useVoronoi = _;
+    if (useVoronoi === false) {
+        clipVoronoi = false;
+    }
+    return chart;
+  };
+
+  chart.circleRadius = function(_) {
+    if (!arguments.length) { return circleRadius; }
+    circleRadius = _;
+    return chart;
+  };
+
+  chart.shape = function(_) {
+    if (!arguments.length) { return getShape; }
+    getShape = _;
+    return chart;
+  };
+
+  chart.onlyCircles = function(_) {
+    if (!arguments.length) { return onlyCircles; }
+    onlyCircles = _;
+    return chart;
+  };
+
+  chart.singlePoint = function(_) {
+    if (!arguments.length) { return singlePoint; }
+    singlePoint = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    return chart;
+  };
+
+  chart.nice = function(_) {
+    if (!arguments.length) { return nice; }
+    nice = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) { return locality; }
+    locality = utils.buildLocality(_);
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var scroll = function() {
+
+  //============================================================
+  // Public Variables
+  //------------------------------------------------------------
+
+  var id,
+      margin = {},
+      vertical,
+      width,
+      height,
+      minDimension,
+      panHandler,
+      overflowHandler,
+      enable;
+
+  //============================================================
+
+  function scroll(g, g_entr, scrollWrap, xAxis) {
+
+      var defs = g.select('defs'),
+          defs_entr = g_entr.select('defs'),
+          scrollMask,
+          scrollTarget,
+          xAxisWrap = scrollWrap.select('.sc-axis-wrap.sc-axis-x'),
+          barsWrap = scrollWrap.select('.sc-bars-wrap'),
+          backShadows,
+          foreShadows;
+
+      var scrollOffset = 0;
+
+      scroll.init = function(offset, overflow) {
+
+        scrollOffset = offset;
+        overflowHandler = overflow;
+
+        this.gradients(enable);
+        this.mask(enable);
+        this.scrollTarget(enable);
+        this.backShadows(enable);
+        this.foreShadows(enable);
+
+        this.assignEvents(enable);
+
+        this.resize(enable);
+      };
+
+      scroll.pan = function(diff) {
+        var distance = 0,
+            overflowDistance = 0,
+            translate = '',
+            x = 0,
+            y = 0;
+
+        // don't fire on events other than zoom and drag
+        // we need click for handling legend toggle
+        if (d3.event) {
+          if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
+            x = d3.event.sourceEvent.deltaX || 0;
+            y = d3.event.sourceEvent.deltaY || 0;
+            distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
+          } else if (d3.event.type === 'drag') {
+            x = d3.event.dx || 0;
+            y = d3.event.dy || 0;
+            distance = vertical ? x : y;
+          } else if (d3.event.type !== 'click') {
+            return 0;
+          }
+          overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
+        }
+
+        // reset value defined in panMultibar();
+        scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), -1);
+        translate = 'translate(' + (vertical ? scrollOffset + ',0' : '0,' + scrollOffset) + ')';
+
+        if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
+          overflowHandler(overflowDistance);
+        }
+
+        foreShadows
+          .attr('transform', translate);
+        barsWrap
+          .attr('transform', translate);
+        xAxisWrap.select('.sc-wrap.sc-axis')
+          .attr('transform', translate);
+
+        return scrollOffset;
+      };
+
+      scroll.assignEvents = function(enable) {
+        if (enable) {
+
+          var zoom = d3.zoom()
+                .on('zoom', panHandler);
+          var drag = d3.drag()
+                .subject(function(d) { return d; })
+                .on('drag', panHandler);
+
+          scrollWrap
+            .call(zoom);
+          scrollTarget
+            .call(zoom);
+
+          scrollWrap
+            .call(drag);
+          scrollTarget
+            .call(drag);
+
+        } else {
+
+          scrollWrap
+              .on('mousedown.zoom', null)
+              .on('mousewheel.zoom', null)
+              .on('mousemove.zoom', null)
+              .on('DOMMouseScroll.zoom', null)
+              .on('dblclick.zoom', null)
+              .on('touchstart.zoom', null)
+              .on('touchmove.zoom', null)
+              .on('touchend.zoom', null)
+              .on('wheel.zoom', null);
+          scrollTarget
+              .on('mousedown.zoom', null)
+              .on('mousewheel.zoom', null)
+              .on('mousemove.zoom', null)
+              .on('DOMMouseScroll.zoom', null)
+              .on('dblclick.zoom', null)
+              .on('touchstart.zoom', null)
+              .on('touchmove.zoom', null)
+              .on('touchend.zoom', null)
+              .on('wheel.zoom', null);
+
+          scrollWrap
+              .on('mousedown.drag', null)
+              .on('mousewheel.drag', null)
+              .on('mousemove.drag', null)
+              .on('DOMMouseScroll.drag', null)
+              .on('dblclick.drag', null)
+              .on('touchstart.drag', null)
+              .on('touchmove.drag', null)
+              .on('touchend.drag', null)
+              .on('wheel.drag', null);
+          scrollTarget
+              .on('mousedown.drag', null)
+              .on('mousewheel.drag', null)
+              .on('mousemove.drag', null)
+              .on('DOMMouseScroll.drag', null)
+              .on('dblclick.drag', null)
+              .on('touchstart.drag', null)
+              .on('touchmove.drag', null)
+              .on('touchend.drag', null)
+              .on('wheel.drag', null);
+        }
+      };
+
+      scroll.resize = function(enable) {
+
+        if (!enable) {
+          return;
+        }
+        var labelOffset = xAxis.labelThickness() + xAxis.tickPadding() / 2,
+            v = vertical,
+            x = v ? margin.left : labelOffset,
+            y = margin.top,
+            scrollWidth = width + (v ? 0 : margin[xAxis.orient()] - labelOffset),
+            scrollHeight = height + (v ? margin[xAxis.orient()] - labelOffset : 0),
+            dim = v ? 'height' : 'width',
+            val = v ? scrollHeight : scrollWidth;
+
+        scrollMask
+          .attr('x', v ? 2 : -margin.left)
+          .attr('y', v ? 0 : 2)
+          .attr('width', width + (v ? -2 : margin.left))
+          .attr('height', height + (v ? margin.bottom : -2));
+
+        scrollTarget
+          .attr('x', x)
+          .attr('y', y)
+          .attr('width', scrollWidth)
+          .attr('height', scrollHeight);
+
+        backShadows.select('.sc-back-shadow-prev')
+          .attr('x', x)
+          .attr('y', y)
+          .attr(dim, val);
+
+        backShadows.select('.sc-back-shadow-more')
+          .attr('x', x + (v ? width - 5 : 1))
+          .attr('y', y + (v ? 0 : height - 6))
+          .attr(dim, val);
+
+        foreShadows.select('.sc-fore-shadow-prev')
+          .attr('x', x + (v ? 1 : 0))
+          .attr('y', y + (v ? 0 : 1))
+          .attr(dim, val);
+
+        foreShadows.select('.sc-fore-shadow-more')
+          .attr('x', x + (v ? minDimension - 17 : 0))
+          .attr('y', y + (v ? 0 : minDimension - 19))
+          .attr(dim, val);
+      };
+
+      /* Background gradients */
+      scroll.gradients = function(enable) {
+        defs_entr
+          .append('linearGradient')
+          .attr('class', 'sc-scroll-gradient')
+          .attr('id', 'sc-back-gradient-prev-' + id);
+        var bgpEnter = defs_entr.select('#sc-back-gradient-prev-' + id);
+
+        defs_entr
+          .append('linearGradient')
+          .attr('class', 'sc-scroll-gradient')
+          .attr('id', 'sc-back-gradient-more-' + id);
+        var bgmEnter = defs_entr.select('#sc-back-gradient-more-' + id);
+
+        /* Foreground gradients */
+        defs_entr
+          .append('linearGradient')
+          .attr('class', 'sc-scroll-gradient')
+          .attr('id', 'sc-fore-gradient-prev-' + id);
+        var fgpEnter = defs_entr.select('#sc-fore-gradient-prev-' + id);
+
+        defs_entr
+          .append('linearGradient')
+          .attr('class', 'sc-scroll-gradient')
+          .attr('id', 'sc-fore-gradient-more-' + id);
+        var fgmEnter = defs_entr.select('#sc-fore-gradient-more-' + id);
+
+        defs.selectAll('.sc-scroll-gradient')
+          .attr('gradientUnits', 'objectBoundingBox')
+          .attr('x1', 0)
+          .attr('y1', 0)
+          .attr('x2', vertical ? 1 : 0)
+          .attr('y2', vertical ? 0 : 1);
+
+        bgpEnter
+          .append('stop')
+          .attr('stop-color', '#000')
+          .attr('stop-opacity', '0.3')
+          .attr('offset', 0);
+        bgpEnter
+          .append('stop')
+          .attr('stop-color', '#FFF')
+          .attr('stop-opacity', '0')
+          .attr('offset', 1);
+        bgmEnter
+          .append('stop')
+          .attr('stop-color', '#FFF')
+          .attr('stop-opacity', '0')
+          .attr('offset', 0);
+        bgmEnter
+          .append('stop')
+          .attr('stop-color', '#000')
+          .attr('stop-opacity', '0.3')
+          .attr('offset', 1);
+
+        fgpEnter
+          .append('stop')
+          .attr('stop-color', '#FFF')
+          .attr('stop-opacity', '1')
+          .attr('offset', 0);
+        fgpEnter
+          .append('stop')
+          .attr('stop-color', '#FFF')
+          .attr('stop-opacity', '0')
+          .attr('offset', 1);
+        fgmEnter
+          .append('stop')
+          .attr('stop-color', '#FFF')
+          .attr('stop-opacity', '0')
+          .attr('offset', 0);
+        fgmEnter
+          .append('stop')
+          .attr('stop-color', '#FFF')
+          .attr('stop-opacity', '1')
+          .attr('offset', 1);
+      };
+
+      scroll.mask = function(enable) {
+        defs_entr.append('clipPath')
+          .attr('class', 'sc-scroll-mask')
+          .attr('id', 'sc-edge-clip-' + id)
+          .append('rect');
+
+        scrollMask = defs.select('.sc-scroll-mask rect');
+
+        scrollWrap.attr('clip-path', enable ? 'url(#sc-edge-clip-' + id + ')' : '');
+      };
+
+      scroll.scrollTarget = function(enable) {
+        g_entr.select('.sc-scroll-background')
+          .append('rect')
+          .attr('class', 'sc-scroll-target')
+          //.attr('fill', '#FFF');
+          .attr('fill', 'transparent');
+
+        scrollTarget = g.select('.sc-scroll-target');
+      };
+
+      /* Background shadow rectangles */
+      scroll.backShadows = function(enable) {
+        var shadowWrap = g_entr.select('.sc-scroll-background')
+              .append('g')
+              .attr('class', 'sc-back-shadow-wrap');
+
+        shadowWrap
+          .append('rect')
+          .attr('class', 'sc-back-shadow-prev');
+        shadowWrap
+          .append('rect')
+          .attr('class', 'sc-back-shadow-more');
+
+        backShadows = g.select('.sc-back-shadow-wrap');
+
+        if (enable) {
+          var dimension = vertical ? 'width' : 'height';
+
+          backShadows.select('rect.sc-back-shadow-prev')
+            .attr('fill', 'url(#sc-back-gradient-prev-' + id + ')')
+            .attr(dimension, 7);
+
+          backShadows.select('rect.sc-back-shadow-more')
+            .attr('fill', 'url(#sc-back-gradient-more-' + id + ')')
+            .attr(dimension, 7);
+        } else {
+          backShadows.selectAll('rect').attr('fill', 'transparent');
+        }
+      };
+
+      /* Foreground shadow rectangles */
+      scroll.foreShadows = function(enable) {
+        var shadowWrap = g_entr.select('.sc-scroll-background')
+              .insert('g')
+              .attr('class', 'sc-fore-shadow-wrap');
+
+        shadowWrap
+          .append('rect')
+          .attr('class', 'sc-fore-shadow-prev');
+        shadowWrap
+          .append('rect')
+          .attr('class', 'sc-fore-shadow-more');
+
+        foreShadows = g.select('.sc-fore-shadow-wrap');
+
+        if (enable) {
+          var dimension = vertical ? 'width' : 'height';
+
+          foreShadows.select('rect.sc-fore-shadow-prev')
+            .attr('fill', 'url(#sc-fore-gradient-prev-' + id + ')')
+            .attr(dimension, 20);
+
+          foreShadows.select('rect.sc-fore-shadow-more')
+            .attr('fill', 'url(#sc-fore-gradient-more-' + id + ')')
+            .attr(dimension, 20);
+        } else {
+          foreShadows.selectAll('rect').attr('fill', 'transparent');
+        }
+      };
+
+    return scroll;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  scroll.id = function(_) {
+    if (!arguments.length) {
+      return id;
+    }
+    id = _;
+    return scroll;
+  };
+
+  scroll.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    return scroll;
+  };
+
+  scroll.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = _;
+    return scroll;
+  };
+
+  scroll.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = _;
+    return scroll;
+  };
+
+  scroll.vertical = function(_) {
+    if (!arguments.length) {
+      return vertical;
+    }
+    vertical = _;
+    return scroll;
+  };
+
+  scroll.minDimension = function(_) {
+    if (!arguments.length) {
+      return minDimension;
+    }
+    minDimension = _;
+    return scroll;
+  };
+
+  scroll.panHandler = function(_) {
+    if (!arguments.length) {
+      return panHandler;
+    }
+    panHandler = utils.functor(_);
+    return scroll;
+  };
+
+  scroll.enable = function(_) {
+    if (!arguments.length) {
+      return enable;
+    }
+    enable = _;
+    return scroll;
+  };
+
+  //============================================================
+
+  return scroll;
+};
+
+var stackedArea = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = 960,
+      height = 500,
+      getX = function(d) { return d.x; }, // accessor to get the x value from a data point
+      getY = function(d) { return d.y; }, // accessor to get the y value from a data point
+      id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
+      x = d3.scaleLinear(), //can be accessed via chart.xScale()
+      y = d3.scaleLinear(), //can be accessed via chart.yScale()
+      clipEdge = false, // if true, masks lines within x and y scale
+      delay = 0, // transition
+      duration = 300, // transition
+      locality = utils.buildLocality(),
+      style = 'stack',
+      offset = 'zero',
+      order = 'default',
+      interpolate = 'linear',  // controls the line interpolation
+      interactive = true, // If true, plots a voronoi overlay for advanced point intersection
+      xDomain = null, // Override x domain (skips the calculation from data)
+      yDomain = null, // Override y domain
+      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
+      fill = color,
+      classes = function(d, i) { return 'sc-area sc-series-' + d.seriesIndex; },
+      dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
+
+  /************************************
+   * offset:
+   *   'zero' (stacked) d3.stackOffsetNone
+   *   'wiggle' (stream) d3.stackOffsetWiggle
+   *   'expand' (normalize to 100%) d3.stackOffsetExpand
+   *   'silhouette' (simple centered) d3.stackOffsetSilhouette
+   *
+   * order:
+   *   'default' (input order) d3.stackOrderNone
+   *   'inside-out' (stream) d3.stackOrderInsideOut
+   ************************************/
+
+  var data0;
+  var x0 = x.copy();
+  var y0 = y.copy();
+
+  //============================================================
+
+  function chart(selection) {
+    selection.each(function(chartData) {
+
+      var container = d3.select(this);
+
+      var availableWidth = width - margin.left - margin.right,
+          availableHeight = height - margin.top - margin.bottom;
+
+      var curve =
+            interpolate === 'linear' ? d3.curveLinear :
+            interpolate === 'cardinal' ? d3.curveCardinal :
+            interpolate === 'monotone' ? d3.curveMonotoneX :
+            interpolate === 'basis' ? d3.curveBasis : d3.natural;
+
+      var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette]
+                        [['zero', 'wiggle', 'expand', 'silhouette'].indexOf(offset)];
+
+      var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut]
+                       [['default', 'inside-out'].indexOf(order)];
+
+      // gradient constructor function
+      chart.gradient = function(d, i, p) {
+        return utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+      };
+
+      //------------------------------------------------------------
+      // Process data
+
+      var stack = d3.stack()
+            .offset(stackOffset)
+            .order(stackOrder)
+            .value(function(d, k) { return d[k]; });
+
+      var indexedData = {};
+      chartData.forEach(function(s, i) {
+        s.values.forEach(function(p, j) {
+          var x = p[0];
+          var y = p[1];
+          if (!indexedData[x]) {
+            indexedData[x] = [];
+            indexedData[x].date = x;
+          }
+          indexedData[x].push(y);
+        });
+      });
+      var keys = d3.keys(indexedData);
+      var dates = keys.map(function(d) { return parseInt(d, 10); });
+      var data = stack.keys(d3.range(0, chartData.length))(d3.values(indexedData));
+
+      var min = d3.min(data, function(series) {
+              return d3.min(series, function(point) {
+                return d3.min(point, function(d) {
+                  return d;
+                });
+              });
+            });
+      var max = d3.max(data, function(series) {
+              return d3.max(series, function(point) {
+                return d3.max(point, function(d) {
+                  return d;
+                });
+              });
+            });
+
+      data.forEach(function(s, i) {
+        s.key = chartData[i].key;
+        s.seriesIndex = chartData[i].seriesIndex;
+        s.total = chartData[i].total;
+        s.forEach(function(p, j) {
+          p.seriesIndex = chartData[i].seriesIndex;
+          p.si0 = i - 1;
+          // shift streamgraph for each point in series
+          if (min) {
+              p[0] -= min;
+              p[1] -= min;
+          }
+        });
+      });
+
+      //------------------------------------------------------------
+      // Rendering functions
+
+      var area = d3.area()
+            .curve(curve)
+            .x(function(d) { return x(d.data.date); })
+            .y0(function(d) { return y(d[0]); })
+            .y1(function(d) { return y(d[1]); });
+
+      var areaEnter = d3.area()
+            .curve(curve)
+            .x(function(d) { return x(d.data.date); })
+            .y0(function(d, i) {
+              var d0 = data0 ? data0[d.si0] : null;
+              return (d0 && d0[i]) ? y0(d0[i][1]) : y0(0);
+            })
+            .y1(function(d, i) {
+              var d0 = data0 ? data0[d.si0] : null;
+              return (d0 && d0[i]) ? y0(d0[i][1]) : y0(0);
+            });
+
+      var areaExit = d3.area()
+            .curve(curve)
+            .x(function(d) { return x(d.data.date); })
+            .y0(function(d, i) {
+              var d0 = data[d.si0];
+              return (d0 && d0[i]) ? y(d0[i][1]) : y(0);
+            })
+            .y1(function(d, i) {
+              var d0 = data[d.si0];
+              return (d0 && d0[i]) ? y(d0[i][1]) : y(0);
+            });
+
+      var tran = d3.transition('area')
+            .duration(duration)
+            .ease(d3.easeLinear);
+
+      //------------------------------------------------------------
+      // Setup Scales
+
+      x.domain(d3.extent(dates)).range([0, availableWidth]);
+      y.domain([0, max - min]).range([availableHeight, 0]);
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-stackedarea');
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+
+      var defs_entr = wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
+
+      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      //------------------------------------------------------------
+
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id)
+        .append('rect');
+
+      wrap.select('#sc-edge-clip-' + id + ' rect')
+        .attr('width', availableWidth)
+        .attr('height', availableHeight);
+
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      //------------------------------------------------------------
+      // Series
+
+      var series_bind = group_wrap.selectAll('g.sc-series').data(data, function(d) { return d.seriesIndex; });
+      var series_entr = series_bind.enter().append('g')
+            .attr('class', 'sc-series')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series
+        .classed('hover', function(d) { return d.hover; })
+        .attr('class', classes)
+        .attr('fill', color)
+        .attr('stroke', color);
+      series
+        .transition(tran)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 0.5);
+      series_bind.exit()
+        .transition(tran)
+          .style('stroke-opacity', 1e-6)
+          .style('fill-opacity', 1e-6)
+          .remove();
+
+      //------------------------------------------------------------
+      // Areas
+
+      var areas_bind = series.selectAll('path.sc-area').data(function(d) { return [d]; }); // note the special treatment of data
+      var areas_entr = areas_bind.enter().append('path').attr('class', 'sc-area sc-enter');
+      var areas = series.selectAll('.sc-area').merge(areas_entr);
+
+      areas
+        .filter(function(d) {
+          return d3.select(this).classed('sc-enter');
+        })
+        .attr('d', areaEnter);
+
+      areas
+        .transition(tran)
+          .attr('d', area)
+          .on('end', function(d) {
+            d3.select(this).classed('sc-enter', false);
+            // store previous data for transitions
+            data0 = data.map(function(s) {
+              return s.map(function(p) {
+                return [p[0], p[1]];
+              });
+            });
+            // store previous scale for transitions
+            y0 = y.copy();
+          });
+
+      series_bind.exit()
+        .transition(tran).selectAll('.sc-area')
+          .attr('d', areaExit)
+          .remove();
+
+      function buildEventObject(e, d, i) {
+        return {
+            points: d,
+            seriesKey: d.key,
+            seriesIndex: d.seriesIndex,
+            e: e
+          };
+      }
+
+      areas
+        .on('mouseover', function(d, i) {
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementMouseover', this, eo);
+          d3.select(this).classed('hover', true);
+        })
+        .on('mousemove', function(d, i) {
+          var eo = buildEventObject(d3.event, d, i);
+          var rect = wrap.select('#sc-edge-clip-' + id + ' rect').node().getBoundingClientRect();
+          var xpos = d3.event.clientX - rect.left;
+          var index = Math.round((xpos * dates.length) / availableWidth) - 1;
+          eo.data = data.map(function(d,i) {
+            var point = [d[index].data.date, d[index][1]];
+            point.seriesKey = d.key;
+            point.seriesIndex = d.seriesIndex;
+            return point;
+          });
+          eo.origin = rect;
+          dispatch.call('elementMousemove', this, eo);
+        })
+        .on('mouseout', function(d, i) {
+          dispatch.call('elementMouseout', this);
+          d3.select(this).classed('hover', false);
+        })
+        .on('click', function(d, i) {
+          var eo = buildEventObject(d3.event, d, i);
+          d3.event.stopPropagation();
+          d3.select(this).classed('hover', false);
+          dispatch.call('elementClick', this, eo);
+        });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+
+  chart.id = function(_) {
+    if (!arguments.length) { return id; }
+    id = _;
+    return chart;
+  };
+
+  chart.color = function(_) {
+    if (!arguments.length) { return color; }
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) { return fill; }
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) { return classes; }
+    classes = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) { return gradient; }
+    gradient = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) { return getX; }
+    getX = _;
+    return chart;
+  };
+  chart.y = function(_) {
+    if (!arguments.length) { return getY; }
+    getY = _;
+    return chart;
+  };
+  chart.xScale = function(_) {
+    if (!arguments.length) { return x; }
+    x = _;
+    return chart;
+  };
+  chart.yScale = function(_) {
+    if (!arguments.length) { return y; }
+    y = _;
+    return chart;
+  };
+  chart.xDomain = function(_) {
+    if (!arguments.length) { return xDomain; }
+    xDomain = _;
+    return chart;
+  };
+  chart.yDomain = function(_) {
+    if (!arguments.length) { return yDomain; }
+    yDomain = _;
+    return chart;
+  };
+  chart.forceX = function(_) {
+    if (!arguments.length) { return forceX; }
+    forceX = _;
+    return chart;
+  };
+  chart.forceY = function(_) {
+    if (!arguments.length) { return forceY; }
+    forceY = _;
+    return chart;
+  };
+
+  chart.interactive = function(_) {
+    if (!arguments.length) { return interactive; }
+    interactive = _;
+    return chart;
+  };
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    return chart;
+  };
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) { return locality; }
+    locality = utils.buildLocality(_);
+    return chart;
+  };
+  chart.clipEdge = function(_) {
+    if (!arguments.length) { return clipEdge; }
+    clipEdge = _;
+    return chart;
+  };
+
+  chart.interpolate = function(_) {
+    if (!arguments.length) { return interpolate; }
+    interpolate = _;
+    return chart;
+  };
+  chart.offset = function(_) {
+    if (!arguments.length) { return offset; }
+    offset = _;
+    return chart;
+  };
+  chart.order = function(_) {
+    if (!arguments.length) { return order; }
+    order = _;
+    return chart;
+  };
+  //shortcut for offset + order
+  chart.style = function(_) {
+    if (!arguments.length) { return style; }
+    style = _;
+
+    switch (style) {
+      case 'stack':
+        chart.offset('zero');
+        chart.order('default');
+        break;
+      case 'stream':
+        chart.offset('wiggle');
+        chart.order('inside-out');
+        break;
+      case 'stream-center':
+          chart.offset('silhouette');
+          chart.order('inside-out');
+          break;
+      case 'expand':
+        chart.offset('expand');
+        chart.order('default');
+        break;
+    }
+
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var table = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 2, right: 0, bottom: 2, left: 0},
+      width = 0,
+      height = 0,
+      animate = true,
+      getX = function (d) { return d.x; },
+      getY = function (d) { return d.y; },
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      color = utils.getColor(['#000']);
+
+  //============================================================
+
+
+  function chart(selection) {
+    selection.each(function (chartData) {
+      var container = d3.select(this);
+
+      //------------------------------------------------------------
+
+      var properties = chartData ? chartData.properties : {},
+          data = (chartData && chartData.data) ? chartData.data.map(function (d, i) {
+            return {
+              'key': d.key || 'Undefined',
+              'type': d.type || null,
+              'disabled': d.disabled || false,
+              'series': d.seriesIndex || i,
+              'values': d._values || d.values
+            };
+          }) : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var labels = properties.labels ||
+            d3.range(
+              1,
+              d3.max(data.map(function (d) { return d.values.length; })) + 1
+            )
+            .map(function (d) {
+              return {'group': d, 'l': 'Group ' + d};
+            });
+
+      var singleSeries = d3.max(data.map(function (d) {
+            return d.values.length;
+          })) === 1;
+
+      function displayNoData(d) {
+        var hasData = d && d.length && d.filter(function (d) { return d.values.length; }).length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('table').data([data]);
+      var wrap_enter = wrap_bind.enter().append('table');
+      wrap_bind.exit().remove();
+      var wrap = container.selectAll('table').merge(wrap_enter);
+
+      //------------------------------------------------------------
+      var table_entr = wrap_enter.attr('class', 'sucrose');
+
+      var thead_entr = table_entr.append('thead')
+            .attr('class', 'sc-thead')
+              .append('tr')
+                .attr('class', 'sc-groups');
+      var thead = wrap.select('.sc-groups').merge(thead_entr);
+          thead_entr.append('th')
+            .attr('class', 'sc-th sc-series-state')
+            .text('Enabled');
+          thead_entr.append('th')
+            .attr('class', 'sc-th sc-series-keys')
+            .text(properties.key || 'Series Key');
+
+      var cols_bind = thead.selectAll('.sc-group').data(labels);
+      var cols_entr = cols_bind.enter().append('th')
+            .attr('class', 'sc-th sc-group');
+          cols_bind.exit().remove();
+          thead.selectAll('.sc-group').merge(cols_entr)
+            .text(function (d) { return singleSeries ? 'Series Total' : d.l; });
+
+        if (!singleSeries) {
+          thead_entr
+            .append('th').attr('class', 'sc-th sc-series-totals')
+            .text('Series Total');
+        }
+
+      //------------------------------------------------------------
+
+      var tfoot_entr = table_entr.append('tfoot')
+            .attr('class', 'sc-tfoot')
+              .append('tr')
+                .attr('class', 'sc-sums');
+      var tfoot = wrap.select('.sc-sums').merge(tfoot_entr);
+          tfoot_entr.append('th')
+            .attr('class', 'sc-th sc-group-sums')
+            .text('');
+          tfoot_entr.append('th')
+            .attr('class', 'sc-th sc-group-sums')
+            .text(singleSeries ? 'Sum' : 'Group Sums');
+
+      var sums_bind = tfoot.selectAll('.sc-sum').data(function (d) {
+              return d
+                .filter(function (f) {
+                  return !f.disabled;
+                })
+                .map(function (a) {
+                  return a.values.map(function (b) { return getY(b); });
+                })
+                .reduce(function (p, c) {
+                  return p.map(function (d, i) {
+                    return d + c[i];
+                  });
+                });
+              });
+      var sums_entr = sums_bind.enter().append('th')
+            .attr('class', 'sc-sum');
+          sums_bind.exit().remove();
+          tfoot.selectAll('.sc-sum').merge(sums_entr)
+            .text(function (d) { return d; });
+
+        if (!singleSeries) {
+          tfoot_entr.append('th')
+            .attr('class', 'sc-th sc-sum-total');
+          tfoot.select('.sc-sum-total')
+            .text(function (d) {
+              return d
+                .filter(function (f) {
+                  return !f.disabled;
+                })
+                .map(function (a) {
+                  return a.values
+                    .map(function (b) { return getY(b); })
+                    .reduce(function (p, c) {
+                      return p + c;
+                    });
+                })
+                .reduce(function (p, c) {
+                  return p + c;
+                });
+            });
+        }
+
+      //------------------------------------------------------------
+
+          table_entr.append('tbody')
+            .attr('class', 'sc-tbody');
+
+      var tbody = wrap.select('.sc-tbody');
+
+      var rows_bind = tbody.selectAll('.sc-series').data(function (d) { return d; });
+          rows_bind.exit().remove();
+      var rows_entr = rows_bind.enter().append('tr')
+            .attr('class', 'sc-series');
+          rows_entr.append('td')
+            .attr('class', 'sc-td sc-state')
+            .attr('tabindex', -1)
+            .attr('data-editable', false)
+            .append('input')
+              .attr('type', 'checkbox');
+          rows_entr.append('td')
+            .attr('class', 'sc-td sc-key');
+
+      var series = tbody.selectAll('.sc-series').merge(rows_entr)
+            .style('color', function (d) { return d.disabled ? '#ddd' : '#000'; })
+            .style('text-decoration', function (d) { return d.disabled ? 'line-through' : 'inherit'; });
+          series.select('.sc-state input')
+            .property('checked', function (d) { return d.disabled ? false : true; });
+          series.select('.sc-key')
+            .text(function (d) { return d.key; });
+
+      var cells_bind = series.selectAll('.sc-val').data(function (d, i) {
+              return d.values.map(function (g, j) {
+                  var val = Array.isArray(g) ?
+                    {
+                      0: g[0],
+                      1: g[1]
+                    } :
+                    {
+                      x: g.x,
+                      y: g.y
+                    };
+                  val.series = i;
+                  val.index = j;
+                  return val;
+                });
+            });
+      var cells_entr = cells_bind.enter().append('td')
+            .attr('class', 'sc-td sc-val');
+          cells_bind.exit().remove();
+          tbody.selectAll('.sc-val').merge(cells_entr)
+            .text(function (d) {
+              return getY(d);
+            });
+
+        if (!singleSeries) {
+          rows_entr.append('td')
+            .attr('class', 'sc-td sc-total')
+            .attr('tabindex', -1)
+            .attr('data-editable', false);
+          series.select('.sc-total')
+            .text(function (d) {
+              return d.values
+                .map(function (d) { return getY(d); })
+                .reduce(function (p, c) {
+                  return p + c;
+                });
+            });
+        }
+
+    });
+
+    return chart;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.margin = function (_) {
+    if (!arguments.length) return margin;
+    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
+    return chart;
+  };
+
+  chart.width = function (_) {
+    if (!arguments.length) return width;
+    width = _;
+    return chart;
+  };
+
+  chart.height = function (_) {
+    if (!arguments.length) return height;
+    height = _;
+    return chart;
+  };
+
+  chart.x = function (_) {
+    if (!arguments.length) return getX;
+    getX = utils.functor(_);
+    return chart;
+  };
+
+  chart.y = function (_) {
+    if (!arguments.length) return getY;
+    getY = utils.functor(_);
+    return chart;
+  };
+
+  chart.strings = function (_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.color = function (_) {
+    if (!arguments.length) return color;
+    color = utils.getColor(_);
+    return chart;
+  };
+
+  //============================================================
+
+
+  return chart;
+};
+
+var tree = function() {
+
+  // issues: 1. zoom slider doesn't zoom on chart center
+  // orientation
+  // bottom circles
+
+  // all hail, stepheneb
+  // https://gist.github.com/1182434
+  // http://mbostock.github.com/d3/talk/20111018/tree.html
+  // https://groups.google.com/forum/#!topic/d3-js/-qUd_jcyGTw/discussion
+  // http://ajaxian.com/archives/foreignobject-hey-youve-got-html-in-my-svg
+  // [possible improvements @ http://bl.ocks.org/robschmuecker/7880033]
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  // specific to org chart
+  var r = 6,
+    padding = {'top': 10, 'right': 10, 'bottom': 10, 'left': 10}, // this is the distance from the edges of the svg to the chart,
+    duration = 300,
+    zoomExtents = {'min': 0.25, 'max': 2},
+    nodeSize = {'width': 100, 'height': 50},
+    nodeImgPath = '../img/',
+    nodeRenderer = function(d) { return '<div class="sc-tree-node"></div>'; },
+    zoomCallback = function(d) { return; },
+    nodeCallback = function(d) { return; },
+    nodeClick = function(d) { return; },
+    horizontal = false;
+
+  var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
+    color = function (d, i) { return utils.defaultColor()(d, i); },
+    fill = function(d, i) { return color(d,i); },
+    gradient = function(d, i) { return color(d,i); },
+
+    setX = function(d, v) { d.x = v; },
+    setY = function(d, v) { d.y = v; },
+    setX0 = function(d, v) { if (horizontal) { d.y0 = v; } else { d.x0 = v; } },
+    setY0 = function(d, v) { if (horizontal) { d.x0 = v; } else { d.y0 = v; } },
+
+    getX = function(d) { return horizontal ? d.y : d.x; },
+    getY = function(d) { return horizontal ? d.x : d.y; },
+    getX0 = function(d) { return horizontal ? d.y0 : d.x0; },
+    getY0 = function(d) { return horizontal ? d.x0 : d.y0; },
+
+    getId = function(d) { return d.id; },
+
+    fillGradient = function(d, i) {
+        return utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+    },
+    useClass = false,
+    valueFormat = utils.numberFormatSI,
+    showLabels = true,
+    dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
+
+  //============================================================
+
+  function chart(selection)
+  {
+    selection.each(function(data) {
+
+      // var diagonal = d3.svg.diagonal()
+      //       .projection(function(d) {
+      //         return [getX(d), getY(d)];
+      //       });
+      var diagonal = function(d) {
+        return "M" + d.y + "," + d.x
+            + "C" + (d.y + d.parent.y) / 2 + "," + d.x
+            + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
+            + " " + d.parent.y + "," + d.parent.x;
+      };
+
+      var zoom = null;
+      chart.setZoom = function() {
+        zoom = d3.zoom()
+                    .scaleExtent([zoomExtents.min, zoomExtents.max])
+                    .on('zoom', function() {
+                      treeWrapper.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
+                      zoomCallback(d3.event.scale);
+                    });
+      };
+      chart.setZoom();
+
+      //------------------------------------------------------------
+      // Setup svgs and skeleton of chart
+
+      var svg = d3.select(this);
+      var availableSize = { // the size of the svg container minus padding
+            'width': parseInt(svg.style('width'), 10) - padding.left - padding.right,
+            'height': parseInt(svg.style('height'), 10) - padding.top - padding.bottom
+          };
+      var container = d3.select(svg.node().parentNode);
+
+      var wrap_bind = svg.selectAll('.sc-wrap').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sucrose sc-wrap sc-treeChart')
+            .attr('id', 'sc-chart-' + id);
+      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+
+      wrap.call(zoom);
+
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs').merge(defs_entr);
+      var nodeShadow = utils.dropShadow('node_back_' + id, defs, {blur: 2});
+
+      wrap_entr.append('svg:rect')
+            .attr('class', 'sc-chartBackground')
+            .attr('width', availableSize.width)
+            .attr('height', availableSize.height)
+            .attr('transform', 'translate(' + padding.left + ',' + padding.top + ')')
+            .style('fill', 'transparent');
+      var backg = wrap.select('.sc-chartBackground');
+
+      var g_entr = wrap_entr.append('g')
+            .attr('class', 'sc-chartWrap');
+      var treeWrapper = wrap.select('.sc-chartWrap');
+
+      g_entr.append('g')
+            .attr('class', 'sc-tree');
+      var treeChart = wrap.select('.sc-tree');
+
+      // Compute the new tree layout.
+      var tree = d3.tree()
+            .size([700,500]);
+            // .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
+            // .separation(function separation(a, b) {
+            //   return a.parent == b.parent ? 1 : 1;
+            // });
+
+      data.x0 = data.x0 || 0;
+      data.y0 = data.y0 || 0;
+
+      var _data = data;
+
+      var nodes = null;
+
+      chart.resize = function() {
+        chart.reset();
+
+        // the size of the svg container minus padding
+        availableSize = {
+          'width': parseInt(svg.style('width'), 10) - padding.left - padding.right,
+          'height': parseInt(svg.style('height'), 10) - padding.top - padding.bottom
+        };
+
+        // the size of the chart itself
+        var size = [
+              Math.abs(d3.min(nodes, getX)) + Math.abs(d3.max(nodes, getX)) + nodeSize.width,
+              Math.abs(d3.min(nodes, getY)) + Math.abs(d3.max(nodes, getY)) + nodeSize.height
+            ],
+
+            // initial chart scale to fit chart in container
+            xScale = availableSize.width / size[0],
+            yScale = availableSize.height / size[1],
+            scale = d3.min([xScale, yScale]),
+
+            // initial chart translation to position chart in the center of container
+            center = [
+              Math.abs(d3.min(nodes, getX)) +
+                (xScale < yScale ? 0 : (availableSize.width / scale - size[0]) / 2),
+              Math.abs(d3.min(nodes, getY)) +
+                (xScale < yScale ? (availableSize.height / scale - size[1]) / 2 : 0)
+            ],
+
+            offset = [
+              nodeSize.width / (horizontal ? 1 : 2),
+              nodeSize.height / (horizontal ? 2 : 1)
+            ],
+
+            translate = [
+              (center[0] + offset[0]) * scale + padding.left / (horizontal ? 2 : 1),
+              (center[1] + offset[1]) * scale + padding.top / (horizontal ? 1 : 2)
+            ];
+
+        backg
+          .attr('width', availableSize.width)
+          .attr('height', availableSize.height);
+
+        treeChart.attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
+      };
+
+      chart.orientation = function(orientation) {
+        horizontal = (orientation === 'horizontal' || !horizontal ? true : false);
+        tree.nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1]);
+        chart.update(_data);
+      };
+
+      chart.showall = function() {
+        function expandAll(d) {
+          if ((d.children && d.children.length) || (d._children && d._children.length)) {
+            if (d._children && d._children.length) {
+              d.children = d._children;
+              d._children = null;
+            }
+            d.children.forEach(expandAll);
+          }
+        }
+        expandAll(_data);
+        chart.update(_data);
+      };
+
+      chart.reset = function() {
+        chart.setZoom();
+        zoom.translate([0, 0]).scale(1);
+        wrap.call(zoom);
+        treeWrapper.attr('transform', 'translate(' + [0, 0] + ')scale(' + 1 + ')');
+      };
+
+      chart.zoomStep = function(step) {
+        var level = zoom.scale() + step;
+        return this.zoomLevel(level);
+      };
+
+      chart.zoomLevel = function(level) {
+
+        var scale = Math.min(Math.max(level, zoomExtents.min), zoomExtents.max),
+
+            prevScale = zoom.scale(),
+            prevTrans = zoom.translate(),
+            treeBBox = backg.node().getBoundingClientRect(),
+
+            size = [
+              treeBBox.width,
+              treeBBox.height
+            ],
+
+            offset = [
+              (size[0] - size[0] * scale) / 2,
+              (size[1] - size[1] * scale) / 2
+            ],
+
+            shift = [
+              scale * (prevTrans[0] - (size[0] - size[0] * prevScale) / 2) / prevScale,
+              scale * (prevTrans[1] - (size[1] - size[1] * prevScale) / 2) / prevScale
+            ],
+
+            translate = [
+              offset[0] + shift[0],
+              offset[1] + shift[1]
+            ];
+
+        zoom.translate(translate).scale(scale);
+        treeWrapper.attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
+
+        return scale;
+      };
+
+      chart.zoomScale = function() {
+        return zoom.scale();
+      };
+
+      chart.filter = function(node) {
+        var __data = {}
+          , found = false;
+
+        function findNode(d) {
+          if (getId(d) === node) {
+            __data = d;
+            found = true;
+          } else if (!found && d.children) {
+            d.children.forEach(findNode);
+          }
+        }
+
+        // Initialize the display to show a few nodes.
+        findNode(data);
+
+        __data.x0 = 0;
+        __data.y0 = 0;
+
+        _data = __data;
+
+        chart.update(_data);
+      };
+
+      chart.update = function(source) {
+        // Click tree node.
+        function leafClick(d) {
+          toggle(d);
+          chart.update(d);
+        }
+
+        // Toggle children.
+        function toggle(d) {
+          if (d.children) {
+            d._children = d.children;
+            d.children = null;
+          } else {
+            d.children = d._children;
+            d._children = null;
+          }
+        }
+        //console.log(_data)
+        nodes = tree(_data);
+        var root = nodes[0];
+
+        nodes.forEach(function(d) {
+          setY(d, d.depth * 2 * (horizontal ? nodeSize.width : nodeSize.height));
+        });
+
+        // Update the nodes…
+        var node = treeChart.selectAll('g.sc-card')
+              .data(nodes, getId);
+
+        // Enter any new nodes at the parent's previous position.
+        var nodeEnter = node.enter().append('svg:g')
+              .attr('class', 'sc-card')
+              .attr('id', function(d) { return 'sc-card-' + getId(d); })
+              .attr('transform', function(d) {
+                if (getY(source) === 0) {
+                  return 'translate(' + getX(root) + ',' + getY(root) + ')';
+                } else {
+                  return 'translate(' + getX0(source) + ',' + getY0(source) + ')';
+                }
+              });
+
+        var nodeOffsetX = (horizontal ? r - nodeSize.width : nodeSize.width / -2) + 'px',
+            nodeOffsetY = (horizontal ? (r - nodeSize.height) / 2 : r * 2 - nodeSize.height) + 'px';
+
+        nodeEnter.each(function(d) {
+          if (defs.select('#myshape-' + getId(d)).empty()) {
+            var nodeObject = defs.append('svg').attr('class', 'sc-foreign-object')
+                  .attr('id', 'myshape-' + getId(d))
+                  .attr('version', '1.1')
+                  .attr('xmlns', 'http://www.w3.org/2000/svg')
+                  .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+                  .attr('x', nodeOffsetX)
+                  .attr('y', nodeOffsetY)
+                  .attr('width', nodeSize.width + 'px')
+                  .attr('height', nodeSize.height + 'px')
+                  .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
+                  .attr('xml:space', 'preserve');
+
+            var nodeContent = nodeObject.append('g').attr('class', 'sc-tree-node-content')
+                  .attr('transform', 'translate(' + r + ',' + r + ')');
+
+            nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
+
+            nodeContent.on('click', nodeClick);
+
+            nodeCallback(nodeObject);
+          }
+        });
+
+        // node content
+        nodeEnter.append('use')
+            .attr('xlink:href', function(d) {
+              return '#myshape-' + getId(d);
+            })
+            .attr('filter', nodeShadow);
+
+        // node circle
+        var xcCircle = nodeEnter.append('svg:g').attr('class', 'sc-expcoll')
+              .style('opacity', 1e-6)
+              .on('click', leafClick);
+            xcCircle.append('svg:circle').attr('class', 'sc-circ-back')
+              .attr('r', r);
+            xcCircle.append('svg:line').attr('class', 'sc-line-vert')
+              .attr('x1', 0).attr('y1', 0.5 - r).attr('x2', 0).attr('y2', r - 0.5)
+              .style('stroke', '#bbb');
+            xcCircle.append('svg:line').attr('class', 'sc-line-hrzn')
+              .attr('x1', 0.5 - r).attr('y1', 0).attr('x2', r - 0.5).attr('y2', 0)
+              .style('stroke', '#fff');
+
+        //Transition nodes to their new position.
+        var nodeUpdate = node.transition()
+              .duration(duration)
+              .attr('transform', function(d) {
+                return 'translate(' + getX(d) + ',' + getY(d) + ')';
+              });
+            nodeUpdate.select('.sc-expcoll')
+              .style('opacity', function(d) {
+                return ((d.children && d.children.length) || (d._children && d._children.length)) ? 1 : 0;
+              });
+            nodeUpdate.select('.sc-circ-back')
+              .style('fill', function(d) {
+                return (d._children && d._children.length) ? '#777' : (d.children ? '#bbb' : 'none');
+              });
+            nodeUpdate.select('.sc-line-vert')
+              .style('stroke', function(d) {
+                return (d._children && d._children.length) ? '#fff' : '#bbb';
+              });
+
+            nodeUpdate.each(function(d) {
+              container.select('#myshape-' + getId(d))
+                .attr('x', nodeOffsetX)
+                .attr('y', nodeOffsetY);
+            });
+
+        // Transition exiting nodes to the parent's new position.
+        var nodeExit = node.exit().transition()
+              .duration(duration)
+              .attr('transform', function(d) {
+                return 'translate(' + getX(source) + ',' + getY(source) + ')';
+              })
+              .remove();
+            nodeExit.selectAll('.sc-expcoll')
+              .style('stroke-opacity', 1e-6);
+            nodeExit.selectAll('.sc-foreign-object')
+              .attr('width', 1)
+              .attr('height', 1)
+              .attr('x', -1)
+              .attr('y', -1);
+
+        // Update the links
+        var link = treeChart.selectAll('path.link')
+              .data(tree.links(nodes), function(d) {
+                return getId(d.source) + '-' + getId(d.target);
+              });
+
+            // Enter any new links at the parent's previous position.
+            link.enter().insert('svg:path', 'g')
+              .attr('class', 'link')
+              .attr('d', function(d) {
+                var o = getY(source) === 0 ? {x: source.x, y: source.y} : {x: source.x0, y: source.y0};
+                return diagonal({ source: o, target: o });
+              });
+
+            // Transition links to their new position.
+            link.transition()
+              .duration(duration)
+              .attr('d', diagonal);
+
+            // Transition exiting nodes to the parent's new position.
+            link.exit().transition()
+              .duration(duration)
+              .attr('d', function(d) {
+                var o = { x: source.x, y: source.y };
+                return diagonal({ source: o, target: o });
+              })
+              .remove();
+
+        // Stash the old positions for transition.
+        nodes
+          .forEach(function(d) {
+            setX0(d, getX(d));
+            setY0(d, getY(d));
+          });
+
+        chart.resize();
+      };
+
+      chart.gradient(fillGradient);
+
+      chart.update(_data);
+
+    });
+
+    return chart;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+
+  chart.color = function(_) {
+    if (!arguments.length) return color;
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) return fill;
+    fill = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) return gradient;
+    gradient = _;
+    return chart;
+  };
+  chart.useClass = function(_) {
+    if (!arguments.length) return useClass;
+    useClass = _;
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) return width;
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) return height;
+    height = _;
+    return chart;
+  };
+
+  chart.values = function(_) {
+    if (!arguments.length) return getValues;
+    getValues = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) return getX;
+    getX = _;
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) return getY;
+    getY = utils.functor(_);
+    return chart;
+  };
+
+  chart.showLabels = function(_) {
+    if (!arguments.length) return showLabels;
+    showLabels = _;
+    return chart;
+  };
+
+  chart.id = function(_) {
+    if (!arguments.length) return id;
+    id = _;
+    return chart;
+  };
+
+  chart.valueFormat = function(_) {
+    if (!arguments.length) return valueFormat;
+    valueFormat = _;
+    return chart;
+  };
+
+  chart.labelThreshold = function(_) {
+    if (!arguments.length) return labelThreshold;
+    labelThreshold = _;
+    return chart;
+  };
+
+  // ORG
+
+  chart.radius = function(_) {
+    if (!arguments.length) return r;
+    r = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) return duration;
+    duration = _;
+    return chart;
+  };
+
+  chart.zoomExtents = function(_) {
+    if (!arguments.length) return zoomExtents;
+    zoomExtents = _;
+    return chart;
+  };
+
+  chart.zoomCallback = function(_) {
+    if (!arguments.length) return zoomCallback;
+    zoomCallback = _;
+    return chart;
+  };
+
+  chart.padding = function(_) {
+    if (!arguments.length) return padding;
+    padding = _;
+    return chart;
+  };
+
+  chart.nodeSize = function(_) {
+    if (!arguments.length) return nodeSize;
+    nodeSize = _;
+    return chart;
+  };
+
+  chart.nodeImgPath = function(_) {
+    if (!arguments.length) return nodeImgPath;
+    nodeImgPath = _;
+    return chart;
+  };
+
+  chart.nodeRenderer = function(_) {
+    if (!arguments.length) return nodeRenderer;
+    nodeRenderer = _;
+    return chart;
+  };
+
+  chart.nodeCallback = function(_) {
+    if (!arguments.length) return nodeCallback;
+    nodeCallback = _;
+    return chart;
+  };
+
+  chart.nodeClick = function(_) {
+    if (!arguments.length) return nodeClick;
+    nodeClick = _;
+    return chart;
+  };
+
+  chart.horizontal = function(_) {
+    if (!arguments.length) return horizontal;
+    horizontal = _;
+    return chart;
+  };
+
+  chart.getId = function(_) {
+    if (!arguments.length) return getId;
+    getId = _;
+    return chart;
+  };
+  //============================================================
+
+  return chart;
+};
+
+var treemap = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 20, right: 0, bottom: 0, left: 0},
+      width = 0,
+      height = 0,
+      x = d3.scaleLinear(), //can be accessed via chart.xScale()
+      y = d3.scaleLinear(), //can be accessed via chart.yScale()
+      id = Math.floor(Math.random() * 10000), //Create semi-unique ID incase user doesn't select one
+      getValue = function(d) { return d.size; }, // accessor to get the size value from a data point
+      getKey = function(d) { return d.name; }, // accessor to get the name value from a data point
+      groupBy = function(d) { return getKey(d); }, // accessor to get the name value from a data point
+      clipEdge = true, // if true, masks lines within x and y scale
+      duration = 500,
+      leafClick = function() { return false; },
+      // color = function(d, i) { return utils.defaultColor()(d, i); },
+      color = d3.scaleOrdinal().range(
+                d3.schemeCategory20.map(function(c) {
+                  c = d3.rgb(c);
+                  c.opacity = 0.6;
+                  return c;
+                })
+              ),
+      fill = color,
+      classes = function(d, i) { return 'sc-child'; },
+      direction = 'ltr',
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
+
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var ROOT,
+      TREE,
+      NODES = [];
+
+  // This is for data sets that don't include a colorIndex
+  // Excludes leaves
+  function reduceGroups(d) {
+    var data = d.data ? d.data : d;
+    var name = groupBy(data);
+    var i, l;
+    if (name && NODES.indexOf(name) === -1) {
+      NODES.push(name);
+      if (data.children) {
+        l = data.children.length;
+        for (i = 0; i < l; i += 1) {
+          reduceGroups(data.children[i]);
+        }
+      }
+    }
+    return NODES;
+  }
+
+  //============================================================
+  // TODO:
+  // 1. title,
+  // 2. colors,
+  // 3. legend data change remove,
+  // 4. change groupby,
+  // 5. contrasting text
+
+  function chart(selection) {
+    selection.each(function(chartData) {
+
+      var availableWidth = width - margin.left - margin.right,
+          availableHeight = height - margin.top - margin.bottom,
+          container = d3.select(this),
+          transitioning;
+
+      // Set up the gradient constructor function
+      chart.gradient = function(d, i, p) {
+        var iColor = (d.parent.colorIndex || NODES.indexOf(groupBy(d.parent)) || i);
+        return utils.colorLinearGradient(
+          d,
+          id + '-' + i,
+          p,
+          color(d, iColor, NODES.length),
+          wrap.select('defs')
+        );
+      };
+
+      // We only need to define TREE and NODES once on initial load
+      // TREE is always available in its initial state and NODES is immutable
+      TREE = TREE ||
+        d3.hierarchy(chartData[0])
+          .sum(function(d) { return getValue(d); })
+          .sort(function(a, b) { return b.height - a.height || b.value - a.value; });
+
+      NODES = NODES.length ? NODES : reduceGroups(TREE);
+
+      // Recalcuate the treemap layout dimensions
+      d3.treemap()
+        .size([availableWidth, availableHeight])
+        .round(false)
+          (TREE);
+
+      // We store the root on first render
+      // which gets reused on resize
+      // Transition will reset root when called
+      ROOT = ROOT || TREE;
+
+      x.domain([ROOT.x0, ROOT.x1])
+       .range([0, availableWidth]);
+      y.domain([ROOT.y0, ROOT.y1])
+       .range([0, availableHeight]);
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([TREE]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
+      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+      var defs_entr = wrap_entr.append('defs');
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = wrap.select('g.sc-chart-wrap').merge(g_entr);
+
+      // wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      //------------------------------------------------------------
+      // Clip Path
+
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-edge-clip-' + id)
+        .append('rect');
+      wrap.select('#sc-edge-clip-' + id + ' rect')
+        .attr('width', width)
+        .attr('height', height);
+      g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      //------------------------------------------------------------
+      // Family Tree Path
+
+      var treepath_bind = g_entr.selectAll('.sc-treepath').data([TREE]);
+      var treepath_enter = treepath_bind.enter().append('g').attr('class', 'sc-treepath');
+      var treepath = g.selectAll('.sc-treepath').merge(treepath_enter);
+
+      treepath_enter.append('rect')
+        .attr('class', 'sc-target')
+        .on('click', transition);
+
+      treepath_enter.append('text')
+        .attr('x', direction === 'rtl' ? width - 6 : 6)
+        .attr('y', 6)
+        .attr('dy', '.75em');
+
+      treepath.select('.sc-target')
+        .attr('width', width)
+        .attr('height', margin.top);
+
+      //------------------------------------------------------------
+      // Main Chart
+
+      var gold = render();
+
+      function render() {
+
+        var grandparent_bind = g.selectAll('.sc-grandparent.sc-trans').data([ROOT]);
+        var grandparent_entr = grandparent_bind.enter().append('g').attr('class', 'sc-grandparent sc-trans');
+        var grandparent = g.selectAll('.sc-grandparent.sc-trans').merge(grandparent_entr);
+        // We need to keep the old granparent around until transition ends
+        // grandparent.exit().remove();
+
+        grandparent
+          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+          .lower();
+
+        // Parent group
+        var parents_bind = grandparent.selectAll('g.sc-parent').data(ROOT.children);
+        var parents_entr = parents_bind.enter().append('g').classed('sc-parent', true);
+        var parents = grandparent.selectAll('.sc-parent').merge(parents_entr);
+        parents_bind.exit().remove();
+
+        // Child rectangles
+        var children_bind = parents.selectAll('rect.sc-child').data(function(d) { return d.children || [d]; });
+        var children_entr = children_bind.enter().append('rect').attr('class', 'sc-child');
+        var children = parents.selectAll('.sc-child').merge(children_entr);
+        children_bind.exit().remove();
+
+        children
+          .attr('class', classes)
+          .attr('fill', function(d, i) {
+            // while (d.depth > 1) {
+            //   d = d.parent;
+            // }
+            // return color(groupBy(d));
+            var iColor = (d.parent.colorIndex || NODES.indexOf(getKey(d.parent.data)) || i);
+            return this.getAttribute('fill') || fill(d, iColor, NODES.length);
+          })
+            .call(rect);
+
+        // Parent labels
+        var label_bind = parents.selectAll('text.sc-label').data(function(d) { return [d]; });
+        var label_entr = label_bind.enter().append('text').attr('class', 'sc-label')
+              .attr('dy', '.75em');
+        var label = parents.selectAll('.sc-label').merge(label_entr);
+        label_bind.exit().remove();
+
+        label
+          .text(function(d) {
+              return getKey(d.data);  //groupBy(d);
+           })
+            .call(text);
+
+        // Parent event target
+        var target_bind = parents.selectAll('rect.sc-target').data(function(d) { return [d]; });
+        var target_entr = target_bind.enter().append('rect').attr('class', 'sc-target');
+        var target = parents.selectAll('.sc-target').merge(target_entr);
+        target_bind.exit().remove();
+
+        target
+            .call(rect);
+
+        // Family tree path
+        treepath.selectAll('text')
+          .datum(ROOT)
+            .text(crumbs);
+
+        treepath.selectAll('rect')
+            .data([ROOT.parent]);
+
+        // -------------
+        // Assign Events
+
+        // Assign transition event for parents with children.
+        target
+          .filter(function(d) { return d.children; })
+          .on('click', transition);
+
+        // Assign navigate event for parents without children (leaves).
+        target
+          .filter(function(d) { return !(d.children); })
+          .on('click', leafClick);
+
+        // Tooltips
+        target
+          .on('mouseover', function(d, i) {
+            d3.select(this).classed('hover', true);
+            var eo = {
+              point: d,
+              pointIndex: i,
+              id: id,
+              e: d3.event
+            };
+            dispatch.call('elementMouseover', this, eo);
+          })
+          .on('mousemove', function(d, i) {
+            var e = d3.event;
+            dispatch.call('elementMousemove', this, e);
+          })
+          .on('mouseout', function(d, i) {
+            d3.select(this).classed('hover', false);
+            dispatch.call('elementMouseout', this);
+          });
+
+        children
+          .on('mouseover', function(d, i) {
+            d3.select(this).classed('hover', true);
+            var eo = {
+                label: getKey(d),
+                value: getValue(d),
+                point: d,
+                pointIndex: i,
+                e: d3.event,
+                id: id
+            };
+            dispatch.call('elementMouseover', this, eo);
+          })
+          .on('mouseout', function(d, i) {
+            d3.select(this).classed('hover', false);
+            dispatch.call('elementMouseout', this);
+          });
+
+        return grandparent;
+      }
+
+      function transition(d) {
+        var direction;
+        var tup;
+        var tdn;
+        var gnew;
+
+        // cleanup tooltips
+        dispatch.call('elementMouseout', this);
+
+        // If we are already transitioning, wait
+        if (transitioning || !d) { return; }
+
+        // Reset the root which will be used by render
+        ROOT = d;
+
+        transitioning = true;
+
+        gold.classed('sc-trans', false);
+
+        direction = d3.select(this).classed('sc-target') ? 'out' : 'in';
+
+        // Create transitions for in and out
+        tup = d3.transition('treemap-out')
+                    .duration(duration)
+                    .ease(d3.easeCubicIn);
+        tdn = d3.transition('treemap-in')
+                    .duration(duration)
+                    .ease(d3.easeCubicIn);
+
+        // render the new treemap
+        gnew = render();
+
+        // Update the domain only after entering new elements
+        x.domain([d.x0, d.x1]);
+        y.domain([d.y0, d.y1]);
+
+        // Enable anti-aliasing during the transition
+        container.style('shape-rendering', null);
+
+        // Fade-in entering text so start at zero
+        gnew.selectAll('text').style('fill-opacity', 0);
+
+        // Select existing text and rectangles with transition
+        // anything called by this selection will be run
+        // continously until transtion completes
+        gnew.selectAll('text').transition(tdn).style('fill-opacity', 1).call(text);
+        gnew.selectAll('rect').transition(tdn).style('fill-opacity', 1).call(rect);
+        gold.selectAll('text').transition(tup).style('fill-opacity', 0).call(text).remove();
+        gold.selectAll('rect').transition(tup).style('fill-opacity', 0).call(rect)
+          .on('end', function(d, i) {
+            transitioning = false;
+            container.style('shape-rendering', 'crispEdges');
+            gold.selectAll('*').interrupt('treemap-out');
+            gold.remove();
+            gold = gnew;
+          });
+      }
+
+      function text(text) {
+        text
+          .attr('x', function(d) {
+            var xpos = direction === 'rtl' ? -1 : 1;
+            return x(d.x0) + 6 * xpos;
+          })
+          .attr('y', function(d) {
+            return y(d.y0) + 6;
+          });
+      }
+
+      function rect(rect) {
+        rect
+          .attr('x', function(d) {
+            return x(d.x0);
+          })
+          .attr('y', function(d) { return y(d.y0); })
+          .attr('width', function(d) {
+            return x(d.x1) - x(d.x0);
+          })
+          .attr('height', function(d) { return y(d.y1) - y(d.y0); });
+      }
+
+      function crumbs(d) {
+        if (d.parent) {
+          return crumbs(d.parent) + ' / ' + getKey(d.data);
+        }
+        return getKey(d.data);
+      }
+    });
+
+    return chart;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+
+  chart.color = function(_) {
+    if (!arguments.length) { return color; }
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) { return fill; }
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) { return classes; }
+    classes = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) { return gradient; }
+    gradient = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) { return getX; }
+    getX = _;
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) { return getY; }
+    getY = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.xScale = function(_) {
+    if (!arguments.length) { return x; }
+    x = _;
+    return chart;
+  };
+
+  chart.yScale = function(_) {
+    if (!arguments.length) { return y; }
+    y = _;
+    return chart;
+  };
+
+  chart.xDomain = function(_) {
+    if (!arguments.length) { return xDomain; }
+    xDomain = _;
+    return chart;
+  };
+
+  chart.yDomain = function(_) {
+    if (!arguments.length) { return yDomain; }
+    yDomain = _;
+    return chart;
+  };
+
+  chart.leafClick = function(_) {
+    if (!arguments.length) { return leafClick; }
+    leafClick = _;
+    return chart;
+  };
+
+  chart.getValue = function(_) {
+    if (!arguments.length) { return getValue; }
+    getValue = _;
+    return chart;
+  };
+
+  chart.groupBy = function(_) {
+    if (!arguments.length) { return groupBy; }
+    groupBy = _;
+    return chart;
+  };
+
+  chart.groups = function(_) {
+    if (!arguments.length) { return NODES; }
+    NODES = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    return chart;
+  };
+
+  chart.id = function(_) {
+    if (!arguments.length) { return id; }
+    id = _;
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    return chart;
+  };
+
+  //============================================================
+
+
+  return chart;
+};
+
+
+
+var models = Object.freeze({
+	legend: legend,
+	axis: axis,
+	funnel: funnel,
+	gauge: gauge,
+	line: line$$1,
+	multiBar: multiBar,
+	pie: pie,
+	scatter: scatter,
+	scroll: scroll,
+	stackedArea: stackedArea,
+	table: table,
+	tree: tree,
+	treemap: treemap
+});
+
+var bubbleChart = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
+      xDomain,
+      yDomain,
+      delay = 200,
+      duration = 0,
+      groupBy = function(d) { return d.y; },
+      filterBy = function(d) { return d.y; },
+      clipEdge = false, // if true, masks lines within x and y scale
+      seriesLength = 0,
+      reduceYTicks = false, // if false a tick will show for every data point
+      format = d3.timeFormat('%Y-%m-%d'),
+      tooltip = null,
+      tooltips = true,
+      x,
+      y,
+      state = {},
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+  var xValueFormat = function(d, labels, isDate) {
+          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
+            d : labels[parseInt(d, 10)] || d;
+          return isDate ? utils.dateFormat(val, 'MMM', chart.locality()) : val;
+      };
+  var yValueFormat = function(d, labels, isCurrency) {
+          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
+            d : labels[parseInt(d, 10)].key || d;
+          return utils.numberFormatSI(val, 2, isCurrency, chart.locality());
+      };
+
+  var scatter$$1 = scatter()
+        .padData(true)
+        .padDataOuter(-1)
+        .size(function(d) { return d.y; })
+        .sizeRange([256, 1024])
+        .singlePoint(true),
+      model = scatter$$1,
+      xAxis = axis(),
+      yAxis = axis(),
+      legend$$1 = legend()
+        .align('center')
+        .key(function(d) { return d.key + '%'; });
+
+  var tooltipContent = function(key, x, y, e, graph) {
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
+
+  var showTooltip = function(eo, offsetElement, properties) {
+    var key = eo.series.key,
+        x = eo.point.x,
+        y = eo.point.y,
+        content = tooltipContent(key, x, y, eo, chart),
+        gravity = eo.value < 0 ? 'n' : 's';
+
+    return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+  };
+
+  var seriesClick = function(data, e, chart) { return; };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          modelClass = 'bubble';
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var modelData,
+          timeExtent,
+          xD,
+          yD,
+          yValues;
+
+      chart.update = function() {
+        container.transition().duration(duration).call(chart);
+      };
+
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      // set title display option
+      showTitle = showTitle && properties.title;
+
+      function getTimeDomain(data) {
+        var timeExtent =
+              d3.extent(
+                d3.merge(
+                  data.map(function(d) {
+                    return d.values.map(function(d, i) {
+                      return d3.timeParse('%Y-%m-%d')(getX(d));
+                    });
+                  })
+                )
+              );
+        var timeRange = [
+          d3.timeMonth.floor(timeExtent[0]),
+          d3.timeDay.offset(d3.timeMonth.ceil(timeExtent[1]), -1)
+        ];
+        return timeRange;
+      }
+
+      // Calculate the x-axis ticks
+      function getTimeTicks(timeDomain) {
+        function daysInMonth(date) {
+          return 32 - new Date(date.getFullYear(), date.getMonth(), 32).getDate();
+        }
+        var timeRange = d3.timeMonth.range(timeDomain[0], timeDomain[1]);
+        var timeTicks =
+              timeRange.map(function(d) {
+                return d3.timeDay.offset(d3.timeMonth.floor(d), daysInMonth(d) / 2 - 1);
+              });
+        return timeTicks;
+      }
+
+      // Group data by groupBy function to prep data for calculating y-axis groups
+      // and y scale value for points
+      function getGroupTicks(data) {
+
+        var groupedData = d3.nest()
+              .key(groupBy)
+              .entries(data);
+
+        // Calculate y scale parameters
+        var gHeight = 1000 / groupedData.length,
+            gOffset = gHeight * 0.25,
+            gDomain = [0, 1],
+            gRange = [0, 1],
+            gScale = d3.scaleLinear().domain(gDomain).range(gRange),
+            yValues = [],
+            total = 0;
+
+        // Calculate total for each data group and
+        // point y value
+        groupedData
+          .map(function(s, i) {
+            s.total = 0;
+
+            s.values = s.values.sort(function(a, b) {
+                return b.y < a.y ? -1 : b.y > a.y ? 1 : 0;
+              })
+              .map(function(p) {
+                s.total += p.y;
+                return p;
+              });
+
+            s.group = i;
+            return s;
+          })
+          .sort(function(a, b) {
+            return a.total < b.total ? -1 : a.total > b.total ? 1 : 0;
+          })
+          .map(function(s, i) {
+            total += s.total;
+
+            gDomain = d3.extent(s.values.map(function(p) { return p.y; }));
+            gRange = [gHeight * i + gOffset, gHeight * (i + 1) - gOffset];
+            gScale.domain(gDomain).range(gRange);
+
+            s.values = s.values
+              .map(function(p) {
+                p.group = s.group;
+                p.opportunity = p.y;
+                p.y = gScale(p.opportunity);
+                return p;
+              });
+
+            yValues.push({y: d3.min(s.values.map(function(p) { return p.y; })), key: s.key});
+
+            return s;
+          });
+
+        return yValues;
+      }
+
+      // set state.disabled
+      state.disabled = data.map(function(d) { return !!d.disabled; });
+
+      // Now that group calculations are done,
+      // group the data by filter so that legend filters
+      var nestedData = d3.nest()
+        .key(filterBy)
+        .entries(data);
+
+      //add series index to each data point for reference
+      modelData = nestedData
+        .sort(function(a, b) {
+          //sort legend by key
+          return parseInt(a.key, 10) < parseInt(b.key, 10) ? -1 : parseInt(a.key, 10) > parseInt(b.key, 10) ? 1 : 0;
+        })
+        .map(function(d, i) {
+          d.seriesIndex = i;
+          d.classes = d.values[0].classes;
+          d.color = d.values[0].color;
+          return d;
+        });
+
+      xD = getTimeDomain(modelData);
+
+      yValues = getGroupTicks(data);
+
+      yD = d3.extent(
+            d3.merge(
+              modelData.map(function(d) {
+                return d.values.map(function(d, i) {
+                  return getY(d, i);
+                });
+              })
+            ).concat(forceY)
+          );
+
+      //------------------------------------------------------------
+      // Setup Scales and Axes
+
+      x = scatter$$1.xScale();
+      y = scatter$$1.yScale();
+
+      xAxis
+        .orient('bottom')
+        .valueFormat(xValueFormat)
+        .tickSize(0)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false)
+        .ticks(d3.timeMonths, 1)
+        .scale(x)
+        .tickValues(getTimeTicks(xD));
+      yAxis
+        .orient('left')
+        .valueFormat(yValueFormat)
+        .tickPadding(7)
+        .highlightZero(false)
+        .showMaxMin(false)
+        .scale(y)
+        .ticks(yValues.length)
+        .tickValues(yValues.map(function(d, i) {
+          return yValues[i].y;
+        }));
+
+      //------------------------------------------------------------
+      // Main chart draw
+
+      chart.render = function() {
+
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        // Chart layout variables
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        // Header variables
+        var maxBubbleSize = Math.sqrt(scatter$$1.sizeRange()[1] / Math.PI),
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            legendHeight = 0,
+            trans = '';
+
+        //------------------------------------------------------------
+        // Setup containers and skeleton of chart
+
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+        wrap_entr.append('rect').attr('class', 'sc-background')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('fill', '#FFF');
+
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        wrap_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = wrap.select('.sc-title-wrap');
+
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = wrap.select('.sc-legend-wrap');
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        //------------------------------------------------------------
+        // Title & Legend
+
+        title_wrap.select('.sc-title').remove();
+
+        if (showTitle) {
+          title_wrap
+            .append('text')
+              .attr('class', 'sc-title')
+              .attr('x', direction === 'rtl' ? availableWidth : 0)
+              .attr('y', 0)
+              .attr('dy', '.75em')
+              .attr('text-anchor', 'start')
+              .attr('stroke', 'none')
+              .attr('fill', 'black')
+              .text(properties.title);
+
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
+
+        if (showLegend) {
+          legend$$1
+            .id('legend_' + chart.id())
+            .strings(chart.strings().legend)
+            .align('center')
+            .height(availableHeight - headerHeight);
+          legend_wrap
+            .datum(modelData)
+            .call(legend$$1);
+          legend$$1
+            .arrange(availableWidth);
+
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+              legendSpace = availableWidth - titleBBox.width - 6,
+              legendTop = showTitle && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' || !legend$$1.collapsed() ? 0 : availableWidth - legend$$1.width(),
+              ypos = titleBBox.height;
+
+          if (legendTop) {
+            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+          } else if (!showTitle) {
+            ypos = - legend$$1.margin().top;
+          }
+
+          legend_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+
+          headerHeight += legendTop ? 12 : legend$$1.height();
+        }
+
+        // Recalc inner margins based on legend and control height
+        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+
+        //------------------------------------------------------------
+        // Main Chart Components
+
+        model
+          .width(innerWidth)
+          .height(innerHeight)
+          .id(chart.id())
+          .xDomain(xD)
+          .yDomain(yD);
+
+        model_wrap
+          .datum(modelData.filter(function(d) {
+            return !d.disabled;
+          }))
+          .transition().duration(duration)
+            .call(model);
+
+        innerMargin.top += maxBubbleSize;
+
+        //------------------------------------------------------------
+        // Setup Axes
+
+        var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
+            xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
+
+        function setInnerMargins() {
+          innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
+          innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
+          innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+        }
+
+        function setInnerDimensions() {
+          innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+          // Recalc chart dimensions and scales based on new inner dimensions
+          scatter$$1.resetDimensions(innerWidth, innerHeight);
+        }
+
+        // Y-Axis
+        yAxis
+          .margin(innerMargin)
+          .tickFormat(function(d, i) {
+            var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
+            return utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
+          });
+        yAxis_wrap
+          .call(yAxis);
+        // reset inner dimensions
+        yAxisMargin = yAxis.margin();
+        setInnerMargins();
+        setInnerDimensions();
+
+        // X-Axis
+        xAxis
+          .tickSize(0)
+          .margin(innerMargin)
+          .tickFormat(function(d) {
+            return xAxis.valueFormat()(d, null, xIsDatetime);
+          });
+        xAxis_wrap
+          .call(xAxis);
+
+        // reset inner dimensions
+        xAxisMargin = xAxis.margin();
+        setInnerMargins();
+        setInnerDimensions();
+
+        // recall y-axis to set final size based on new dimensions
+        yAxis
+          .tickSize(-innerWidth, 0)
+          .margin(innerMargin);
+        yAxis_wrap
+          .call(yAxis);
+        yAxis_wrap.select('path.domain')
+          .attr('d', "M0,0V0.5H0V" + innerHeight);
+
+        // final call to lines based on new dimensions
+        model_wrap
+          .transition().duration(chart.delay())
+            .call(scatter$$1);
+
+        //------------------------------------------------------------
+        // Final repositioning
+
+        trans = innerMargin.left + ',';
+        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
+        trans += innerMargin.top;
+        yAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        model_wrap
+          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      legend$$1.dispatch.on('legendClick', function(d, i) {
+        d.disabled = !d.disabled;
+
+        if (!modelData.filter(function(d) { return !d.disabled; }).length) {
+          modelData.map(function(d) {
+            d.disabled = false;
+            container.selectAll('.sc-series').classed('disabled', false);
+            return d;
+          });
+        }
+
+        state.disabled = modelData.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
+
+        container.transition().call(chart.render);
+      });
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          tooltip = showTooltip(eo, that.parentNode);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip) {
+          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          data.forEach(function(series, i) {
+            series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        container.transition().call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        dispatch.call('tooltipHide', this);
+        if (legend$$1.enabled()) {
+          legend$$1.dispatch.call('closeMenu', this);
+        }
+      });
+
+      model.dispatch.on('elementClick', function(eo) {
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart);
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  model.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.scatter = scatter$$1;
+  chart.legend = legend$$1;
+  chart.xAxis = xAxis;
+  chart.yAxis = yAxis;
+
+  fc.rebind(chart, scatter$$1, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, scatter$$1, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+    var classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return 'inherit';
+        };
+        classes = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+        };
+        break;
+      case 'data':
+        color = function(d, i) {
+          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+        };
+        classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var fill = (!params.gradient) ? color : function(d, i) {
+      return series.gradient(d, d.seriesIndex);
+    };
+
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
+
+    legend$$1.color(color);
+    legend$$1.classes(classes);
+
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) {
+      return showTitle;
+    }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) {
+      return showLegend;
+    }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) {
+      return tooltip;
+    }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) {
+      return tooltips;
+    }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) {
+      return tooltipContent;
+    }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) {
+      return state;
+    }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    // model.direction(_);
+    xAxis.direction(_);
+    yAxis.direction(_);
+    legend$$1.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
+    return chart;
+  };
+
+  chart.groupBy = function(_) {
+    if (!arguments.length) {
+      return groupBy;
+    }
+    groupBy = _;
+    return chart;
+  };
+
+  chart.filterBy = function(_) {
+    if (!arguments.length) {
+      return filterBy;
+    }
+    filterBy = _;
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var funnelChart = function() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -1952,10 +10120,10 @@ function funnelChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var funnel = models.funnel(),
-      model = funnel,
-      controls = models.legend().align('center'),
-      legend = models.legend().align('center');
+  var funnel$$1 = funnel(),
+      model = funnel$$1,
+      controls = legend().align('center'),
+      legend$$1 = legend().align('center');
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -2176,33 +10344,33 @@ function funnelChart() {
         }
 
         if (showLegend) {
-          legend
+          legend$$1
             .id('legend_' + chart.id())
             .strings(chart.strings().legend)
             .align('center')
             .height(availableHeight - innerMargin.top);
           legend_wrap
             .datum(data)
-            .call(legend);
-          legend
+            .call(legend$$1);
+          legend$$1
             .arrange(availableWidth);
 
           var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
+              legendTop = showTitle && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' || !legend$$1.collapsed() ? 0 : availableWidth - legend$$1.width(),
               ypos = titleBBox.height;
 
           if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
+            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
-            ypos = - legend.margin().top;
+            ypos = - legend$$1.margin().top;
           }
 
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
-          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
+          legendHeight = legendTop ? 12 : legend$$1.height() - (showTitle ? 0 : legend$$1.margin().top);
         }
 
         // Recalc inner margins based on title and legend height
@@ -2234,7 +10402,7 @@ function funnelChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(d, i) {
+      legend$$1.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
         d.active = false;
 
@@ -2295,8 +10463,8 @@ function funnelChart() {
         if (controls.enabled()) {
           controls.dispatch.call('closeMenu', this);
         }
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (legend$$1.enabled()) {
+          legend$$1.dispatch.call('closeMenu', this);
         }
       });
 
@@ -2332,13 +10500,13 @@ function funnelChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.funnel = funnel;
-  chart.legend = legend;
+  chart.funnel = funnel$$1;
+  chart.legend = legend$$1;
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, funnel, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
+  fc.rebind(chart, funnel$$1, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -2385,8 +10553,8 @@ function funnelChart() {
     model.fill(fill);
     model.classes(classes);
 
-    legend.color(color);
-    legend.classes(classes);
+    legend$$1.color(color);
+    legend$$1.classes(classes);
 
     return chart;
   };
@@ -2469,7 +10637,7 @@ function funnelChart() {
     if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
-    legend.direction(_);
+    legend$$1.direction(_);
     controls.direction(_);
     return chart;
   };
@@ -2503,57 +10671,6221 @@ function funnelChart() {
   //============================================================
 
   return chart;
-}
+};
 
-// export {default as bubbleChart} from './bubbleChart.js';
+var gaugeChart = function() {
 
-// export {default as gaugeChart} from './gaugeChart.js';
-// export {default as globeChart} from './globe.js';
-// export {default as lineChart} from './lineChart.js';
-// export {default as multiBarChart} from './multiBarChart.js';
-// export {default as paretoChart} from './paretoChart.js';
-// export {default as pieChart} from './pieChart.js';
-// export {default as stackedAreaChart} from './stackedAreaChart.js';
-// export {default as treemapChart} from './treemapChart.js';
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showLegend = true,
+      direction = 'ltr',
+      delay = 0,
+      duration = 0,
+      tooltip = null,
+      tooltips = true,
+      state = {},
+      x,
+      y, //can be accessed via chart.yScale()
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var gauge$$1 = gauge(),
+      model = gauge$$1,
+      legend$$1 = legend().align('center');
+
+  var tooltipContent = function(key, x, y, e, graph) {
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
+
+  var showTooltip = function(eo, offsetElement, properties) {
+        var key = model.fmtKey()(eo.point.series),
+            x = model.getCount()(eo.point.series),
+            y = model.getValue()(eo.point.y1 - eo.point.y0),
+            content = tooltipContent(key, x, y, eo.e, chart);
+        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+      };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          modelClass = 'gauge';
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      chart.update = function() {
+        container.transition().duration(duration).call(chart);
+      };
+
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      //add series index to each data point for reference
+      data.forEach(function(s, i) {
+        var y = model.y();
+        s.seriesIndex = i;
+        s.value = y(s);
+        if (!s.value && !s.values) {
+          s.values = [];
+        } else if (!isNaN(s.value)) {
+          s.values = [{x: 0, y: parseInt(s.value, 10)}];
+        }
+        s.values.forEach(function(p, j) {
+          p.index = j;
+          p.series = s;
+          if (typeof p.value == 'undefined') {
+            p.value = y(p);
+          }
+        });
+
+        s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
+        s.count = s.count || s.values.length;
+        s.disabled = s.disabled || s.value === 0;
+      });
+
+      // only sum enabled series
+      var modelData = data.filter(function(d, i) { return !d.disabled; });
+
+      if (!modelData.length) {
+        modelData = [{values: []}]; // safety array
+      }
+
+      properties.count = d3.sum(modelData, function(d) { return d.count; });
+
+      properties.total = d3.sum(modelData, function(d) { return d.value; });
+
+      // set title display option
+      showTitle = showTitle && properties.title.length;
+
+      //set state.disabled
+      state.disabled = data.map(function(d) { return !!d.disabled; });
+
+      //------------------------------------------------------------
+      // Display No Data message if there's nothing to show.
+
+      if (!properties.total) {
+        displayNoData();
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      //------------------------------------------------------------
+      // Main chart draw
+
+      chart.render = function() {
+
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
+
+        // Header variables
+        var maxLegendWidth = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            legendHeight = 0,
+            trans = '';
+
+        title_wrap.select('.sc-title').remove();
+
+        if (showTitle) {
+          title_wrap
+            .append('text')
+              .attr('class', 'sc-title')
+              .attr('x', direction === 'rtl' ? availableWidth : 0)
+              .attr('y', 0)
+              .attr('dy', '.75em')
+              .attr('text-anchor', 'start')
+              .attr('stroke', 'none')
+              .attr('fill', 'black')
+              .text(properties.title);
+
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
+
+        if (showLegend) {
+          legend$$1
+            .id('legend_' + chart.id())
+            .strings(chart.strings().legend)
+            .align('center')
+            .height(availableHeight - innerMargin.top);
+          legend_wrap
+            .datum(data)
+            .call(legend$$1);
+          legend$$1
+            .arrange(availableWidth);
+
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+              legendSpace = availableWidth - titleBBox.width - 6,
+              legendTop = showTitle && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' || !legend$$1.collapsed() ? 0 : availableWidth - legend$$1.width(),
+              ypos = titleBBox.height;
+
+          if (legendTop) {
+            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+          } else if (!showTitle) {
+            ypos = - legend$$1.margin().top;
+          }
+
+          legend_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+
+          legendHeight = legendTop ? 12 : legend$$1.height() - (showTitle ? 0 : legend$$1.margin().top);
+        }
+
+        // Recalc inner margins based on title and legend height
+        headerHeight += legendHeight;
+        innerMargin.top += headerHeight;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
+        //------------------------------------------------------------
+        // Main Chart Component(s)
+
+        model
+          .width(innerWidth)
+          .height(innerHeight);
+
+        model_wrap
+          .datum(modelData)
+          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
+          .transition().duration(duration)
+            .call(model);
+
+        model.setPointer(properties.total);
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          tooltip = showTooltip(eo, that.parentNode, properties);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip) {
+          sucrose.tooltip.position(that.parentNode, tooltip, e);
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          modelData.forEach(function(series, i) {
+            series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        if (legend$$1.enabled()) {
+          legend$$1.dispatch.call('closeMenu', this);
+        }
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  model.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.gauge = gauge$$1;
+  chart.legend = legend$$1;
+
+  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, model, 'values', 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue', 'transitionMs');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+    var classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return 'inherit';
+        };
+        classes = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+        };
+        break;
+      case 'data':
+        color = function(d, i) {
+          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+        };
+        classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var fill = (!params.gradient) ? color : function(d, i) {
+      return model.gradient(d, d.seriesIndex);
+    };
+
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
+
+    legend$$1.color(color);
+    legend$$1.classes(classes);
+
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) { return showTitle; }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) { return showLegend; }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) { return tooltip; }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) { return tooltips; }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) { return tooltipContent; }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) { return state; }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) { return strings; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    model.direction(_);
+    legend$$1.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    model.delay(_);
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var globe = function() {
+
+  // http://cldr.unicode.org/
+  // http://www.geonames.org/countries/
+  // http://www.naturalearthdata.com/downloads/
+  // http://geojson.org/geojson-spec.html
+  // http://bl.ocks.org/mbostock/4183330
+  // http://bost.ocks.org/mike/map/
+  // https://github.com/mbostock/topojson
+  // https://github.com/mbostock/topojson/wiki/Command-Line-Reference
+  // https://github.com/mbostock/us-atlas
+  // https://github.com/mbostock/world-atlas
+  // https://github.com/papandreou/node-cldr
+  // https://github.com/melalj/topojson-map-generator
+  // http://bl.ocks.org/mbostock/248bac3b8e354a9103c4#cubicInOut
+  // https://www.jasondavies.com/maps/rotate/
+  // https://www.jasondavies.com/maps/zoom/
+  // http://www.kirupa.com/html5/animating_with_easing_functions_in_javascript.htm
+  // http://www.jacklmoore.com/notes/mouse-position/
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
+      margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      tooltip = null,
+      tooltips = true,
+      initialTilt = 0,
+      initialRotate = 100,
+      x,
+      y,
+      state = {},
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.'
+      },
+      showLabels = true,
+      autoSpin = false,
+      showGraticule = true,
+      world_map = [],
+      country_map = {},
+      country_labels = {},
+      color = function(d, i) { return utils.defaultColor()(d, i); },
+      classes = function(d, i) { return 'sc-country-' + i; },
+      fill = color,
+      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
+
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var projection = d3.geoOrthographic().precision(0.1);
+  var path = d3.geoPath().projection(projection);
+  var graticule = d3.geoGraticule();
+  var colorLimit = 0;
+
+  function tooltipContent(d) {
+    return '<p><b>' + d.name + '</b></p>' +
+           '<p><b>Amount:</b> $' + d3.format(',.0f')(d.amount) + '</p>';
+  }
+
+  function showTooltip(eo, offsetElement) {
+    var content = tooltipContent(eo);
+    tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+  }
+
+
+  var seriesClick = function(data, e, chart) {
+    return;
+  };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          node = d3.select('#' + id + ' svg').node();
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var tooltips0 = tooltips,
+          m0, n0, o0;
+
+      // Header variables
+      var maxControlsWidth = 0,
+          maxLegendWidth = 0,
+          widthRatio = 0,
+          headerHeight = 0,
+          titleBBox = {width: 0, height: 0},
+          controlsHeight = 0,
+          legendHeight = 0,
+          trans = '';
+
+      // Globe variables
+      var world,
+          active_country = false,
+          world_view = {rotate: [initialRotate, initialTilt], scale: 1, zoom: 1},
+          country_view = {rotate: [null, null], scale: null, zoom: null},
+          iRotation;
+
+      // Chart layout variables
+      var renderWidth, renderHeight, availableWidth, availableHeight;
+
+      chart.container = this;
+
+      var fillGradient = function(d, i) {
+            return utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+          };
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length,
+            x, y;
+        if (hasData) return false;
+        x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+      var results = data[0];
+
+      //------------------------------------------------------------
+      // Setup svgs and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-globe');
+      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+
+      wrap_entr.append('defs');
+      var defs = wrap.select('defs');
+
+      wrap_entr.append('svg:rect')
+        .attr('class', 'sc-chart-background')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      var backg = wrap.select('.sc-chart-background');
+
+      var globe_entr = wrap_entr.append('g').attr('class', 'sc-globe');
+      var globe = wrap.select('.sc-globe');
+
+      globe_entr.append('path')
+        .datum({type: 'Sphere'})
+        .attr('class', 'sphere');
+      var sphere = d3.select('.sphere');
+
+      if (showGraticule) {
+        globe_entr.append('path')
+          .datum(graticule)
+          .attr('class', 'graticule');
+        var grid = d3.select('.graticule');
+      }
+
+      // zoom and pan
+      var zoom = d3.zoom()
+            .on('start', zoomStart)
+            .on('zoom', zoomMove)
+            .on('end', zoomEnd);
+      globe.call(zoom);
+
+      sphere
+        .on('click', function () {
+          unLoadCountry();
+        });
+
+      function zoomStart() {
+        m0 = normalizeOffset(d3.event.sourceEvent);
+        n0 = projection.invert(m0);
+        o0 = projection.rotate();
+
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+          tooltips = false;
+        }
+
+        if (autoSpin) {
+          clearInterval(iRotation);
+        }
+      }
+
+      function zoomMove() {
+        if (!m0) {
+          return;
+        }
+        var scale = calcScale(d3.event.transform.k);
+        var m1, n1, o1;
+
+        m1 = normalizeOffset(d3.event.sourceEvent);
+        n1 = projection.invert(m1);
+
+        if (!n1[0]) {
+          return;
+        }
+
+        o1 = [o0[0] + n1[0] - n0[0], (country_view.rotate[1] || world_view.rotate[1])];
+        o0 = [o1[0], o1[1]];
+
+        projection
+          .rotate(o1)
+          .scale(scale);
+
+        refresh();
+      }
+
+      function zoomEnd() {
+        m0 = null;
+        tooltips = tooltips0;
+      }
+
+      function normalizeOffset(e) {
+        var rect = node.getBoundingClientRect(),
+            offsetX = (e ? e.clientX || 0 : 0) - rect.left,
+            offsetY = (e ? e.clientY || 0 : 0) - rect.top;
+        return [offsetX, offsetY];
+      }
+
+      //------------------------------------------------------------
+      // Main chart draw methods
+
+      chart.update = function() {
+        container.transition().call(chart);
+      };
+
+      chart.resize = function () {
+        var scale, translate;
+        calcDimensions();
+        scale = calcScale(projection.scale());
+        translate = calcTranslate();
+        backg
+          .attr('width', availableWidth)
+          .attr('height', availableHeight);
+        projection
+          .scale(scale)
+          .translate(translate);
+        refresh();
+      };
+
+      chart.render = function() {
+
+        calcDimensions();
+
+        projection
+          .translate(calcTranslate())
+          .rotate(world_view.rotate)
+          .scale(calcScale(world_view.scale));
+
+        path.projection(projection);
+
+        sphere
+          .attr('d', path);
+
+        if (showGraticule) {
+          grid
+            .attr('d', path);
+        }
+
+        backg
+          .attr('width', availableWidth)
+          .attr('height', availableHeight);
+
+        refresh();
+      };
+
+      //============================================================
+
+      chart.render();
+
+      loadChart(world_map, 'countries');
+
+      if (autoSpin) {
+        iRotation = setInterval(spin, 10);
+      }
+
+      //------------------------------------------------------------
+      // Internal functions
+
+      function calcDimensions() {
+        renderWidth = width || parseInt(container.style('width'), 10) || 960;
+        renderHeight = height || parseInt(container.style('height'), 10) || 400;
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+      }
+
+      function calcScale(s) {
+        var scale = Math.min(Math.max(s, 0.75), 3),
+            size = Math.min(availableHeight, availableWidth) / 2;
+        return scale * size;
+      }
+
+      function calcTranslate() {
+        return [availableWidth / 2 + margin.left, availableHeight / 2 + margin.top];
+      }
+
+      function loadChart(data, type) {
+        colorLimit = results._total;
+
+        var world_bind = globe_entr.append('g').attr('class', type)
+              .selectAll('path').data(data);
+        var world_entr = world_bind.enter().append('path')
+              .attr('d', clip)
+              .attr('class', classes)
+              .style('fill', function (d, i) {
+                d.amount = amount(d);
+                return fill(d, d.properties.mapcolor13 || i);
+              });
+        world = globe.selectAll('path').merge(world_entr);
+
+        world_entr
+          .on('click', loadCountry)
+          .on('mouseover', function (d, i, j) {
+            if (!d.properties) {
+              return;
+            }
+            var eo = buildEventObject(d3.event, d, i, j);
+            dispatch.call('tooltipShow', this, eo);
+          })
+          .on('mousemove', function(d, i, j) {
+            var e = d3.event;
+            dispatch.call('tooltipMove', this, e);
+          })
+          .on('mouseout', function () {
+            dispatch.call('tooltipHide', this);
+          });
+
+        function buildEventObject(e, d, i, j) {
+          var eo = {
+              point: d,
+              e: e,
+              name: (country_labels[d.properties.iso_a2] || d.properties.name),
+              amount: amount(d)
+          };
+          return eo;
+        }
+      }
+
+      function loadCountry(d) {
+        if (active_country == d3.select(this)) {
+          return;
+        }
+
+        unLoadCountry();
+
+        // If we have country-specific geographic features.
+        if (!country_map[d.id]) {
+          return;
+        }
+
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+
+        var centroid = d3.geoCentroid(d);
+        var bounds = path.bounds(d);
+        var hscale = availableWidth  / (bounds[1][0] - bounds[0][0]);
+        var vscale = availableHeight / (bounds[1][1] - bounds[0][1]);
+        var scale = Math.min(availableWidth * hscale, availableHeight * vscale) / 2;
+        var rotate = [-centroid[0], -centroid[1]];
+
+        world_view = {
+          rotate: projection.rotate(),
+          scale: projection.scale()
+        };
+
+        projection
+          .rotate(rotate)
+          .scale(scale);
+
+        country_view = {
+          rotate: projection.rotate(),
+          scale: projection.scale()
+        };
+
+        // Flatten the results and include the state-level
+        // results so that we don't need complex tooltip logic.
+        var obj = region_results(d);
+        obj.parent = results;
+        results = obj;
+        colorLimit = results._total;
+
+        active_country = d3.select(this);
+        loadChart(country_map[d.id], 'states');
+        active_country.style('display', 'none');
+
+        refresh();
+      }
+
+      function unLoadCountry() {
+        if (!active_country) {
+          return;
+        }
+
+        projection
+          .rotate(world_view.rotate)
+          .scale(world_view.scale);
+
+        country_view = {
+          rotate: [null, null],
+          scale: null
+        };
+
+        results = results.parent;
+        colorLimit = results._total;
+
+        active_country.style('display', 'inline');
+        d3.select('.states').remove();
+        active_country = false;
+
+        refresh();
+      }
+
+      function region_results(d) {
+        return (
+          results._values[d.id] ||
+          results._values[d.properties.name] ||
+          {"_total": 0}
+        );
+      }
+
+      function amount(d) {
+        return region_results(d)._total || 0;
+      }
+
+      function spin() {
+        var o0 = projection.rotate(),
+            m1 = [10, 0],
+            o1 = [o0[0] + m1[0] / 8, initialTilt];
+        rotate(o1);
+      }
+
+      function rotate(o) {
+        projection.rotate(o);
+        refresh();
+      }
+
+      function refresh(duration) {
+        globe.selectAll('path')
+          .attr('d', clip);
+      }
+
+      function clip(d) {
+        return path(d) || 'M0,0Z';
+      }
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      dispatch.on('tooltipShow', function(eo) {
+          if (tooltips) {
+            showTooltip(eo, that.parentNode);
+          }
+        });
+
+      dispatch.on('tooltipMove', function(e) {
+          if (tooltip) {
+            sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+          }
+        });
+
+      dispatch.on('tooltipHide', function() {
+          if (tooltips) {
+            sucrose.tooltip.cleanup();
+          }
+        });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+          if (typeof eo.disabled !== 'undefined') {
+            data.forEach(function(series, i) {
+              series.disabled = eo.disabled[i];
+            });
+            state.disabled = eo.disabled;
+          }
+
+          if (typeof eo.stacked !== 'undefined') {
+            multibar.stacked(eo.stacked);
+            state.stacked = eo.stacked;
+          }
+
+          container.transition().call(chart);
+        });
+
+      // dispatch.on('chartClick', function() {
+      //     if (controls.enabled()) {
+      //       controls.dispatch.call('closeMenu', this);
+      //     }
+      //     if (legend.enabled()) {
+      //       legend.dispatch.call('closeMenu', this);
+      //     }
+      //   });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+  chart.projection = projection;
+  chart.path = path;
+  chart.graticule = graticule;
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          return utils.defaultColor()(d, i);
+        };
+    var classes = function(d, i) {
+          return 'sc-country-' + i + (d.classes ? ' ' + d.classes : '');
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(i / params.l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return '';
+        };
+        classes = function(d, i) {
+          var iClass = (i * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass; //TODO: use d3.formatNumber
+          return 'sc-country-' + i + ' sc-fill' + iClass;
+        };
+        break;
+      case 'data':
+        color = function(d, i) {
+          var r = d.amount || 0;
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(r / colorLimit);
+        };
+        break;
+    }
+    var fill = (!params.gradient) ? color : function(d, i) {
+        return chart.gradient(d, i);
+      };
+
+    chart.color(color);
+    chart.classes(classes);
+    chart.fill(fill);
+
+    return chart;
+  };
+
+  chart.color = function(_) {
+    if (!arguments.length) return color;
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) return fill;
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) return classes;
+    classes = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) return gradient;
+    gradient = _;
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) return width;
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) return height;
+    height = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) {
+      return tooltip;
+    }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) {
+      return tooltips;
+    }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) {
+      return tooltipContent;
+    }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) {
+      return state;
+    }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.values = function(_) {
+    if (!arguments.length) return getValues;
+    getValues = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) return getX;
+    getX = _;
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) return getY;
+    getY = utils.functor(_);
+    return chart;
+  };
+
+  chart.showLabels = function(_) {
+    if (!arguments.length) return showLabels;
+    showLabels = _;
+    return chart;
+  };
+
+  chart.autoSpin = function(_) {
+    if (!arguments.length) return autoSpin;
+    autoSpin = _;
+    return chart;
+  };
+
+  chart.id = function(_) {
+    if (!arguments.length) return id;
+    id = _;
+    return chart;
+  };
+
+  chart.valueFormat = function(_) {
+    if (!arguments.length) return valueFormat;
+    valueFormat = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) {
+      return showTitle;
+    }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.worldMap = function(_) {
+    if (!arguments.length) {
+      return world_map;
+    }
+    world_map = _;
+    return chart;
+  };
+
+  chart.countryMap = function(_) {
+    if (!arguments.length) {
+      return country_map;
+    }
+    country_map = _;
+    return chart;
+  };
+
+  chart.countryLabels = function(_) {
+    if (!arguments.length) {
+      return country_labels;
+    }
+    country_labels = _;
+    return chart;
+  };
+  //============================================================
+
+  return chart;
+};
+
+var lineChart = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      delay = 0,
+      duration = 0,
+      tooltip = null,
+      tooltips = true,
+      x,
+      y,
+      state = {},
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      pointRadius = 3,
+      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var lines = line$$1()
+        .clipEdge(true),
+      model = lines,
+      xAxis = axis(),
+      yAxis = axis(),
+      legend$$1 = legend()
+        .align('right'),
+      controls = legend()
+        .align('left')
+        .color(['#444']);
+
+  var tooltipContent = function(key, x, y, e, graph) {
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
+
+  var showTooltip = function(eo, offsetElement) {
+        var key = eo.series.key,
+            x = lines.x()(eo.point, eo.pointIndex),
+            y = lines.y()(eo.point, eo.pointIndex),
+            content = tooltipContent(key, x, y, eo, chart);
+
+        tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+      };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          modelClass = 'line';
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null,
+          labels = properties.labels ? properties.labels.map(function(d) { return d.l || d; }) : [];
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var modelData = [],
+          xTickLabels = [],
+          totalAmount = 0,
+          singlePoint = false,
+          showMaxMin = false,
+          isArrayData = true,
+          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var xValueFormat = function(d, i, selection, noEllipsis) {
+            var label = xIsDatetime ?
+                          utils.dateFormat(d, '%x', chart.locality()) :
+                          isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
+                            d :
+                            xTickLabels[parseInt(d, 10)];
+            return label;
+          };
+
+      var yValueFormat = function(d) {
+            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+          };
+
+      chart.update = function() {
+        container.transition().duration(duration).call(chart);
+      };
+
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      isArrayData = Array.isArray(data[0].values[0]);
+      if (isArrayData) {
+        model.x(function(d) { return d ? d[0] : 0; });
+        model.y(function(d) { return d ? d[1] : 0; });
+      } else {
+        model.x(function(d) { return d.x; });
+        model.y(function(d) { return d.y; });
+      }
+
+      // set title display option
+      showTitle = showTitle && properties.title;
+
+      // add series index to each data point for reference
+      // and disable data series if total is zero
+      data.map(function(d, i) {
+        d.seriesIndex = i;
+        d.total = d3.sum(d.values, function(d, i) {
+          return model.y()(d, i);
+        });
+        if (!d.total) {
+          d.disabled = true;
+        }
+      });
+
+      xTickLabels = properties.labels ?
+          properties.labels.map(function(d) { return [].concat(d.l)[0] || chart.strings().noLabel; }) :
+          [];
+
+      // TODO: what if the dimension is a numerical range?
+      // xValuesAreDates = xTickLabels.length ?
+      //       utils.isValidDate(xTickLabels[0]) :
+      //       utils.isValidDate(model.x()(data[0].values[0]));
+      // xValuesAreDates = isArrayData && utils.isValidDate(data[0].values[0][0]);
+
+      // SAVE FOR LATER
+      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
+      //   return d3.min(d.values, function(d, i) {
+      //     return model.x()(d, i);
+      //   });
+      // }) > 0;
+
+      modelData = data.filter(function(d) {
+          return !d.disabled;
+        });
+
+      // safety array
+      modelData = modelData.length ? modelData : [{series: 0, total: 0, disabled: true, values: []}];
+
+      totalAmount = d3.sum(modelData, function(d) {
+          return d.total;
+        });
+
+      //------------------------------------------------------------
+      // Display No Data message if there's nothing to show.
+
+      if (!totalAmount) {
+        displayNoData();
+        return chart;
+      }
+
+      // set state.disabled
+      state.disabled = modelData.map(function(d) { return !!d.disabled; });
+      state.interpolate = lines.interpolate();
+      state.isArea = lines.isArea()();
+
+      var controlsData = [
+        { key: 'Linear', disabled: lines.interpolate() !== 'linear' },
+        { key: 'Basis', disabled: lines.interpolate() !== 'basis' },
+        { key: 'Monotone', disabled: lines.interpolate() !== 'monotone' },
+        { key: 'Cardinal', disabled: lines.interpolate() !== 'cardinal' },
+        { key: 'Line', disabled: lines.isArea()() === true },
+        { key: 'Area', disabled: lines.isArea()() === false }
+      ];
+
+      //------------------------------------------------------------
+      // Setup Scales and Axes
+
+      // Are all data series single points
+      singlePoint = d3.max(modelData, function(d) {
+          return d.values.length;
+        }) === 1;
+
+      var pointSize = Math.pow(pointRadius, 2) * Math.PI * (singlePoint ? 3 : 1);
+
+      lines
+        .id(chart.id())
+        //TODO: we need to reconsider use of padData
+        // .padData(singlePoint ? false : true)
+        // .padDataOuter(-1)
+        // set x-scale as time instead of linear
+        .xScale(xIsDatetime && !xTickLabels.length ? d3.scaleTime() : d3.scaleLinear())
+        .singlePoint(singlePoint)
+        .size(pointSize) // default size set to 3
+        .sizeRange([pointSize, pointSize])
+        .sizeDomain([pointSize, pointSize]); //set to speed up calculation, needs to be unset if there is a custom size accessor
+
+      if (singlePoint) {
+
+        var xValues = d3.merge(modelData.map(function(d) {
+                return d.values.map(function(d, i) {
+                  return lines.x()(d, i);
+                });
+              }))
+              .reduce(function(p, c) {
+                if (p.indexOf(c) < 0) p.push(c);
+                return p;
+              }, [])
+              .sort(function(a, b) {
+                return a - b;
+              }),
+            xExtents = d3.extent(xValues),
+            xOffset = 1 * (xIsDatetime && !xTickLabels.length ? 86400000 : 1);
+
+        var yValues = d3.merge(modelData.map(function(d) {
+                return d.values.map(function(d, i) {
+                  return lines.y()(d, i);
+                });
+              })),
+            yExtents = d3.extent(yValues),
+            yOffset = modelData.length === 1 ? 2 : Math.min((yExtents[1] - yExtents[0]) / modelData.length, yExtents[0]);
+
+        lines
+          .xDomain([
+            xExtents[0] - xOffset,
+            xExtents[1] + xOffset
+          ])
+          .yDomain([
+            yExtents[0] - yOffset,
+            yExtents[1] + yOffset
+          ]);
+
+        xAxis
+          .orient('bottom')
+          .highlightZero(false)
+          .showMaxMin(false)
+          .ticks(xValues.length)
+          .tickValues(xValues)
+          .showMaxMin(false);
+        yAxis
+          .orient('left')
+          .ticks(singlePoint ? 5 : null) //TODO: why 5?
+          .showMaxMin(false)
+          .highlightZero(false);
+
+      } else {
+
+        lines
+          .xDomain(null)  //?why null?
+          .yDomain(null);
+        xAxis
+          .orient('bottom')
+          .ticks(null)
+          .tickValues(null)
+          .showMaxMin(xIsDatetime)
+          .highlightZero(false);
+        yAxis
+          .orient('left')
+          .ticks(null)
+          .showMaxMin(true)
+          .highlightZero(true);
+
+      }
+
+      x = lines.xScale();
+      y = lines.yScale();
+
+      xAxis
+        .scale(x)
+        .tickPadding(6)
+        .valueFormat(xValueFormat);
+      yAxis
+        .scale(y)
+        .tickPadding(6)
+        .valueFormat(yValueFormat);
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      //------------------------------------------------------------
+      // Main chart draw
+
+      chart.render = function() {
+
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
+
+        // Header variables
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
+            legendHeight = 0,
+            trans = '';
+
+        title_wrap.select('.sc-title').remove();
+
+        if (showTitle) {
+          title_wrap
+            .append('text')
+              .attr('class', 'sc-title')
+              .attr('x', direction === 'rtl' ? availableWidth : 0)
+              .attr('y', 0)
+              .attr('dy', '.75em')
+              .attr('text-anchor', 'start')
+              .attr('stroke', 'none')
+              .attr('fill', 'black')
+              .text(properties.title);
+
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
+
+        if (showControls) {
+          controls
+            .id('controls_' + chart.id())
+            .strings(chart.strings().controls)
+            .align('left')
+            .height(availableHeight - headerHeight);
+          controls_wrap
+            .datum(controlsData)
+            .call(controls);
+
+          maxControlsWidth = controls.calcMaxWidth();
+        }
+        if (showLegend) {
+          legend$$1
+            .id('legend_' + chart.id())
+            .strings(chart.strings().legend)
+            .align('right')
+            .height(availableHeight - headerHeight);
+          legend_wrap
+            .datum(data)
+            .call(legend$$1);
+
+          maxLegendWidth = legend$$1.calcMaxWidth();
+        }
+
+        // calculate proportional available space
+        widthRatio = availableWidth / (maxControlsWidth + maxLegendWidth);
+        maxControlsWidth = Math.floor(maxControlsWidth * widthRatio);
+        maxLegendWidth = Math.floor(maxLegendWidth * widthRatio);
+
+        if (showControls) {
+          controls
+            .arrange(maxControlsWidth);
+          maxLegendWidth = availableWidth - controls.width();
+        }
+        if (showLegend) {
+          legend$$1
+            .arrange(maxLegendWidth);
+          maxControlsWidth = availableWidth - legend$$1.width();
+        }
+
+        if (showControls) {
+          var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
+              ypos = showTitle ? titleBBox.height : - controls.margin().top;
+          controls_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+          controlsHeight = controls.height();
+        }
+        if (showLegend) {
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+              legendSpace = availableWidth - titleBBox.width - 6,
+              legendTop = showTitle && !showControls && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' ? 0 : availableWidth - legend$$1.width(),
+              ypos = titleBBox.height;
+          if (legendTop) {
+            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+          } else if (!showTitle) {
+            ypos = - legend$$1.margin().top;
+          }
+          legend_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+          legendHeight = legendTop ? 12 : legend$$1.height();
+        }
+
+        // Recalc inner margins based on legend and control height
+        headerHeight += Math.max(controlsHeight, legendHeight);
+        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+
+        //------------------------------------------------------------
+        // Main Chart Component(s)
+
+        model
+          .width(innerWidth)
+          .height(innerHeight);
+        model_wrap
+          .datum(modelData)
+          .call(model);
+
+        //------------------------------------------------------------
+        // Axes
+
+        var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
+            xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
+
+        function setInnerMargins() {
+          innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
+          innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
+          innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+        }
+
+        function setInnerDimensions() {
+          innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+          innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+          // Recalc chart dimensions and scales based on new inner dimensions
+          model.width(innerWidth).height(innerHeight);
+          // This resets the scales for the whole chart
+          // unfortunately we can't call this without until line instance is called
+          lines.scatter.resetDimensions(innerWidth, innerHeight);
+        }
+
+        // Y-Axis
+        yAxis
+          .margin(innerMargin)
+          .tickFormat(function(d, i) {
+            return yAxis.valueFormat()(d, yIsCurrency);
+          });
+        yAxis_wrap
+          .call(yAxis);
+        // reset inner dimensions
+        yAxisMargin = yAxis.margin();
+        setInnerMargins();
+        setInnerDimensions();
+
+        // X-Axis
+        // resize ticks based on new dimensions
+        xAxis
+          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
+          .margin(innerMargin)
+          .tickFormat(function(d, i, noEllipsis) {
+            return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
+          });
+        xAxis_wrap
+          .call(xAxis);
+        xAxisMargin = xAxis.margin();
+        setInnerMargins();
+        setInnerDimensions();
+        // xAxis
+        //  .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
+
+        // recall y-axis, x-axis and lines to set final size based on new dimensions
+        yAxis
+          .tickSize(-innerWidth + (lines.padData() ? pointRadius : 0), 0)
+          .margin(innerMargin);
+        yAxis_wrap
+          .call(yAxis);
+
+        xAxis
+          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
+          .margin(innerMargin);
+        xAxis_wrap
+          .call(xAxis);
+
+        model
+          .width(innerWidth)
+          .height(innerHeight);
+        model_wrap
+          .datum(modelData)
+          .call(model);
+
+        // final call to lines based on new dimensions
+        // model_wrap
+        //   .transition().duration(duration)
+        //     .call(model);
+
+        //------------------------------------------------------------
+        // Final repositioning
+
+        innerMargin.top += headerHeight;
+
+        trans = innerMargin.left + ',';
+        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
+        trans += innerMargin.top;
+        yAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        trans = innerMargin.left + ',' + innerMargin.top;
+        model_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      legend$$1.dispatch.on('legendClick', function(d, i) {
+        d.disabled = !d.disabled;
+
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
+          data.map(function(d) {
+            d.disabled = false;
+            container.selectAll('.sc-series').classed('disabled', false);
+            return d;
+          });
+        }
+
+        state.disabled = data.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      controls.dispatch.on('legendClick', function(d, i) {
+        //if the option is currently enabled (i.e., selected)
+        if (!d.disabled) {
+          return;
+        }
+
+        //set the controls all to false
+        controlsData = controlsData.map(function(s) {
+          s.disabled = true;
+          return s;
+        });
+        //activate the the selected control option
+        d.disabled = false;
+
+        switch (d.key) {
+          case 'Basis':
+            lines.interpolate('basis');
+            break;
+          case 'Linear':
+            lines.interpolate('linear');
+            break;
+          case 'Monotone':
+            lines.interpolate('monotone');
+            break;
+          case 'Cardinal':
+            lines.interpolate('cardinal');
+            break;
+          case 'Line':
+            lines.isArea(false);
+            break;
+          case 'Area':
+            lines.isArea(true);
+            break;
+        }
+
+        state.interpolate = lines.interpolate();
+        state.isArea = lines.isArea();
+        dispatch.call('stateChange', this, state);
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          tooltip = showTooltip(eo, that.parentNode, properties);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip) {
+          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          data.forEach(function(series, i) {
+            series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        if (typeof eo.interpolate !== 'undefined') {
+          lines.interpolate(eo.interpolate);
+          state.interpolate = eo.interpolate;
+        }
+
+        if (typeof eo.isArea !== 'undefined') {
+          lines.isArea(eo.isArea);
+          state.isArea = eo.isArea;
+        }
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        //dispatch.call('tooltipHide', this);
+        if (controls.enabled()) {
+          controls.dispatch.call('closeMenu', this);
+        }
+        if (legend$$1.enabled()) {
+          legend$$1.dispatch.call('closeMenu', this);
+        }
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  model.dispatch.on('elementMouseout.tooltip', function(eo) {
+    // need eo for removing hover class on element
+    dispatch.call('tooltipHide', this, eo);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.lines = lines;
+  chart.legend = legend$$1;
+  chart.controls = controls;
+  chart.xAxis = xAxis;
+  chart.yAxis = yAxis;
+
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, lines, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+    var classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return 'inherit';
+        };
+        classes = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+        };
+        break;
+      case 'data':
+        color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+        classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var fill = (!params.gradient) ? color : function(d, i) {
+      return model.gradient(d, d.seriesIndex);
+    };
+
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
+
+    // don't enable this since controls get a custom function
+    // controls.color(color);
+    // controls.classes(classes);
+    legend$$1.color(color);
+    legend$$1.classes(classes);
+
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) { return showTitle; }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showControls = function(_) {
+    if (!arguments.length) { return showControls; }
+    showControls = _;
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) { return showLegend; }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) { return tooltip; }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) { return tooltips; }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) { return tooltipContent; }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) { return state; }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) { return strings; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    xAxis.direction(_);
+    yAxis.direction(_);
+    legend$$1.direction(_);
+    controls.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    model.delay(_);
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var multiBarChart = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      tooltip = null,
+      tooltips = true,
+      x,
+      y,
+      delay = 0,
+      duration = 0,
+      state = {},
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      vertical = true,
+      scrollEnabled = true,
+      overflowHandler = function(d) { return; },
+      hideEmptyGroups = true,
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  // Scroll variables
+  var useScroll = false,
+      scrollOffset = 0;
+
+  var multibar = multiBar().stacked(false).clipEdge(false);
+  var model = multibar;
+  var xAxis = axis(); //.orient('bottom'),
+  var yAxis = axis(); //.orient('left'),
+  var controls = legend().color(['#444']);
+  var legend$$1 = legend();
+  var scroll$$1 = scroll();
+
+  var tooltipContent = function(eo, graph) {
+        var key = eo.group.label,
+            y = eo.point.y,
+            x = Math.abs(y * 100 / eo.group._height).toFixed(1);
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
+
+  var showTooltip = function(eo, offsetElement) {
+        var content = tooltipContent(eo, chart),
+            gravity = eo.value < 0 ?
+              vertical ? 'n' : 'e' :
+              vertical ? 's' : 'w';
+
+        return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+      };
+
+  var seriesClick = function(data, e, chart) {
+        return;
+      };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          modelClass = vertical ? 'multibar' : 'multibar-horizontal';
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var availableWidth = width;
+      var availableHeight = height;
+
+      var seriesData = [],
+          seriesCount = 0,
+          groupData = [],
+          groupLabels = [],
+          groupCount = 0,
+          totalAmount = 0,
+          hasData = false,
+          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32;
+
+      var xValueFormat = function(d, i, selection, noEllipsis) {
+            // Set axis to use trimmed array rather than data
+            var value = groupLabels && Array.isArray(groupLabels) ?
+                          groupLabels[i] || d:
+                          d;
+            var label = xIsDatetime ?
+                          utils.dateFormat(value, '%x', chart.locality()) :
+                          value;
+            var width = Math.max(vertical ?
+                          baseDimension * 2 :
+                          availableWidth * 0.2, 75);
+            return !noEllipsis ?
+                      utils.stringEllipsify(label, container, width) :
+                      label;
+          };
+
+      var yValueFormat = function(d) {
+            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+          };
+
+      chart.update = function() {
+        container.transition().duration(duration).call(chart);
+      };
+
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series;
+
+        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+        series.values.map(function(d) {
+          d.active = series.active;
+        });
+
+        // if you have activated a data series, inactivate the rest
+        if (series.active === 'active') {
+          data
+            .filter(function(d) {
+              return d.active !== 'active';
+            })
+            .map(function(d) {
+              d.active = 'inactive';
+              d.values.map(function(d) {
+                d.active = 'inactive';
+              });
+              return d;
+            });
+        }
+
+        // if there are no active data series, activate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data.map(function(d) {
+              d.active = '';
+              d.values.map(function(d) {
+                d.active = '';
+              });
+              container.selectAll('.sc-series').classed('sc-inactive', false);
+              return d;
+            });
+        }
+
+        container.call(chart);
+      };
+
+      // add series index to each data point for reference
+      data.forEach(function(series, s) {
+        // make sure untrimmed values array exists
+        // and set immutable series values
+        if (!series._values) {
+          series._values = series.values.map(function(value, v) {
+            return {
+              'x': value.x,
+              'y': value.y
+            };
+          });
+        }
+
+        series.seriesIndex = s;
+
+        series.values = series._values.map(function(value, v) {
+            return {
+                  'seriesIndex': series.seriesIndex,
+                  'group': v,
+                  'color': typeof series.color !== 'undefined' ? series.color : '',
+                  'x': multibar.x()(value, v),
+                  'y': multibar.y()(value, v),
+                  'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
+                  'active': typeof series.active !== 'undefined' ? series.active : ''
+                };
+          });
+
+        series.total = d3.sum(series.values, function(value, v) {
+            return value.y;
+          });
+
+        // disabled if all values in series are zero
+        // or the series was disabled by the legend
+        series.disabled = series.disabled || series.total === 0;
+        // inherit values from series
+        series.values.forEach(function(value, v) {
+          // do not eval d.active because it can be false
+          value.active = typeof series.active !== 'undefined' ? series.active : '';
+        });
+      });
+
+      seriesData = data
+        .filter(function(series, s) {
+          return !series.disabled && (!series.type || series.type === 'bar');
+        })
+        .map(function(series, s) {
+          series.seri = s;
+          series.values
+            .forEach(function(value, v) {
+              value.seri = series.seri;
+            });
+          return series;
+        });
+
+      seriesCount = seriesData.length;
+      hasData = seriesCount > 0;
+
+      // update groupTotal amounts based on enabled data series
+      groupData = properties.groups.map(function(group, g) {
+          group.total = 0;
+          group._height = 0;
+          // only sum enabled series
+          seriesData
+            .forEach(function(series, s) {
+              series.values
+                .filter(function(value, v) {
+                  return value.group === g;
+                })
+                .forEach(function(value, v) {
+                  group.total += value.y;
+                  group._height += Math.abs(value.y);
+                });
+            });
+          return group;
+        });
+
+      totalAmount = d3.sum(groupData, function(group) { return group.total; });
+
+      // build a trimmed array for active group only labels
+      groupLabels = groupData
+        .filter(function(group, g) {
+          return hideEmptyGroups ? group._height !== 0 : true;
+        })
+        .map(function(group) {
+          return group.label || chart.strings().noLabel;
+        });
+
+      groupCount = groupLabels.length;
+
+      if (hideEmptyGroups) {
+        // build a discrete array of data values for the multibar
+        // based on enabled data series
+        seriesData.forEach(function(series, s) {
+          //reset series values to exlcude values for
+          //groups that have all zero values
+          series.values = series.values
+            .filter(function(value, v) {
+              return groupData[v]._height !== 0;
+            })
+            .map(function(value, v) {
+              return {
+                'seri': series.seri,
+                'seriesIndex': value.seriesIndex,
+                'group': value.group,
+                'color': value.color,
+                'x': (v + 1),
+                'y': value.y,
+                'y0': value.y0,
+                'active': value.active
+              };
+            });
+          return series;
+        });
+      }
+            // return {
+            //       'seriesIndex': series.seriesIndex,
+            //       'group': v,
+            //       'color': typeof series.color !== 'undefined' ? series.color : '',
+            //       'x': multibar.x()(value, v),
+            //       'y': multibar.y()(value, v),
+            //       'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
+            //       'active': typeof series.active !== 'undefined' ? series.active : ''
+            //     };
+      //------------------------------------------------------------
+      // Display No Data message if there's nothing to show.
+
+      if (!hasData) {
+        displayNoData();
+        return chart;
+      }
+
+      // safety array
+      if (!seriesData.length) {
+        seriesData = [{values: []}];
+      }
+
+      // set state.disabled
+      state.disabled = data.map(function(d) { return !!d.disabled; });
+      state.stacked = multibar.stacked();
+
+      // set title display option
+      showTitle = showTitle && properties.title;
+
+      var controlsData = [
+        { key: 'Grouped', disabled: state.stacked },
+        { key: 'Stacked', disabled: !state.stacked }
+      ];
+
+      //------------------------------------------------------------
+      // Setup Scales and Axes
+
+      x = multibar.xScale();
+      y = multibar.yScale();
+
+      xAxis
+        .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
+        .scale(x)
+        .valueFormat(xValueFormat)
+        .tickSize(0)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false);
+
+      yAxis
+        .orient(vertical ? 'left' : 'bottom')
+        .scale(y)
+        .valueFormat(yValueFormat)
+        .tickPadding(4)
+        .showMaxMin(true);
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      /* Clipping box for scroll */
+      wrap_entr.append('defs');
+
+      /* Container for scroll elements */
+      wrap_entr.append('g').attr('class', 'sc-scroll-background');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+      /* Append scroll group with chart mask */
+      wrap_entr.append('g').attr('class', 'sc-scroll-wrap');
+      var scroll_wrap = wrap.select('.sc-scroll-wrap');
+
+      wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+
+      wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-bars-wrap');
+      var model_wrap = wrap.select('.sc-bars-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      //------------------------------------------------------------
+      // Main chart draw
+
+      chart.render = function() {
+
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            // availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        // Scroll variables
+        // for stacked, baseDimension is width of bar plus 1/4 of bar for gap
+        // for grouped, baseDimension is width of bar plus width of one bar for gap
+        var boundsWidth = state.stacked ? baseDimension : baseDimension * seriesCount + baseDimension,
+            gap = baseDimension * (state.stacked ? 0.25 : 1),
+            minDimension = groupCount * boundsWidth + gap;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
+
+        // Header variables
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
+            legendHeight = 0,
+            trans = '';
+
+        title_wrap.select('.sc-title').remove();
+
+        if (showTitle) {
+          title_wrap
+            .append('text')
+              .attr('class', 'sc-title')
+              .attr('x', direction === 'rtl' ? availableWidth : 0)
+              .attr('y', 0)
+              .attr('dy', '.75em')
+              .attr('text-anchor', 'start')
+              .attr('stroke', 'none')
+              .attr('fill', 'black')
+              .text(properties.title);
+
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
+
+        if (showControls) {
+          controls
+            .id('controls_' + chart.id())
+            .strings(chart.strings().controls)
+            .align('left')
+            .height(availableHeight - headerHeight);
+          controls_wrap
+            .datum(controlsData)
+            .call(controls);
+
+          maxControlsWidth = controls.calcMaxWidth();
+        }
+        if (showLegend) {
+          if (multibar.barColor()) {
+            data.forEach(function(series, i) {
+              series.color = d3.rgb('#ccc').darker(i * 1.5).toString();
+            });
+          }
+
+          legend$$1
+            .id('legend_' + chart.id())
+            .strings(chart.strings().legend)
+            .align('right')
+            .height(availableHeight - headerHeight);
+
+          legend_wrap
+            .datum(data)
+            .call(legend$$1);
+
+          maxLegendWidth = legend$$1.calcMaxWidth();
+        }
+
+        // calculate proportional available space
+        widthRatio = availableWidth / (maxControlsWidth + maxLegendWidth);
+        maxControlsWidth = Math.floor(maxControlsWidth * widthRatio);
+        maxLegendWidth = Math.floor(maxLegendWidth * widthRatio);
+
+        if (showControls) {
+          controls
+            .arrange(maxControlsWidth);
+          maxLegendWidth = availableWidth - controls.width();
+        }
+        if (showLegend) {
+          legend$$1
+            .arrange(maxLegendWidth);
+          maxControlsWidth = availableWidth - legend$$1.width();
+        }
+
+        if (showControls) {
+          var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
+              ypos = showTitle ? titleBBox.height : - controls.margin().top;
+          controls_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+          controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
+        }
+        if (showLegend) {
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+              legendSpace = availableWidth - titleBBox.width - 6,
+              legendTop = showTitle && !showControls && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' ? 0 : availableWidth - legend$$1.width(),
+              ypos = titleBBox.height;
+          if (legendTop) {
+            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+          } else if (!showTitle) {
+            ypos = - legend$$1.margin().top;
+          }
+          legend_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+          legendHeight = legendTop ? 12 : legend$$1.height() - (showTitle ? 0 : legend$$1.margin().top);
+        }
+
+        // Recalc inner margins based on legend and control height
+        headerHeight += Math.max(controlsHeight, legendHeight);
+        innerMargin.top += headerHeight;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
+        //------------------------------------------------------------
+        // Main Chart Component(s)
+
+        function getDimension(d) {
+          if (d === 'width') {
+            return vertical && scrollEnabled ? Math.max(innerWidth, minDimension) : innerWidth;
+          } else if (d === 'height') {
+            return !vertical && scrollEnabled ? Math.max(innerHeight, minDimension) : innerHeight;
+          } else {
+            return 0;
+          }
+        }
+
+        multibar
+          .vertical(vertical)
+          .baseDimension(baseDimension)
+          .disabled(data.map(function(series) { return series.disabled; }))
+          .width(getDimension('width'))
+          .height(getDimension('height'));
+        model_wrap
+          .data([seriesData])
+          .call(multibar);
+
+        //------------------------------------------------------------
+        // Axes
+
+        var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
+            xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
+
+        function setInnerMargins() {
+          innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
+          innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
+          innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+          setInnerDimensions();
+        }
+
+        function setInnerDimensions() {
+          innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+          // Recalc chart dimensions and scales based on new inner dimensions
+          multibar.resetDimensions(getDimension('width'), getDimension('height'));
+        }
+
+        // Y-Axis
+        yAxis
+          .margin(innerMargin)
+          .ticks(innerHeight / 48);
+        yAxis_wrap
+          .call(yAxis);
+        // reset inner dimensions
+        yAxisMargin = yAxis.margin();
+        setInnerMargins();
+
+        // X-Axis
+        xAxis
+          .margin(innerMargin)
+          .ticks(groupCount);
+        trans = innerMargin.left + ',';
+        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xAxis_wrap
+          .attr('transform', 'translate(' + trans + ')')
+            .call(xAxis);
+        // reset inner dimensions
+        xAxisMargin = xAxis.margin();
+        setInnerMargins();
+
+        // resize ticks based on new dimensions
+        xAxis
+          .tickSize(0)
+          .margin(innerMargin);
+        xAxis_wrap
+          .call(xAxis);
+
+        // reset inner dimensions
+        xAxisMargin = xAxis.margin();
+        setInnerMargins();
+
+        // recall y-axis to set final size based on new dimensions
+        yAxis
+          .tickSize(vertical ? -innerWidth : -innerHeight, 0)
+          .margin(innerMargin);
+        yAxis_wrap
+          .call(yAxis);
+
+        // reset inner dimensions
+        yAxisMargin = yAxis.margin();
+        setInnerMargins();
+
+        // final call to lines based on new dimensions
+        model_wrap
+          .transition()
+            .call(multibar);
+
+        //------------------------------------------------------------
+        // Final repositioning
+
+
+        trans = (vertical || xAxis.orient() === 'left' ? 0 : innerWidth) + ',';
+        trans += (vertical && xAxis.orient() === 'bottom' ? innerHeight + 2 : -2);
+        xAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        trans = innerMargin.left + (vertical || yAxis.orient() === 'bottom' ? 0 : innerWidth) + ',';
+        trans += innerMargin.top + (vertical || yAxis.orient() === 'left' ? 0 : innerHeight);
+        yAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        scroll_wrap
+          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+
+        //------------------------------------------------------------
+        // Enable scrolling
+
+        if (scrollEnabled) {
+
+          useScroll = minDimension > (vertical ? innerWidth : innerHeight);
+
+          xAxis_wrap.select('.sc-axislabel')
+            .attr('x', (vertical ? innerWidth : -innerHeight) / 2);
+
+          var diff = (vertical ? innerWidth : innerHeight) - minDimension,
+              panMultibar = function() {
+                dispatch.call('tooltipHide', this);
+                scrollOffset = scroll$$1.pan(diff);
+                xAxis_wrap.select('.sc-axislabel')
+                  .attr('x', (vertical ? innerWidth - scrollOffset * 2 : scrollOffset * 2 - innerHeight) / 2);
+              };
+
+          scroll$$1
+            .id(chart.id())
+            .enable(useScroll)
+            .vertical(vertical)
+            .width(innerWidth)
+            .height(innerHeight)
+            .margin(innerMargin)
+            .minDimension(minDimension)
+            .panHandler(panMultibar);
+
+          scroll$$1(wrap, wrap_entr, scroll_wrap, xAxis);
+
+          scroll$$1.init(scrollOffset, overflowHandler);
+
+          // initial call to zoom in case of scrolled bars on window resize
+          scroll$$1.panHandler()();
+        }
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      legend$$1.dispatch.on('legendClick', function(d, i) {
+        d.disabled = !d.disabled;
+        d.active = false;
+
+        // if there are no enabled data series, enable them all
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
+          data.map(function(d) {
+            d.disabled = false;
+            return d;
+          });
+        }
+
+        // if there are no active data series, activate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data.map(function(d) {
+            d.active = '';
+            return d;
+          });
+        }
+
+        state.disabled = data.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      controls.dispatch.on('legendClick', function(d, i) {
+        //if the option is currently enabled (i.e., selected)
+        if (!d.disabled) {
+          return;
+        }
+
+        //set the controls all to false
+        controlsData = controlsData.map(function(s) {
+          s.disabled = true;
+          return s;
+        });
+        //activate the the selected control option
+        d.disabled = false;
+
+        switch (d.key) {
+          case 'Grouped':
+            multibar.stacked(false);
+            break;
+          case 'Stacked':
+            multibar.stacked(true);
+            break;
+        }
+
+        state.stacked = multibar.stacked();
+        dispatch.call('stateChange', this, state);
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          eo.group = groupData[eo.groupIndex];
+          tooltip = showTooltip(eo, that.parentNode, groupData);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip) {
+          sucrose.tooltip.position(that.parentNode, tooltip, e, vertical ? 's' : 'w');
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          data.forEach(function(series, i) {
+            series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        if (typeof eo.stacked !== 'undefined') {
+          multibar.stacked(eo.stacked);
+          state.stacked = eo.stacked;
+        }
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        //dispatch.call('tooltipHide', this);
+        if (controls.enabled()) {
+          controls.dispatch.call('closeMenu', this);
+        }
+        if (legend$$1.enabled()) {
+          legend$$1.dispatch.call('closeMenu', this);
+        }
+      });
+
+      model.dispatch.on('elementClick', function(eo) {
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart);
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  model.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.multibar = multibar;
+  chart.legend = legend$$1;
+  chart.controls = controls;
+  chart.xAxis = xAxis;
+  chart.yAxis = yAxis;
+
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+    var classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return 'inherit';
+        };
+        classes = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+        };
+        break;
+      case 'data':
+        color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+        classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var fill = (!params.gradient) ? color : function(d, i) {
+      var p = {orientation: params.orientation || (vertical ? 'vertical' : 'horizontal'), position: params.position || 'middle'};
+      return model.gradient(d, d.seriesIndex, p);
+    };
+
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
+
+    // don't enable this since controls get a custom function
+    // controls.color(color);
+    // controls.classes(classes);
+    legend$$1.color(color);
+    legend$$1.classes(classes);
+
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) { return showTitle; }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showControls = function(_) {
+    if (!arguments.length) { return showControls; }
+    showControls = _;
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) { return showLegend; }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) { return tooltip; }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) { return tooltips; }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) { return tooltipContent; }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) { return state; }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) { return strings; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    model.direction(_);
+    xAxis.direction(_);
+    yAxis.direction(_);
+    legend$$1.direction(_);
+    controls.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) { return seriesClick; }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.vertical = function(_) {
+    if (!arguments.length) { return vertical; }
+    vertical = _;
+    return chart;
+  };
+
+  chart.allowScroll = function(_) {
+    if (!arguments.length) { return scrollEnabled; }
+    scrollEnabled = _;
+    return chart;
+  };
+
+  chart.overflowHandler = function(_) {
+    if (!arguments.length) { return overflowHandler; }
+    overflowHandler = utils.functor(_);
+    return chart;
+  };
+
+  chart.hideEmptyGroups = function(_) {
+    if (!arguments.length) { return hideEmptyGroups; }
+    hideEmptyGroups = _;
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var paretoChart = function() {
+  //'use strict';
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      tooltip = null,
+      tooltips = true,
+      x,
+      y,
+      clipEdge = false, // if true, masks lines within x and y scale
+      delay = 0, // transition
+      duration = 300, // transition
+      state = {},
+      strings = {
+        barlegend: {close: 'Hide bar legend', open: 'Show bar legend'},
+        linelegend: {close: 'Hide line legend', open: 'Show line legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      locality = utils.buildLocality(),
+      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var multibar = multiBar()
+      .stacked(true)
+      .clipEdge(false)
+      .withLine(true)
+      .nice(false),
+    linesBackground = line$$1()
+      .color(function(d, i) { return '#FFF'; })
+      .fill(function(d, i) { return '#FFF'; })
+      .useVoronoi(false)
+      .nice(false),
+    lines = line$$1()
+      .useVoronoi(false)
+      .color('data')
+      .nice(false),
+    xAxis = axis(),
+    yAxis = axis(),
+    barLegend = legend()
+      .align('left')
+      .position('middle'),
+    lineLegend = legend()
+      .align('right')
+      .position('middle');
+
+  var tooltipBar = function(key, x, y, e, graph) {
+        return '<p><b>' + key + '</b></p>' +
+               '<p><b>' + y + '</b></p>' +
+               '<p><b>' + x + '%</b></p>';
+      };
+  var tooltipLine = function(key, x, y, e, graph) {
+        return '<p><p>' + key + ': <b>' + y + '</b></p>';
+      };
+  var tooltipQuota = function(key, x, y, e, graph) {
+        return '<p>' + e.key + ': <b>' + y + '</b></p>';
+      };
+
+  var showTooltip = function(eo, offsetElement, groupData) {
+        var key = eo.series.key,
+            per = (eo.point.y * 100 / groupData[eo.pointIndex].t).toFixed(1),
+            amt = lines.y()(eo.point, eo.pointIndex),
+            content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
+
+        return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+      };
+
+  var showQuotaTooltip = function(eo, offsetElement) {
+        var content = tooltipQuota(eo.key, 0, eo.val, eo, chart);
+        return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+      };
+
+  var seriesClick = function(data, eo, chart, container) {
+        return;
+      };
+
+  var getAbsoluteXY = function(element) {
+        var viewportElement = document.documentElement,
+          box = element.getBoundingClientRect(),
+          scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft,
+          scrollTop = viewportElement.scrollTop + document.body.scrollTop,
+          x = box.left + scrollLeft,
+          y = box.top + scrollTop;
+
+        return {'x': x, 'y': y};
+      };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          modelClass = 'pareto';
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var maxBarLegendWidth = 0,
+          maxLineLegendWidth = 0,
+          widthRatio = 0,
+          headerHeight = 0,
+          pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
+          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var baseDimension = multibar.stacked() ? 72 : 32;
+
+      var xValueFormat = function(d, i, selection, noEllipsis) {
+            // Set axis to use trimmed array rather than data
+            var value = groupLabels && Array.isArray(groupLabels) ?
+                          groupLabels[i] || d:
+                          d;
+            var label = xIsDatetime ?
+                          utils.dateFormat(value, '%x', chart.locality()) :
+                          value;
+            var width = Math.max(baseDimension * 2, 75);
+            return !noEllipsis ?
+                      utils.stringEllipsify(label, container, width) :
+                      label;
+          };
+
+      var yValueFormat = function(d) {
+            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+          };
+
+      chart.update = function() {
+        container.transition().call(chart);
+      };
+
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series;
+
+        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+        series.values.map(function(d) {
+          d.active = series.active;
+        });
+
+        // if you have activated a data series, inactivate the rest
+        if (series.active === 'active') {
+          data
+            .filter(function(d) {
+              return d.active !== 'active';
+            })
+            .map(function(d) {
+              d.active = 'inactive';
+              d.values.map(function(d) {
+                d.active = 'inactive';
+              });
+              return d;
+            });
+        }
+
+        // if there are no active data series, activate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data
+            .map(function(d) {
+              d.active = '';
+              d.values.map(function(d) {
+                d.active = '';
+              });
+              container.selectAll('.sc-series').classed('sc-inactive', false);
+              return d;
+            });
+        }
+
+        container.call(chart);
+      };
+
+      // add series index to each data point for reference
+      data.forEach(function(series, s) {
+        // make sure untrimmed values array exists
+        // and set immutable series values
+        if (!series._values) {
+          series._values = series.values.map(function(value, v) {
+            return {
+              'x': Array.isArray(value) ? value[0] : value.x,
+              'y': Array.isArray(value) ? value[1] : value.y
+            };
+          });
+        }
+      });
+
+      var barData = data
+            .filter(function(d) {
+              return !d.type || d.type === 'bar';
+            })
+            .map(function(series, s) {
+              series.seriesIndex = s;
+
+              series.values = series._values.map(function(value, v) {
+                  return {
+                      'group': v,
+                      'seriesIndex': series.seriesIndex,
+                      'color': typeof series.color !== 'undefined' ? series.color : '',
+                      'x': multibar.x()(value, v),
+                      'y': multibar.y()(value, v),
+                      'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
+                      'active': typeof series.active !== 'undefined' ? series.active : '' // do not eval d.active because it can be false
+                    };
+                });
+
+              return series;
+            })
+            .filter(function(d) {
+              return !d.disabled;
+            })
+            .map(function(series, s) {
+              series.seri = s;
+              series.values
+                .forEach(function(value, v) {
+                  value.seri = series.seri;
+                });
+              return series;
+            });
+      barData = barData.length ? barData : [{values: []}];
+
+      var lineData = data
+            .filter(function(d) {
+              return d.type === 'line';
+            })
+            .map(function(series, s) {
+              series.seriesIndex = s;
+
+              if (!multibar.stacked()) {
+
+                series.values = series._values.map(function(value, v) {
+                  return {
+                    'seriesIndex': series.seriesIndex,
+                    'color': typeof series.color !== 'undefined' ? series.color : '',
+                    'x': lines.x()(value, v) + (series.seriesIndex - v) * 0.25,
+                    'y': lines.y()(value, v)
+                  };
+                });
+
+              } else {
+
+                series.values.forEach(function(value) {
+                  value.y = 0;
+                });
+
+                barData.map(function(barSeries) {
+                    barSeries.values.map(function(value, v) {
+                      series.values[v].y += multibar.y()(value, v);
+                    });
+                  });
+
+                series.values.forEach(function(value, v) {
+                  if (v > 0) {
+                    value.y += series.values[v - 1].y;
+                  }
+                });
+
+              }
+
+              return series;
+            })
+            .filter(function(d) {
+              return !d.disabled;
+            })
+            .map(function(series, s) {
+              series.seri = s;
+              series.values
+                .forEach(function(value, v) {
+                  value.seri = series.seri;
+                });
+              return series;
+            });
+      lineData = lineData.length ? lineData : [{values: []}];
+
+      var groupData = properties.groupData,
+          groupLabels = groupData.map(function(d) {
+            return [].concat(d.l)[0] || chart.strings().noLabel;
+          });
+
+      var quotaValue = properties.quota || 0,
+          quotaLabel = properties.quotaLabel || '';
+
+      var targetQuotaValue = properties.targetQuota || 0,
+          targetQuotaLabel = properties.targetQuotaLabel || '';
+
+      //------------------------------------------------------------
+      // Legend data
+
+      var barLegendData = data
+            .filter(function(d) {
+              return !d.type || d.type === 'bar';
+            });
+
+      var lineLegendData = data
+            .filter(function(d) {
+              return d.type === 'line';
+            });
+      lineLegendData.push({
+        'key': quotaLabel,
+        'type': 'dash',
+        'color': '#444',
+        'seriesIndex': lineLegendData.length,
+        'values': {'seriesIndex': lineLegendData.length, 'x': 0, 'y': 0}
+      });
+      if (targetQuotaValue > 0) {
+        lineLegendData.push({
+          'key': targetQuotaLabel,
+          'type': 'dash',
+          'color': '#777',
+          'seriesIndex': lineLegendData.length,
+          'values': {'seriesIndex': lineLegendData.length + 1, 'x': 0, 'y': 0}
+        });
+      }
+
+      var seriesX = data
+            .filter(function(d) {
+              return !d.disabled;
+            })
+            .map(function(d) {
+              return d._values.map(function(d, i) {
+                return getX(d, i);
+              });
+            });
+
+      var seriesY = data
+            .map(function(d) {
+              return d._values.map(function(d, i) {
+                return getY(d, i);
+              });
+            });
+
+      // set title display option
+      showTitle = showTitle && properties.title;
+
+      //------------------------------------------------------------
+      // Setup Scales
+
+      x = multibar.xScale();
+      y = multibar.yScale();
+
+      xAxis
+        .orient('bottom')
+        .scale(x)
+        .valueFormat(xValueFormat)
+        .tickSize(0)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false);
+
+      yAxis
+        .orient('left')
+        .scale(y)
+        .valueFormat(yValueFormat)
+        .tickPadding(7)
+        .showMaxMin(true);
+
+      //------------------------------------------------------------
+      // Main chart draw
+
+      chart.render = function() {
+
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
+        // Header variables
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
+            legendHeight = 0,
+            trans = '';
+
+        //------------------------------------------------------------
+        // Setup containers and skeleton of chart
+
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+        wrap_entr.append('rect').attr('class', 'sc-background')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('width', renderWidth)
+          .attr('height', renderHeight)
+          .attr('fill', '#FFF');
+
+        wrap_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = wrap.select('.sc-title-wrap');
+
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+        wrap_entr.append('g').attr('class', 'sc-bars-wrap');
+        var bars_wrap = wrap.select('.sc-bars-wrap');
+        wrap_entr.append('g').attr('class', 'sc-quota-wrap');
+        var quota_wrap = wrap.select('.sc-quota-wrap');
+
+        wrap_entr.append('g').attr('class', 'sc-lines-wrap1');
+        var lines_wrap1 = wrap.select('.sc-lines-wrap1');
+        wrap_entr.append('g').attr('class', 'sc-lines-wrap2');
+        var lines_wrap2 = wrap.select('.sc-lines-wrap2');
+
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap sc-bar-legend');
+        var barLegend_wrap = wrap.select('.sc-legend-wrap.sc-bar-legend');
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap sc-line-legend');
+        var lineLegend_wrap = wrap.select('.sc-legend-wrap.sc-line-legend');
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        //------------------------------------------------------------
+        // Title & Legends
+
+        title_wrap.select('.sc-title').remove();
+
+        if (showTitle) {
+          title_wrap
+            .append('text')
+            .attr('class', 'sc-title')
+            .attr('x', direction === 'rtl' ? availableWidth : 0)
+            .attr('y', 0)
+            .attr('dy', '.75em')
+            .attr('text-anchor', 'start')
+            .attr('stroke', 'none')
+            .attr('fill', 'black')
+            .text(properties.title);
+
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
+
+        if (showLegend) {
+          // bar series legend
+          barLegend
+            .id('barlegend_' + chart.id())
+            .strings(chart.strings().barlegend)
+            .align('left')
+            .height(availableHeight - innerMargin.top);
+          barLegend_wrap
+            .datum(barLegendData)
+            .call(barLegend);
+
+          maxBarLegendWidth = barLegend.calcMaxWidth();
+
+          // line series legend
+          lineLegend
+            .id('linelegend_' + chart.id())
+            .strings(chart.strings().linelegend)
+            .align('right')
+            .height(availableHeight - innerMargin.top);
+          lineLegend_wrap
+            .datum(lineLegendData)
+            .call(lineLegend);
+
+          maxLineLegendWidth = lineLegend.calcMaxWidth();
+
+          // calculate proportional available space
+          widthRatio = availableWidth / (maxBarLegendWidth + maxLineLegendWidth);
+
+          barLegend
+            .arrange(Math.floor(widthRatio * maxBarLegendWidth));
+
+          lineLegend
+            .arrange(Math.floor(widthRatio * maxLineLegendWidth));
+
+          barLegend_wrap
+            .attr('transform', 'translate(' + (direction === 'rtl' ? availableWidth - barLegend.width() : 0) + ',' + innerMargin.top + ')');
+          lineLegend_wrap
+            .attr('transform', 'translate(' + (direction === 'rtl' ? 0 : availableWidth - lineLegend.width()) + ',' + innerMargin.top + ')');
+        }
+
+        // Recalculate inner margins based on legend size
+        headerHeight += Math.max(barLegend.height(), lineLegend.height()) + 4;
+        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+
+        //------------------------------------------------------------
+        // Initial call of Main Chart Components
+
+        var limitY = Math.max(d3.max(d3.merge(seriesY)), quotaValue, targetQuotaValue || 0);
+        var forceY = [0, Math.ceil(limitY * 0.1) * 10];
+
+        // Main Bar Chart
+        multibar
+          .width(innerWidth)
+          .height(innerHeight)
+          .forceY(forceY)
+          .id(chart.id());
+        bars_wrap
+          .datum(barData)
+          .call(multibar);
+
+        var outerPadding = x(1) + x.bandwidth() / (multibar.stacked() || lineData.length === 1 ? 2 : 4);
+
+        // Main Line Chart
+        linesBackground
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
+          .width(innerWidth)
+          .height(innerHeight)
+          .forceY(forceY)
+          .useVoronoi(false)
+          .id('outline_' + chart.id());
+        lines
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
+          .width(innerWidth)
+          .height(innerHeight)
+          .forceY(forceY)
+          .useVoronoi(false)
+          .size(pointSize)
+          .sizeRange([pointSize, pointSize])
+          .sizeDomain([pointSize, pointSize])
+          .id('foreground_' + chart.id());
+        lines_wrap1
+          .datum(lineData)
+          .call(linesBackground);
+        lines_wrap2
+          .datum(lineData)
+          .call(lines);
+
+        // Axes
+        xAxis_wrap
+          .call(xAxis);
+
+        yAxis_wrap
+          .style('opacity', barData.length ? 1 : 0)
+          .call(yAxis);
+
+        var xAxisMargin = xAxis.margin();
+        var yAxisMargin = yAxis.margin();
+
+        var quotaTextWidth = 0,
+            quotaTextHeight = 14;
+
+        function setInnerMargins() {
+          innerMargin.left = Math.max(quotaTextWidth, xAxisMargin.left, yAxisMargin.left);
+          innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
+          innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+          setInnerDimensions();
+        }
+
+        function setInnerDimensions() {
+          innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+          // Recalc chart dimensions and scales based on new inner dimensions
+          multibar.resetDimensions(innerWidth, innerHeight);
+        }
+
+        //------------------------------------------------------------
+        // Quota Line
+
+        quota_wrap.selectAll('line').remove();
+        yAxis_wrap.selectAll('text.sc-quota-value').remove();
+        yAxis_wrap.selectAll('text.sc-target-quota-value').remove();
+
+        // Target Quota Line
+        if (targetQuotaValue > 0) {
+          quota_wrap.append('line')
+            .attr('class', 'sc-quota-target')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', innerWidth)
+            .attr('y2', 0)
+            .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')')
+            .style('stroke-dasharray', '8, 8');
+
+          quota_wrap.append('line')
+            .datum({key: targetQuotaLabel, val: targetQuotaValue})
+            .attr('class', 'sc-quota-target sc-quota-background')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', innerWidth)
+            .attr('y2', 0)
+            .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
+
+          // Target Quota line label
+          yAxis_wrap.append('text')
+            .text(yAxis.valueFormat()(targetQuotaValue, true))
+            .attr('class', 'sc-target-quota-value')
+            .attr('dy', '.36em')
+            .attr('dx', '0')
+            .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
+            .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
+
+          quotaTextWidth = Math.round(wrap.select('text.sc-target-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding());
+        }
+
+        if (quotaValue > 0) {
+          quota_wrap.append('line')
+            .attr('class', 'sc-quota-line')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', innerWidth)
+            .attr('y2', 0)
+            .attr('transform', 'translate(0,' + y(quotaValue) + ')')
+            .style('stroke-dasharray', '8, 8');
+
+          quota_wrap.append('line')
+            .datum({key: quotaLabel, val: quotaValue})
+            .attr('class', 'sc-quota-line sc-quota-background')
+            .attr('x1', 0)
+            .attr('y1', 0)
+            .attr('x2', innerWidth)
+            .attr('y2', 0)
+            .attr('transform', 'translate(0,' + y(quotaValue) + ')');
+
+          // Quota line label
+          yAxis_wrap.append('text')
+            .text(yAxis.valueFormat()(quotaValue, true))
+            .attr('class', 'sc-quota-value')
+            .attr('dy', '.36em')
+            .attr('dx', '0')
+            .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
+            .attr('transform', 'translate(' + -yAxis.tickPadding() + ',' + y(quotaValue) + ')');
+
+          quotaTextWidth = Math.max(quotaTextWidth, Math.round(wrap.select('text.sc-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding()));
+        }
+
+        //------------------------------------------------------------
+        // Calculate intial dimensions based on first Axis call
+
+        // Temporarily reset inner dimensions
+        setInnerMargins();
+
+        //------------------------------------------------------------
+        // Recall Main Chart and Axis
+
+        multibar
+          .width(innerWidth)
+          .height(innerHeight);
+        bars_wrap
+          .call(multibar);
+
+        xAxis_wrap
+          .call(xAxis);
+        yAxis_wrap
+          .call(yAxis);
+
+        //------------------------------------------------------------
+        // Recalculate final dimensions based on new Axis size
+        outerPadding = x(1) + x.bandwidth() / (multibar.stacked() ? 2 : lineData.length * 2);
+
+        xAxisMargin = xAxis.margin();
+        yAxisMargin = yAxis.margin();
+
+        setInnerMargins();
+
+        //------------------------------------------------------------
+        // Recall Main Chart Components based on final dimensions
+
+        var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
+
+        multibar
+          .width(innerWidth)
+          .height(innerHeight);
+
+        bars_wrap
+          .attr('transform', transform)
+          .call(multibar);
+
+
+        linesBackground
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
+          .width(innerWidth)
+          .height(innerHeight);
+        lines
+          .margin({top: 0, right: outerPadding, bottom: 0, left: outerPadding})
+          .width(innerWidth)
+          .height(innerHeight);
+
+        lines_wrap1
+          .attr('transform', transform)
+          .call(linesBackground);
+        lines_wrap2
+          .attr('transform', transform)
+          .call(lines);
+
+
+        quota_wrap
+          .attr('transform', transform)
+          .selectAll('line')
+            .attr('x2', innerWidth);
+
+        xAxis_wrap
+          .attr('transform', 'translate(' + innerMargin.left + ',' + (xAxis.orient() === 'bottom' ? innerHeight + innerMargin.top : innerMargin.top) + ')')
+          .call(xAxis);
+
+        yAxis
+          .ticks(Math.ceil(innerHeight / 48))
+          .tickSize(-innerWidth, 0);
+
+        yAxis_wrap
+          .attr('transform', 'translate(' + (yAxis.orient() === 'left' ? innerMargin.left : innerMargin.left + innerWidth) + ',' + innerMargin.top + ')')
+          .call(yAxis);
+
+        if (targetQuotaValue > 0) {
+
+          quota_wrap.selectAll('line.sc-quota-target')
+            .attr('x2', innerWidth)
+            .attr('transform', 'translate(0,' + y(targetQuotaValue) + ')');
+
+          yAxis_wrap.select('text.sc-target-quota-value')
+            .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
+
+          quotaTextHeight = Math.round(parseInt(wrap.select('text.sc-target-quota-value').node().getBoundingClientRect().height, 10) / 1.15);
+
+          //check if tick lines overlap quota values, if so, hide the values that overlap
+          yAxis_wrap.selectAll('g.tick, g.sc-axisMaxMin')
+            .each(function(d, i) {
+              if (Math.abs(y(d) - y(targetQuotaValue)) <= quotaTextHeight) {
+                d3.select(this).style('opacity', 0);
+              }
+            });
+        }
+
+        if (quotaValue > 0) {
+
+          quota_wrap.selectAll('line.sc-quota-line')
+            .attr('x2', innerWidth)
+            .attr('transform', 'translate(0,' + y(quotaValue) + ')');
+          yAxis_wrap.select('text.sc-quota-value')
+            .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(quotaValue) + ')');
+
+          quotaTextHeight = Math.round(parseInt(wrap.select('text.sc-quota-value').node().getBoundingClientRect().height, 10) / 1.15);
+
+          //check if tick lines overlap quota values, if so, hide the values that overlap
+          yAxis_wrap.selectAll('g.tick, g.sc-axisMaxMin')
+            .each(function(d, i) {
+              if (Math.abs(y(d) - y(quotaValue)) <= quotaTextHeight) {
+                d3.select(this).style('opacity', 0);
+              }
+            });
+
+          // if there is a quota and an adjusted quota
+          // check to see if the adjusted collides
+          if (targetQuotaValue > 0) {
+            if (Math.abs(y(quotaValue) - y(targetQuotaValue)) <= quotaTextHeight) {
+              yAxis_wrap.select('.sc-target-quota-value').style('opacity', 0);
+            }
+          }
+        }
+
+      quota_wrap.selectAll('line.sc-quota-background')
+        .on('mouseover', function(d) {
+          if (tooltips) {
+            var eo = {
+                val: d.val,
+                key: d.key,
+                e: d3.event
+            };
+            tooltip = showQuotaTooltip(eo, that.parentNode);
+          }
+        })
+        .on('mousemove', function() {
+          var e = d3.event;
+          dispatch.call('tooltipMove', this, e);
+        })
+        .on('mouseout', function() {
+          dispatch.call('tooltipHide', this);
+        });
+
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      barLegend.dispatch.on('legendClick', function(d, i) {
+        var selectedSeries = d.seriesIndex;
+
+        //swap bar disabled
+        d.disabled = !d.disabled;
+        //swap line disabled for same series
+        if (!chart.stacked()) {
+          data.filter(function(d) {
+              return d.seriesIndex === selectedSeries && d.type === 'line';
+            }).map(function(d) {
+              d.disabled = !d.disabled;
+              return d;
+            });
+        }
+        // if there are no enabled data series, enable them all
+        if (!data.filter(function(d) {
+          return !d.disabled && d.type === 'bar';
+        }).length) {
+          data.map(function(d) {
+            d.disabled = false;
+            wrap.selectAll('.sc-series').classed('disabled', false);
+            return d;
+          });
+        }
+        container.call(chart);
+      });
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          tooltip = showTooltip(eo, that.parentNode, groupData);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip) {
+          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          data.forEach(function(series, i) {
+            series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        if (typeof eo.stacked !== 'undefined') {
+          multibar.stacked(eo.stacked);
+          state.stacked = eo.stacked;
+        }
+
+        container.transition().call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        if (barLegend.enabled()) {
+          barLegend.dispatch.call('closeMenu', this);
+        }
+        if (lineLegend.enabled()) {
+          lineLegend.dispatch.call('closeMenu', this);
+        }
+      });
+
+      multibar.dispatch.on('elementClick', function(eo) {
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart, container);
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  lines.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  lines.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  lines.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  multibar.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  multibar.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  multibar.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.linesBackground = linesBackground;
+  chart.lines = lines;
+  chart.multibar = multibar;
+  chart.barLegend = barLegend;
+  chart.lineLegend = lineLegend;
+  chart.xAxis = xAxis;
+  chart.yAxis = yAxis;
+
+  fc.rebind(chart, multibar, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'color', 'fill', 'classes', 'gradient');
+  fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+      params = arguments[1] || {};
+    var barColor = function(d, i) {
+      return utils.defaultColor()(d, d.seriesIndex);
+    };
+    var barClasses = function(d, i) {
+      return 'sc-series sc-series-' + d.seriesIndex;
+    };
+    var lineColor = function(d, i) {
+      var p = params.lineColor ? params.lineColor : {
+        c1: '#1A8221',
+        c2: '#62B464',
+        l: 1
+      };
+      return d.color || d3.interpolateHsl(d3.rgb(p.c1), d3.rgb(p.c2))(d.seriesIndex / 2);
+    };
+    var lineClasses = function(d, i) {
+      return 'sc-series sc-series-' + d.seriesIndex;
+    };
+
+    switch (type) {
+      case 'graduated':
+        barColor = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.barColor.c1), d3.rgb(params.barColor.c2))(d.seriesIndex / params.barColor.l);
+        };
+        break;
+      case 'class':
+        barColor = function() {
+          return 'inherit';
+        };
+        barClasses = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+        };
+        lineClasses = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+        };
+        break;
+      case 'data':
+        barColor = function(d, i) {
+          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+        };
+        barClasses = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        lineClasses = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var barFill = (!params.gradient) ? barColor : function(d, i) {
+      var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
+      return multibar.gradient(d, d.seriesIndex, p);
+    };
+
+    multibar.color(barColor);
+    multibar.fill(barFill);
+    multibar.classes(barClasses);
+
+    lines.color(lineColor);
+    lines.fill(lineColor);
+    lines.classes(lineClasses);
+
+    barLegend.color(barColor);
+    barLegend.classes(barClasses);
+
+    lineLegend.color(lineColor);
+    lineLegend.classes(lineClasses);
+
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) { return getX; }
+    getX = _;
+    lines.x(_);
+    multibar.x(_);
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) { return getY; }
+    getY = _;
+    lines.y(_);
+    multibar.y(_);
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) { return showTitle; }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showControls = function(_) {
+    if (!arguments.length) { return false; }
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) { return showLegend; }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltipBar = function(_) {
+    if (!arguments.length) { return tooltipBar; }
+    tooltipBar = _;
+    return chart;
+  };
+
+  chart.tooltipLine = function(_) {
+    if (!arguments.length) { return tooltipLine; }
+    tooltipLine = _;
+    return chart;
+  };
+
+  chart.tooltipQuota = function(_) {
+    if (!arguments.length) { return tooltipQuota; }
+    tooltipQuota = _;
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) { return tooltip; }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) { return tooltips; }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) { return tooltipContent; }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.clipEdge = function(_) {
+    if (!arguments.length) { return clipEdge; }
+    clipEdge = _;
+    multibar.clipEdge(_);
+    linesBackground.clipEdge(_);
+    lines.clipEdge(_);
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) { return state; }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) { return strings; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    multibar.direction(_);
+    xAxis.direction(_);
+    yAxis.direction(_);
+    barLegend.direction(_);
+    lineLegend.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    multibar.duration(_);
+    linesBackground.duration(_);
+    lines.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    multibar.delay(_);
+    linesBackground.delay(_);
+    lines.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) { return seriesClick; }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) { return locality; }
+    locality = utils.buildLocality(_);
+    multibar.locality(_);
+    linesBackground.locality(_);
+    return chart;
+  };
+  //============================================================
+
+  return chart;
+};
+
+var pieChart = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      delay = 0,
+      duration = 0,
+      tooltip = null,
+      tooltips = true,
+      state = {},
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var pie$$1 = pie(),
+      model = pie$$1,
+      controls = legend().align('center'),
+      legend$$1 = legend().align('center');
+
+  var tooltipContent = function(key, x, y, e, graph) {
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
+
+  var showTooltip = function(eo, offsetElement, properties) {
+        var key = model.getKey()(eo),
+            y = model.getValue()(eo),
+            x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
+            content = tooltipContent(key, x, y, eo, chart);
+
+        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+      };
+
+  var seriesClick = function(data, e, chart) { return; };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          modelClass = 'pie';
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      chart.update = function() {
+        container.transition().duration(duration).call(chart);
+      };
+
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series;
+
+        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+
+        // if you have activated a data series, inactivate the rest
+        if (series.active === 'active') {
+          data
+            .filter(function(d) {
+              return d.active !== 'active';
+            })
+            .map(function(d) {
+              d.active = 'inactive';
+              return d;
+            });
+        }
+
+        // if there are no active data series, inactivate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data.map(function(d) {
+            d.active = '';
+            return d;
+          });
+        }
+
+        container.call(chart);
+      };
+
+      // add series index to each data point for reference
+      data.forEach(function(s, i) {
+        var y = model.y();
+        s.seriesIndex = i;
+
+        if (!s.value && !s.values) {
+          s.values = [];
+        } else if (!isNaN(s.value)) {
+          s.values = [{x: 0, y: parseInt(s.value, 10)}];
+        }
+        s.values.forEach(function(p, j) {
+          p.index = j;
+          p.series = s;
+          if (typeof p.value == 'undefined') {
+            p.value = y(p);
+          }
+        });
+
+        s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
+        s.count = s.count || s.values.length;
+        s.disabled = s.disabled || s.value === 0;
+      });
+
+      // only sum enabled series
+      var modelData = data.filter(function(d, i) { return !d.disabled; });
+
+      if (!modelData.length) {
+        modelData = [{values: []}]; // safety array
+      }
+
+      properties.count = d3.sum(modelData, function(d) { return d.count; });
+
+      properties.total = d3.sum(modelData, function(d) { return d.value; });
+
+      // set title display option
+      showTitle = showTitle && properties.title.length;
+
+      //set state.disabled
+      state.disabled = data.map(function(d) { return !!d.disabled; });
+
+      //------------------------------------------------------------
+      // Display No Data message if there's nothing to show.
+
+      if (!properties.total) {
+        displayNoData();
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      //------------------------------------------------------------
+      // Main chart draw
+
+      chart.render = function() {
+
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
+
+        // Header variables
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
+            legendHeight = 0,
+            trans = '';
+
+        title_wrap.select('.sc-title').remove();
+
+        if (showTitle) {
+          title_wrap
+            .append('text')
+              .attr('class', 'sc-title')
+              .attr('x', direction === 'rtl' ? availableWidth : 0)
+              .attr('y', 0)
+              .attr('dy', '.75em')
+              .attr('text-anchor', 'start')
+              .attr('stroke', 'none')
+              .attr('fill', 'black')
+              .text(properties.title);
+
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
+
+        if (showLegend) {
+          legend$$1
+            .id('legend_' + chart.id())
+            .strings(chart.strings().legend)
+            .align('center')
+            .height(availableHeight - innerMargin.top);
+          legend_wrap
+            .datum(data)
+            .call(legend$$1);
+          legend$$1
+            .arrange(availableWidth);
+
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+              legendSpace = availableWidth - titleBBox.width - 6,
+              legendTop = showTitle && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' || !legend$$1.collapsed() ? 0 : availableWidth - legend$$1.width(),
+              ypos = titleBBox.height;
+
+          if (legendTop) {
+            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+          } else if (!showTitle) {
+            ypos = - legend$$1.margin().top;
+          }
+
+          legend_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+
+          legendHeight = legendTop ? 12 : legend$$1.height() - (showTitle ? 0 : legend$$1.margin().top);
+        }
+
+        // Recalc inner margins based on title and legend height
+        headerHeight += legendHeight;
+        innerMargin.top += headerHeight;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
+        //------------------------------------------------------------
+        // Main Chart Component(s)
+
+        model
+          .width(innerWidth)
+          .height(innerHeight);
+
+        model_wrap
+          .datum(modelData)
+          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
+          .transition().duration(duration)
+            .call(model);
+
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      legend$$1.dispatch.on('legendClick', function(d, i) {
+        d.disabled = !d.disabled;
+        d.active = false;
+
+        // if there are no enabled data series, enable them all
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
+          data.map(function(d) {
+            d.disabled = false;
+            return d;
+          });
+        }
+
+        // if there are no active data series, activate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data.map(function(d) {
+            d.active = '';
+            return d;
+          });
+        }
+
+        state.disabled = data.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          tooltip = showTooltip(eo, that.parentNode, properties);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip) {
+          sucrose.tooltip.position(that.parentNode, tooltip, e);
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          modelData.forEach(function(series, i) {
+            series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        //dispatch.call('tooltipHide', this);
+        if (controls.enabled()) {
+          controls.dispatch.call('closeMenu', this);
+        }
+        if (legend$$1.enabled()) {
+          legend$$1.dispatch.call('closeMenu', this);
+        }
+      });
+
+      model.dispatch.on('elementClick', function(eo) {
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart);
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  model.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.pie = pie$$1;
+  chart.legend = legend$$1;
+  chart.controls = controls;
+
+  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, pie$$1, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
+  fc.rebind(chart, pie$$1, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+    var classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return 'inherit';
+        };
+        classes = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+        };
+        break;
+      case 'data':
+        color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+        classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var fill = (!params.gradient) ? color : function(d, i) {
+      return model.gradient(d, d.seriesIndex);
+    };
+
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
+
+    legend$$1.color(color);
+    legend$$1.classes(classes);
+
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) { return showTitle; }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showControls = function(_) {
+    if (!arguments.length) { return showControls; }
+    showControls = _;
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) { return showLegend; }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) { return tooltip; }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) { return tooltips; }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) { return tooltipContent; }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) { return state; }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) { return strings; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    model.direction(_);
+    legend$$1.direction(_);
+    controls.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var stackedAreaChart = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      delay = 0,
+      duration = 0,
+      tooltip = null,
+      tooltips = true,
+      guidetips = null,
+      x,
+      y,
+      state = {},
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      pointRadius = 3,
+      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var stacked = stackedArea()
+        .clipEdge(true),
+      model = stacked,
+      xAxis = axis(),
+      yAxis = axis(),
+      legend$$1 = legend()
+        .align('right'),
+      controls = legend()
+        .align('left')
+        .color(['#444']),
+      guide = line$$1().duration(0);
+
+  var tooltipContent = function(key, x, y, e, graph) {
+        return '<p>' + key + ': ' + y + '</p>';
+      };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          modelClass = 'stackedarea';
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null,
+          labels = properties.labels ? properties.labels.map(function(d) { return d.l || d; }) : [];
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var modelData = [],
+          xTickLabels = [],
+          totalAmount = 0,
+          singlePoint = false,
+          showMaxMin = false,
+          isArrayData = true,
+          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var xValueFormat = function(d, i, selection, noEllipsis) {
+            var label = xIsDatetime ?
+                          utils.dateFormat(d, 'yMMMM', chart.locality()) :
+                          isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
+                            d :
+                            xTickLabels[parseInt(d, 10)];
+            return label;
+          };
+
+      var yValueFormat = function(d) {
+            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+          };
+
+      chart.update = function() {
+        container.transition().duration(duration).call(chart);
+      };
+
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      isArrayData = Array.isArray(data[0].values[0]);
+      if (isArrayData) {
+        model.x(function(d) { return d ? d[0] : 0; });
+        model.y(function(d) { return d ? d[1] : 0; });
+      } else {
+        model.x(function(d) { return d.x; });
+        model.y(function(d) { return d.y; });
+      }
+
+      // set title display option
+      showTitle = showTitle && properties.title;
+
+      // add series index to each data point for reference
+      // and disable data series if total is zero
+      data.map(function(d, i) {
+        d.seriesIndex = i;
+        d.total = d3.sum(d.values, function(d, i) {
+          return model.y()(d, i);
+        });
+        if (!d.total) {
+          d.disabled = true;
+        }
+      });
+
+      xTickLabels = properties.labels ?
+          properties.labels.map(function(d) { return [].concat(d.l)[0] || chart.strings().noLabel; }) :
+          [];
+
+      // TODO: what if the dimension is a numerical range?
+      // xValuesAreDates = xTickLabels.length ?
+      //       utils.isValidDate(xTickLabels[0]) :
+      //       utils.isValidDate(model.x()(data[0].values[0]));
+      // xValuesAreDates = isArrayData && utils.isValidDate(data[0].values[0][0]);
+
+      // SAVE FOR LATER
+      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
+      //   return d3.min(d.values, function(d, i) {
+      //     return model.x()(d, i);
+      //   });
+      // }) > 0;
+
+      modelData = data.filter(function(d) {
+          return !d.disabled;
+        });
+
+      // safety array
+      modelData = modelData.length ? modelData : [{series: 0, total: 0, disabled: true, values: []}];
+
+      totalAmount = d3.sum(modelData, function(d) {
+          return d.total;
+        });
+
+      //------------------------------------------------------------
+      // Display No Data message if there's nothing to show.
+
+      if (!totalAmount) {
+        displayNoData();
+        return chart;
+      }
+
+      // set state.disabled
+      state.disabled = modelData.map(function(d) { return !!d.disabled; });
+      state.style = stacked.style();
+
+      var controlsData = [
+        { key: 'Stacked', disabled: stacked.offset() !== 'zero' },
+        { key: 'Stream', disabled: stacked.offset() !== 'wiggle' },
+        { key: 'Expanded', disabled: stacked.offset() !== 'expand' }
+      ];
+
+      //------------------------------------------------------------
+      // Setup Scales and Axes
+
+      stacked
+        .id(chart.id())
+        .xDomain(null)  //?why null?
+        .yDomain(null)
+        .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear());
+
+      x = stacked.xScale();
+      y = stacked.yScale();
+
+      xAxis
+        .orient('bottom')
+        .ticks(null)
+        .tickValues(null)
+        .showMaxMin(xIsDatetime)
+        .highlightZero(false)
+        .scale(x)
+        .tickPadding(6)
+        .valueFormat(xValueFormat);
+      yAxis
+        .orient('left')
+        .ticks(null)
+        .showMaxMin(true)
+        .highlightZero(true)
+        .scale(y)
+        .tickPadding(6)
+        .valueFormat(yValueFormat);
+
+      guide
+        .id(chart.id())
+        .useVoronoi(false)
+        .clipEdge(false)
+        .xScale(x)
+        .yScale(y);
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-guide-wrap');
+      var guide_wrap = wrap.select('.sc-guide-wrap');
+
+      //------------------------------------------------------------
+      // Main chart draw
+
+      chart.render = function() {
+
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
+
+        // Header variables
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
+            legendHeight = 0,
+            trans = '';
+
+        title_wrap.select('.sc-title').remove();
+
+        if (showTitle) {
+          title_wrap
+            .append('text')
+              .attr('class', 'sc-title')
+              .attr('x', direction === 'rtl' ? availableWidth : 0)
+              .attr('y', 0)
+              .attr('dy', '.75em')
+              .attr('text-anchor', 'start')
+              .attr('stroke', 'none')
+              .attr('fill', 'black')
+              .text(properties.title);
+
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
+
+        if (showControls) {
+          controls
+            .id('controls_' + chart.id())
+            .strings(chart.strings().controls)
+            .align('left')
+            .height(availableHeight - headerHeight);
+          controls_wrap
+            .datum(controlsData)
+            .call(controls);
+
+          maxControlsWidth = controls.calcMaxWidth();
+        }
+        if (showLegend) {
+          legend$$1
+            .id('legend_' + chart.id())
+            .strings(chart.strings().legend)
+            .align('right')
+            .height(availableHeight - headerHeight);
+          legend_wrap
+            .datum(data)
+            .call(legend$$1);
+
+          maxLegendWidth = legend$$1.calcMaxWidth();
+        }
+
+        // calculate proportional available space
+        widthRatio = availableWidth / (maxControlsWidth + maxLegendWidth);
+        maxControlsWidth = Math.floor(maxControlsWidth * widthRatio);
+        maxLegendWidth = Math.floor(maxLegendWidth * widthRatio);
+
+        if (showControls) {
+          controls
+            .arrange(maxControlsWidth);
+          maxLegendWidth = availableWidth - controls.width();
+        }
+        if (showLegend) {
+          legend$$1
+            .arrange(maxLegendWidth);
+          maxControlsWidth = availableWidth - legend$$1.width();
+        }
+
+        if (showControls) {
+          var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
+              ypos = showTitle ? titleBBox.height : - controls.margin().top;
+          controls_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+          controlsHeight = controls.height();
+        }
+        if (showLegend) {
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+              legendSpace = availableWidth - titleBBox.width - 6,
+              legendTop = showTitle && !showControls && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' ? 0 : availableWidth - legend$$1.width(),
+              ypos = titleBBox.height;
+          if (legendTop) {
+            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+          } else if (!showTitle) {
+            ypos = - legend$$1.margin().top;
+          }
+          legend_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+          legendHeight = legendTop ? 12 : legend$$1.height();
+        }
+
+        // Recalc inner margins based on legend and control height
+        headerHeight += Math.max(controlsHeight, legendHeight);
+        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+
+        //------------------------------------------------------------
+        // Main Chart Component(s)
+
+        model
+          .width(innerWidth)
+          .height(innerHeight);
+        model_wrap
+          .datum(modelData)
+          .call(model);
+
+        //------------------------------------------------------------
+        // Axes
+
+        var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
+            xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
+
+        function setInnerMargins() {
+          innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
+          innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
+          innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+        }
+
+        function setInnerDimensions() {
+          innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+          innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+          // Recalc chart dimensions and scales based on new inner dimensions
+          model.width(innerWidth).height(innerHeight);
+          // This resets the scales for the whole chart
+          // unfortunately we can't call this without until line instance is called
+          // stacked.scatter.resetDimensions(innerWidth, innerHeight);
+          x.range([0, innerWidth]);
+          y.range([innerHeight, 0]);
+        }
+
+        // Y-Axis
+        yAxis
+          .margin(innerMargin)
+          .tickFormat(function(d, i) {
+            return yAxis.valueFormat()(d, yIsCurrency);
+          });
+        yAxis_wrap
+          .call(yAxis);
+        // reset inner dimensions
+        yAxisMargin = yAxis.margin();
+        setInnerMargins();
+        setInnerDimensions();
+
+        // X-Axis
+        // resize ticks based on new dimensions
+        xAxis
+          .tickSize(-innerHeight, 0)
+          .margin(innerMargin)
+          .tickFormat(function(d, i, noEllipsis) {
+            return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
+          });
+        xAxis_wrap
+          .call(xAxis);
+        xAxisMargin = xAxis.margin();
+        setInnerMargins();
+        setInnerDimensions();
+        // xAxis
+        //  .resizeTickLines(-innerHeight);
+
+        // recall y-axis, x-axis and lines to set final size based on new dimensions
+        yAxis
+          .ticks(stacked.offset() === 'wiggle' ? 0 : null)
+          .tickSize(-innerWidth, 0)
+          .margin(innerMargin);
+        yAxis_wrap
+          .call(yAxis);
+
+        xAxis
+          .tickSize(-innerHeight, 0)
+          .margin(innerMargin);
+        xAxis_wrap
+          .call(xAxis);
+
+        model
+          .width(innerWidth)
+          .height(innerHeight);
+        model_wrap
+          .datum(modelData)
+          .call(model);
+
+        //------------------------------------------------------------
+        // Guide Line
+
+        // var middleDate = (x.domain()[0].getTime() + (x.domain()[1].getTime() - x.domain()[0].getTime()) / 2);
+        var pointSize = Math.pow(3, 2) * Math.PI; // default size set to 3
+
+        guide
+          .width(innerWidth)
+          .height(innerHeight)
+          // .color(function() { return '#000'; })
+          .size(pointSize)
+          .sizeRange([pointSize, pointSize])
+          .xDomain(x.domain()) // don't let scatter recalc domain from data
+          .yDomain(y.domain()); // don't let scatter recalc domain from data
+
+        guide_wrap
+          .datum([{
+            key:'guide',
+            values: [
+              {x: 0, y: 0},
+              {x: 0, y: y.domain()[1]}
+            ]
+          }])
+          .call(guide);
+
+        chart.showTooltip = function(eo, offsetElement) {
+          var key = eo.seriesKey,
+              x = xValueFormat(stacked.x()(eo)),
+              y = yValueFormat(stacked.y()(eo)),
+              content = tooltipContent(key, x, y, eo, chart);
+          return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        };
+
+
+        chart.moveGuide = function(svg, container, eo) {
+          var xpos = eo.data[0][0];
+          var values = [{x: xpos, y: 0}]
+                .concat(eo.data.map(function(d, i) { return {x: xpos, y: d[1]}; }))
+                .concat([{x: xpos, y: y.domain()[1]}]);
+          var guidePos = {
+                clientX: eo.origin.left + x(xpos)
+              };
+
+          var xData = [xpos, 0];
+              xData.e = eo.e;
+              xData.seriesIndex = 0;
+              xData.seriesKey = 'x';
+
+          guide_wrap
+            .datum([{
+              key:'guide',
+              values: values,
+              seriesIndex: 0
+            }])
+            .call(guide);
+
+          if (!guidetips) {
+            guidetips = {};
+            eo.data.forEach(function(d, i) {
+              d.e = eo.e;
+              guidetips[i] = chart.showTooltip(d, that.parentNode);
+            });
+            guidetips['x'] = chart.showTooltip(xData, that.parentNode);
+          }
+
+          // Line
+          eo.data.forEach(function(d, i) {
+            var key = d.seriesKey,
+                xval = xValueFormat(stacked.x()(d)),
+                yval = yValueFormat(stacked.y()(d)),
+                content = tooltipContent(key, xval, yval, d, chart);
+            guidePos.clientY = eo.origin.top + y(d[1]);
+            d3.select(guidetips[i]).select('.tooltip-inner').html(content);
+            sucrose.tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');
+          });
+
+          // Top date
+          xData.forEach(function(d, i) {
+            var xval = xValueFormat(xpos);
+            guidePos.clientY = eo.origin.top;
+            d3.select(guidetips['x']).select('.tooltip-inner').html(xval);
+            sucrose.tooltip.position(that.parentNode, guidetips['x'], guidePos, 's');
+          });
+
+        };
+
+        //------------------------------------------------------------
+        // Final repositioning
+
+        innerMargin.top += headerHeight;
+
+        trans = innerMargin.left + ',';
+        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
+        trans += innerMargin.top;
+        yAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        trans = innerMargin.left + ',' + innerMargin.top;
+        model_wrap
+          .attr('transform', 'translate(' + trans + ')');
+        guide_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        dispatch.on('tooltipShow', function(eo) {
+          if (tooltips) {
+            tooltip = true;
+            guide_wrap.classed('hover', true);
+          }
+        });
+
+        dispatch.on('tooltipMove', function(eo) {
+          if (tooltip) {
+            chart.moveGuide(that.parentNode, container, eo);
+          }
+        });
+
+        dispatch.on('tooltipHide', function() {
+          if (tooltips) {
+            tooltip = false;
+            sucrose.tooltip.cleanup();
+            guidetips = null;
+            guide_wrap.classed('hover', false);
+          }
+        });
+
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      stacked.dispatch.on('elementClick.toggle', function(e) {
+        if (data.filter(function(d) { return !d.disabled; }).length === 1) {
+          data = data.map(function(d) {
+            d.disabled = false;
+            return d;
+          });
+        } else {
+          data = data.map(function(d,i) {
+            d.disabled = (i !== e.seriesIndex);
+            return d;
+          });
+        }
+
+        state.disabled = data.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
+        dispatch.call('tooltipHide', this);
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      legend$$1.dispatch.on('legendClick', function(d, i) {
+        d.disabled = !d.disabled;
+
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
+          data.map(function(d) {
+            d.disabled = false;
+            container.selectAll('.sc-series').classed('disabled', false);
+            return d;
+          });
+        }
+
+        state.disabled = data.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      controls.dispatch.on('legendClick', function(d, i) {
+        //if the option is currently enabled (i.e., selected)
+        if (!d.disabled) {
+          return;
+        }
+
+        //set the controls all to false
+        controlsData = controlsData.map(function(s) {
+          s.disabled = true;
+          return s;
+        });
+        //activate the the selected control option
+        d.disabled = false;
+
+        switch (d.key) {
+          case 'Stacked':
+            stacked.style('stack');
+            break;
+          case 'Stream':
+            stacked.style('stream');
+            break;
+          case 'Expanded':
+            stacked.style('expand');
+            break;
+        }
+
+        state.style = stacked.style();
+        dispatch.call('stateChange', this, state);
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          data.forEach(function(series, i) {
+            series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        if (typeof eo.style !== 'undefined') {
+          stacked.style(eo.style);
+          state.style = eo.style;
+        }
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        if (controls.enabled()) {
+          controls.dispatch.call('closeMenu', this);
+        }
+        if (legend$$1.enabled()) {
+          legend$$1.dispatch.call('closeMenu', this);
+        }
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  model.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.stacked = stacked;
+  chart.legend = legend$$1;
+  chart.controls = controls;
+  chart.xAxis = xAxis;
+  chart.yAxis = yAxis;
+
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, stacked, 'size', 'sizeDomain', 'forceSize', 'offset', 'order', 'style', 'interactive', 'useVoronoi', 'clipVoronoi');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+    var classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return 'inherit';
+        };
+        classes = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+        };
+        break;
+      case 'data':
+        color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+        classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var fill = (!params.gradient) ? color : function(d, i) {
+      var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
+      return model.gradient(d, d.seriesIndex, p);
+    };
+
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
+
+    // don't enable this since controls get a custom function
+    // controls.color(color);
+    // controls.classes(classes);
+    legend$$1.color(color);
+    legend$$1.classes(classes);
+
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) { return showTitle; }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showControls = function(_) {
+    if (!arguments.length) { return showControls; }
+    showControls = _;
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) { return showLegend; }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) { return tooltip; }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) { return tooltips; }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) { return tooltipContent; }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) { return state; }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) { return strings; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    xAxis.direction(_);
+    yAxis.direction(_);
+    legend$$1.direction(_);
+    controls.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    model.delay(_);
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+var treemapChart = function() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showLegend = false,
+      direction = 'ltr',
+      tooltip = null,
+      tooltips = true,
+      colorData = 'default',
+      //create a clone of the d3 array
+      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utils.identity),
+      x, //can be accessed via chart.xScale()
+      y, //can be accessed via chart.yScale()
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
+
+  var treemap$$1 = treemap(),
+      model = treemap$$1,
+      legend$$1 = legend();
+
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var tooltipContent = function(point) {
+        var tt = '<h3>' + point.data.name + '</h3>' +
+                 '<p>' + utils.numberFormatSI(point.value) + '</p>';
+        return tt;
+      };
+
+  var showTooltip = function(eo, offsetElement) {
+        var content = tooltipContent(eo.point);
+        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+      };
+
+  //============================================================
+
+
+  function chart(selection) {
+    selection.each(function(chartData) {
+
+      var data = [chartData];
+
+      var container = d3.select(this),
+          that = this;
+
+      var availableWidth = (width || parseInt(container.style('width'), 10) || 960) - margin.left - margin.right,
+          availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom;
+
+      chart.update = function() { container.transition().duration(300).call(chart); };
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Display noData message if there's nothing to show.
+
+      if (!data || !data.length || !data.filter(function(d) { return d && d.children.length; }).length) {
+        container.select('.utils.sc-wrap').remove();
+        var noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
+
+        noDataText.enter().append('text')
+          .attr('class', 'sucrose sc-no-data')
+          .attr('dy', '-.7em')
+          .style('text-anchor', 'middle');
+
+        noDataText
+          .attr('x', margin.left + availableWidth / 2)
+          .attr('y', margin.top + availableHeight / 2)
+          .text(utils.identity);
+
+        return chart;
+      } else {
+        container.selectAll('.sc-no-data').remove();
+      }
+
+      //------------------------------------------------------------
+
+      //remove existing colors from default color array, if any
+      // if (colorData === 'data') {
+      //   removeColors(data[0]);
+      // }
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data(data);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-treemap-chart');
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap.select('.sc-background')
+        .attr('width', availableWidth + margin.left + margin.right)
+        .attr('height', availableHeight + margin.top + margin.bottom);
+
+      wrap_entr.append('g').attr('class', 'sc-treemap-wrap');
+      var treemap_wrap = wrap.select('.sc-treemap-wrap');
+
+      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      //------------------------------------------------------------
+      // Title & Legend
+
+      var titleHeight = 0,
+          legendHeight = 0;
+
+      if (showLegend) {
+        g_entr.append('g').attr('class', 'sc-legendWrap');
+
+        legend$$1
+          .id('legend_' + chart.id())
+          .strings(chart.strings().legend)
+          .width(availableWidth + margin.left)
+          .height(availableHeight);
+
+        g.select('.sc-legendWrap')
+          .datum(data)
+          .call(legend$$1);
+
+        legendHeight = legend$$1.height() + 10;
+
+        if (margin.top !== legendHeight + titleHeight) {
+          margin.top = legendHeight + titleHeight;
+          availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom;
+        }
+
+        g.select('.sc-legendWrap')
+          .attr('transform', 'translate(' + (-margin.left) + ',' + (-margin.top) + ')');
+      }
+
+      if (showTitle && properties.title) {
+        g_entr.append('g').attr('class', 'sc-title-wrap');
+
+        g.select('.sc-title').remove();
+
+        g.select('.sc-title-wrap')
+          .append('text')
+            .attr('class', 'sc-title')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('text-anchor', 'start')
+            .text(properties.title)
+            .attr('stroke', 'none')
+            .attr('fill', 'black');
+
+        titleHeight = parseInt(g.select('.sc-title').style('height'), 10) +
+          parseInt(g.select('.sc-title').style('margin-top'), 10) +
+          parseInt(g.select('.sc-title').style('margin-bottom'), 10);
+
+        if (margin.top !== titleHeight + legendHeight) {
+          margin.top = titleHeight + legendHeight;
+          availableHeight = (height || parseInt(container.style('height'), 10) || 400) - margin.top - margin.bottom;
+        }
+
+        g.select('.sc-title-wrap')
+          .attr('transform', 'translate(0,' + (-margin.top + parseInt(g.select('.sc-title').style('height'), 10)) + ')');
+      }
+
+      //------------------------------------------------------------
+      // Main Chart Component(s)
+
+      treemap$$1
+        .width(availableWidth)
+        .height(availableHeight);
+
+      treemap_wrap
+        .datum(data.filter(function(d) { return !d.disabled; }))
+        .transition()
+          .call(treemap$$1);
+
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      legend$$1.dispatch.on('legendClick', function(d, i) {
+        d.disabled = !d.disabled;
+
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
+          data.map(function(d) {
+            d.disabled = false;
+            wrap.selectAll('.sc-series').classed('disabled', false);
+            return d;
+          });
+        }
+
+        container.transition().duration(300).call(chart);
+      });
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          tooltip = showTooltip(eo, that.parentNode);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip) {
+          sucrose.tooltip.position(that.parentNode, tooltip, e);
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      //============================================================
+
+      // function removeColors(d) {
+      //   var i, l;
+      //   if (d.color && colorArray.indexOf(d.color) !== -1) {
+      //     colorArray.splice(colorArray.indexOf(d.color), 1);
+      //   }
+      //   if (d.children) {
+      //     l = d.children.length;
+      //     for (i = 0; i < l; i += 1) {
+      //       removeColors(d.children[i]);
+      //     }
+      //   }
+      // }
+
+    });
+
+    return chart;
+  }
+
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  treemap$$1.dispatch.on('elementMouseover', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  treemap$$1.dispatch.on('elementMousemove', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  treemap$$1.dispatch.on('elementMouseout', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.legend = legend$$1;
+  chart.treemap = treemap$$1;
+
+  fc.rebind(chart, treemap$$1, 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'id', 'delay', 'leafClick', 'getValue', 'getName', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
+
+  chart.colorData = function(_) {
+    if (!arguments.length) { return colorData; }
+
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          var c = (type === 'data' && d.color) ? {color: d.color} : {};
+          return utils.getColor(colorArray)(c, i);
+        };
+    var classes = function(d, i) {
+          return 'sc-child';
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i, l) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(i / l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return 'inherit';
+        };
+        classes = function(d, i) {
+          var iClass = (i * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-child ' + (d.className || 'sc-fill' + iClass);
+        };
+        break;
+    }
+
+    var fill = (!params.gradient) ? color : function(d, i) {
+      var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
+      return treemap$$1.gradient(d, i, p);
+    };
+
+    treemap$$1.color(color);
+    treemap$$1.fill(fill);
+    treemap$$1.classes(classes);
+
+    legend$$1.color(color);
+    legend$$1.classes(classes);
+
+    colorData = arguments[0];
+
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) { return getX; }
+    getX = _;
+    treemap$$1.x(_);
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) { return getY; }
+    getY = _;
+    treemap$$1.y(_);
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) { return showTitle; }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) { return showLegend; }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltip = function(_) {
+    if (!arguments.length) { return tooltip; }
+    tooltip = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) { return tooltips; }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) { return tooltipContent; }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+};
+
+
+
+var charts = Object.freeze({
+	bubbleChart: bubbleChart,
+	funnelChart: funnelChart,
+	gaugeChart: gaugeChart,
+	globeChart: globe,
+	lineChart: lineChart,
+	multiBarChart: multiBarChart,
+	paretoChart: paretoChart,
+	pieChart: pieChart,
+	stackedAreaChart: stackedAreaChart,
+	treemapChart: treemapChart
+});
+
+// import * as d3 from 'd3'; //without this rollup does something funky to d3 global
+// import * as path from 'path';
+// import * as fc from path.resolve( '../d3fc-rebind.js' );
+// import * as fc from './fc';
+// import rebind as fc from '../d3fc-rebind';
+// export {rebind as rebind} from '../d3fc-rebind';
 
 var ver = '0.0.2'; //change to 0.0.3 when ready
 var dev = false; //set false when in production
 
-// export {* as models} from './models/models.js';
-// export {* as charts} from './models/charts.js';
-// export {models as models};
-// export {charts as charts};
-
-
-// export {default as axis} from './models/axis.js';
-// export {default as funnel} from './models/funnel.js';
-// export {default as gauge} from './models/gauge.js';
-// export {default as line} from './models/line.js';
-// export {default as multiBar} from './models/multiBar.js';
-// export {default as pie} from './models/pie.js';
-// export {default as stackedArea} from './models/stackedArea.js';
-// export {default as scatter} from './models/scatter.js';
-// export {default as scroll} from './models/scroll.js';
-// export {default as table} from './models/table.js';
-// export {default as tree} from './models/tree.js';
-// export {default as treemap} from './models/treemap.js';
-
-// export {default as bubbleChart} from './models/bubbleChart.js';
-// export {default as funnelChart} from './models/funnelChart.js';
-// export {default as gaugeChart} from './models/gaugeChart.js';
-// export {default as globeChart} from './models/globe.js';
-// export {default as lineChart} from './models/lineChart.js';
-// export {default as multiBarChart} from './models/multiBarChart.js';
-// export {default as paretoChart} from './models/paretoChart.js';
-// export {default as pieChart} from './models/pieChart.js';
-// export {default as stackedAreaChart} from './models/stackedAreaChart.js';
-// export {default as treemapChart} from './models/treemapChart.js';
-
 exports.version = ver;
 exports.development = dev;
+exports.models = models;
+exports.charts = charts;
 exports.utils = utils;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
-//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoic3Vjcm9zZS5qcyIsInNvdXJjZXMiOlsiLi4vc3JjL3V0aWxzLmpzIiwiLi4vc3JjL21vZGVscy9sZWdlbmQuanMiLCIuLi9zcmMvbW9kZWxzL2Z1bm5lbC5qcyIsIi4uL3NyYy9tb2RlbHMvbW9kZWxzLmpzIiwiLi4vc3JjL21vZGVscy9mdW5uZWxDaGFydC5qcyIsIi4uL3NyYy9tb2RlbHMvY2hhcnRzLmpzIiwiLi4vc3JjL21haW4uanMiXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IGQzIGZyb20gJ2QzJztcbi8vIGltcG9ydCAqIGFzIGQzIGZyb20gJ2QzJztcblxudmFyIHV0aWxzID0ge307XG5cbnV0aWxzLnN0cmlwID0gZnVuY3Rpb24ocykge1xuICByZXR1cm4gcy5yZXBsYWNlKC8oXFxzfCYpL2csJycpO1xufTtcblxudXRpbHMuaWRlbnRpdHkgPSBmdW5jdGlvbihkKSB7XG4gIHJldHVybiBkO1xufTtcblxudXRpbHMuZnVuY3RvciA9IGZ1bmN0aW9uIGZ1bmN0b3Iodikge1xuICByZXR1cm4gdHlwZW9mIHYgPT09IFwiZnVuY3Rpb25cIiA/IHYgOiBmdW5jdGlvbigpIHtcbiAgICByZXR1cm4gdjtcbiAgfTtcbn07XG5cbmV4cG9ydCBkZWZhdWx0IHV0aWxzO1xuLy8gZXhwb3J0IHt1dGlscyBhcyBkZWZhdWx0fTtcbiIsImltcG9ydCBkMyBmcm9tICdkMyc7XG5pbXBvcnQgdXRpbHMgZnJvbSAnLi4vdXRpbHMuanMnO1xuLy8gaW1wb3J0IHNjcm9sbCBmcm9tICcuL3Njcm9sbC5qcyc7XG5cbmV4cG9ydCBmdW5jdGlvbiBsZWdlbmQoKSB7XG5cbiAgLy89PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT1cbiAgLy8gUHVibGljIFZhcmlhYmxlcyB3aXRoIERlZmF1bHQgU2V0dGluZ3NcbiAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cblxuICB2YXIgbWFyZ2luID0ge3RvcDogMTAsIHJpZ2h0OiAxMCwgYm90dG9tOiAxNSwgbGVmdDogMTB9LFxuICAgICAgd2lkdGggPSAwLFxuICAgICAgaGVpZ2h0ID0gMCxcbiAgICAgIGFsaWduID0gJ3JpZ2h0JyxcbiAgICAgIGRpcmVjdGlvbiA9ICdsdHInLFxuICAgICAgcG9zaXRpb24gPSAnc3RhcnQnLFxuICAgICAgcmFkaXVzID0gNiwgLy8gc2l6ZSBvZiBkb3RcbiAgICAgIGRpYW1ldGVyID0gcmFkaXVzICogMiwgLy8gZGlhbXRlciBvZiBkb3QgcGx1cyBzdHJva2VcbiAgICAgIGd1dHRlciA9IDEwLCAvLyBob3Jpem9udGFsIGdhcCBiZXR3ZWVuIGtleXNcbiAgICAgIHNwYWNpbmcgPSAxMiwgLy8gdmVydGljYWwgZ2FwIGJldHdlZW4ga2V5c1xuICAgICAgdGV4dEdhcCA9IDUsIC8vIGdhcCBiZXR3ZWVuIGRvdCBhbmQgbGFiZWwgYWNjb3VudGluZyBmb3IgZG90IHN0cm9rZVxuICAgICAgZXF1YWxDb2x1bW5zID0gdHJ1ZSxcbiAgICAgIHNob3dBbGwgPSBmYWxzZSxcbiAgICAgIHNob3dNZW51ID0gZmFsc2UsXG4gICAgICBjb2xsYXBzZWQgPSBmYWxzZSxcbiAgICAgIHJvd3NDb3VudCA9IDMsIC8vbnVtYmVyIG9mIHJvd3MgdG8gZGlzcGxheSBpZiBzaG93QWxsID0gZmFsc2VcbiAgICAgIGVuYWJsZWQgPSBmYWxzZSxcbiAgICAgIHN0cmluZ3MgPSB7XG4gICAgICAgIGNsb3NlOiAnSGlkZSBsZWdlbmQnLFxuICAgICAgICB0eXBlOiAnU2hvdyBsZWdlbmQnLFxuICAgICAgICBub0xhYmVsOiAndW5kZWZpbmVkJ1xuICAgICAgfSxcbiAgICAgIGlkID0gTWF0aC5mbG9vcihNYXRoLnJhbmRvbSgpICogMTAwMDApLCAvL0NyZWF0ZSBzZW1pLXVuaXF1ZSBJRCBpbiBjYXNlIHVzZXIgZG9lc24ndCBzZWxlY3Qgb25lXG4gICAgICBnZXRLZXkgPSBmdW5jdGlvbihkKSB7XG4gICAgICAgIHJldHVybiBkLmtleS5sZW5ndGggPiAwIHx8ICghaXNOYU4ocGFyc2VGbG9hdChkLmtleSkpICYmIGlzRmluaXRlKGQua2V5KSkgPyBkLmtleSA6IGxlZ2VuZC5zdHJpbmdzKCkubm9MYWJlbDtcbiAgICAgIH0sXG4gICAgICBjb2xvciA9IGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgcmV0dXJuIHV0aWxzLmRlZmF1bHRDb2xvcigpKGQsIGQuc2VyaWVzSW5kZXgpO1xuICAgICAgfSxcbiAgICAgIGNsYXNzZXMgPSBmdW5jdGlvbihkKSB7XG4gICAgICAgIHJldHVybiAnc2Mtc2VyaWVzIHNjLXNlcmllcy0nICsgZC5zZXJpZXNJbmRleDtcbiAgICAgIH0sXG4gICAgICBkaXNwYXRjaCA9IGQzLmRpc3BhdGNoKCdsZWdlbmRDbGljaycsICdsZWdlbmRNb3VzZW92ZXInLCAnbGVnZW5kTW91c2VvdXQnLCAndG9nZ2xlTWVudScsICdjbG9zZU1lbnUnKTtcblxuICAvLyBQcml2YXRlIFZhcmlhYmxlc1xuICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuXG4gIHZhciBsZWdlbmRPcGVuID0gMDtcblxuICB2YXIgdXNlU2Nyb2xsID0gZmFsc2UsXG4gICAgICBzY3JvbGxFbmFibGVkID0gdHJ1ZSxcbiAgICAgIHNjcm9sbE9mZnNldCA9IDAsXG4gICAgICBvdmVyZmxvd0hhbmRsZXIgPSBmdW5jdGlvbihkKSB7IHJldHVybjsgfTtcblxuICAvLz09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PVxuXG4gIGZ1bmN0aW9uIGxlZ2VuZChzZWxlY3Rpb24pIHtcblxuICAgIHNlbGVjdGlvbi5lYWNoKGZ1bmN0aW9uKGRhdGEpIHtcblxuICAgICAgdmFyIGNvbnRhaW5lciA9IGQzLnNlbGVjdCh0aGlzKSxcbiAgICAgICAgICBjb250YWluZXJXaWR0aCA9IHdpZHRoLFxuICAgICAgICAgIGNvbnRhaW5lckhlaWdodCA9IGhlaWdodCxcbiAgICAgICAgICBrZXlXaWR0aHMgPSBbXSxcbiAgICAgICAgICBsZWdlbmRIZWlnaHQgPSAwLFxuICAgICAgICAgIGRyb3Bkb3duSGVpZ2h0ID0gMCxcbiAgICAgICAgICB0eXBlID0gJycsXG4gICAgICAgICAgaW5saW5lID0gcG9zaXRpb24gPT09ICdzdGFydCcgPyB0cnVlIDogZmFsc2UsXG4gICAgICAgICAgcnRsID0gZGlyZWN0aW9uID09PSAncnRsJyA/IHRydWUgOiBmYWxzZSxcbiAgICAgICAgICBsaW5lU3BhY2luZyA9IHNwYWNpbmcgKiAoaW5saW5lID8gMSA6IDAuNiksXG4gICAgICAgICAgcGFkZGluZyA9IGd1dHRlciArIChpbmxpbmUgPyBkaWFtZXRlciArIHRleHRHYXAgOiAwKTtcblxuICAgICAgaWYgKCFkYXRhIHx8ICFkYXRhLmxlbmd0aCB8fCAhZGF0YS5maWx0ZXIoZnVuY3Rpb24oZCkgeyByZXR1cm4gIWQudmFsdWVzIHx8IGQudmFsdWVzLmxlbmd0aDsgfSkubGVuZ3RoKSB7XG4gICAgICAgIHJldHVybiBsZWdlbmQ7XG4gICAgICB9XG5cbiAgICAgIC8vIGVuZm9yY2UgZXhpc3RlbmNlIG9mIHNlcmllcyBmb3Igc3RhdGljIGxlZ2VuZCBrZXlzXG4gICAgICB2YXIgaVNlcmllcyA9IGRhdGEuZmlsdGVyKGZ1bmN0aW9uKGQpIHsgcmV0dXJuIGQuaGFzT3duUHJvcGVydHkoJ3Nlcmllc0luZGV4Jyk7IH0pLmxlbmd0aDtcbiAgICAgIGRhdGEuZmlsdGVyKGZ1bmN0aW9uKGQpIHsgcmV0dXJuICFkLmhhc093blByb3BlcnR5KCdzZXJpZXNJbmRleCcpOyB9KS5tYXAoZnVuY3Rpb24oZCwgaSkge1xuICAgICAgICBkLnNlcmllc0luZGV4ID0gaVNlcmllcztcbiAgICAgICAgaVNlcmllcyArPSAxO1xuICAgICAgfSk7XG5cbiAgICAgIGVuYWJsZWQgPSB0cnVlO1xuXG4gICAgICB0eXBlID0gIWRhdGFbMF0udHlwZSB8fCBkYXRhWzBdLnR5cGUgPT09ICdiYXInID8gJ2JhcicgOiAnbGluZSc7XG4gICAgICBhbGlnbiA9IHJ0bCAmJiBhbGlnbiAhPT0gJ2NlbnRlcicgPyBhbGlnbiA9PT0gJ2xlZnQnID8gJ3JpZ2h0JyA6ICdsZWZ0JyA6IGFsaWduO1xuXG4gICAgICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuICAgICAgLy8gU2V0dXAgY29udGFpbmVycyBhbmQgc2tlbGV0b24gb2YgbGVnZW5kXG5cbiAgICAgIHZhciB3cmFwX2JpbmQgPSBjb250YWluZXIuc2VsZWN0QWxsKCdnLnNjLXdyYXAnKS5kYXRhKFtkYXRhXSk7XG4gICAgICB2YXIgd3JhcF9lbnRyID0gd3JhcF9iaW5kLmVudGVyKCkuYXBwZW5kKCdnJykuYXR0cignY2xhc3MnLCAnc2Mtd3JhcCBzYy1sZWdlbmQnKTtcbiAgICAgIHZhciB3cmFwID0gY29udGFpbmVyLnNlbGVjdCgnZy5zYy13cmFwJykubWVyZ2Uod3JhcF9lbnRyKTtcbiAgICAgIHdyYXAuYXR0cigndHJhbnNmb3JtJywgJ3RyYW5zbGF0ZSgwLDApJyk7XG5cbiAgICAgIHZhciBkZWZzX2VudHIgPSB3cmFwX2VudHIuYXBwZW5kKCdkZWZzJyk7XG4gICAgICB2YXIgZGVmcyA9IHdyYXAuc2VsZWN0KCdkZWZzJyk7XG5cbiAgICAgIGRlZnNfZW50ci5hcHBlbmQoJ2NsaXBQYXRoJykuYXR0cignaWQnLCAnc2MtZWRnZS1jbGlwLScgKyBpZCkuYXBwZW5kKCdyZWN0Jyk7XG4gICAgICB2YXIgY2xpcCA9IHdyYXAuc2VsZWN0KCcjc2MtZWRnZS1jbGlwLScgKyBpZCArICcgcmVjdCcpO1xuXG4gICAgICB3cmFwX2VudHIuYXBwZW5kKCdyZWN0JykuYXR0cignY2xhc3MnLCAnc2MtbGVnZW5kLWJhY2tncm91bmQnKTtcbiAgICAgIHZhciBiYWNrID0gd3JhcC5zZWxlY3QoJy5zYy1sZWdlbmQtYmFja2dyb3VuZCcpO1xuICAgICAgdmFyIGJhY2tGaWx0ZXIgPSB1dGlscy5kcm9wU2hhZG93KCdsZWdlbmRfYmFja18nICsgaWQsIGRlZnMsIHtibHVyOiAyfSk7XG5cbiAgICAgIHdyYXBfZW50ci5hcHBlbmQoJ3RleHQnKS5hdHRyKCdjbGFzcycsICdzYy1sZWdlbmQtbGluaycpO1xuICAgICAgdmFyIGxpbmsgPSB3cmFwLnNlbGVjdCgnLnNjLWxlZ2VuZC1saW5rJyk7XG5cbiAgICAgIHZhciBtYXNrX2VudHIgPSB3cmFwX2VudHIuYXBwZW5kKCdnJykuYXR0cignY2xhc3MnLCAnc2MtbGVnZW5kLW1hc2snKTtcbiAgICAgIHZhciBtYXNrID0gd3JhcC5zZWxlY3QoJy5zYy1sZWdlbmQtbWFzaycpO1xuXG4gICAgICBtYXNrX2VudHIuYXBwZW5kKCdnJykuYXR0cignY2xhc3MnLCAnc2MtZ3JvdXAnKTtcbiAgICAgIHZhciBnID0gd3JhcC5zZWxlY3QoJy5zYy1ncm91cCcpO1xuXG4gICAgICB2YXIgc2VyaWVzX2JpbmQgPSBnLnNlbGVjdEFsbCgnLnNjLXNlcmllcycpLmRhdGEodXRpbHMuaWRlbnRpdHksIGZ1bmN0aW9uKGQpIHsgcmV0dXJuIGQuc2VyaWVzSW5kZXg7IH0pO1xuICAgICAgc2VyaWVzX2JpbmQuZXhpdCgpLnJlbW92ZSgpO1xuICAgICAgdmFyIHNlcmllc19lbnRyID0gc2VyaWVzX2JpbmQuZW50ZXIoKS5hcHBlbmQoJ2cnKS5hdHRyKCdjbGFzcycsICdzYy1zZXJpZXMnKVxuICAgICAgICAgICAgLm9uKCdtb3VzZW92ZXInLCBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgICAgIGRpc3BhdGNoLmNhbGwoJ2xlZ2VuZE1vdXNlb3ZlcicsIHRoaXMsIGQpO1xuICAgICAgICAgICAgfSlcbiAgICAgICAgICAgIC5vbignbW91c2VvdXQnLCBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgICAgIGRpc3BhdGNoLmNhbGwoJ2xlZ2VuZE1vdXNlb3V0JywgdGhpcywgZCk7XG4gICAgICAgICAgICB9KVxuICAgICAgICAgICAgLm9uKCdjbGljaycsIGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgICAgICAgZDMuZXZlbnQucHJldmVudERlZmF1bHQoKTtcbiAgICAgICAgICAgICAgZDMuZXZlbnQuc3RvcFByb3BhZ2F0aW9uKCk7XG4gICAgICAgICAgICAgIGRpc3BhdGNoLmNhbGwoJ2xlZ2VuZENsaWNrJywgdGhpcywgZCk7XG4gICAgICAgICAgICB9KTtcbiAgICAgIHZhciBzZXJpZXMgPSBnLnNlbGVjdEFsbCgnLnNjLXNlcmllcycpLm1lcmdlKHNlcmllc19lbnRyKTtcblxuICAgICAgc2VyaWVzXG4gICAgICAgICAgLmF0dHIoJ2NsYXNzJywgY2xhc3NlcylcbiAgICAgICAgICAuYXR0cignZmlsbCcsIGNvbG9yKVxuICAgICAgICAgIC5hdHRyKCdzdHJva2UnLCBjb2xvcilcbiAgICAgIHNlcmllc19lbnRyXG4gICAgICAgIC5hcHBlbmQoJ3JlY3QnKVxuICAgICAgICAgIC5hdHRyKCd4JywgKGRpYW1ldGVyICsgdGV4dEdhcCkgLyAtMilcbiAgICAgICAgICAuYXR0cigneScsIChkaWFtZXRlciArIGxpbmVTcGFjaW5nKSAvIC0yKVxuICAgICAgICAgIC5hdHRyKCd3aWR0aCcsIGRpYW1ldGVyICsgdGV4dEdhcClcbiAgICAgICAgICAuYXR0cignaGVpZ2h0JywgZGlhbWV0ZXIgKyBsaW5lU3BhY2luZylcbiAgICAgICAgICAuc3R5bGUoJ2ZpbGwnLCAnI0ZGRScpXG4gICAgICAgICAgLnN0eWxlKCdzdHJva2Utd2lkdGgnLCAwKVxuICAgICAgICAgIC5zdHlsZSgnb3BhY2l0eScsIDAuMSk7XG5cbiAgICAgIHZhciBjaXJjbGVzX2JpbmQgPSBzZXJpZXNfZW50ci5zZWxlY3RBbGwoJ2NpcmNsZScpLmRhdGEoZnVuY3Rpb24oZCkgeyByZXR1cm4gdHlwZSA9PT0gJ2xpbmUnID8gW2QsIGRdIDogW2RdOyB9KTtcbiAgICAgIGNpcmNsZXNfYmluZC5leGl0KCkucmVtb3ZlKCk7XG4gICAgICB2YXIgY2lyY2xlc19lbnRyID0gY2lyY2xlc19iaW5kLmVudGVyKClcbiAgICAgICAgLmFwcGVuZCgnY2lyY2xlJylcbiAgICAgICAgICAuYXR0cigncicsIHJhZGl1cylcbiAgICAgICAgICAuc3R5bGUoJ3N0cm9rZS13aWR0aCcsICcycHgnKTtcbiAgICAgIHZhciBjaXJjbGVzID0gc2VyaWVzLnNlbGVjdEFsbCgnY2lyY2xlJykubWVyZ2UoY2lyY2xlc19lbnRyKTtcblxuICAgICAgdmFyIGxpbmVfYmluZCA9IHNlcmllc19lbnRyLnNlbGVjdEFsbCgnbGluZScpLmRhdGEodHlwZSA9PT0gJ2xpbmUnID8gZnVuY3Rpb24oZCkgeyByZXR1cm4gW2RdOyB9IDogW10pO1xuICAgICAgbGluZV9iaW5kLmV4aXQoKS5yZW1vdmUoKTtcbiAgICAgIHZhciBsaW5lc19lbnRyID0gbGluZV9iaW5kLmVudGVyKClcbiAgICAgICAgLmFwcGVuZCgnbGluZScpXG4gICAgICAgICAgLmF0dHIoJ3gwJywgMClcbiAgICAgICAgICAuYXR0cigneTAnLCAwKVxuICAgICAgICAgIC5hdHRyKCd5MScsIDApXG4gICAgICAgICAgLnN0eWxlKCdzdHJva2Utd2lkdGgnLCAnNHB4Jyk7XG4gICAgICB2YXIgbGluZXMgPSBzZXJpZXMuc2VsZWN0QWxsKCdsaW5lJykubWVyZ2UobGluZXNfZW50cik7XG5cbiAgICAgIHZhciB0ZXh0c19lbnRyID0gc2VyaWVzX2VudHIuYXBwZW5kKCd0ZXh0JylcbiAgICAgICAgLmF0dHIoJ2R4JywgMCk7XG4gICAgICB2YXIgdGV4dHMgPSBzZXJpZXMuc2VsZWN0QWxsKCd0ZXh0JykubWVyZ2UodGV4dHNfZW50cik7XG5cbiAgICAgIHRleHRzXG4gICAgICAgIC5hdHRyKCdkeScsIGlubGluZSA/ICcuMzZlbScgOiAnLjcxZW0nKVxuICAgICAgICAudGV4dChnZXRLZXkpO1xuXG4gICAgICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuICAgICAgLy8gVXBkYXRlIGxlZ2VuZCBhdHRyaWJ1dGVzXG5cbiAgICAgIGNsaXBcbiAgICAgICAgLmF0dHIoJ3gnLCAwLjUpXG4gICAgICAgIC5hdHRyKCd5JywgMC41KVxuICAgICAgICAuYXR0cignd2lkdGgnLCAwKVxuICAgICAgICAuYXR0cignaGVpZ2h0JywgMCk7XG5cbiAgICAgIGJhY2tcbiAgICAgICAgLmF0dHIoJ3gnLCAwLjUpXG4gICAgICAgIC5hdHRyKCd5JywgMC41KVxuICAgICAgICAuYXR0cignd2lkdGgnLCAwKVxuICAgICAgICAuYXR0cignaGVpZ2h0JywgMClcbiAgICAgICAgLnN0eWxlKCdvcGFjaXR5JywgMClcbiAgICAgICAgLnN0eWxlKCdwb2ludGVyLWV2ZW50cycsICdhbGwnKVxuICAgICAgICAub24oJ2NsaWNrJywgZnVuY3Rpb24oZCwgaSkge1xuICAgICAgICAgIGQzLmV2ZW50LnN0b3BQcm9wYWdhdGlvbigpO1xuICAgICAgICB9KTtcblxuICAgICAgbGlua1xuICAgICAgICAudGV4dChsZWdlbmRPcGVuID09PSAxID8gbGVnZW5kLnN0cmluZ3MoKS5jbG9zZSA6IGxlZ2VuZC5zdHJpbmdzKCkub3BlbilcbiAgICAgICAgLmF0dHIoJ3RleHQtYW5jaG9yJywgYWxpZ24gPT09ICdsZWZ0JyA/IHJ0bCA/ICdlbmQnIDogJ3N0YXJ0JyA6IHJ0bCA/ICdzdGFydCcgOiAnZW5kJylcbiAgICAgICAgLmF0dHIoJ2R5JywgJy4zNmVtJylcbiAgICAgICAgLmF0dHIoJ2R4JywgMClcbiAgICAgICAgLnN0eWxlKCdvcGFjaXR5JywgMClcbiAgICAgICAgLm9uKCdjbGljaycsIGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgICBkMy5ldmVudC5wcmV2ZW50RGVmYXVsdCgpO1xuICAgICAgICAgIGQzLmV2ZW50LnN0b3BQcm9wYWdhdGlvbigpO1xuICAgICAgICAgIGRpc3BhdGNoLmNhbGwoJ3RvZ2dsZU1lbnUnLCB0aGlzLCBkLCBpKTtcbiAgICAgICAgfSk7XG5cbiAgICAgIHNlcmllcy5jbGFzc2VkKCdkaXNhYmxlZCcsIGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgcmV0dXJuIGQuZGlzYWJsZWQ7XG4gICAgICB9KTtcblxuICAgICAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cblxuICAgICAgLy9UT0RPOiBhZGQgYWJpbGl0eSB0byBhZGQga2V5IHRvIGxlZ2VuZFxuICAgICAgLy9UT0RPOiBoYXZlIHNlcmllcyBkaXNwbGF5IHZhbHVlcyBvbiBob3ZlclxuICAgICAgLy92YXIgbGFiZWwgPSBnLmFwcGVuZCgndGV4dCcpLnRleHQoJ1Byb2JhYmlsaXR5OicpLmF0dHIoJ2NsYXNzJywnc2Mtc2VyaWVzLWxhYmVsJykuYXR0cigndHJhbnNmb3JtJywndHJhbnNsYXRlKDAsMCknKTtcblxuICAgICAgLy8gc3RvcmUgbGVnZW5kIGxhYmVsIHdpZHRoc1xuICAgICAgbGVnZW5kLmNhbGNNYXhXaWR0aCA9IGZ1bmN0aW9uKCkge1xuICAgICAgICBrZXlXaWR0aHMgPSBbXTtcblxuICAgICAgICBnLnN0eWxlKCdkaXNwbGF5JywgJ2lubGluZScpO1xuXG4gICAgICAgIHRleHRzLmVhY2goZnVuY3Rpb24oZCwgaSkge1xuICAgICAgICAgIHZhciB0ZXh0V2lkdGggPSBkMy5zZWxlY3QodGhpcykubm9kZSgpLmdldEJvdW5kaW5nQ2xpZW50UmVjdCgpLndpZHRoO1xuICAgICAgICAgIGtleVdpZHRocy5wdXNoKE1hdGgubWF4KE1hdGguZmxvb3IodGV4dFdpZHRoKSwgKHR5cGUgPT09ICdsaW5lJyA/IDUwIDogMjApKSk7XG4gICAgICAgIH0pO1xuXG4gICAgICAgIGxlZ2VuZC53aWR0aChkMy5zdW0oa2V5V2lkdGhzKSArIGtleVdpZHRocy5sZW5ndGggKiBwYWRkaW5nIC0gZ3V0dGVyKTtcblxuICAgICAgICByZXR1cm4gbGVnZW5kLndpZHRoKCk7XG4gICAgICB9O1xuXG4gICAgICBsZWdlbmQuZ2V0TGluZUhlaWdodCA9IGZ1bmN0aW9uKCkge1xuICAgICAgICBnLnN0eWxlKCdkaXNwbGF5JywgJ2lubGluZScpO1xuICAgICAgICB2YXIgbGluZUhlaWdodEJCID0gTWF0aC5mbG9vcih0ZXh0cy5ub2RlKCkuZ2V0Qm91bmRpbmdDbGllbnRSZWN0KCkuaGVpZ2h0KTtcbiAgICAgICAgcmV0dXJuIGxpbmVIZWlnaHRCQjtcbiAgICAgIH07XG5cbiAgICAgIGxlZ2VuZC5hcnJhbmdlID0gZnVuY3Rpb24oY29udGFpbmVyV2lkdGgpIHtcblxuICAgICAgICBpZiAoa2V5V2lkdGhzLmxlbmd0aCA9PT0gMCkge1xuICAgICAgICAgIHRoaXMuY2FsY01heFdpZHRoKCk7XG4gICAgICAgIH1cblxuICAgICAgICBmdW5jdGlvbiBrZXlXaWR0aChpKSB7XG4gICAgICAgICAgcmV0dXJuIGtleVdpZHRoc1tpXSArIHBhZGRpbmc7XG4gICAgICAgIH1cbiAgICAgICAgZnVuY3Rpb24ga2V5V2lkdGhOb0d1dHRlcihpKSB7XG4gICAgICAgICAgcmV0dXJuIGtleVdpZHRoc1tpXSArIHBhZGRpbmcgLSBndXR0ZXI7XG4gICAgICAgIH1cbiAgICAgICAgZnVuY3Rpb24gc2lnbihib29sKSB7XG4gICAgICAgICAgcmV0dXJuIGJvb2wgPyAxIDogLTE7XG4gICAgICAgIH1cblxuICAgICAgICB2YXIga2V5cyA9IGtleVdpZHRocy5sZW5ndGgsXG4gICAgICAgICAgICByb3dzID0gMSxcbiAgICAgICAgICAgIGNvbHMgPSBrZXlzLFxuICAgICAgICAgICAgY29sdW1uV2lkdGhzID0gW10sXG4gICAgICAgICAgICBrZXlQb3NpdGlvbnMgPSBbXSxcbiAgICAgICAgICAgIG1heFdpZHRoID0gY29udGFpbmVyV2lkdGggLSBtYXJnaW4ubGVmdCAtIG1hcmdpbi5yaWdodCxcbiAgICAgICAgICAgIG1heFJvd1dpZHRoID0gMCxcbiAgICAgICAgICAgIG1pblJvd1dpZHRoID0gMCxcbiAgICAgICAgICAgIHRleHRIZWlnaHQgPSB0aGlzLmdldExpbmVIZWlnaHQoKSxcbiAgICAgICAgICAgIGxpbmVIZWlnaHQgPSBkaWFtZXRlciArIChpbmxpbmUgPyAwIDogdGV4dEhlaWdodCkgKyBsaW5lU3BhY2luZyxcbiAgICAgICAgICAgIG1lbnVNYXJnaW4gPSB7dG9wOiA3LCByaWdodDogNywgYm90dG9tOiA3LCBsZWZ0OiA3fSwgLy8gYWNjb3VudCBmb3Igc3Ryb2tlIHdpZHRoXG4gICAgICAgICAgICB4cG9zID0gMCxcbiAgICAgICAgICAgIHlwb3MgPSAwLFxuICAgICAgICAgICAgaSxcbiAgICAgICAgICAgIG1vZCxcbiAgICAgICAgICAgIHNoaWZ0O1xuXG4gICAgICAgIGlmIChlcXVhbENvbHVtbnMpIHtcblxuICAgICAgICAgIC8va2VlcCBkZWNyZWFzaW5nIHRoZSBudW1iZXIgb2Yga2V5cyBwZXIgcm93IHVudGlsXG4gICAgICAgICAgLy9sZWdlbmQgd2lkdGggaXMgbGVzcyB0aGFuIHRoZSBhdmFpbGFibGUgd2lkdGhcbiAgICAgICAgICB3aGlsZSAoY29scyA+IDApIHtcbiAgICAgICAgICAgIGNvbHVtbldpZHRocyA9IFtdO1xuXG4gICAgICAgICAgICBmb3IgKGkgPSAwOyBpIDwga2V5czsgaSArPSAxKSB7XG4gICAgICAgICAgICAgIGlmIChrZXlXaWR0aChpKSA+IChjb2x1bW5XaWR0aHNbaSAlIGNvbHNdIHx8IDApKSB7XG4gICAgICAgICAgICAgICAgY29sdW1uV2lkdGhzW2kgJSBjb2xzXSA9IGtleVdpZHRoKGkpO1xuICAgICAgICAgICAgICB9XG4gICAgICAgICAgICB9XG5cbiAgICAgICAgICAgIGlmIChkMy5zdW0oY29sdW1uV2lkdGhzKSAtIGd1dHRlciA8IG1heFdpZHRoKSB7XG4gICAgICAgICAgICAgIGJyZWFrO1xuICAgICAgICAgICAgfVxuICAgICAgICAgICAgY29scyAtPSAxO1xuICAgICAgICAgIH1cbiAgICAgICAgICBjb2xzID0gY29scyB8fCAxO1xuXG4gICAgICAgICAgcm93cyA9IE1hdGguY2VpbChrZXlzIC8gY29scyk7XG4gICAgICAgICAgbWF4Um93V2lkdGggPSBkMy5zdW0oY29sdW1uV2lkdGhzKSAtIGd1dHRlcjtcblxuICAgICAgICAgIGZvciAoaSA9IDA7IGkgPCBrZXlzOyBpICs9IDEpIHtcbiAgICAgICAgICAgIG1vZCA9IGkgJSBjb2xzO1xuXG4gICAgICAgICAgICBpZiAoaW5saW5lKSB7XG4gICAgICAgICAgICAgIGlmIChtb2QgPT09IDApIHtcbiAgICAgICAgICAgICAgICB4cG9zID0gcnRsID8gbWF4Um93V2lkdGggOiAwO1xuICAgICAgICAgICAgICB9IGVsc2Uge1xuICAgICAgICAgICAgICAgIHhwb3MgKz0gY29sdW1uV2lkdGhzW21vZCAtIDFdICogc2lnbighcnRsKTtcbiAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgfSBlbHNlIHtcbiAgICAgICAgICAgICAgaWYgKG1vZCA9PT0gMCkge1xuICAgICAgICAgICAgICAgIHhwb3MgPSAocnRsID8gbWF4Um93V2lkdGggOiAwKSArIChjb2x1bW5XaWR0aHNbbW9kXSAtIGd1dHRlcikgLyAyICogc2lnbighcnRsKTtcbiAgICAgICAgICAgICAgfSBlbHNlIHtcbiAgICAgICAgICAgICAgICB4cG9zICs9IChjb2x1bW5XaWR0aHNbbW9kIC0gMV0gKyBjb2x1bW5XaWR0aHNbbW9kXSkgLyAyICogc2lnbighcnRsKTtcbiAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgfVxuXG4gICAgICAgICAgICB5cG9zID0gTWF0aC5mbG9vcihpIC8gY29scykgKiBsaW5lSGVpZ2h0O1xuICAgICAgICAgICAga2V5UG9zaXRpb25zW2ldID0ge3g6IHhwb3MsIHk6IHlwb3N9O1xuICAgICAgICAgIH1cblxuICAgICAgICB9IGVsc2Uge1xuXG4gICAgICAgICAgaWYgKHJ0bCkge1xuXG4gICAgICAgICAgICB4cG9zID0gbWF4V2lkdGg7XG5cbiAgICAgICAgICAgIGZvciAoaSA9IDA7IGkgPCBrZXlzOyBpICs9IDEpIHtcbiAgICAgICAgICAgICAgaWYgKHhwb3MgLSBrZXlXaWR0aE5vR3V0dGVyKGkpIDwgMCkge1xuICAgICAgICAgICAgICAgIG1heFJvd1dpZHRoID0gTWF0aC5tYXgobWF4Um93V2lkdGgsIGtleVdpZHRoTm9HdXR0ZXIoaSkpO1xuICAgICAgICAgICAgICAgIHhwb3MgPSBtYXhXaWR0aDtcbiAgICAgICAgICAgICAgICBpZiAoaSkge1xuICAgICAgICAgICAgICAgICAgcm93cyArPSAxO1xuICAgICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICBpZiAoeHBvcyAtIGtleVdpZHRoTm9HdXR0ZXIoaSkgPiBtYXhSb3dXaWR0aCkge1xuICAgICAgICAgICAgICAgIG1heFJvd1dpZHRoID0geHBvcyAtIGtleVdpZHRoTm9HdXR0ZXIoaSk7XG4gICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAga2V5UG9zaXRpb25zW2ldID0ge3g6IHhwb3MsIHk6IChyb3dzIC0gMSkgKiAobGluZVNwYWNpbmcgKyBkaWFtZXRlcil9O1xuICAgICAgICAgICAgICB4cG9zIC09IGtleVdpZHRoKGkpO1xuICAgICAgICAgICAgfVxuXG4gICAgICAgICAgfSBlbHNlIHtcblxuICAgICAgICAgICAgeHBvcyA9IDA7XG5cbiAgICAgICAgICAgIGZvciAoaSA9IDA7IGkgPCBrZXlzOyBpICs9IDEpIHtcbiAgICAgICAgICAgICAgaWYgKGkgJiYgeHBvcyArIGtleVdpZHRoTm9HdXR0ZXIoaSkgPiBtYXhXaWR0aCkge1xuICAgICAgICAgICAgICAgIHhwb3MgPSAwO1xuICAgICAgICAgICAgICAgIHJvd3MgKz0gMTtcbiAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICBpZiAoeHBvcyArIGtleVdpZHRoTm9HdXR0ZXIoaSkgPiBtYXhSb3dXaWR0aCkge1xuICAgICAgICAgICAgICAgIG1heFJvd1dpZHRoID0geHBvcyArIGtleVdpZHRoTm9HdXR0ZXIoaSk7XG4gICAgICAgICAgICAgIH1cbiAgICAgICAgICAgICAga2V5UG9zaXRpb25zW2ldID0ge3g6IHhwb3MsIHk6IChyb3dzIC0gMSkgKiAobGluZVNwYWNpbmcgKyBkaWFtZXRlcil9O1xuICAgICAgICAgICAgICB4cG9zICs9IGtleVdpZHRoKGkpO1xuICAgICAgICAgICAgfVxuXG4gICAgICAgICAgfVxuXG4gICAgICAgIH1cblxuICAgICAgICBpZiAoIXNob3dNZW51ICYmIChzaG93QWxsIHx8IHJvd3MgPD0gcm93c0NvdW50KSkge1xuXG4gICAgICAgICAgbGVnZW5kT3BlbiA9IDA7XG4gICAgICAgICAgY29sbGFwc2VkID0gZmFsc2U7XG4gICAgICAgICAgdXNlU2Nyb2xsID0gZmFsc2U7XG5cbiAgICAgICAgICBsZWdlbmRcbiAgICAgICAgICAgIC53aWR0aChtYXJnaW4ubGVmdCArIG1heFJvd1dpZHRoICsgbWFyZ2luLnJpZ2h0KVxuICAgICAgICAgICAgLmhlaWdodChtYXJnaW4udG9wICsgcm93cyAqIGxpbmVIZWlnaHQgLSBsaW5lU3BhY2luZyArIG1hcmdpbi5ib3R0b20pO1xuXG4gICAgICAgICAgc3dpdGNoIChhbGlnbikge1xuICAgICAgICAgICAgY2FzZSAnbGVmdCc6XG4gICAgICAgICAgICAgIHNoaWZ0ID0gMDtcbiAgICAgICAgICAgICAgYnJlYWs7XG4gICAgICAgICAgICBjYXNlICdjZW50ZXInOlxuICAgICAgICAgICAgICBzaGlmdCA9IChjb250YWluZXJXaWR0aCAtIGxlZ2VuZC53aWR0aCgpKSAvIDI7XG4gICAgICAgICAgICAgIGJyZWFrO1xuICAgICAgICAgICAgY2FzZSAncmlnaHQnOlxuICAgICAgICAgICAgICBzaGlmdCA9IDA7XG4gICAgICAgICAgICAgIGJyZWFrO1xuICAgICAgICAgIH1cblxuICAgICAgICAgIGNsaXBcbiAgICAgICAgICAgIC5hdHRyKCd5JywgMClcbiAgICAgICAgICAgIC5hdHRyKCd3aWR0aCcsIGxlZ2VuZC53aWR0aCgpKVxuICAgICAgICAgICAgLmF0dHIoJ2hlaWdodCcsIGxlZ2VuZC5oZWlnaHQoKSk7XG5cbiAgICAgICAgICBiYWNrXG4gICAgICAgICAgICAuYXR0cigneCcsIHNoaWZ0KVxuICAgICAgICAgICAgLmF0dHIoJ3dpZHRoJywgbGVnZW5kLndpZHRoKCkpXG4gICAgICAgICAgICAuYXR0cignaGVpZ2h0JywgbGVnZW5kLmhlaWdodCgpKVxuICAgICAgICAgICAgLmF0dHIoJ3J4JywgMClcbiAgICAgICAgICAgIC5hdHRyKCdyeScsIDApXG4gICAgICAgICAgICAuYXR0cignZmlsdGVyJywgJ25vbmUnKVxuICAgICAgICAgICAgLnN0eWxlKCdkaXNwbGF5JywgJ2lubGluZScpXG4gICAgICAgICAgICAuc3R5bGUoJ29wYWNpdHknLCAwKTtcblxuICAgICAgICAgIG1hc2tcbiAgICAgICAgICAgIC5hdHRyKCdjbGlwLXBhdGgnLCAnbm9uZScpXG4gICAgICAgICAgICAuYXR0cigndHJhbnNmb3JtJywgZnVuY3Rpb24oZCwgaSkge1xuICAgICAgICAgICAgICB2YXIgeHBvcyA9IHNoaWZ0ICsgbWFyZ2luLmxlZnQgKyAoaW5saW5lID8gcmFkaXVzICogc2lnbighcnRsKSA6IDApLFxuICAgICAgICAgICAgICAgICAgeXBvcyA9IG1hcmdpbi50b3AgKyBtZW51TWFyZ2luLnRvcDtcbiAgICAgICAgICAgICAgcmV0dXJuICd0cmFuc2xhdGUoJyArIHhwb3MgKyAnLCcgKyB5cG9zICsgJyknO1xuICAgICAgICAgICAgfSk7XG5cbiAgICAgICAgICBnXG4gICAgICAgICAgICAuc3R5bGUoJ29wYWNpdHknLCAxKVxuICAgICAgICAgICAgLnN0eWxlKCdkaXNwbGF5JywgJ2lubGluZScpO1xuXG4gICAgICAgICAgc2VyaWVzXG4gICAgICAgICAgICAuYXR0cigndHJhbnNmb3JtJywgZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgICB2YXIgcG9zID0ga2V5UG9zaXRpb25zW2Quc2VyaWVzSW5kZXhdO1xuICAgICAgICAgICAgICByZXR1cm4gJ3RyYW5zbGF0ZSgnICsgcG9zLnggKyAnLCcgKyBwb3MueSArICcpJztcbiAgICAgICAgICAgIH0pO1xuXG4gICAgICAgICAgc2VyaWVzLnNlbGVjdCgncmVjdCcpXG4gICAgICAgICAgICAuYXR0cigneCcsIGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgICAgICAgdmFyIHhwb3MgPSAwO1xuICAgICAgICAgICAgICBpZiAoaW5saW5lKSB7XG4gICAgICAgICAgICAgICAgeHBvcyA9IChkaWFtZXRlciArIGd1dHRlcikgLyAyICogc2lnbihydGwpO1xuICAgICAgICAgICAgICAgIHhwb3MgLT0gcnRsID8ga2V5V2lkdGgoZC5zZXJpZXNJbmRleCkgOiAwO1xuICAgICAgICAgICAgICB9IGVsc2Uge1xuICAgICAgICAgICAgICAgIHhwb3MgPSBrZXlXaWR0aChkLnNlcmllc0luZGV4KSAvIC0yO1xuICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgIHJldHVybiB4cG9zO1xuICAgICAgICAgICAgfSlcbiAgICAgICAgICAgIC5hdHRyKCd3aWR0aCcsIGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgICAgICAgcmV0dXJuIGtleVdpZHRoKGQuc2VyaWVzSW5kZXgpO1xuICAgICAgICAgICAgfSlcbiAgICAgICAgICAgIC5hdHRyKCdoZWlnaHQnLCBsaW5lSGVpZ2h0KTtcblxuICAgICAgICAgIGNpcmNsZXNcbiAgICAgICAgICAgIC5hdHRyKCdyJywgZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgICByZXR1cm4gZC50eXBlID09PSAnZGFzaCcgPyAwIDogcmFkaXVzO1xuICAgICAgICAgICAgfSlcbiAgICAgICAgICAgIC5hdHRyKCd0cmFuc2Zvcm0nLCBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgICAgIHZhciB4cG9zID0gaW5saW5lIHx8IHR5cGUgPT09ICdiYXInID8gMCA6IHJhZGl1cyAqIDMgKiBzaWduKGkpO1xuICAgICAgICAgICAgICByZXR1cm4gJ3RyYW5zbGF0ZSgnICsgeHBvcyArICcsMCknO1xuICAgICAgICAgICAgfSk7XG5cbiAgICAgICAgICBsaW5lc1xuICAgICAgICAgICAgLmF0dHIoJ3gxJywgZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgICByZXR1cm4gZC50eXBlID09PSAnZGFzaCcgPyByYWRpdXMgKiA4IDogcmFkaXVzICogNDtcbiAgICAgICAgICAgIH0pXG4gICAgICAgICAgICAuYXR0cigndHJhbnNmb3JtJywgZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgICB2YXIgeHBvcyA9IHJhZGl1cyAqIChkLnR5cGUgPT09ICdkYXNoJyA/IC00IDogLTIpO1xuICAgICAgICAgICAgICByZXR1cm4gJ3RyYW5zbGF0ZSgnICsgeHBvcyArICcsMCknO1xuICAgICAgICAgICAgfSlcbiAgICAgICAgICAgIC5zdHlsZSgnc3Ryb2tlLWRhc2hhcnJheScsIGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgICAgICAgcmV0dXJuIGQudHlwZSA9PT0gJ2Rhc2gnID8gJzgsIDgnIDogJ25vbmUnO1xuICAgICAgICAgICAgfSlcbiAgICAgICAgICAgIC5zdHlsZSgnc3Ryb2tlLWRhc2hvZmZzZXQnLCAtNCk7XG5cbiAgICAgICAgICB0ZXh0c1xuICAgICAgICAgICAgLmF0dHIoJ2R5JywgaW5saW5lID8gJy4zNmVtJyA6ICcuNzFlbScpXG4gICAgICAgICAgICAuYXR0cigndGV4dC1hbmNob3InLCBwb3NpdGlvbilcbiAgICAgICAgICAgIC5hdHRyKCd0cmFuc2Zvcm0nLCBmdW5jdGlvbihkKSB7XG4gICAgICAgICAgICAgIHZhciB4cG9zID0gaW5saW5lID8gKHJhZGl1cyArIHRleHRHYXApICogc2lnbighcnRsKSA6IDAsXG4gICAgICAgICAgICAgICAgICB5cG9zID0gaW5saW5lID8gMCA6IChkaWFtZXRlciArIGxpbmVTcGFjaW5nKSAvIDI7XG4gICAgICAgICAgICAgIHJldHVybiAndHJhbnNsYXRlKCcgKyB4cG9zICsgJywnICsgeXBvcyArICcpJztcbiAgICAgICAgICAgIH0pO1xuXG4gICAgICAgIH0gZWxzZSB7XG5cbiAgICAgICAgICBjb2xsYXBzZWQgPSB0cnVlO1xuICAgICAgICAgIHVzZVNjcm9sbCA9IHRydWU7XG5cbiAgICAgICAgICBsZWdlbmRcbiAgICAgICAgICAgIC53aWR0aChtZW51TWFyZ2luLmxlZnQgKyBkMy5tYXgoa2V5V2lkdGhzKSArIGRpYW1ldGVyICsgdGV4dEdhcCArIG1lbnVNYXJnaW4ucmlnaHQpXG4gICAgICAgICAgICAuaGVpZ2h0KG1hcmdpbi50b3AgKyBkaWFtZXRlciArIG1hcmdpbi50b3ApOyAvL2Rvbid0IHVzZSBib3R0b20gaGVyZSBiZWNhdXNlIHdlIHdhbnQgdmVydGljYWwgY2VudGVyaW5nXG5cbiAgICAgICAgICBsZWdlbmRIZWlnaHQgPSBtZW51TWFyZ2luLnRvcCArIGRpYW1ldGVyICoga2V5cyArIHNwYWNpbmcgKiAoa2V5cyAtIDEpICsgbWVudU1hcmdpbi5ib3R0b207XG4gICAgICAgICAgZHJvcGRvd25IZWlnaHQgPSBNYXRoLm1pbihjb250YWluZXJIZWlnaHQgLSBsZWdlbmQuaGVpZ2h0KCksIGxlZ2VuZEhlaWdodCk7XG5cbiAgICAgICAgICBjbGlwXG4gICAgICAgICAgICAuYXR0cigneCcsIDAuNSAtIG1lbnVNYXJnaW4udG9wIC0gcmFkaXVzKVxuICAgICAgICAgICAgLmF0dHIoJ3knLCAwLjUgLSBtZW51TWFyZ2luLnRvcCAtIHJhZGl1cylcbiAgICAgICAgICAgIC5hdHRyKCd3aWR0aCcsIGxlZ2VuZC53aWR0aCgpKVxuICAgICAgICAgICAgLmF0dHIoJ2hlaWdodCcsIGRyb3Bkb3duSGVpZ2h0KTtcblxuICAgICAgICAgIGJhY2tcbiAgICAgICAgICAgIC5hdHRyKCd4JywgMC41KVxuICAgICAgICAgICAgLmF0dHIoJ3knLCAwLjUgKyBsZWdlbmQuaGVpZ2h0KCkpXG4gICAgICAgICAgICAuYXR0cignd2lkdGgnLCBsZWdlbmQud2lkdGgoKSlcbiAgICAgICAgICAgIC5hdHRyKCdoZWlnaHQnLCBkcm9wZG93bkhlaWdodClcbiAgICAgICAgICAgIC5hdHRyKCdyeCcsIDIpXG4gICAgICAgICAgICAuYXR0cigncnknLCAyKVxuICAgICAgICAgICAgLmF0dHIoJ2ZpbHRlcicsIGJhY2tGaWx0ZXIpXG4gICAgICAgICAgICAuc3R5bGUoJ29wYWNpdHknLCBsZWdlbmRPcGVuICogMC45KVxuICAgICAgICAgICAgLnN0eWxlKCdkaXNwbGF5JywgbGVnZW5kT3BlbiA/ICdpbmxpbmUnIDogJ25vbmUnKTtcblxuICAgICAgICAgIGxpbmtcbiAgICAgICAgICAgIC5hdHRyKCd0cmFuc2Zvcm0nLCBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgICAgIHZhciB4cG9zID0gYWxpZ24gPT09ICdsZWZ0JyA/IDAuNSA6IDAuNSArIGxlZ2VuZC53aWR0aCgpLFxuICAgICAgICAgICAgICAgICAgeXBvcyA9IG1hcmdpbi50b3AgKyByYWRpdXM7XG4gICAgICAgICAgICAgIHJldHVybiAndHJhbnNsYXRlKCcgKyB4cG9zICsgJywnICsgeXBvcyArICcpJztcbiAgICAgICAgICAgIH0pXG4gICAgICAgICAgICAuc3R5bGUoJ29wYWNpdHknLCAxKTtcblxuICAgICAgICAgIG1hc2tcbiAgICAgICAgICAgIC5hdHRyKCdjbGlwLXBhdGgnLCAndXJsKCNzYy1lZGdlLWNsaXAtJyArIGlkICsgJyknKVxuICAgICAgICAgICAgLmF0dHIoJ3RyYW5zZm9ybScsIGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgICAgICAgdmFyIHhwb3MgPSBtZW51TWFyZ2luLmxlZnQgKyByYWRpdXMsXG4gICAgICAgICAgICAgICAgICB5cG9zID0gbGVnZW5kLmhlaWdodCgpICsgbWVudU1hcmdpbi50b3AgKyByYWRpdXM7XG4gICAgICAgICAgICAgIHJldHVybiAndHJhbnNsYXRlKCcgKyB4cG9zICsgJywnICsgeXBvcyArICcpJztcbiAgICAgICAgICAgIH0pO1xuXG4gICAgICAgICAgZ1xuICAgICAgICAgICAgLnN0eWxlKCdvcGFjaXR5JywgbGVnZW5kT3BlbilcbiAgICAgICAgICAgIC5zdHlsZSgnZGlzcGxheScsIGxlZ2VuZE9wZW4gPyAnaW5saW5lJyA6ICdub25lJylcbiAgICAgICAgICAgIC5hdHRyKCd0cmFuc2Zvcm0nLCBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgICAgIHZhciB4cG9zID0gcnRsID8gZDMubWF4KGtleVdpZHRocykgKyByYWRpdXMgOiAwO1xuICAgICAgICAgICAgICByZXR1cm4gJ3RyYW5zbGF0ZSgnICsgeHBvcyArICcsMCknO1xuICAgICAgICAgICAgfSk7XG5cbiAgICAgICAgICBzZXJpZXNcbiAgICAgICAgICAgIC5hdHRyKCd0cmFuc2Zvcm0nLCBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgICAgIHZhciB5cG9zID0gaSAqIChkaWFtZXRlciArIHNwYWNpbmcpO1xuICAgICAgICAgICAgICByZXR1cm4gJ3RyYW5zbGF0ZSgwLCcgKyB5cG9zICsgJyknO1xuICAgICAgICAgICAgfSk7XG5cbiAgICAgICAgICBzZXJpZXMuc2VsZWN0KCdyZWN0JylcbiAgICAgICAgICAgIC5hdHRyKCd4JywgZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgICB2YXIgdyA9IChkaWFtZXRlciArIGd1dHRlcikgLyAyICogc2lnbihydGwpO1xuICAgICAgICAgICAgICB3IC09IHJ0bCA/IGtleVdpZHRoKGQuc2VyaWVzSW5kZXgpIDogMDtcbiAgICAgICAgICAgICAgcmV0dXJuIHc7XG4gICAgICAgICAgICB9KVxuICAgICAgICAgICAgLmF0dHIoJ3dpZHRoJywgZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgICByZXR1cm4ga2V5V2lkdGgoZC5zZXJpZXNJbmRleCk7XG4gICAgICAgICAgICB9KVxuICAgICAgICAgICAgLmF0dHIoJ2hlaWdodCcsIGRpYW1ldGVyICsgbGluZVNwYWNpbmcpO1xuXG4gICAgICAgICAgY2lyY2xlc1xuICAgICAgICAgICAgLmF0dHIoJ3InLCBmdW5jdGlvbihkKSB7XG4gICAgICAgICAgICAgIHJldHVybiBkLnR5cGUgPT09ICdkYXNoJyA/IDAgOiBkLnR5cGUgPT09ICdsaW5lJyA/IHJhZGl1cyAtIDIgOiByYWRpdXM7XG4gICAgICAgICAgICB9KVxuICAgICAgICAgICAgLmF0dHIoJ3RyYW5zZm9ybScsICcnKTtcblxuICAgICAgICAgIGxpbmVzXG4gICAgICAgICAgICAuYXR0cigneDEnLCAxNilcbiAgICAgICAgICAgIC5hdHRyKCd0cmFuc2Zvcm0nLCAndHJhbnNsYXRlKC04LDApJylcbiAgICAgICAgICAgIC5zdHlsZSgnc3Ryb2tlLWRhc2hhcnJheScsIGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgICAgICAgcmV0dXJuIGQudHlwZSA9PT0gJ2Rhc2gnID8gJzYsIDQsIDYnIDogJ25vbmUnO1xuICAgICAgICAgICAgfSlcbiAgICAgICAgICAgIC5zdHlsZSgnc3Ryb2tlLWRhc2hvZmZzZXQnLCAwKTtcblxuICAgICAgICAgIHRleHRzXG4gICAgICAgICAgICAuYXR0cigndGV4dC1hbmNob3InLCAnc3RhcnQnKVxuICAgICAgICAgICAgLmF0dHIoJ2R5JywgJy4zNmVtJylcbiAgICAgICAgICAgIC5hdHRyKCd0cmFuc2Zvcm0nLCBmdW5jdGlvbihkKSB7XG4gICAgICAgICAgICAgIHZhciB4cG9zID0gKHJhZGl1cyArIHRleHRHYXApICogc2lnbighcnRsKTtcbiAgICAgICAgICAgICAgcmV0dXJuICd0cmFuc2xhdGUoJyArIHhwb3MgKyAnLDApJztcbiAgICAgICAgICAgIH0pO1xuXG4gICAgICAgIH1cblxuICAgICAgICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuICAgICAgICAvLyBFbmFibGUgc2Nyb2xsaW5nXG4gICAgICAgIGlmIChzY3JvbGxFbmFibGVkKSB7XG4gICAgICAgICAgdmFyIGRpZmYgPSBkcm9wZG93bkhlaWdodCAtIGxlZ2VuZEhlaWdodDtcblxuICAgICAgICAgIHZhciBhc3NpZ25TY3JvbGxFdmVudHMgPSBmdW5jdGlvbihlbmFibGUpIHtcbiAgICAgICAgICAgIGlmIChlbmFibGUpIHtcblxuICAgICAgICAgICAgICB2YXIgem9vbSA9IGQzLnpvb20oKVxuICAgICAgICAgICAgICAgICAgICAub24oJ3pvb20nLCBwYW5MZWdlbmQpO1xuICAgICAgICAgICAgICB2YXIgZHJhZyA9IGQzLmRyYWcoKVxuICAgICAgICAgICAgICAgICAgICAuc3ViamVjdCh1dGlscy5pZGVudGl0eSlcbiAgICAgICAgICAgICAgICAgICAgLm9uKCdkcmFnJywgcGFuTGVnZW5kKTtcblxuICAgICAgICAgICAgICBiYWNrLmNhbGwoem9vbSk7XG4gICAgICAgICAgICAgIGcuY2FsbCh6b29tKTtcblxuICAgICAgICAgICAgICBiYWNrLmNhbGwoZHJhZyk7XG4gICAgICAgICAgICAgIGcuY2FsbChkcmFnKTtcblxuICAgICAgICAgICAgfSBlbHNlIHtcblxuICAgICAgICAgICAgICBiYWNrXG4gICAgICAgICAgICAgICAgICAub24oXCJtb3VzZWRvd24uem9vbVwiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwibW91c2V3aGVlbC56b29tXCIsIG51bGwpXG4gICAgICAgICAgICAgICAgICAub24oXCJtb3VzZW1vdmUuem9vbVwiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwiRE9NTW91c2VTY3JvbGwuem9vbVwiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwiZGJsY2xpY2suem9vbVwiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwidG91Y2hzdGFydC56b29tXCIsIG51bGwpXG4gICAgICAgICAgICAgICAgICAub24oXCJ0b3VjaG1vdmUuem9vbVwiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwidG91Y2hlbmQuem9vbVwiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwid2hlZWwuem9vbVwiLCBudWxsKTtcbiAgICAgICAgICAgICAgZ1xuICAgICAgICAgICAgICAgICAgLm9uKFwibW91c2Vkb3duLnpvb21cIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcIm1vdXNld2hlZWwuem9vbVwiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwibW91c2Vtb3ZlLnpvb21cIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcIkRPTU1vdXNlU2Nyb2xsLnpvb21cIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcImRibGNsaWNrLnpvb21cIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcInRvdWNoc3RhcnQuem9vbVwiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwidG91Y2htb3ZlLnpvb21cIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcInRvdWNoZW5kLnpvb21cIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcIndoZWVsLnpvb21cIiwgbnVsbCk7XG5cbiAgICAgICAgICAgICAgYmFja1xuICAgICAgICAgICAgICAgICAgLm9uKFwibW91c2Vkb3duLmRyYWdcIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcIm1vdXNld2hlZWwuZHJhZ1wiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwibW91c2Vtb3ZlLmRyYWdcIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcIkRPTU1vdXNlU2Nyb2xsLmRyYWdcIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcImRibGNsaWNrLmRyYWdcIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcInRvdWNoc3RhcnQuZHJhZ1wiLCBudWxsKVxuICAgICAgICAgICAgICAgICAgLm9uKFwidG91Y2htb3ZlLmRyYWdcIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcInRvdWNoZW5kLmRyYWdcIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcIndoZWVsLmRyYWdcIiwgbnVsbCk7XG4gICAgICAgICAgICAgIGdcbiAgICAgICAgICAgICAgICAgIC5vbihcIm1vdXNlZG93bi5kcmFnXCIsIG51bGwpXG4gICAgICAgICAgICAgICAgICAub24oXCJtb3VzZXdoZWVsLmRyYWdcIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcIm1vdXNlbW92ZS5kcmFnXCIsIG51bGwpXG4gICAgICAgICAgICAgICAgICAub24oXCJET01Nb3VzZVNjcm9sbC5kcmFnXCIsIG51bGwpXG4gICAgICAgICAgICAgICAgICAub24oXCJkYmxjbGljay5kcmFnXCIsIG51bGwpXG4gICAgICAgICAgICAgICAgICAub24oXCJ0b3VjaHN0YXJ0LmRyYWdcIiwgbnVsbClcbiAgICAgICAgICAgICAgICAgIC5vbihcInRvdWNobW92ZS5kcmFnXCIsIG51bGwpXG4gICAgICAgICAgICAgICAgICAub24oXCJ0b3VjaGVuZC5kcmFnXCIsIG51bGwpXG4gICAgICAgICAgICAgICAgICAub24oXCJ3aGVlbC5kcmFnXCIsIG51bGwpO1xuICAgICAgICAgICAgfVxuICAgICAgICAgIH07XG5cbiAgICAgICAgICB2YXIgcGFuTGVnZW5kID0gZnVuY3Rpb24oKSB7XG4gICAgICAgICAgICB2YXIgZGlzdGFuY2UgPSAwLFxuICAgICAgICAgICAgICAgIG92ZXJmbG93RGlzdGFuY2UgPSAwLFxuICAgICAgICAgICAgICAgIHRyYW5zbGF0ZSA9ICcnLFxuICAgICAgICAgICAgICAgIHggPSAwLFxuICAgICAgICAgICAgICAgIHkgPSAwO1xuXG4gICAgICAgICAgICAvLyBkb24ndCBmaXJlIG9uIGV2ZW50cyBvdGhlciB0aGFuIHpvb20gYW5kIGRyYWdcbiAgICAgICAgICAgIC8vIHdlIG5lZWQgY2xpY2sgZm9yIGhhbmRsaW5nIGxlZ2VuZCB0b2dnbGVcbiAgICAgICAgICAgIGlmIChkMy5ldmVudCkge1xuICAgICAgICAgICAgICBpZiAoZDMuZXZlbnQudHlwZSA9PT0gJ3pvb20nICYmIGQzLmV2ZW50LnNvdXJjZUV2ZW50KSB7XG4gICAgICAgICAgICAgICAgeCA9IGQzLmV2ZW50LnNvdXJjZUV2ZW50LmRlbHRhWCB8fCAwO1xuICAgICAgICAgICAgICAgIHkgPSBkMy5ldmVudC5zb3VyY2VFdmVudC5kZWx0YVkgfHwgMDtcbiAgICAgICAgICAgICAgICBkaXN0YW5jZSA9IChNYXRoLmFicyh4KSA+IE1hdGguYWJzKHkpID8geCA6IHkpICogLTE7XG4gICAgICAgICAgICAgIH0gZWxzZSBpZiAoZDMuZXZlbnQudHlwZSA9PT0gJ2RyYWcnKSB7XG4gICAgICAgICAgICAgICAgeCA9IGQzLmV2ZW50LmR4IHx8IDA7XG4gICAgICAgICAgICAgICAgeSA9IGQzLmV2ZW50LmR5IHx8IDA7XG4gICAgICAgICAgICAgICAgZGlzdGFuY2UgPSB5O1xuICAgICAgICAgICAgICB9IGVsc2UgaWYgKGQzLmV2ZW50LnR5cGUgIT09ICdjbGljaycpIHtcbiAgICAgICAgICAgICAgICByZXR1cm4gMDtcbiAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICBvdmVyZmxvd0Rpc3RhbmNlID0gKE1hdGguYWJzKHkpID4gTWF0aC5hYnMoeCkgPyB5IDogMCk7XG4gICAgICAgICAgICB9XG5cbiAgICAgICAgICAgIC8vIHJlc2V0IHZhbHVlIGRlZmluZWQgaW4gcGFuTXVsdGliYXIoKTtcbiAgICAgICAgICAgIHNjcm9sbE9mZnNldCA9IE1hdGgubWluKE1hdGgubWF4KHNjcm9sbE9mZnNldCArIGRpc3RhbmNlLCBkaWZmKSwgMCk7XG4gICAgICAgICAgICB0cmFuc2xhdGUgPSAndHJhbnNsYXRlKCcgKyAocnRsID8gZDMubWF4KGtleVdpZHRocykgKyByYWRpdXMgOiAwKSArICcsJyArIHNjcm9sbE9mZnNldCArICcpJztcblxuICAgICAgICAgICAgaWYgKHNjcm9sbE9mZnNldCArIGRpc3RhbmNlID4gMCB8fCBzY3JvbGxPZmZzZXQgKyBkaXN0YW5jZSA8IGRpZmYpIHtcbiAgICAgICAgICAgICAgb3ZlcmZsb3dIYW5kbGVyKG92ZXJmbG93RGlzdGFuY2UpO1xuICAgICAgICAgICAgfVxuXG4gICAgICAgICAgICBnLmF0dHIoJ3RyYW5zZm9ybScsIHRyYW5zbGF0ZSk7XG4gICAgICAgICAgfTtcblxuICAgICAgICAgIGFzc2lnblNjcm9sbEV2ZW50cyh1c2VTY3JvbGwpO1xuICAgICAgICB9XG5cbiAgICAgIH07XG5cbiAgICAgIC8vPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09XG4gICAgICAvLyBFdmVudCBIYW5kbGluZy9EaXNwYXRjaGluZyAoaW4gY2hhcnQncyBzY29wZSlcbiAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG5cbiAgICAgIGZ1bmN0aW9uIGRpc3BsYXlNZW51KCkge1xuICAgICAgICBiYWNrXG4gICAgICAgICAgLnN0eWxlKCdvcGFjaXR5JywgbGVnZW5kT3BlbiAqIDAuOSlcbiAgICAgICAgICAuc3R5bGUoJ2Rpc3BsYXknLCBsZWdlbmRPcGVuID8gJ2lubGluZScgOiAnbm9uZScpO1xuICAgICAgICBnXG4gICAgICAgICAgLnN0eWxlKCdvcGFjaXR5JywgbGVnZW5kT3BlbilcbiAgICAgICAgICAuc3R5bGUoJ2Rpc3BsYXknLCBsZWdlbmRPcGVuID8gJ2lubGluZScgOiAnbm9uZScpO1xuICAgICAgICBsaW5rXG4gICAgICAgICAgLnRleHQobGVnZW5kT3BlbiA9PT0gMSA/IGxlZ2VuZC5zdHJpbmdzKCkuY2xvc2UgOiBsZWdlbmQuc3RyaW5ncygpLm9wZW4pO1xuICAgICAgfVxuXG4gICAgICBkaXNwYXRjaC5vbigndG9nZ2xlTWVudScsIGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgZDMuZXZlbnQuc3RvcFByb3BhZ2F0aW9uKCk7XG4gICAgICAgIGxlZ2VuZE9wZW4gPSAxIC0gbGVnZW5kT3BlbjtcbiAgICAgICAgZGlzcGxheU1lbnUoKTtcbiAgICAgIH0pO1xuXG4gICAgICBkaXNwYXRjaC5vbignY2xvc2VNZW51JywgZnVuY3Rpb24oZCkge1xuICAgICAgICBpZiAobGVnZW5kT3BlbiA9PT0gMSkge1xuICAgICAgICAgIGxlZ2VuZE9wZW4gPSAwO1xuICAgICAgICAgIGRpc3BsYXlNZW51KCk7XG4gICAgICAgIH1cbiAgICAgIH0pO1xuXG4gICAgfSk7XG5cbiAgICByZXR1cm4gbGVnZW5kO1xuICB9XG5cblxuICAvLz09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PVxuICAvLyBFeHBvc2UgUHVibGljIFZhcmlhYmxlc1xuICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuXG4gIGxlZ2VuZC5kaXNwYXRjaCA9IGRpc3BhdGNoO1xuXG4gIGxlZ2VuZC5tYXJnaW4gPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBtYXJnaW47IH1cbiAgICBtYXJnaW4udG9wICAgID0gdHlwZW9mIF8udG9wICAgICE9PSAndW5kZWZpbmVkJyA/IF8udG9wICAgIDogbWFyZ2luLnRvcDtcbiAgICBtYXJnaW4ucmlnaHQgID0gdHlwZW9mIF8ucmlnaHQgICE9PSAndW5kZWZpbmVkJyA/IF8ucmlnaHQgIDogbWFyZ2luLnJpZ2h0O1xuICAgIG1hcmdpbi5ib3R0b20gPSB0eXBlb2YgXy5ib3R0b20gIT09ICd1bmRlZmluZWQnID8gXy5ib3R0b20gOiBtYXJnaW4uYm90dG9tO1xuICAgIG1hcmdpbi5sZWZ0ICAgPSB0eXBlb2YgXy5sZWZ0ICAgIT09ICd1bmRlZmluZWQnID8gXy5sZWZ0ICAgOiBtYXJnaW4ubGVmdDtcbiAgICByZXR1cm4gbGVnZW5kO1xuICB9O1xuXG4gIGxlZ2VuZC53aWR0aCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiB3aWR0aDtcbiAgICB9XG4gICAgd2lkdGggPSBNYXRoLnJvdW5kKF8pO1xuICAgIHJldHVybiBsZWdlbmQ7XG4gIH07XG5cbiAgbGVnZW5kLmhlaWdodCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBoZWlnaHQ7XG4gICAgfVxuICAgIGhlaWdodCA9IE1hdGgucm91bmQoXyk7XG4gICAgcmV0dXJuIGxlZ2VuZDtcbiAgfTtcblxuICBsZWdlbmQuaWQgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gaWQ7XG4gICAgfVxuICAgIGlkID0gXztcbiAgICByZXR1cm4gbGVnZW5kO1xuICB9O1xuXG4gIGxlZ2VuZC5rZXkgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gZ2V0S2V5O1xuICAgIH1cbiAgICBnZXRLZXkgPSBfO1xuICAgIHJldHVybiBsZWdlbmQ7XG4gIH07XG5cbiAgbGVnZW5kLmNvbG9yID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkge1xuICAgICAgcmV0dXJuIGNvbG9yO1xuICAgIH1cbiAgICBjb2xvciA9IHV0aWxzLmdldENvbG9yKF8pO1xuICAgIHJldHVybiBsZWdlbmQ7XG4gIH07XG5cbiAgbGVnZW5kLmNsYXNzZXMgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gY2xhc3NlcztcbiAgICB9XG4gICAgY2xhc3NlcyA9IF87XG4gICAgcmV0dXJuIGxlZ2VuZDtcbiAgfTtcblxuICBsZWdlbmQuYWxpZ24gPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gYWxpZ247XG4gICAgfVxuICAgIGFsaWduID0gXztcbiAgICByZXR1cm4gbGVnZW5kO1xuICB9O1xuXG4gIGxlZ2VuZC5wb3NpdGlvbiA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBwb3NpdGlvbjtcbiAgICB9XG4gICAgcG9zaXRpb24gPSBfO1xuICAgIHJldHVybiBsZWdlbmQ7XG4gIH07XG5cbiAgbGVnZW5kLnNob3dBbGwgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBzaG93QWxsOyB9XG4gICAgc2hvd0FsbCA9IF87XG4gICAgcmV0dXJuIGxlZ2VuZDtcbiAgfTtcblxuICBsZWdlbmQuc2hvd01lbnUgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBzaG93TWVudTsgfVxuICAgIHNob3dNZW51ID0gXztcbiAgICByZXR1cm4gbGVnZW5kO1xuICB9O1xuXG4gIGxlZ2VuZC5jb2xsYXBzZWQgPSBmdW5jdGlvbihfKSB7XG4gICAgcmV0dXJuIGNvbGxhcHNlZDtcbiAgfTtcblxuICBsZWdlbmQucm93c0NvdW50ID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkge1xuICAgICAgcmV0dXJuIHJvd3NDb3VudDtcbiAgICB9XG4gICAgcm93c0NvdW50ID0gXztcbiAgICByZXR1cm4gbGVnZW5kO1xuICB9O1xuXG4gIGxlZ2VuZC5zcGFjaW5nID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkge1xuICAgICAgcmV0dXJuIHNwYWNpbmc7XG4gICAgfVxuICAgIHNwYWNpbmcgPSBfO1xuICAgIHJldHVybiBsZWdlbmQ7XG4gIH07XG5cbiAgbGVnZW5kLmd1dHRlciA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBndXR0ZXI7XG4gICAgfVxuICAgIGd1dHRlciA9IF87XG4gICAgcmV0dXJuIGxlZ2VuZDtcbiAgfTtcblxuICBsZWdlbmQucmFkaXVzID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkge1xuICAgICAgcmV0dXJuIHJhZGl1cztcbiAgICB9XG4gICAgcmFkaXVzID0gXztcbiAgICByZXR1cm4gbGVnZW5kO1xuICB9O1xuXG4gIGxlZ2VuZC5zdHJpbmdzID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkge1xuICAgICAgcmV0dXJuIHN0cmluZ3M7XG4gICAgfVxuICAgIHN0cmluZ3MgPSBfO1xuICAgIHJldHVybiBsZWdlbmQ7XG4gIH07XG5cbiAgbGVnZW5kLmVxdWFsQ29sdW1ucyA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBlcXVhbENvbHVtbnM7XG4gICAgfVxuICAgIGVxdWFsQ29sdW1ucyA9IF87XG4gICAgcmV0dXJuIGxlZ2VuZDtcbiAgfTtcblxuICBsZWdlbmQuZW5hYmxlZCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBlbmFibGVkO1xuICAgIH1cbiAgICBlbmFibGVkID0gXztcbiAgICByZXR1cm4gbGVnZW5kO1xuICB9O1xuXG4gIGxlZ2VuZC5kaXJlY3Rpb24gPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gZGlyZWN0aW9uO1xuICAgIH1cbiAgICBkaXJlY3Rpb24gPSBfO1xuICAgIHJldHVybiBsZWdlbmQ7XG4gIH07XG5cbiAgLy89PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT1cblxuXG4gIHJldHVybiBsZWdlbmQ7XG59XG4iLCJpbXBvcnQgZDMgZnJvbSAnZDMnO1xuaW1wb3J0IHV0aWxzIGZyb20gJy4uL3V0aWxzLmpzJztcblxuZXhwb3J0IGZ1bmN0aW9uIGZ1bm5lbCgpIHtcblxuICAvLz09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PVxuICAvLyBQdWJsaWMgVmFyaWFibGVzIHdpdGggRGVmYXVsdCBTZXR0aW5nc1xuICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuXG4gIHZhciBtYXJnaW4gPSB7dG9wOiAwLCByaWdodDogMCwgYm90dG9tOiAwLCBsZWZ0OiAwfSxcbiAgICAgIHdpZHRoID0gOTYwLFxuICAgICAgaGVpZ2h0ID0gNTAwLFxuICAgICAgaWQgPSBNYXRoLmZsb29yKE1hdGgucmFuZG9tKCkgKiAxMDAwMCksIC8vQ3JlYXRlIHNlbWktdW5pcXVlIElEIGluIGNhc2UgdXNlciBkb2Vzbid0IHNlbGVjdCBvbmVcbiAgICAgIGdldFggPSBmdW5jdGlvbihkKSB7IHJldHVybiBkLng7IH0sXG4gICAgICBnZXRZID0gZnVuY3Rpb24oZCkgeyByZXR1cm4gZC55OyB9LFxuICAgICAgZ2V0SCA9IGZ1bmN0aW9uKGQpIHsgcmV0dXJuIGQuaGVpZ2h0OyB9LFxuICAgICAgZ2V0S2V5ID0gZnVuY3Rpb24oZCkgeyByZXR1cm4gZC5rZXk7IH0sXG4gICAgICBnZXRWYWx1ZSA9IGZ1bmN0aW9uKGQsIGkpIHsgcmV0dXJuIGQudmFsdWU7IH0sXG4gICAgICBmbXRLZXkgPSBmdW5jdGlvbihkKSB7IHJldHVybiBnZXRLZXkoZC5zZXJpZXMgfHwgZCk7IH0sXG4gICAgICBmbXRWYWx1ZSA9IGZ1bmN0aW9uKGQpIHsgcmV0dXJuIGdldFZhbHVlKGQuc2VyaWVzIHx8IGQpOyB9LFxuICAgICAgZm10Q291bnQgPSBmdW5jdGlvbihkKSB7IHJldHVybiAoJyAoJyArIChkLnNlcmllcy5jb3VudCB8fCBkLmNvdW50KSArICcpJykucmVwbGFjZSgnICgpJywgJycpOyB9LFxuICAgICAgbG9jYWxpdHkgPSB1dGlscy5idWlsZExvY2FsaXR5KCksXG4gICAgICBkaXJlY3Rpb24gPSAnbHRyJyxcbiAgICAgIGRlbGF5ID0gMCxcbiAgICAgIGR1cmF0aW9uID0gMCxcbiAgICAgIGNvbG9yID0gZnVuY3Rpb24oZCwgaSkgeyByZXR1cm4gdXRpbHMuZGVmYXVsdENvbG9yKCkoZC5zZXJpZXMsIGQuc2VyaWVzSW5kZXgpOyB9LFxuICAgICAgZmlsbCA9IGNvbG9yLFxuICAgICAgdGV4dHVyZUZpbGwgPSBmYWxzZSxcbiAgICAgIGNsYXNzZXMgPSBmdW5jdGlvbihkLCBpKSB7IHJldHVybiAnc2Mtc2VyaWVzIHNjLXNlcmllcy0nICsgZC5zZXJpZXNJbmRleDsgfTtcblxuICB2YXIgciA9IDAuMywgLy8gcmF0aW8gb2Ygd2lkdGggdG8gaGVpZ2h0IChvciBzbG9wZSlcbiAgICAgIHkgPSBkMy5zY2FsZUxpbmVhcigpLFxuICAgICAgeURvbWFpbixcbiAgICAgIGZvcmNlWSA9IFswXSwgLy8gMCBpcyBmb3JjZWQgYnkgZGVmYXVsdC4uIHRoaXMgbWFrZXMgc2Vuc2UgZm9yIHRoZSBtYWpvcml0eSBvZiBiYXIgZ3JhcGhzLi4uIHVzZXIgY2FuIGFsd2F5cyBkbyBjaGFydC5mb3JjZVkoW10pIHRvIHJlbW92ZVxuICAgICAgd3JhcExhYmVscyA9IHRydWUsXG4gICAgICBtaW5MYWJlbFdpZHRoID0gNzUsXG4gICAgICBkaXNwYXRjaCA9IGQzLmRpc3BhdGNoKCdjaGFydENsaWNrJywgJ2VsZW1lbnRDbGljaycsICdlbGVtZW50RGJsQ2xpY2snLCAnZWxlbWVudE1vdXNlb3ZlcicsICdlbGVtZW50TW91c2VvdXQnLCAnZWxlbWVudE1vdXNlbW92ZScpO1xuXG4gIC8vPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09XG4gIC8vIFByaXZhdGUgVmFyaWFibGVzXG4gIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG5cbiAgLy8gVGhlc2UgdmFsdWVzIGFyZSBwcmVzZXJ2ZWQgYmV0d2VlbiByZW5kZXJpbmdzXG4gIHZhciBjYWxjdWxhdGVkV2lkdGggPSAwLFxuICAgICAgY2FsY3VsYXRlZEhlaWdodCA9IDAsXG4gICAgICBjYWxjdWxhdGVkQ2VudGVyID0gMDtcblxuICAvLz09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PVxuICAvLyBVcGRhdGUgY2hhcnRcblxuICBmdW5jdGlvbiBjaGFydChzZWxlY3Rpb24pIHtcbiAgICBzZWxlY3Rpb24uZWFjaChmdW5jdGlvbihkYXRhKSB7XG5cbiAgICAgIHZhciBhdmFpbGFibGVXaWR0aCA9IHdpZHRoIC0gbWFyZ2luLmxlZnQgLSBtYXJnaW4ucmlnaHQsXG4gICAgICAgICAgYXZhaWxhYmxlSGVpZ2h0ID0gaGVpZ2h0IC0gbWFyZ2luLnRvcCAtIG1hcmdpbi5ib3R0b20sXG4gICAgICAgICAgY29udGFpbmVyID0gZDMuc2VsZWN0KHRoaXMpO1xuXG4gICAgICB2YXIgbGFiZWxHYXAgPSA1LFxuICAgICAgICAgIGxhYmVsU3BhY2UgPSA1LFxuICAgICAgICAgIGxhYmVsT2Zmc2V0ID0gMCxcbiAgICAgICAgICBmdW5uZWxUb3RhbCA9IDAsXG4gICAgICAgICAgZnVubmVsT2Zmc2V0ID0gMDtcblxuICAgICAgLy9zdW0gdGhlIHZhbHVlcyBmb3IgZWFjaCBkYXRhIGVsZW1lbnRcbiAgICAgIGZ1bm5lbFRvdGFsID0gZDMuc3VtKGRhdGEsIGZ1bmN0aW9uKGQpIHsgcmV0dXJuIGQudmFsdWU7IH0pO1xuXG4gICAgICAvL3NldCB1cCB0aGUgZ3JhZGllbnQgY29uc3RydWN0b3IgZnVuY3Rpb25cbiAgICAgIGNoYXJ0LmdyYWRpZW50ID0gZnVuY3Rpb24oZCwgaSwgcCkge1xuICAgICAgICByZXR1cm4gdXRpbHMuY29sb3JMaW5lYXJHcmFkaWVudChkLCBpZCArICctJyArIGksIHAsIGNvbG9yKGQsIGkpLCB3cmFwLnNlbGVjdCgnZGVmcycpKTtcbiAgICAgIH07XG5cbiAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAvLyBTZXR1cCBzY2FsZXNcblxuICAgICAgZnVuY3Rpb24gY2FsY0RpbWVuc2lvbnMoKSB7XG4gICAgICAgIGNhbGN1bGF0ZWRXaWR0aCA9IGNhbGNXaWR0aChmdW5uZWxPZmZzZXQpO1xuICAgICAgICBjYWxjdWxhdGVkSGVpZ2h0ID0gY2FsY0hlaWdodCgpO1xuICAgICAgICBjYWxjdWxhdGVkQ2VudGVyID0gY2FsY0NlbnRlcihmdW5uZWxPZmZzZXQpO1xuICAgICAgfVxuXG4gICAgICBmdW5jdGlvbiBjYWxjU2NhbGVzKCkge1xuICAgICAgICB2YXIgZnVubmVsQXJlYSA9IGFyZWFUcmFwZXpvaWQoY2FsY3VsYXRlZEhlaWdodCwgY2FsY3VsYXRlZFdpZHRoKSxcbiAgICAgICAgICAgIGZ1bm5lbFNoaWZ0ID0gMCxcbiAgICAgICAgICAgIGZ1bm5lbE1pbkhlaWdodCA9IDQsXG4gICAgICAgICAgICBfYmFzZSA9IGNhbGN1bGF0ZWRXaWR0aCAtIDIgKiByICogY2FsY3VsYXRlZEhlaWdodCxcbiAgICAgICAgICAgIF9ib3R0b20gPSBjYWxjdWxhdGVkSGVpZ2h0O1xuXG4gICAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAgIC8vIEFkanVzdCBwb2ludHMgdG8gY29tcGVuc2F0ZSBmb3IgcGFyYWxsYXggb2Ygc2xpY2VcbiAgICAgICAgLy8gYnkgaW5jcmVhc2luZyBoZWlnaHQgcmVsYXRpdmUgdG8gYXJlYSBvZiBmdW5uZWxcblxuICAgICAgICAvLyBydW5zIGZyb20gYm90dG9tIHRvIHRvcFxuICAgICAgICBkYXRhLmZvckVhY2goZnVuY3Rpb24oc2VyaWVzLCBpKSB7XG4gICAgICAgICAgc2VyaWVzLnZhbHVlcy5mb3JFYWNoKGZ1bmN0aW9uKHBvaW50KSB7XG5cbiAgICAgICAgICAgIHBvaW50Ll9oZWlnaHQgPSBmdW5uZWxUb3RhbCA+IDAgP1xuICAgICAgICAgICAgICBoZWlnaHRUcmFwZXpvaWQoZnVubmVsQXJlYSAqIHBvaW50LnZhbHVlIC8gZnVubmVsVG90YWwsIF9iYXNlKSA6XG4gICAgICAgICAgICAgIDA7XG5cbiAgICAgICAgICAgIC8vVE9ETzogbm90IHdvcmtpbmdcbiAgICAgICAgICAgIGlmIChwb2ludC5faGVpZ2h0IDwgZnVubmVsTWluSGVpZ2h0KSB7XG4gICAgICAgICAgICAgIGZ1bm5lbFNoaWZ0ICs9IHBvaW50Ll9oZWlnaHQgLSBmdW5uZWxNaW5IZWlnaHQ7XG4gICAgICAgICAgICAgIHBvaW50Ll9oZWlnaHQgPSBmdW5uZWxNaW5IZWlnaHQ7XG4gICAgICAgICAgICB9IGVsc2UgaWYgKGZ1bm5lbFNoaWZ0IDwgMCAmJiBwb2ludC5faGVpZ2h0ICsgZnVubmVsU2hpZnQgPiBmdW5uZWxNaW5IZWlnaHQpIHtcbiAgICAgICAgICAgICAgcG9pbnQuX2hlaWdodCArPSBmdW5uZWxTaGlmdDtcbiAgICAgICAgICAgICAgZnVubmVsU2hpZnQgPSAwO1xuICAgICAgICAgICAgfVxuXG4gICAgICAgICAgICBwb2ludC5fYmFzZSA9IF9iYXNlO1xuICAgICAgICAgICAgcG9pbnQuX2JvdHRvbSA9IF9ib3R0b207XG4gICAgICAgICAgICBwb2ludC5fdG9wID0gcG9pbnQuX2JvdHRvbSAtIHBvaW50Ll9oZWlnaHQ7XG5cbiAgICAgICAgICAgIF9iYXNlICs9IDIgKiByICogcG9pbnQuX2hlaWdodDtcbiAgICAgICAgICAgIF9ib3R0b20gLT0gcG9pbnQuX2hlaWdodDtcbiAgICAgICAgICB9KTtcbiAgICAgICAgfSk7XG5cbiAgICAgICAgLy8gUmVtYXAgYW5kIGZsYXR0ZW4gdGhlIGRhdGEgZm9yIHVzZSBpbiBjYWxjdWxhdGluZyB0aGUgc2NhbGVzJyBkb21haW5zXG4gICAgICAgIC8vVE9ETzogdGhpcyBpcyBubyBsb25nZXIgbmVlZGVkXG4gICAgICAgIHZhciBzZXJpZXNEYXRhID0geURvbWFpbiB8fCAvLyBpZiB3ZSBrbm93IHlEb21haW4sIG5vIG5lZWQgdG8gY2FsY3VsYXRlXG4gICAgICAgICAgICAgIGQzLmV4dGVudChcbiAgICAgICAgICAgICAgICBkMy5tZXJnZShcbiAgICAgICAgICAgICAgICAgIGRhdGEubWFwKGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgICAgICAgICAgICAgcmV0dXJuIGQudmFsdWVzLm1hcChmdW5jdGlvbihkKSB7XG4gICAgICAgICAgICAgICAgICAgICAgcmV0dXJuIGQuX3RvcDtcbiAgICAgICAgICAgICAgICAgICAgfSk7XG4gICAgICAgICAgICAgICAgICB9KVxuICAgICAgICAgICAgICAgICkuY29uY2F0KGZvcmNlWSlcbiAgICAgICAgICAgICAgKTtcblxuICAgICAgICB5IC5kb21haW4oc2VyaWVzRGF0YSlcbiAgICAgICAgICAucmFuZ2UoW2NhbGN1bGF0ZWRIZWlnaHQsIDBdKTtcbiAgICAgIH1cblxuICAgICAgY2FsY0RpbWVuc2lvbnMoKTtcbiAgICAgIGNhbGNTY2FsZXMoKTtcblxuICAgICAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cbiAgICAgIC8vIFNldHVwIGNvbnRhaW5lcnMgYW5kIHNrZWxldG9uIG9mIGNoYXJ0XG4gICAgICB2YXIgd3JhcF9iaW5kID0gY29udGFpbmVyLnNlbGVjdEFsbCgnZy5zYy13cmFwJykuZGF0YShbZGF0YV0pO1xuICAgICAgdmFyIHdyYXBfZW50ciA9IHdyYXBfYmluZC5lbnRlcigpLmFwcGVuZCgnZycpLmF0dHIoJ2NsYXNzJywgJ3NjLXdyYXAgc2MtZnVubmVsJyk7XG4gICAgICB2YXIgd3JhcCA9IGNvbnRhaW5lci5zZWxlY3QoJy5zYy13cmFwJykubWVyZ2Uod3JhcF9lbnRyKTtcblxuICAgICAgdmFyIGRlZnNfZW50ciA9IHdyYXBfZW50ci5hcHBlbmQoJ2RlZnMnKTtcblxuICAgICAgd3JhcC5hdHRyKCd0cmFuc2Zvcm0nLCAndHJhbnNsYXRlKCcgKyBtYXJnaW4ubGVmdCArICcsJyArIG1hcmdpbi50b3AgKyAnKScpO1xuXG4gICAgICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuICAgICAgLy8gRGVmaW5pdGlvbnNcblxuICAgICAgaWYgKHRleHR1cmVGaWxsKSB7XG4gICAgICAgIHZhciBtYXNrID0gdXRpbHMuY3JlYXRlVGV4dHVyZShkZWZzX2VudHIsIGlkKTtcbiAgICAgIH1cblxuICAgICAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cbiAgICAgIC8vIEFwcGVuZCBtYWpvciBkYXRhIHNlcmllcyBncm91cGluZyBjb250YWluZXJzXG5cbiAgICAgIHZhciBzZXJpZXNfYmluZCA9IHdyYXAuc2VsZWN0QWxsKCcuc2Mtc2VyaWVzJykuZGF0YShkYXRhLCBmdW5jdGlvbihkKSB7IHJldHVybiBkLnNlcmllc0luZGV4OyB9KTtcbiAgICAgIHZhciBzZXJpZXNfZW50ciA9IHNlcmllc19iaW5kLmVudGVyKCkuYXBwZW5kKCdnJykuYXR0cignY2xhc3MnLCAnc2Mtc2VyaWVzJyk7XG4gICAgICAvLyBzZXJpZXNfYmluZC5leGl0KCkudHJhbnNpdGlvbigpLmR1cmF0aW9uKGR1cmF0aW9uKVxuICAgICAgLy8gICAuc2VsZWN0QWxsKCdnLnNjLXNsaWNlJylcbiAgICAgIC8vICAgLmRlbGF5KGZ1bmN0aW9uKGQsIGkpIHsgcmV0dXJuIGkgKiBkZWxheSAvIGRhdGFbMF0udmFsdWVzLmxlbmd0aDsgfSlcbiAgICAgIC8vICAgICAuYXR0cigncG9pbnRzJywgZnVuY3Rpb24oZCkge1xuICAgICAgLy8gICAgICAgcmV0dXJuIHBvaW50c1RyYXBlem9pZChkLCAwLCBjYWxjdWxhdGVkV2lkdGgpO1xuICAgICAgLy8gICAgIH0pXG4gICAgICAvLyAgICAgLnN0eWxlKCdzdHJva2Utb3BhY2l0eScsIDFlLTYpXG4gICAgICAvLyAgICAgLnN0eWxlKCdmaWxsLW9wYWNpdHknLCAxZS02KVxuICAgICAgLy8gICAgIC5yZW1vdmUoKTtcbiAgICAgIC8vIHNlcmllc19iaW5kLmV4aXQoKS50cmFuc2l0aW9uKCkuZHVyYXRpb24oZHVyYXRpb24pXG4gICAgICAvLyAgIC5zZWxlY3RBbGwoJ2cuc2MtbGFiZWwtdmFsdWUnKVxuICAgICAgLy8gICAuZGVsYXkoZnVuY3Rpb24oZCwgaSkgeyByZXR1cm4gaSAqIGRlbGF5IC8gZGF0YVswXS52YWx1ZXMubGVuZ3RoOyB9KVxuICAgICAgLy8gICAgIC5hdHRyKCd5JywgMClcbiAgICAgIC8vICAgICAuYXR0cigndHJhbnNmb3JtJywgJ3RyYW5zbGF0ZSgnICsgY2FsY3VsYXRlZENlbnRlciArICcsMCknKVxuICAgICAgLy8gICAgIC5zdHlsZSgnc3Ryb2tlLW9wYWNpdHknLCAxZS02KVxuICAgICAgLy8gICAgIC5zdHlsZSgnZmlsbC1vcGFjaXR5JywgMWUtNilcbiAgICAgIC8vICAgICAucmVtb3ZlKCk7XG4gICAgICBzZXJpZXNfYmluZC5leGl0KCkucmVtb3ZlKCk7XG4gICAgICB2YXIgc2VyaWVzID0gd3JhcC5zZWxlY3RBbGwoJy5zYy1zZXJpZXMnKS5tZXJnZShzZXJpZXNfZW50cik7XG5cbiAgICAgIHNlcmllc19lbnRyXG4gICAgICAgIC5zdHlsZSgnc3Ryb2tlJywgJyNGRkYnKVxuICAgICAgICAuc3R5bGUoJ3N0cm9rZS13aWR0aCcsIDIpXG4gICAgICAgIC5zdHlsZSgnc3Ryb2tlLW9wYWNpdHknLCAxKVxuICAgICAgICAub24oJ21vdXNlb3ZlcicsIGZ1bmN0aW9uKGQsIGksIGopIHsgLy9UT0RPOiBmaWd1cmUgb3V0IHdoeSBqIHdvcmtzIGFib3ZlLCBidXQgbm90IGhlcmVcbiAgICAgICAgICBkMy5zZWxlY3QodGhpcykuY2xhc3NlZCgnaG92ZXInLCB0cnVlKTtcbiAgICAgICAgfSlcbiAgICAgICAgLm9uKCdtb3VzZW91dCcsIGZ1bmN0aW9uKGQsIGksIGopIHtcbiAgICAgICAgICBkMy5zZWxlY3QodGhpcykuY2xhc3NlZCgnaG92ZXInLCBmYWxzZSk7XG4gICAgICAgIH0pO1xuXG4gICAgICBzZXJpZXNcbiAgICAgICAgLmF0dHIoJ2NsYXNzJywgZnVuY3Rpb24oZCkgeyByZXR1cm4gY2xhc3NlcyhkLCBkLnNlcmllc0luZGV4KTsgfSlcbiAgICAgICAgLmF0dHIoJ2ZpbGwnLCBmdW5jdGlvbihkKSB7IHJldHVybiBmaWxsKGQsIGQuc2VyaWVzSW5kZXgpOyB9KVxuICAgICAgICAuY2xhc3NlZCgnc2MtYWN0aXZlJywgZnVuY3Rpb24oZCkgeyByZXR1cm4gZC5hY3RpdmUgPT09ICdhY3RpdmUnOyB9KVxuICAgICAgICAuY2xhc3NlZCgnc2MtaW5hY3RpdmUnLCBmdW5jdGlvbihkKSB7IHJldHVybiBkLmFjdGl2ZSA9PT0gJ2luYWN0aXZlJzsgfSk7XG5cbiAgICAgIHNlcmllcy50cmFuc2l0aW9uKCkuZHVyYXRpb24oZHVyYXRpb24pXG4gICAgICAgICAgLnN0eWxlKCdzdHJva2Utb3BhY2l0eScsIDEpXG4gICAgICAgICAgLnN0eWxlKCdmaWxsLW9wYWNpdHknLCAxKTtcblxuICAgICAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cbiAgICAgIC8vIEFwcGVuZCBwb2x5Z29ucyBmb3IgZnVubmVsXG4gICAgICAvLyBTYXZlIGZvciBsYXRlci4uLlxuICAgICAgLy8gZnVuY3Rpb24ocywgaSkge1xuICAgICAgLy8gICByZXR1cm4gcy52YWx1ZXMubWFwKGZ1bmN0aW9uKHYsIGopIHtcbiAgICAgIC8vICAgICB2LmRpc2FibGVkID0gcy5kaXNhYmxlZDtcbiAgICAgIC8vICAgICB2LmtleSA9IHMua2V5O1xuICAgICAgLy8gICAgIHYuc2VyaWVzSW5kZXggPSBzLnNlcmllc0luZGV4O1xuICAgICAgLy8gICAgIHYuaW5kZXggPSBqO1xuICAgICAgLy8gICAgIHJldHVybiB2O1xuICAgICAgLy8gICB9KTtcbiAgICAgIC8vIH0sXG5cbiAgICAgIHZhciBzbGljZV9iaW5kID0gc2VyaWVzLnNlbGVjdEFsbCgnZy5zYy1zbGljZScpXG4gICAgICAgICAgICAuZGF0YShmdW5jdGlvbihkKSB7IHJldHVybiBkLnZhbHVlczsgfSwgZnVuY3Rpb24oZCkgeyByZXR1cm4gZC5zZXJpZXNJbmRleDsgfSk7XG4gICAgICBzbGljZV9iaW5kLmV4aXQoKS5yZW1vdmUoKTtcbiAgICAgIHZhciBzbGljZV9lbnRyID0gc2xpY2VfYmluZC5lbnRlcigpLmFwcGVuZCgnZycpLmF0dHIoJ2NsYXNzJywgJ3NjLXNsaWNlJyk7XG4gICAgICB2YXIgc2xpY2VzID0gc2VyaWVzLnNlbGVjdEFsbCgnZy5zYy1zbGljZScpLm1lcmdlKHNsaWNlX2VudHIpO1xuXG4gICAgICBzbGljZV9lbnRyLmFwcGVuZCgncG9seWdvbicpXG4gICAgICAgIC5hdHRyKCdjbGFzcycsICdzYy1iYXNlJyk7XG5cbiAgICAgIHNsaWNlcy5zZWxlY3QoJ3BvbHlnb24uc2MtYmFzZScpXG4gICAgICAgIC5hdHRyKCdwb2ludHMnLCBmdW5jdGlvbihkKSB7XG4gICAgICAgICAgcmV0dXJuIHBvaW50c1RyYXBlem9pZChkLCAwLCBjYWxjdWxhdGVkV2lkdGgpO1xuICAgICAgICB9KTtcblxuICAgICAgaWYgKHRleHR1cmVGaWxsKSB7XG4gICAgICAgIC8vIEZvciBvbiBjbGljayBhY3RpdmUgYmFyc1xuICAgICAgICBzbGljZV9lbnRyLmFwcGVuZCgncG9seWdvbicpXG4gICAgICAgICAgLmF0dHIoJ2NsYXNzJywgJ3NjLXRleHR1cmUnKVxuICAgICAgICAgIC5zdHlsZSgnbWFzaycsICd1cmwoJyArIG1hc2sgKyAnKScpO1xuXG4gICAgICAgIHNsaWNlcy5zZWxlY3QoJ3BvbHlnb24uc2MtdGV4dHVyZScpXG4gICAgICAgICAgLmF0dHIoJ3BvaW50cycsIGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgICAgIHJldHVybiBwb2ludHNUcmFwZXpvaWQoZCwgMCwgY2FsY3VsYXRlZFdpZHRoKTtcbiAgICAgICAgICB9KTtcbiAgICAgIH1cblxuICAgICAgc2xpY2VfZW50clxuICAgICAgICAub24oJ21vdXNlb3ZlcicsIGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgICBkMy5zZWxlY3QodGhpcykuY2xhc3NlZCgnaG92ZXInLCB0cnVlKTtcbiAgICAgICAgICB2YXIgZW8gPSBidWlsZEV2ZW50T2JqZWN0KGQzLmV2ZW50LCBkLCBpKTtcbiAgICAgICAgICBkaXNwYXRjaC5jYWxsKCdlbGVtZW50TW91c2VvdmVyJywgdGhpcywgZW8pO1xuICAgICAgICB9KVxuICAgICAgICAub24oJ21vdXNlbW92ZScsIGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgICB2YXIgZSA9IGQzLmV2ZW50O1xuICAgICAgICAgIGRpc3BhdGNoLmNhbGwoJ2VsZW1lbnRNb3VzZW1vdmUnLCB0aGlzLCBlKTtcbiAgICAgICAgfSlcbiAgICAgICAgLm9uKCdtb3VzZW91dCcsIGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgICBkMy5zZWxlY3QodGhpcykuY2xhc3NlZCgnaG92ZXInLCBmYWxzZSk7XG4gICAgICAgICAgZGlzcGF0Y2guY2FsbCgnZWxlbWVudE1vdXNlb3V0JywgdGhpcyk7XG4gICAgICAgIH0pXG4gICAgICAgIC5vbignY2xpY2snLCBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgZDMuZXZlbnQuc3RvcFByb3BhZ2F0aW9uKCk7XG4gICAgICAgICAgdmFyIGVvID0gYnVpbGRFdmVudE9iamVjdChkMy5ldmVudCwgZCwgaSk7XG4gICAgICAgICAgZGlzcGF0Y2guY2FsbCgnZWxlbWVudENsaWNrJywgdGhpcywgZW8pO1xuICAgICAgICB9KVxuICAgICAgICAub24oJ2RibGNsaWNrJywgZnVuY3Rpb24oZCwgaSkge1xuICAgICAgICAgIGQzLmV2ZW50LnN0b3BQcm9wYWdhdGlvbigpO1xuICAgICAgICAgIHZhciBlbyA9IGJ1aWxkRXZlbnRPYmplY3QoZDMuZXZlbnQsIGQsIGkpO1xuICAgICAgICAgIGRpc3BhdGNoLmNhbGwoJ2VsZW1lbnREYmxDbGljaycsIHRoaXMsIGVvKTtcbiAgICAgICAgfSk7XG5cbiAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAvLyBBcHBlbmQgY29udGFpbmVycyBmb3IgbGFiZWxzXG5cbiAgICAgIHZhciBsYWJlbHNfYmluZCA9IHNlcmllcy5zZWxlY3RBbGwoJy5zYy1sYWJlbC12YWx1ZScpXG4gICAgICAgICAgICAuZGF0YShmdW5jdGlvbihkKSB7IHJldHVybiBkLnZhbHVlczsgfSwgZnVuY3Rpb24oZCkgeyByZXR1cm4gZC5zZXJpZXNJbmRleDsgfSk7XG4gICAgICBsYWJlbHNfYmluZC5leGl0KCkucmVtb3ZlKCk7XG4gICAgICB2YXIgbGFiZWxzX2VudHIgPSBsYWJlbHNfYmluZC5lbnRlcigpLmFwcGVuZCgnZycpLmF0dHIoJ2NsYXNzJywgJ3NjLWxhYmVsLXZhbHVlJyk7XG4gICAgICB2YXIgbGFiZWxzID0gc2VyaWVzLnNlbGVjdEFsbCgnZy5zYy1sYWJlbC12YWx1ZScpLm1lcmdlKGxhYmVsc19lbnRyKTtcblxuICAgICAgbGFiZWxzXG4gICAgICAgIC5hdHRyKCd0cmFuc2Zvcm0nLCAndHJhbnNsYXRlKCcgKyBjYWxjdWxhdGVkQ2VudGVyICsgJywwKScpO1xuXG4gICAgICB2YXIgc2lkZUxhYmVscyA9IGxhYmVscy5maWx0ZXIoJy5zYy1sYWJlbC1zaWRlJyk7XG5cbiAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAvLyBVcGRhdGUgZnVubmVsIGxhYmVsc1xuXG4gICAgICBmdW5jdGlvbiByZW5kZXJGdW5uZWxMYWJlbHMoKSB7XG4gICAgICAgIC8vIFJlbW92ZSByZXNwb25zaXZlIGxhYmVsIGVsZW1lbnRzXG4gICAgICAgIGxhYmVscy5zZWxlY3RBbGwoJ3BvbHlsaW5lJykucmVtb3ZlKCk7XG4gICAgICAgIGxhYmVscy5zZWxlY3RBbGwoJ3JlY3QnKS5yZW1vdmUoKTtcbiAgICAgICAgbGFiZWxzLnNlbGVjdEFsbCgndGV4dCcpLnJlbW92ZSgpO1xuXG4gICAgICAgIGxhYmVscy5hcHBlbmQoJ3JlY3QnKVxuICAgICAgICAgIC5hdHRyKCdjbGFzcycsICdzYy1sYWJlbC1ib3gnKVxuICAgICAgICAgIC5hdHRyKCd4JywgMClcbiAgICAgICAgICAuYXR0cigneScsIDApXG4gICAgICAgICAgLmF0dHIoJ3dpZHRoJywgMClcbiAgICAgICAgICAuYXR0cignaGVpZ2h0JywgMClcbiAgICAgICAgICAuYXR0cigncngnLCAyKVxuICAgICAgICAgIC5hdHRyKCdyeScsIDIpXG4gICAgICAgICAgLnN0eWxlKCdwb2ludGVyLWV2ZW50cycsICdub25lJylcbiAgICAgICAgICAuc3R5bGUoJ3N0cm9rZS13aWR0aCcsIDApXG4gICAgICAgICAgLnN0eWxlKCdmaWxsLW9wYWNpdHknLCAwKTtcblxuICAgICAgICAvLyBBcHBlbmQgbGFiZWwgdGV4dCBhbmQgd3JhcCBpZiBuZWVkZWRcbiAgICAgICAgbGFiZWxzLmFwcGVuZCgndGV4dCcpXG4gICAgICAgICAgLnRleHQoZm10S2V5KVxuICAgICAgICAgICAgLmNhbGwoZm10TGFiZWwsICdzYy1sYWJlbCcsIDAuODUsICdtaWRkbGUnLCBmbXRGaWxsKTtcblxuICAgICAgICBsYWJlbHMuc2VsZWN0KCcuc2MtbGFiZWwnKVxuICAgICAgICAgIC5jYWxsKFxuICAgICAgICAgICAgaGFuZGxlTGFiZWwsXG4gICAgICAgICAgICAod3JhcExhYmVscyA/IHdyYXBMYWJlbCA6IGVsbGlwc2lmeUxhYmVsKSxcbiAgICAgICAgICAgIGNhbGNGdW5uZWxXaWR0aEF0U2xpY2VNaWRwb2ludCxcbiAgICAgICAgICAgIGZ1bmN0aW9uKHR4dCwgZHkpIHtcbiAgICAgICAgICAgICAgZm10TGFiZWwodHh0LCAnc2MtbGFiZWwnLCBkeSwgJ21pZGRsZScsIGZtdEZpbGwpO1xuICAgICAgICAgICAgfVxuICAgICAgICAgICk7XG5cbiAgICAgICAgLy8gQXBwZW5kIHZhbHVlIGFuZCBjb3VudCB0ZXh0XG4gICAgICAgIGxhYmVscy5hcHBlbmQoJ3RleHQnKVxuICAgICAgICAgIC50ZXh0KGZtdFZhbHVlKVxuICAgICAgICAgICAgLmNhbGwoZm10TGFiZWwsICdzYy12YWx1ZScsIDAuODUsICdtaWRkbGUnLCBmbXRGaWxsKTtcblxuICAgICAgICBsYWJlbHMuc2VsZWN0KCcuc2MtdmFsdWUnKVxuICAgICAgICAgIC5hcHBlbmQoJ3RzcGFuJylcbiAgICAgICAgICAgIC50ZXh0KGZtdENvdW50KTtcblxuICAgICAgICBsYWJlbHNcbiAgICAgICAgICAuY2FsbChwb3NpdGlvblZhbHVlKVxuICAgICAgICAgIC8vIFBvc2l0aW9uIGxhYmVscyBhbmQgaWRlbnRpZnkgc2lkZSBsYWJlbHNcbiAgICAgICAgICAuY2FsbChjYWxjRnVubmVsTGFiZWxEaW1lbnNpb25zKVxuICAgICAgICAgIC5jYWxsKHBvc2l0aW9uTGFiZWxCb3gpO1xuXG4gICAgICAgIGxhYmVsc1xuICAgICAgICAgIC5jbGFzc2VkKCdzYy1sYWJlbC1zaWRlJywgZnVuY3Rpb24oZCkgeyByZXR1cm4gZC50b29UYWxsIHx8IGQudG9vV2lkZTsgfSk7XG4gICAgICB9XG5cbiAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAvLyBVcGRhdGUgc2lkZSBsYWJlbHNcblxuICAgICAgZnVuY3Rpb24gcmVuZGVyU2lkZUxhYmVscygpIHtcbiAgICAgICAgLy8gUmVtb3ZlIGFsbCByZXNwb25zaXZlIGVsZW1lbnRzXG4gICAgICAgIHNpZGVMYWJlbHMgPSBsYWJlbHMuZmlsdGVyKCcuc2MtbGFiZWwtc2lkZScpO1xuICAgICAgICBzaWRlTGFiZWxzLnNlbGVjdEFsbCgnLnNjLWxhYmVsJykucmVtb3ZlKCk7XG4gICAgICAgIHNpZGVMYWJlbHMuc2VsZWN0QWxsKCdyZWN0JykucmVtb3ZlKCk7XG4gICAgICAgIHNpZGVMYWJlbHMuc2VsZWN0QWxsKCdwb2x5bGluZScpLnJlbW92ZSgpO1xuXG4gICAgICAgIC8vIFBvc2l0aW9uIHNpZGUgbGFiZWxzXG4gICAgICAgIHNpZGVMYWJlbHMuYXBwZW5kKCd0ZXh0JylcbiAgICAgICAgICAudGV4dChmbXRLZXkpXG4gICAgICAgICAgICAuY2FsbChmbXRMYWJlbCwgJ3NjLWxhYmVsJywgMC44NSwgJ3N0YXJ0JywgJyM1NTUnKTtcblxuICAgICAgICBzaWRlTGFiZWxzLnNlbGVjdCgnLnNjLWxhYmVsJylcbiAgICAgICAgICAuY2FsbChcbiAgICAgICAgICAgIGhhbmRsZUxhYmVsLFxuICAgICAgICAgICAgKHdyYXBMYWJlbHMgPyB3cmFwTGFiZWwgOiBlbGxpcHNpZnlMYWJlbCksXG4gICAgICAgICAgICAod3JhcExhYmVscyA/IGNhbGNTaWRlV2lkdGggOiBtYXhTaWRlTGFiZWxXaWR0aCksXG4gICAgICAgICAgICBmdW5jdGlvbih0eHQsIGR5KSB7XG4gICAgICAgICAgICAgIGZtdExhYmVsKHR4dCwgJ3NjLWxhYmVsJywgZHksICdzdGFydCcsICcjNTU1Jyk7XG4gICAgICAgICAgICB9XG4gICAgICAgICAgKTtcblxuICAgICAgICBzaWRlTGFiZWxzXG4gICAgICAgICAgLmNhbGwocG9zaXRpb25WYWx1ZSk7XG5cbiAgICAgICAgc2lkZUxhYmVscy5zZWxlY3QoJy5zYy12YWx1ZScpXG4gICAgICAgICAgLnN0eWxlKCd0ZXh0LWFuY2hvcicsICdzdGFydCcpXG4gICAgICAgICAgLnN0eWxlKCdmaWxsJywgJyM1NTUnKTtcblxuICAgICAgICBzaWRlTGFiZWxzXG4gICAgICAgICAgLmNhbGwoY2FsY1NpZGVMYWJlbERpbWVuc2lvbnMpO1xuXG4gICAgICAgIC8vIFJlZmxvdyBzaWRlIGxhYmVsIHZlcnRpY2FsIHBvc2l0aW9uIHRvIHByZXZlbnQgb3ZlcmxhcFxuICAgICAgICB2YXIgZDAgPSAwO1xuXG4gICAgICAgIC8vIFRvcCB0byBib3R0b21cbiAgICAgICAgZm9yICh2YXIgZ3JvdXBzID0gc2lkZUxhYmVscy5ub2RlcygpLCBqID0gZ3JvdXBzLmxlbmd0aCAtIDE7IGogPj0gMDsgLS1qKSB7XG4gICAgICAgICAgdmFyIGQgPSBkMy5zZWxlY3QoZ3JvdXBzW2pdKS5kYXRhKClbMF07XG4gICAgICAgICAgaWYgKGQpIHtcbiAgICAgICAgICAgIGlmICghZDApIHtcbiAgICAgICAgICAgICAgZC5sYWJlbEJvdHRvbSA9IGQubGFiZWxUb3AgKyBkLmxhYmVsSGVpZ2h0ICsgbGFiZWxTcGFjZTtcbiAgICAgICAgICAgICAgZDAgPSBkLmxhYmVsQm90dG9tO1xuICAgICAgICAgICAgICBjb250aW51ZTtcbiAgICAgICAgICAgIH1cblxuICAgICAgICAgICAgZC5sYWJlbFRvcCA9IE1hdGgubWF4KGQwLCBkLmxhYmVsVG9wKTtcbiAgICAgICAgICAgIGQubGFiZWxCb3R0b20gPSBkLmxhYmVsVG9wICsgZC5sYWJlbEhlaWdodCArIGxhYmVsU3BhY2U7XG4gICAgICAgICAgICBkMCA9IGQubGFiZWxCb3R0b207XG4gICAgICAgICAgfVxuICAgICAgICB9XG5cbiAgICAgICAgLy8gQW5kIHRoZW4uLi5cbiAgICAgICAgaWYgKGQwICYmIGQwIC0gbGFiZWxTcGFjZSA+IGQzLm1heCh5LnJhbmdlKCkpKSB7XG5cbiAgICAgICAgICBkMCA9IDA7XG5cbiAgICAgICAgICAvLyBCb3R0b20gdG8gdG9wXG4gICAgICAgICAgZm9yICh2YXIgZ3JvdXBzID0gc2lkZUxhYmVscy5ub2RlcygpLCBqID0gMCwgbSA9IGdyb3Vwcy5sZW5ndGg7IGogPCBtOyArK2opIHtcbiAgICAgICAgICAgIHZhciBkID0gZDMuc2VsZWN0KGdyb3Vwc1tqXSkuZGF0YSgpWzBdO1xuICAgICAgICAgICAgaWYgKGQpIHtcbiAgICAgICAgICAgICAgaWYgKCFkMCkge1xuICAgICAgICAgICAgICAgIGQubGFiZWxCb3R0b20gPSBjYWxjdWxhdGVkSGVpZ2h0IC0gMTtcbiAgICAgICAgICAgICAgICBkLmxhYmVsVG9wID0gZC5sYWJlbEJvdHRvbSAtIGQubGFiZWxIZWlnaHQ7XG4gICAgICAgICAgICAgICAgZDAgPSBkLmxhYmVsVG9wO1xuICAgICAgICAgICAgICAgIGNvbnRpbnVlO1xuICAgICAgICAgICAgICB9XG5cbiAgICAgICAgICAgICAgZC5sYWJlbEJvdHRvbSA9IE1hdGgubWluKGQwLCBkLmxhYmVsQm90dG9tKTtcbiAgICAgICAgICAgICAgZC5sYWJlbFRvcCA9IGQubGFiZWxCb3R0b20gLSBkLmxhYmVsSGVpZ2h0IC0gbGFiZWxTcGFjZTtcbiAgICAgICAgICAgICAgZDAgPSBkLmxhYmVsVG9wO1xuICAgICAgICAgICAgfVxuICAgICAgICAgIH1cblxuICAgICAgICAgIC8vIG9rLCBGSU5BTExZLCBzbyBpZiB3ZSBhcmUgYWJvdmUgdGhlIHRvcCBvZiB0aGUgZnVubmVsLFxuICAgICAgICAgIC8vIHdlIG5lZWQgdG8gbG93ZXIgdGhlbSBhbGwgYmFjayBkb3duXG4gICAgICAgICAgaWYgKGQwIDwgMCkge1xuICAgICAgICAgICAgc2lkZUxhYmVscy5lYWNoKGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgICAgICAgICBkLmxhYmVsVG9wIC09IGQwO1xuICAgICAgICAgICAgICAgIGQubGFiZWxCb3R0b20gLT0gZDA7XG4gICAgICAgICAgICAgIH0pO1xuICAgICAgICAgIH1cbiAgICAgICAgfVxuXG4gICAgICAgIGQwID0gMDtcblxuICAgICAgICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuICAgICAgICAvLyBSZWNhbGN1bGF0ZSBmdW5uZWwgb2Zmc2V0IGJhc2VkIG9uIHNpZGUgbGFiZWwgZGltZW5zaW9uc1xuXG4gICAgICAgIHNpZGVMYWJlbHNcbiAgICAgICAgICAuY2FsbChjYWxjT2Zmc2V0cyk7XG4gICAgICB9XG5cbiAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAvLyBDYWxjdWxhdGUgdGhlIHdpZHRoIGFuZCBwb3NpdGlvbiBvZiBsYWJlbHMgd2hpY2hcbiAgICAgIC8vIGRldGVybWluZXMgdGhlIGZ1bm5lbCBvZmZzZXQgZGltZW5zaW9uXG5cbiAgICAgIGZ1bmN0aW9uIHJlbmRlckxhYmVscygpIHtcbiAgICAgICAgcmVuZGVyRnVubmVsTGFiZWxzKCk7XG4gICAgICAgIHJlbmRlclNpZGVMYWJlbHMoKTtcbiAgICAgIH1cblxuICAgICAgcmVuZGVyTGFiZWxzKCk7XG4gICAgICBjYWxjRGltZW5zaW9ucygpO1xuICAgICAgY2FsY1NjYWxlcygpO1xuXG4gICAgICAvLyBDYWxscyB0d2ljZSBzaW5jZSB0aGUgZmlyc3QgY2FsbCBtYXkgY3JlYXRlIGEgZnVubmVsIG9mZnNldFxuICAgICAgLy8gd2hpY2ggZGVjcmVhc2VzIHRoZSBmdW5uZWwgd2lkdGggd2hpY2ggaW1wYWN0cyBsYWJlbCBwb3NpdGlvblxuXG4gICAgICByZW5kZXJMYWJlbHMoKTtcbiAgICAgIGNhbGNEaW1lbnNpb25zKCk7XG4gICAgICBjYWxjU2NhbGVzKCk7XG5cbiAgICAgIHJlbmRlckxhYmVscygpO1xuICAgICAgY2FsY0RpbWVuc2lvbnMoKTtcbiAgICAgIGNhbGNTY2FsZXMoKTtcblxuICAgICAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cbiAgICAgIC8vIFJlcG9zaXRpb24gcmVzcG9uc2l2ZSBlbGVtZW50c1xuXG4gICAgICBzbGljZXMuc2VsZWN0KCcuc2MtYmFzZScpXG4gICAgICAgIC5hdHRyKCdwb2ludHMnLCBmdW5jdGlvbihkKSB7XG4gICAgICAgICAgcmV0dXJuIHBvaW50c1RyYXBlem9pZChkLCAxLCBjYWxjdWxhdGVkV2lkdGgpO1xuICAgICAgICB9KTtcblxuICAgICAgaWYgKHRleHR1cmVGaWxsKSB7XG4gICAgICAgIHNsaWNlcy5zZWxlY3RBbGwoJy5zYy10ZXh0dXJlJylcbiAgICAgICAgICAuYXR0cigncG9pbnRzJywgZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgcmV0dXJuIHBvaW50c1RyYXBlem9pZChkLCAxLCBjYWxjdWxhdGVkV2lkdGgpO1xuICAgICAgICAgIH0pXG4gICAgICAgICAgLnN0eWxlKCdmaWxsJywgZm10RmlsbCk7XG4gICAgICB9XG5cbiAgICAgIGxhYmVsc1xuICAgICAgICAuYXR0cigndHJhbnNmb3JtJywgZnVuY3Rpb24oZCkge1xuICAgICAgICAgIHZhciB4VHJhbnMgPSBkLnRvb1RhbGwgPyAwIDogY2FsY3VsYXRlZENlbnRlcixcbiAgICAgICAgICAgICAgeVRyYW5zID0gZC50b29UYWxsID8gMCA6IGQubGFiZWxUb3A7XG4gICAgICAgICAgcmV0dXJuICd0cmFuc2xhdGUoJyArIHhUcmFucyArICcsJyArIHlUcmFucyArICcpJztcbiAgICAgICAgfSk7XG5cbiAgICAgIHNpZGVMYWJlbHNcbiAgICAgICAgLmF0dHIoJ3RyYW5zZm9ybScsIGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgICByZXR1cm4gJ3RyYW5zbGF0ZSgnICsgbGFiZWxPZmZzZXQgKyAnLCcgKyBkLmxhYmVsVG9wICsgJyknO1xuICAgICAgICB9KTtcblxuICAgICAgc2lkZUxhYmVsc1xuICAgICAgICAuYXBwZW5kKCdwb2x5bGluZScpXG4gICAgICAgICAgLmF0dHIoJ2NsYXNzJywgJ3NjLWxhYmVsLWxlYWRlcicpXG4gICAgICAgICAgLnN0eWxlKCdmaWxsLW9wYWNpdHknLCAwKVxuICAgICAgICAgIC5zdHlsZSgnc3Ryb2tlJywgJyM5OTknKVxuICAgICAgICAgIC5zdHlsZSgnc3Ryb2tlLXdpZHRoJywgMSlcbiAgICAgICAgICAuc3R5bGUoJ3N0cm9rZS1vcGFjaXR5JywgMC41KTtcblxuICAgICAgc2lkZUxhYmVscy5zZWxlY3RBbGwoJ3BvbHlsaW5lJylcbiAgICAgICAgLmNhbGwocG9pbnRzTGVhZGVyKTtcblxuICAgICAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cbiAgICAgIC8vIFV0aWxpdHkgZnVuY3Rpb25zXG5cbiAgICAgIC8vIFRPRE86IHVzZSBzY2FsZXMgaW5zdGVhZCBvZiByYXRpbyBhbGdlYnJhXG4gICAgICAvLyB2YXIgZnVubmVsU2NhbGUgPSBkMy5zY2FsZUxpbmVhcigpXG4gICAgICAvLyAgICAgICAuZG9tYWluKFt3IC8gMiwgbWluaW11bV0pXG4gICAgICAvLyAgICAgICAucmFuZ2UoWzAsIG1heHkxKnRoZW5zY2FsZXRoaXN0b3ByZXZlbnRtaW5pbXVtZnJvbXBhc3NpbmddKTtcblxuICAgICAgZnVuY3Rpb24gYnVpbGRFdmVudE9iamVjdChlLCBkLCBpKSB7XG4gICAgICAgIHJldHVybiB7XG4gICAgICAgICAgaWQ6IGlkLFxuICAgICAgICAgIGtleTogZm10S2V5KGQpLFxuICAgICAgICAgIHZhbHVlOiBmbXRWYWx1ZShkKSxcbiAgICAgICAgICBjb3VudDogZm10Q291bnQoZCksXG4gICAgICAgICAgZGF0YTogZCxcbiAgICAgICAgICBzZXJpZXM6IGQuc2VyaWVzLFxuICAgICAgICAgIGU6IGVcbiAgICAgICAgfTtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gd3JhcExhYmVsKGQsIGxibCwgZm5XaWR0aCwgZm10TGFiZWwpIHtcbiAgICAgICAgdmFyIHRleHQgPSBsYmwudGV4dCgpLFxuICAgICAgICAgICAgZHkgPSBwYXJzZUZsb2F0KGxibC5hdHRyKCdkeScpKSxcbiAgICAgICAgICAgIHdvcmQsXG4gICAgICAgICAgICB3b3JkcyA9IHRleHQuc3BsaXQoL1xccysvKS5yZXZlcnNlKCksXG4gICAgICAgICAgICBsaW5lID0gW10sXG4gICAgICAgICAgICBsaW5lTnVtYmVyID0gMCxcbiAgICAgICAgICAgIG1heFdpZHRoID0gZm5XaWR0aChkLCAwKSxcbiAgICAgICAgICAgIHBhcmVudCA9IGQzLnNlbGVjdChsYmwubm9kZSgpLnBhcmVudE5vZGUpO1xuXG4gICAgICAgIGxibC50ZXh0KG51bGwpO1xuXG4gICAgICAgIHdoaWxlICh3b3JkID0gd29yZHMucG9wKCkpIHtcbiAgICAgICAgICBsaW5lLnB1c2god29yZCk7XG4gICAgICAgICAgbGJsLnRleHQobGluZS5qb2luKCcgJykpO1xuXG4gICAgICAgICAgaWYgKGxibC5ub2RlKCkuZ2V0Q29tcHV0ZWRUZXh0TGVuZ3RoKCkgPiBtYXhXaWR0aCAmJiBsaW5lLmxlbmd0aCA+IDEpIHtcbiAgICAgICAgICAgIGxpbmUucG9wKCk7XG4gICAgICAgICAgICBsYmwudGV4dChsaW5lLmpvaW4oJyAnKSk7XG4gICAgICAgICAgICBsaW5lID0gW3dvcmRdO1xuICAgICAgICAgICAgbGJsID0gcGFyZW50LmFwcGVuZCgndGV4dCcpO1xuICAgICAgICAgICAgbGJsLnRleHQod29yZClcbiAgICAgICAgICAgICAgLmNhbGwoZm10TGFiZWwsICsrbGluZU51bWJlciAqIDEuMSArIGR5KTtcbiAgICAgICAgICB9XG4gICAgICAgIH1cbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gaGFuZGxlTGFiZWwobGJscywgZm5Gb3JtYXQsIGZuV2lkdGgsIGZtdExhYmVsKSB7XG4gICAgICAgIGxibHMuZWFjaChmdW5jdGlvbihkKSB7XG4gICAgICAgICAgdmFyIGxibCA9IGQzLnNlbGVjdCh0aGlzKTtcbiAgICAgICAgICBmbkZvcm1hdChkLCBsYmwsIGZuV2lkdGgsIGZtdExhYmVsKTtcbiAgICAgICAgfSk7XG4gICAgICB9XG5cbiAgICAgIGZ1bmN0aW9uIGVsbGlwc2lmeUxhYmVsKGQsIGxibCwgZm5XaWR0aCwgZm10TGFiZWwpIHtcbiAgICAgICAgdmFyIHRleHQgPSBsYmwudGV4dCgpLFxuICAgICAgICAgICAgZHkgPSBwYXJzZUZsb2F0KGxibC5hdHRyKCdkeScpKSxcbiAgICAgICAgICAgIG1heFdpZHRoID0gZm5XaWR0aChkKTtcblxuICAgICAgICBsYmwudGV4dCh1dGlscy5zdHJpbmdFbGxpcHNpZnkodGV4dCwgY29udGFpbmVyLCBtYXhXaWR0aCkpXG4gICAgICAgICAgLmNhbGwoZm10TGFiZWwsIGR5KTtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gbWF4U2lkZUxhYmVsV2lkdGgoZCkge1xuICAgICAgICAvLyBvdmVyYWxsIHdpZHRoIG9mIGNvbnRhaW5lciBtaW51cyB0aGUgd2lkdGggb2YgZnVubmVsIHRvcFxuICAgICAgICAvLyBvciBtaW5MYWJlbFdpZHRoLCB3aGljaCBldmVyIGlzIGdyZWF0ZXJcbiAgICAgICAgLy8gdGhpcyBpcyBhbHNvIG5vdyBhcyBmdW5uZWxPZmZzZXQgKG1heWJlKVxuICAgICAgICB2YXIgdHdlbnR5ID0gTWF0aC5tYXgoYXZhaWxhYmxlV2lkdGggLSBhdmFpbGFibGVIZWlnaHQgLyAxLjEsIG1pbkxhYmVsV2lkdGgpLFxuICAgICAgICAgICAgLy8gYm90dG9tIG9mIHNsaWNlXG4gICAgICAgICAgICBzbGljZUJvdHRvbSA9IGQuX2JvdHRvbSxcbiAgICAgICAgICAgIC8vIHggY29tcG9uZW50IG9mIHNsb3BlIEYgYXQgeVxuICAgICAgICAgICAgYmFzZSA9IHNsaWNlQm90dG9tICogcixcbiAgICAgICAgICAgIC8vIHRvdGFsIHdpZHRoIGF0IGJvdHRvbSBvZiBzbGljZVxuICAgICAgICAgICAgbWF4V2lkdGggPSB0d2VudHkgKyBiYXNlLFxuICAgICAgICAgICAgLy8gaGVpZ2h0IG9mIHNsb3BlZCBsZWFkZXJcbiAgICAgICAgICAgIGxlYWRlckhlaWdodCA9IE1hdGguYWJzKGQubGFiZWxCb3R0b20gLSBzbGljZUJvdHRvbSksXG4gICAgICAgICAgICAvLyB3aWR0aCBvZiB0aGUgYW5nbGVkIGxlYWRlclxuICAgICAgICAgICAgbGVhZGVyV2lkdGggPSBsZWFkZXJIZWlnaHQgKiByLFxuICAgICAgICAgICAgLy8gdG90YWwgd2lkdGggb2YgbGVhZGVyXG4gICAgICAgICAgICBsZWFkZXJUb3RhbCA9IGxhYmVsR2FwICsgbGVhZGVyV2lkdGggKyBsYWJlbEdhcCArIGxhYmVsR2FwLFxuICAgICAgICAgICAgLy8gdGhpcyBpcyB0aGUgZGlzdGFuY2UgZnJvbSBlbmQgb2YgbGFiZWwgcGx1cyBzcGFjaW5nIHRvIEZcbiAgICAgICAgICAgIGlPZmZzZXQgPSBtYXhXaWR0aCAtIGxlYWRlclRvdGFsO1xuXG4gICAgICAgIHJldHVybiBNYXRoLm1heChpT2Zmc2V0LCBtaW5MYWJlbFdpZHRoKTtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gcG9pbnRzVHJhcGV6b2lkKGQsIGgsIHcpIHtcbiAgICAgICAgLy9NQVRIOiBkb24ndCBkZWxldGVcbiAgICAgICAgLy8gdiA9IDEvMiAqIGggKiAoYiArIGIgKyAyKnIqaCk7XG4gICAgICAgIC8vIDJ2ID0gaCAqIChiICsgYiArIDIqcipoKTtcbiAgICAgICAgLy8gMnYgPSBoICogKDIqYiArIDIqcipoKTtcbiAgICAgICAgLy8gMnYgPSAyKmIqaCArIDIqcipoKmg7XG4gICAgICAgIC8vIHYgPSBiKmggKyByKmgqaDtcbiAgICAgICAgLy8gdiAtIGIqaCAtIHIqaCpoID0gMDtcbiAgICAgICAgLy8gdi9yIC0gYipoL3IgLSBoKmggPSAwO1xuICAgICAgICAvLyBiL3IqaCArIGgqaCArIGIvci8yKmIvci8yID0gdi9yICsgYi9yLzIqYi9yLzI7XG4gICAgICAgIC8vIGgqaCArIGIvcipoICsgYi9yLzIqYi9yLzIgPSB2L3IgKyBiL3IvMipiL3IvMjtcbiAgICAgICAgLy8gKGggKyBiL3IvMikoaCArIGIvci8yKSA9IHYvciArIGIvci8yKmIvci8yO1xuICAgICAgICAvLyBoICsgYi9yLzIgPSBNYXRoLnNxcnQodi9yICsgYi9yLzIqYi9yLzIpO1xuICAgICAgICAvLyBoICA9IE1hdGguYWJzKE1hdGguc3FydCh2L3IgKyBiL3IvMipiL3IvMikpIC0gYi9yLzI7XG4gICAgICAgIHZhciB5MCA9IGQuX2JvdHRvbSxcbiAgICAgICAgICAgIHkxID0gZC5fdG9wLFxuICAgICAgICAgICAgdzAgPSB3IC8gMiAtIHIgKiB5MCxcbiAgICAgICAgICAgIHcxID0gdyAvIDIgLSByICogeTEsXG4gICAgICAgICAgICBjID0gY2FsY3VsYXRlZENlbnRlcjtcblxuICAgICAgICByZXR1cm4gKFxuICAgICAgICAgIChjIC0gdzApICsgJywnICsgKHkwICogaCkgKyAnICcgK1xuICAgICAgICAgIChjIC0gdzEpICsgJywnICsgKHkxICogaCkgKyAnICcgK1xuICAgICAgICAgIChjICsgdzEpICsgJywnICsgKHkxICogaCkgKyAnICcgK1xuICAgICAgICAgIChjICsgdzApICsgJywnICsgKHkwICogaClcbiAgICAgICAgKTtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gaGVpZ2h0VHJhcGV6b2lkKGEsIGIpIHtcbiAgICAgICAgdmFyIHggPSBiIC8gciAvIDI7XG4gICAgICAgIHJldHVybiBNYXRoLmFicyhNYXRoLnNxcnQoYSAvIHIgKyB4ICogeCkpIC0geDtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gYXJlYVRyYXBlem9pZChoLCB3KSB7XG4gICAgICAgIHJldHVybiBoICogKHcgLSBoICogcik7XG4gICAgICB9XG5cbiAgICAgIGZ1bmN0aW9uIGNhbGNXaWR0aChvZmZzZXQpIHtcbiAgICAgICAgcmV0dXJuIE1hdGgucm91bmQoTWF0aC5tYXgoTWF0aC5taW4oYXZhaWxhYmxlSGVpZ2h0IC8gMS4xLCBhdmFpbGFibGVXaWR0aCAtIG9mZnNldCksIDQwKSk7XG4gICAgICB9XG5cbiAgICAgIGZ1bmN0aW9uIGNhbGNIZWlnaHQoKSB7XG4gICAgICAgIC8vIE1BVEg6IGRvbid0IGRlbGV0ZVxuICAgICAgICAvLyBoID0gNjY2LjY2NlxuICAgICAgICAvLyB3ID0gNjAwXG4gICAgICAgIC8vIG0gPSAyMDBcbiAgICAgICAgLy8gYXQgd2hhdCBoZWlnaHQgaXMgbSA9IDIwMFxuICAgICAgICAvLyB3ID0gaCAqIDAuMyA9IDY2NiAqIDAuMyA9IDIwMFxuICAgICAgICAvLyBtYXhoZWlnaHQgPSAoKHcgLSBtKSAvIDIpIC8gMC4zID0gKHcgLSBtKSAvIDAuNiA9IGhcbiAgICAgICAgLy8gKDYwMCAtIDIwMCkgLyAwLjYgPSA0MDAgLyAwLjYgPSA2NjZcbiAgICAgICAgcmV0dXJuIE1hdGgubWluKGNhbGN1bGF0ZWRXaWR0aCAqIDEuMSwgKGNhbGN1bGF0ZWRXaWR0aCAtIGNhbGN1bGF0ZWRXaWR0aCAqIHIpIC8gKDIgKiByKSk7XG4gICAgICB9XG5cbiAgICAgIGZ1bmN0aW9uIGNhbGNDZW50ZXIob2Zmc2V0KSB7XG4gICAgICAgIHJldHVybiBjYWxjdWxhdGVkV2lkdGggLyAyICsgb2Zmc2V0O1xuICAgICAgfVxuXG4gICAgICBmdW5jdGlvbiBjYWxjRnVubmVsV2lkdGhBdFNsaWNlTWlkcG9pbnQoZCkge1xuICAgICAgICB2YXIgYiA9IGNhbGN1bGF0ZWRXaWR0aCxcbiAgICAgICAgICAgIHYgPSBkLl9ib3R0b20gLSBkLl9oZWlnaHQgLyAyOyAvLyBtaWQgcG9pbnQgb2Ygc2xpY2VcbiAgICAgICAgcmV0dXJuIGIgLSB2ICogciAqIDI7XG4gICAgICB9XG5cbiAgICAgIGZ1bmN0aW9uIGNhbGNTaWRlV2lkdGgoZCwgb2Zmc2V0KSB7XG4gICAgICAgIHZhciBiID0gTWF0aC5tYXgoKGF2YWlsYWJsZVdpZHRoIC0gY2FsY3VsYXRlZFdpZHRoKSAvIDIsIG9mZnNldCksXG4gICAgICAgICAgICB2ID0gZC5fdG9wOyAvLyB0b3Agb2Ygc2xpY2VcbiAgICAgICAgcmV0dXJuIGIgKyB2ICogcjtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gY2FsY0xhYmVsQkJveChsYmwpIHtcbiAgICAgICAgcmV0dXJuIGQzLnNlbGVjdChsYmwpLm5vZGUoKS5nZXRCb3VuZGluZ0NsaWVudFJlY3QoKTtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gY2FsY0Z1bm5lbExhYmVsRGltZW5zaW9ucyhsYmxzKSB7XG4gICAgICAgIGxibHMuZWFjaChmdW5jdGlvbihkKSB7XG4gICAgICAgICAgdmFyIGJib3ggPSBjYWxjTGFiZWxCQm94KHRoaXMpO1xuXG4gICAgICAgICAgZC5sYWJlbEhlaWdodCA9IGJib3guaGVpZ2h0O1xuICAgICAgICAgIGQubGFiZWxXaWR0aCA9IGJib3gud2lkdGg7XG4gICAgICAgICAgZC5sYWJlbFRvcCA9IChkLl9ib3R0b20gLSBkLl9oZWlnaHQgLyAyKSAtIGQubGFiZWxIZWlnaHQgLyAyO1xuICAgICAgICAgIGQubGFiZWxCb3R0b20gPSBkLmxhYmVsVG9wICsgZC5sYWJlbEhlaWdodCArIGxhYmVsU3BhY2U7XG4gICAgICAgICAgZC50b29XaWRlID0gZC5sYWJlbFdpZHRoID4gY2FsY0Z1bm5lbFdpZHRoQXRTbGljZU1pZHBvaW50KGQpO1xuICAgICAgICAgIGQudG9vVGFsbCA9IGQubGFiZWxIZWlnaHQgPiBkLl9oZWlnaHQgLSA0O1xuICAgICAgICB9KTtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gY2FsY1NpZGVMYWJlbERpbWVuc2lvbnMobGJscykge1xuICAgICAgICBsYmxzLmVhY2goZnVuY3Rpb24oZCkge1xuICAgICAgICAgIHZhciBiYm94ID0gY2FsY0xhYmVsQkJveCh0aGlzKTtcblxuICAgICAgICAgIGQubGFiZWxIZWlnaHQgPSBiYm94LmhlaWdodDtcbiAgICAgICAgICBkLmxhYmVsV2lkdGggPSBiYm94LndpZHRoO1xuICAgICAgICAgIGQubGFiZWxUb3AgPSBkLl90b3A7XG4gICAgICAgICAgZC5sYWJlbEJvdHRvbSA9IGQubGFiZWxUb3AgKyBkLmxhYmVsSGVpZ2h0ICsgbGFiZWxTcGFjZTtcbiAgICAgICAgfSk7XG4gICAgICB9XG5cbiAgICAgIGZ1bmN0aW9uIHBvaW50c0xlYWRlcihwb2x5bGluZXMpIHtcbiAgICAgICAgLy8gTWVzcyB3aXRoIHRoaXMgZnVuY3Rpb24gYXQgeW91ciBwZXJpbC5cbiAgICAgICAgdmFyIGMgPSBwb2x5bGluZXMuc2l6ZSgpO1xuXG4gICAgICAgIC8vIHJ1biB0b3AgdG8gYm90dG9tXG4gICAgICAgIGZvciAodmFyIGdyb3VwcyA9IHBvbHlsaW5lcy5ub2RlcygpLCBpID0gZ3JvdXBzLmxlbmd0aCAtIDE7IGkgPj0gMDsgLS1pKSB7XG4gICAgICAgICAgdmFyIG5vZGUgPSBkMy5zZWxlY3QoZ3JvdXBzW2ldKTtcbiAgICAgICAgICB2YXIgZCA9IG5vZGUuZGF0YSgpWzBdO1xuICAgICAgICAgIHZhciAvLyBwcmV2aW91cyBsYWJlbFxuICAgICAgICAgICAgICBwID0gaSA8IGMgLSAxID8gZDMuc2VsZWN0KGdyb3Vwc1tpICsgMV0pLmRhdGEoKVswXSA6IG51bGwsXG4gICAgICAgICAgICAgIC8vIG5leHQgbGFiZWxcbiAgICAgICAgICAgICAgbiA9IGkgPyBkMy5zZWxlY3QoZ3JvdXBzW2kgLSAxXSkuZGF0YSgpWzBdIDogbnVsbCxcbiAgICAgICAgICAgICAgLy8gbGFiZWwgaGVpZ2h0XG4gICAgICAgICAgICAgIGggPSBNYXRoLnJvdW5kKGQubGFiZWxIZWlnaHQpICsgMC41LFxuICAgICAgICAgICAgICAvLyBzbGljZSBib3R0b21cbiAgICAgICAgICAgICAgdCA9IE1hdGgucm91bmQoZC5fYm90dG9tIC0gZC5sYWJlbFRvcCkgLSAwLjUsXG4gICAgICAgICAgICAgIC8vIHByZXZpb3VzIHdpZHRoXG4gICAgICAgICAgICAgIHdwID0gcCA/IHAubGFiZWxXaWR0aCAtIChkLmxhYmVsQm90dG9tIC0gcC5sYWJlbEJvdHRvbSkgKiByIDogMCxcbiAgICAgICAgICAgICAgLy8gY3VycmVudCB3aWR0aFxuICAgICAgICAgICAgICB3YyA9IGQubGFiZWxXaWR0aCxcbiAgICAgICAgICAgICAgLy8gbmV4dCB3aWR0aFxuICAgICAgICAgICAgICB3biA9IG4gJiYgaCA8IHQgPyBuLmxhYmVsV2lkdGggOiAwLFxuICAgICAgICAgICAgICAvLyBmaW5hbCB3aWR0aFxuICAgICAgICAgICAgICB3ID0gTWF0aC5yb3VuZChNYXRoLm1heCh3cCwgd2MsIHduKSkgKyBsYWJlbEdhcCxcbiAgICAgICAgICAgICAgLy8gZnVubmVsIGVkZ2VcbiAgICAgICAgICAgICAgZiA9IE1hdGgucm91bmQoY2FsY1NpZGVXaWR0aChkLCBmdW5uZWxPZmZzZXQpKSAtIGxhYmVsT2Zmc2V0IC0gbGFiZWxHYXA7XG5cbiAgICAgICAgICAvLyBwb2x5bGluZSBwb2ludHNcbiAgICAgICAgICB2YXIgcG9pbnRzID0gMCArICcsJyArIGggKyAnICcgK1xuICAgICAgICAgICAgICAgICB3ICsgJywnICsgaCArICcgJyArXG4gICAgICAgICAgICAgICAgICh3ICsgTWF0aC5hYnMoaCAtIHQpICogcikgKyAnLCcgKyB0ICsgJyAnICtcbiAgICAgICAgICAgICAgICAgZiArICcsJyArIHQ7XG5cbiAgICAgICAgICAvLyB0aGlzIHdpbGwgYmUgb3ZlcnJpZGRpbmcgdGhlIGxhYmVsIHdpZHRoIGluIGRhdGFcbiAgICAgICAgICAvLyByZWZlcmVuY2VkIGFib3ZlIGFzIHAubGFiZWxXaWR0aFxuICAgICAgICAgIGQubGFiZWxXaWR0aCA9IHc7XG4gICAgICAgICAgbm9kZS5hdHRyKCdwb2ludHMnLCBwb2ludHMpO1xuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIGZ1bmN0aW9uIGNhbGNPZmZzZXRzKGxibHMpIHtcbiAgICAgICAgdmFyIHNpZGVXaWR0aCA9IChhdmFpbGFibGVXaWR0aCAtIGNhbGN1bGF0ZWRXaWR0aCkgLyAyLCAvLyBuYXR1cmFsIHdpZHRoIG9mIHNpZGVcbiAgICAgICAgICAgIG9mZnNldCA9IDA7XG5cbiAgICAgICAgbGJscy5lYWNoKGZ1bmN0aW9uKGQpIHtcbiAgICAgICAgICB2YXIgLy8gYm90dG9tIG9mIHNsaWNlXG4gICAgICAgICAgICAgIHNsaWNlQm90dG9tID0gZC5fYm90dG9tLFxuICAgICAgICAgICAgICAvLyBpcyBzbGljZSBiZWxvdyBvciBhYm92ZSBsYWJlbCBib3R0b21cbiAgICAgICAgICAgICAgc2NhbGFyID0gZC5sYWJlbEJvdHRvbSA+PSBzbGljZUJvdHRvbSA/IDEgOiAwLFxuICAgICAgICAgICAgICAvLyB0aGUgd2lkdGggb2YgdGhlIGFuZ2xlZCBsZWFkZXJcbiAgICAgICAgICAgICAgLy8gZnJvbSBib3R0b20gcmlnaHQgb2YgbGFiZWwgdG8gYm90dG9tIG9mIHNsaWNlXG4gICAgICAgICAgICAgIGxlYWRlclNsb3BlID0gTWF0aC5hYnMoZC5sYWJlbEJvdHRvbSArIGxhYmVsR2FwIC0gc2xpY2VCb3R0b20pICogcixcbiAgICAgICAgICAgICAgLy8gdGhpcyBpcyB0aGUgeCBjb21wb25lbnQgb2Ygc2xvcGUgRiBhdCB5XG4gICAgICAgICAgICAgIGJhc2UgPSBzbGljZUJvdHRvbSAqIHIsXG4gICAgICAgICAgICAgIC8vIHRoaXMgaXMgdGhlIGRpc3RhbmNlIGZyb20gZW5kIG9mIGxhYmVsIHBsdXMgc3BhY2luZyB0byBGXG4gICAgICAgICAgICAgIGlPZmZzZXQgPSBkLmxhYmVsV2lkdGggKyBsZWFkZXJTbG9wZSArIGxhYmVsR2FwICogMyAtIGJhc2U7XG4gICAgICAgICAgLy8gaWYgdGhpcyBsYWJlbCBzdGlja3Mgb3V0IHBhc3QgRlxuICAgICAgICAgIGlmIChpT2Zmc2V0ID49IG9mZnNldCkge1xuICAgICAgICAgICAgLy8gdGhpcyBpcyB0aGUgbWluaW11bSBkaXN0YW5jZSBmb3IgRlxuICAgICAgICAgICAgLy8gaGFzIHRvIGJlIGF3YXkgZnJvbSB0aGUgbGVmdCBlZGdlIG9mIGxhYmVsc1xuICAgICAgICAgICAgb2Zmc2V0ID0gaU9mZnNldDtcbiAgICAgICAgICB9XG4gICAgICAgIH0pO1xuXG4gICAgICAgIC8vIGhvdyBmYXIgZnJvbSBjaGFydCBlZGdlIGlzIGxhYmVsIGxlZnQgZWRnZVxuICAgICAgICBvZmZzZXQgPSBNYXRoLnJvdW5kKG9mZnNldCAqIDEwKSAvIDEwO1xuXG4gICAgICAgIC8vIHRoZXJlIGFyZSB0aHJlZSBzdGF0ZXM6XG4gICAgICAgIGlmIChvZmZzZXQgPD0gMCkge1xuICAgICAgICAvLyAxLiBubyBsYWJlbCBzdGlja3Mgb3V0IHBhc3QgRlxuICAgICAgICAgIGxhYmVsT2Zmc2V0ID0gc2lkZVdpZHRoO1xuICAgICAgICAgIGZ1bm5lbE9mZnNldCA9IHNpZGVXaWR0aDtcbiAgICAgICAgfSBlbHNlIGlmIChvZmZzZXQgPiAwICYmIG9mZnNldCA8IHNpZGVXaWR0aCkge1xuICAgICAgICAvLyAyLiBpT2Zmc2V0IGlzID4gMCBidXQgPCBzaWRlV2lkdGhcbiAgICAgICAgICBsYWJlbE9mZnNldCA9IHNpZGVXaWR0aCAtIG9mZnNldDtcbiAgICAgICAgICBmdW5uZWxPZmZzZXQgPSBzaWRlV2lkdGg7XG4gICAgICAgIH0gZWxzZSB7XG4gICAgICAgIC8vIDMuIGlPZmZzZXQgaXMgPj0gc2lkZVdpZHRoXG4gICAgICAgICAgbGFiZWxPZmZzZXQgPSAwO1xuICAgICAgICAgIGZ1bm5lbE9mZnNldCA9IG9mZnNldDtcbiAgICAgICAgfVxuICAgICAgfVxuXG4gICAgICBmdW5jdGlvbiBmbXRGaWxsKGQsIGksIGopIHtcbiAgICAgICAgdmFyIGJhY2tDb2xvciA9IGQzLnNlbGVjdCh0aGlzLnBhcmVudE5vZGUpLnN0eWxlKCdmaWxsJyk7XG4gICAgICAgIHJldHVybiB1dGlscy5nZXRUZXh0Q29udHJhc3QoYmFja0NvbG9yLCBpKTtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gZm10RGlyZWN0aW9uKGQpIHtcbiAgICAgICAgdmFyIG0gPSB1dGlscy5pc1JUTENoYXIoZC5zbGljZSgtMSkpLFxuICAgICAgICAgICAgZGlyID0gbSA/ICdydGwnIDogJ2x0cic7XG4gICAgICAgIHJldHVybiAnbHRyJztcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gZm10TGFiZWwodHh0LCBjbGFzc2VzLCBkeSwgYW5jaG9yLCBmaWxsKSB7XG4gICAgICAgIHR4dFxuICAgICAgICAgIC5hdHRyKCd4JywgMClcbiAgICAgICAgICAuYXR0cigneScsIDApXG4gICAgICAgICAgLmF0dHIoJ2R5JywgZHkgKyAnZW0nKVxuICAgICAgICAgIC5hdHRyKCdjbGFzcycsIGNsYXNzZXMpXG4gICAgICAgICAgLmF0dHIoJ2RpcmVjdGlvbicsIGZ1bmN0aW9uKCkge1xuICAgICAgICAgICAgcmV0dXJuIGZtdERpcmVjdGlvbih0eHQudGV4dCgpKTtcbiAgICAgICAgICB9KVxuICAgICAgICAgIC5zdHlsZSgncG9pbnRlci1ldmVudHMnLCAnbm9uZScpXG4gICAgICAgICAgLnN0eWxlKCd0ZXh0LWFuY2hvcicsIGFuY2hvcilcbiAgICAgICAgICAuc3R5bGUoJ2ZpbGwnLCBmaWxsKTtcbiAgICAgIH1cblxuICAgICAgZnVuY3Rpb24gcG9zaXRpb25WYWx1ZShsYmxzKSB7XG4gICAgICAgIGxibHMuZWFjaChmdW5jdGlvbihkKSB7XG4gICAgICAgICAgdmFyIGxibCA9IGQzLnNlbGVjdCh0aGlzKTtcbiAgICAgICAgICB2YXIgY250ID0gbGJsLnNlbGVjdEFsbCgnLnNjLWxhYmVsJykuc2l6ZSgpICsgMTtcbiAgICAgICAgICB2YXIgZHkgPSAoLjg1ICsgY250IC0gMSkgKyAnZW0nO1xuICAgICAgICAgIGxibC5zZWxlY3QoJy5zYy12YWx1ZScpXG4gICAgICAgICAgICAuYXR0cignZHknLCBkeSk7XG4gICAgICAgIH0pO1xuICAgICAgfVxuXG4gICAgICBmdW5jdGlvbiBwb3NpdGlvbkxhYmVsQm94KGxibHMpIHtcbiAgICAgICAgbGJscy5lYWNoKGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgICB2YXIgbGJsID0gZDMuc2VsZWN0KHRoaXMpO1xuXG4gICAgICAgICAgbGJsLnNlbGVjdCgnLnNjLWxhYmVsLWJveCcpXG4gICAgICAgICAgICAuYXR0cigneCcsIChkLmxhYmVsV2lkdGggKyA2KSAvIC0yKVxuICAgICAgICAgICAgLmF0dHIoJ3knLCAtMilcbiAgICAgICAgICAgIC5hdHRyKCd3aWR0aCcsIGQubGFiZWxXaWR0aCArIDYpXG4gICAgICAgICAgICAuYXR0cignaGVpZ2h0JywgZC5sYWJlbEhlaWdodCArIDQpXG4gICAgICAgICAgICAuYXR0cigncngnLCAyKVxuICAgICAgICAgICAgLmF0dHIoJ3J5JywgMilcbiAgICAgICAgICAgIC5zdHlsZSgnZmlsbC1vcGFjaXR5JywgMSk7XG4gICAgICAgIH0pO1xuICAgICAgfVxuXG4gICAgfSk7XG5cbiAgICByZXR1cm4gY2hhcnQ7XG4gIH1cblxuXG4gIC8vPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09XG4gIC8vIEV4cG9zZSBQdWJsaWMgVmFyaWFibGVzXG4gIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG5cbiAgY2hhcnQuZGlzcGF0Y2ggPSBkaXNwYXRjaDtcblxuICBjaGFydC5pZCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBpZDtcbiAgICB9XG4gICAgaWQgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5jb2xvciA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBjb2xvcjtcbiAgICB9XG4gICAgY29sb3IgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcbiAgY2hhcnQuZmlsbCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBmaWxsO1xuICAgIH1cbiAgICBmaWxsID0gXztcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG4gIGNoYXJ0LmNsYXNzZXMgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gY2xhc3NlcztcbiAgICB9XG4gICAgY2xhc3NlcyA9IF87XG4gICAgcmV0dXJuIGNoYXJ0O1xuICB9O1xuICBjaGFydC5ncmFkaWVudCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBncmFkaWVudDtcbiAgICB9XG4gICAgY2hhcnQuZ3JhZGllbnQgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5tYXJnaW4gPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gbWFyZ2luO1xuICAgIH1cbiAgICBtYXJnaW4udG9wICAgID0gdHlwZW9mIF8udG9wICAgICE9ICd1bmRlZmluZWQnID8gXy50b3AgICAgOiBtYXJnaW4udG9wO1xuICAgIG1hcmdpbi5yaWdodCAgPSB0eXBlb2YgXy5yaWdodCAgIT0gJ3VuZGVmaW5lZCcgPyBfLnJpZ2h0ICA6IG1hcmdpbi5yaWdodDtcbiAgICBtYXJnaW4uYm90dG9tID0gdHlwZW9mIF8uYm90dG9tICE9ICd1bmRlZmluZWQnID8gXy5ib3R0b20gOiBtYXJnaW4uYm90dG9tO1xuICAgIG1hcmdpbi5sZWZ0ICAgPSB0eXBlb2YgXy5sZWZ0ICAgIT0gJ3VuZGVmaW5lZCcgPyBfLmxlZnQgICA6IG1hcmdpbi5sZWZ0O1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC53aWR0aCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiB3aWR0aDtcbiAgICB9XG4gICAgd2lkdGggPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5oZWlnaHQgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gaGVpZ2h0O1xuICAgIH1cbiAgICBoZWlnaHQgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC54ID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkge1xuICAgICAgcmV0dXJuIGdldFg7XG4gICAgfVxuICAgIGdldFggPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC55ID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkge1xuICAgICAgcmV0dXJuIGdldFk7XG4gICAgfVxuICAgIGdldFkgPSB1dGlscy5mdW5jdG9yKF8pO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5nZXRLZXkgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gZ2V0S2V5O1xuICAgIH1cbiAgICBnZXRLZXkgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5nZXRWYWx1ZSA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBnZXRWYWx1ZTtcbiAgICB9XG4gICAgZ2V0VmFsdWUgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5mbXRLZXkgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gZm10S2V5O1xuICAgIH1cbiAgICBmbXRLZXkgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5mbXRWYWx1ZSA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBmbXRWYWx1ZTtcbiAgICB9XG4gICAgZm10VmFsdWUgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5mbXRDb3VudCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBmbXRDb3VudDtcbiAgICB9XG4gICAgZm10Q291bnQgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5kaXJlY3Rpb24gPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gZGlyZWN0aW9uO1xuICAgIH1cbiAgICBkaXJlY3Rpb24gPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5kZWxheSA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBkZWxheTtcbiAgICB9XG4gICAgZGVsYXkgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5kdXJhdGlvbiA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBkdXJhdGlvbjtcbiAgICB9XG4gICAgZHVyYXRpb24gPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC50ZXh0dXJlRmlsbCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiB0ZXh0dXJlRmlsbDtcbiAgICB9XG4gICAgdGV4dHVyZUZpbGwgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5sb2NhbGl0eSA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBsb2NhbGl0eTtcbiAgICB9XG4gICAgbG9jYWxpdHkgPSB1dGlscy5idWlsZExvY2FsaXR5KF8pO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC54U2NhbGUgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4geDtcbiAgICB9XG4gICAgeCA9IF87XG4gICAgcmV0dXJuIGNoYXJ0O1xuICB9O1xuXG4gIGNoYXJ0LnlTY2FsZSA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiB5O1xuICAgIH1cbiAgICB5ID0gXztcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG5cbiAgY2hhcnQueURvbWFpbiA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiB5RG9tYWluO1xuICAgIH1cbiAgICB5RG9tYWluID0gXztcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG5cbiAgY2hhcnQuZm9yY2VZID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkge1xuICAgICAgcmV0dXJuIGZvcmNlWTtcbiAgICB9XG4gICAgZm9yY2VZID0gXztcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG5cbiAgY2hhcnQud3JhcExhYmVscyA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiB3cmFwTGFiZWxzO1xuICAgIH1cbiAgICB3cmFwTGFiZWxzID0gXztcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG5cbiAgY2hhcnQubWluTGFiZWxXaWR0aCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHtcbiAgICAgIHJldHVybiBtaW5MYWJlbFdpZHRoO1xuICAgIH1cbiAgICBtaW5MYWJlbFdpZHRoID0gXztcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG5cbiAgLy89PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT1cblxuICByZXR1cm4gY2hhcnQ7XG59XG4iLCJleHBvcnQge2xlZ2VuZCBhcyBsZWdlbmR9IGZyb20gJy4vbGVnZW5kLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBheGlzfSBmcm9tICcuL2F4aXMuanMnO1xuXG5leHBvcnQge2Z1bm5lbCBhcyBmdW5uZWx9IGZyb20gJy4vZnVubmVsLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBnYXVnZX0gZnJvbSAnLi9nYXVnZS5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgbGluZX0gZnJvbSAnLi9saW5lLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBtdWx0aUJhcn0gZnJvbSAnLi9tdWx0aUJhci5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgcGllfSBmcm9tICcuL3BpZS5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgc2NhdHRlcn0gZnJvbSAnLi9zY2F0dGVyLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBzY3JvbGx9IGZyb20gJy4vc2Nyb2xsLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBzdGFja2VkQXJlYX0gZnJvbSAnLi9zdGFja2VkQXJlYS5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgdGFibGV9IGZyb20gJy4vdGFibGUuanMnO1xuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIHRyZWV9IGZyb20gJy4vdHJlZS5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgdHJlZW1hcH0gZnJvbSAnLi90cmVlbWFwLmpzJztcbiIsImltcG9ydCBkMyBmcm9tICdkMyc7XG5pbXBvcnQgdXRpbHMgZnJvbSAnLi4vdXRpbHMuanMnO1xuLy8gaW1wb3J0ICogYXMgbW9kZWxzIGZyb20gJy4vbW9kZWxzLmpzJztcbi8vIGltcG9ydCBmdW5uZWwgYXMgbW9kZWxzLmZ1bm5lbCBmcm9tICcuL21vZGVscy5qcyc7XG5cbmV4cG9ydCBmdW5jdGlvbiBmdW5uZWxDaGFydCgpIHtcblxuICAvLz09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PVxuICAvLyBQdWJsaWMgVmFyaWFibGVzIHdpdGggRGVmYXVsdCBTZXR0aW5nc1xuICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuXG4gIHZhciBtYXJnaW4gPSB7dG9wOiAxMCwgcmlnaHQ6IDEwLCBib3R0b206IDEwLCBsZWZ0OiAxMH0sXG4gICAgICB3aWR0aCA9IG51bGwsXG4gICAgICBoZWlnaHQgPSBudWxsLFxuICAgICAgc2hvd1RpdGxlID0gZmFsc2UsXG4gICAgICBzaG93Q29udHJvbHMgPSBmYWxzZSxcbiAgICAgIHNob3dMZWdlbmQgPSB0cnVlLFxuICAgICAgZGlyZWN0aW9uID0gJ2x0cicsXG4gICAgICBkZWxheSA9IDAsXG4gICAgICBkdXJhdGlvbiA9IDAsXG4gICAgICB0b29sdGlwID0gbnVsbCxcbiAgICAgIHRvb2x0aXBzID0gdHJ1ZSxcbiAgICAgIHN0YXRlID0ge30sXG4gICAgICBzdHJpbmdzID0ge1xuICAgICAgICBsZWdlbmQ6IHtjbG9zZTogJ0hpZGUgbGVnZW5kJywgb3BlbjogJ1Nob3cgbGVnZW5kJ30sXG4gICAgICAgIGNvbnRyb2xzOiB7Y2xvc2U6ICdIaWRlIGNvbnRyb2xzJywgb3BlbjogJ1Nob3cgY29udHJvbHMnfSxcbiAgICAgICAgbm9EYXRhOiAnTm8gRGF0YSBBdmFpbGFibGUuJyxcbiAgICAgICAgbm9MYWJlbDogJ3VuZGVmaW5lZCdcbiAgICAgIH0sXG4gICAgICBkaXNwYXRjaCA9IGQzLmRpc3BhdGNoKCdjaGFydENsaWNrJywgJ2VsZW1lbnRDbGljaycsICd0b29sdGlwU2hvdycsICd0b29sdGlwSGlkZScsICd0b29sdGlwTW92ZScsICdzdGF0ZUNoYW5nZScsICdjaGFuZ2VTdGF0ZScpO1xuXG4gIC8vPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09XG4gIC8vIFByaXZhdGUgVmFyaWFibGVzXG4gIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG5cbiAgdmFyIGZ1bm5lbCA9IG1vZGVscy5mdW5uZWwoKSxcbiAgICAgIG1vZGVsID0gZnVubmVsLFxuICAgICAgY29udHJvbHMgPSBtb2RlbHMubGVnZW5kKCkuYWxpZ24oJ2NlbnRlcicpLFxuICAgICAgbGVnZW5kID0gbW9kZWxzLmxlZ2VuZCgpLmFsaWduKCdjZW50ZXInKTtcblxuICB2YXIgdG9vbHRpcENvbnRlbnQgPSBmdW5jdGlvbihrZXksIHgsIHksIGUsIGdyYXBoKSB7XG4gICAgICAgIHJldHVybiAnPGgzPicgKyBrZXkgKyAnPC9oMz4nICtcbiAgICAgICAgICAgICAgICc8cD4nICsgeSArICcgb24gJyArIHggKyAnPC9wPic7XG4gICAgICB9O1xuXG4gIHZhciBzaG93VG9vbHRpcCA9IGZ1bmN0aW9uKGVvLCBvZmZzZXRFbGVtZW50LCBwcm9wZXJ0aWVzKSB7XG4gICAgICAgIHZhciBrZXkgPSBtb2RlbC5nZXRLZXkoKShlbyksXG4gICAgICAgICAgICB5ID0gbW9kZWwuZ2V0VmFsdWUoKShlbyksXG4gICAgICAgICAgICB4ID0gcHJvcGVydGllcy50b3RhbCA/ICh5ICogMTAwIC8gcHJvcGVydGllcy50b3RhbCkudG9GaXhlZCgxKSA6IDEwMCxcbiAgICAgICAgICAgIGNvbnRlbnQgPSB0b29sdGlwQ29udGVudChrZXksIHgsIHksIGVvLCBjaGFydCk7XG5cbiAgICAgICAgcmV0dXJuIHRvb2x0aXAuc2hvdyhlby5lLCBjb250ZW50LCBudWxsLCBudWxsLCBvZmZzZXRFbGVtZW50KTtcbiAgICAgIH07XG5cbiAgdmFyIHNlcmllc0NsaWNrID0gZnVuY3Rpb24oZGF0YSwgZSwgY2hhcnQpIHsgcmV0dXJuOyB9O1xuXG4gIC8vPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09XG5cbiAgZnVuY3Rpb24gY2hhcnQoc2VsZWN0aW9uKSB7XG5cbiAgICBzZWxlY3Rpb24uZWFjaChmdW5jdGlvbihjaGFydERhdGEpIHtcblxuICAgICAgdmFyIHRoYXQgPSB0aGlzLFxuICAgICAgICAgIGNvbnRhaW5lciA9IGQzLnNlbGVjdCh0aGlzKSxcbiAgICAgICAgICBtb2RlbENsYXNzID0gJ2Z1bm5lbCc7XG5cbiAgICAgIHZhciBwcm9wZXJ0aWVzID0gY2hhcnREYXRhID8gY2hhcnREYXRhLnByb3BlcnRpZXMgOiB7fSxcbiAgICAgICAgICBkYXRhID0gY2hhcnREYXRhID8gY2hhcnREYXRhLmRhdGEgOiBudWxsO1xuXG4gICAgICB2YXIgY29udGFpbmVyV2lkdGggPSBwYXJzZUludChjb250YWluZXIuc3R5bGUoJ3dpZHRoJyksIDEwKSxcbiAgICAgICAgICBjb250YWluZXJIZWlnaHQgPSBwYXJzZUludChjb250YWluZXIuc3R5bGUoJ2hlaWdodCcpLCAxMCk7XG5cbiAgICAgIHZhciB4SXNEYXRldGltZSA9IGNoYXJ0RGF0YS5wcm9wZXJ0aWVzLnhEYXRhVHlwZSA9PT0gJ2RhdGV0aW1lJyB8fCBmYWxzZSxcbiAgICAgICAgICB5SXNDdXJyZW5jeSA9IGNoYXJ0RGF0YS5wcm9wZXJ0aWVzLnlEYXRhVHlwZSA9PT0gJ2N1cnJlbmN5JyB8fCBmYWxzZTtcblxuICAgICAgY2hhcnQudXBkYXRlID0gZnVuY3Rpb24oKSB7XG4gICAgICAgIGNvbnRhaW5lci50cmFuc2l0aW9uKCkuZHVyYXRpb24oZHVyYXRpb24pLmNhbGwoY2hhcnQpO1xuICAgICAgfTtcblxuICAgICAgY2hhcnQuY29udGFpbmVyID0gdGhpcztcblxuICAgICAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cbiAgICAgIC8vIFByaXZhdGUgbWV0aG9kIGZvciBkaXNwbGF5aW5nIG5vIGRhdGEgbWVzc2FnZS5cblxuICAgICAgZnVuY3Rpb24gZGlzcGxheU5vRGF0YShkKSB7XG4gICAgICAgIHZhciBoYXNEYXRhID0gZCAmJiBkLmxlbmd0aCxcbiAgICAgICAgICAgIHggPSAoY29udGFpbmVyV2lkdGggLSBtYXJnaW4ubGVmdCAtIG1hcmdpbi5yaWdodCkgLyAyICsgbWFyZ2luLmxlZnQsXG4gICAgICAgICAgICB5ID0gKGNvbnRhaW5lckhlaWdodCAtIG1hcmdpbi50b3AgLSBtYXJnaW4uYm90dG9tKSAvIDIgKyBtYXJnaW4udG9wO1xuICAgICAgICByZXR1cm4gdXRpbHMuZGlzcGxheU5vRGF0YShoYXNEYXRhLCBjb250YWluZXIsIGNoYXJ0LnN0cmluZ3MoKS5ub0RhdGEsIHgsIHkpO1xuICAgICAgfVxuXG4gICAgICAvLyBDaGVjayB0byBzZWUgaWYgdGhlcmUncyBub3RoaW5nIHRvIHNob3cuXG4gICAgICBpZiAoZGlzcGxheU5vRGF0YShkYXRhKSkge1xuICAgICAgICByZXR1cm4gY2hhcnQ7XG4gICAgICB9XG5cbiAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAvLyBQcm9jZXNzIGRhdGFcblxuICAgICAgY2hhcnQuZGF0YVNlcmllc0FjdGl2YXRlID0gZnVuY3Rpb24oZW8pIHtcbiAgICAgICAgdmFyIHNlcmllcyA9IGVvLnNlcmllcztcblxuICAgICAgICBzZXJpZXMuYWN0aXZlID0gKCFzZXJpZXMuYWN0aXZlIHx8IHNlcmllcy5hY3RpdmUgPT09ICdpbmFjdGl2ZScpID8gJ2FjdGl2ZScgOiAnaW5hY3RpdmUnO1xuXG4gICAgICAgIC8vIGlmIHlvdSBoYXZlIGFjdGl2YXRlZCBhIGRhdGEgc2VyaWVzLCBpbmFjdGl2YXRlIHRoZSByZXN0XG4gICAgICAgIGlmIChzZXJpZXMuYWN0aXZlID09PSAnYWN0aXZlJykge1xuICAgICAgICAgIGRhdGFcbiAgICAgICAgICAgIC5maWx0ZXIoZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgICByZXR1cm4gZC5hY3RpdmUgIT09ICdhY3RpdmUnO1xuICAgICAgICAgICAgfSlcbiAgICAgICAgICAgIC5tYXAoZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgICBkLmFjdGl2ZSA9ICdpbmFjdGl2ZSc7XG4gICAgICAgICAgICAgIHJldHVybiBkO1xuICAgICAgICAgICAgfSk7XG4gICAgICAgIH1cblxuICAgICAgICAvLyBpZiB0aGVyZSBhcmUgbm8gYWN0aXZlIGRhdGEgc2VyaWVzLCBpbmFjdGl2YXRlIHRoZW0gYWxsXG4gICAgICAgIGlmICghZGF0YS5maWx0ZXIoZnVuY3Rpb24oZCkgeyByZXR1cm4gZC5hY3RpdmUgPT09ICdhY3RpdmUnOyB9KS5sZW5ndGgpIHtcbiAgICAgICAgICBkYXRhLm1hcChmdW5jdGlvbihkKSB7XG4gICAgICAgICAgICBkLmFjdGl2ZSA9ICcnO1xuICAgICAgICAgICAgcmV0dXJuIGQ7XG4gICAgICAgICAgfSk7XG4gICAgICAgIH1cblxuICAgICAgICBjb250YWluZXIuY2FsbChjaGFydCk7XG4gICAgICB9O1xuXG4gICAgICAvLyBhZGQgc2VyaWVzIGluZGV4IHRvIGVhY2ggZGF0YSBwb2ludCBmb3IgcmVmZXJlbmNlXG4gICAgICBkYXRhLmZvckVhY2goZnVuY3Rpb24ocywgaSkge1xuICAgICAgICB2YXIgeSA9IG1vZGVsLnkoKTtcbiAgICAgICAgcy5zZXJpZXNJbmRleCA9IGk7XG5cbiAgICAgICAgaWYgKCFzLnZhbHVlICYmICFzLnZhbHVlcykge1xuICAgICAgICAgIHMudmFsdWVzID0gW107XG4gICAgICAgIH0gZWxzZSBpZiAoIWlzTmFOKHMudmFsdWUpKSB7XG4gICAgICAgICAgcy52YWx1ZXMgPSBbe3g6IDAsIHk6IHBhcnNlSW50KHMudmFsdWUsIDEwKX1dO1xuICAgICAgICB9XG4gICAgICAgIHMudmFsdWVzLmZvckVhY2goZnVuY3Rpb24ocCwgaikge1xuICAgICAgICAgIHAuaW5kZXggPSBqO1xuICAgICAgICAgIHAuc2VyaWVzID0gcztcbiAgICAgICAgICBpZiAodHlwZW9mIHAudmFsdWUgPT0gJ3VuZGVmaW5lZCcpIHtcbiAgICAgICAgICAgIHAudmFsdWUgPSB5KHApO1xuICAgICAgICAgIH1cbiAgICAgICAgfSk7XG5cbiAgICAgICAgcy52YWx1ZSA9IHMudmFsdWUgfHwgZDMuc3VtKHMudmFsdWVzLCBmdW5jdGlvbihwKSB7IHJldHVybiBwLnZhbHVlOyB9KTtcbiAgICAgICAgcy5jb3VudCA9IHMuY291bnQgfHwgcy52YWx1ZXMubGVuZ3RoO1xuICAgICAgICBzLmRpc2FibGVkID0gcy5kaXNhYmxlZCB8fCBzLnZhbHVlID09PSAwO1xuICAgICAgfSk7XG5cbiAgICAgIC8vIG9ubHkgc3VtIGVuYWJsZWQgc2VyaWVzXG4gICAgICB2YXIgbW9kZWxEYXRhID0gZGF0YS5maWx0ZXIoZnVuY3Rpb24oZCwgaSkgeyByZXR1cm4gIWQuZGlzYWJsZWQ7IH0pO1xuXG4gICAgICBpZiAoIW1vZGVsRGF0YS5sZW5ndGgpIHtcbiAgICAgICAgbW9kZWxEYXRhID0gW3t2YWx1ZXM6IFtdfV07IC8vIHNhZmV0eSBhcnJheVxuICAgICAgfVxuXG4gICAgICBwcm9wZXJ0aWVzLmNvdW50ID0gZDMuc3VtKG1vZGVsRGF0YSwgZnVuY3Rpb24oZCkgeyByZXR1cm4gZC5jb3VudDsgfSk7XG5cbiAgICAgIHByb3BlcnRpZXMudG90YWwgPSBkMy5zdW0obW9kZWxEYXRhLCBmdW5jdGlvbihkKSB7IHJldHVybiBkLnZhbHVlOyB9KTtcblxuICAgICAgLy8gc2V0IHRpdGxlIGRpc3BsYXkgb3B0aW9uXG4gICAgICBzaG93VGl0bGUgPSBzaG93VGl0bGUgJiYgcHJvcGVydGllcy50aXRsZS5sZW5ndGg7XG5cbiAgICAgIC8vc2V0IHN0YXRlLmRpc2FibGVkXG4gICAgICBzdGF0ZS5kaXNhYmxlZCA9IGRhdGEubWFwKGZ1bmN0aW9uKGQpIHsgcmV0dXJuICEhZC5kaXNhYmxlZDsgfSk7XG5cbiAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAvLyBEaXNwbGF5IE5vIERhdGEgbWVzc2FnZSBpZiB0aGVyZSdzIG5vdGhpbmcgdG8gc2hvdy5cblxuICAgICAgaWYgKCFwcm9wZXJ0aWVzLnRvdGFsKSB7XG4gICAgICAgIGRpc3BsYXlOb0RhdGEoKTtcbiAgICAgICAgcmV0dXJuIGNoYXJ0O1xuICAgICAgfVxuXG4gICAgICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuICAgICAgLy8gTWFpbiBjaGFydCB3cmFwcGVyc1xuXG4gICAgICB2YXIgd3JhcF9iaW5kID0gY29udGFpbmVyLnNlbGVjdEFsbCgnZy5zYy1jaGFydC13cmFwJykuZGF0YShbbW9kZWxEYXRhXSk7XG4gICAgICB2YXIgd3JhcF9lbnRyID0gd3JhcF9iaW5kLmVudGVyKCkuYXBwZW5kKCdnJykuYXR0cignY2xhc3MnLCAnc2MtY2hhcnQtd3JhcCBzYy1jaGFydC0nICsgbW9kZWxDbGFzcyk7XG4gICAgICB2YXIgd3JhcCA9IGNvbnRhaW5lci5zZWxlY3QoJy5zYy1jaGFydC13cmFwJykubWVyZ2Uod3JhcF9lbnRyKTtcblxuICAgICAgd3JhcF9lbnRyLmFwcGVuZCgncmVjdCcpLmF0dHIoJ2NsYXNzJywgJ3NjLWJhY2tncm91bmQnKVxuICAgICAgICAuYXR0cigneCcsIC1tYXJnaW4ubGVmdClcbiAgICAgICAgLmF0dHIoJ3knLCAtbWFyZ2luLnRvcClcbiAgICAgICAgLmF0dHIoJ2ZpbGwnLCAnI0ZGRicpO1xuXG4gICAgICB3cmFwX2VudHIuYXBwZW5kKCdnJykuYXR0cignY2xhc3MnLCAnc2MtdGl0bGUtd3JhcCcpO1xuICAgICAgdmFyIHRpdGxlX3dyYXAgPSB3cmFwLnNlbGVjdCgnLnNjLXRpdGxlLXdyYXAnKTtcblxuICAgICAgd3JhcF9lbnRyLmFwcGVuZCgnZycpLmF0dHIoJ2NsYXNzJywgJ3NjLScgKyBtb2RlbENsYXNzICsgJy13cmFwJyk7XG4gICAgICB2YXIgbW9kZWxfd3JhcCA9IHdyYXAuc2VsZWN0KCcuc2MtJyArIG1vZGVsQ2xhc3MgKyAnLXdyYXAnKTtcblxuICAgICAgd3JhcF9lbnRyLmFwcGVuZCgnZycpLmF0dHIoJ2NsYXNzJywgJ3NjLWNvbnRyb2xzLXdyYXAnKTtcbiAgICAgIHZhciBjb250cm9sc193cmFwID0gd3JhcC5zZWxlY3QoJy5zYy1jb250cm9scy13cmFwJyk7XG4gICAgICB3cmFwX2VudHIuYXBwZW5kKCdnJykuYXR0cignY2xhc3MnLCAnc2MtbGVnZW5kLXdyYXAnKTtcbiAgICAgIHZhciBsZWdlbmRfd3JhcCA9IHdyYXAuc2VsZWN0KCcuc2MtbGVnZW5kLXdyYXAnKTtcblxuICAgICAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cbiAgICAgIC8vIE1haW4gY2hhcnQgZHJhd1xuXG4gICAgICBjaGFydC5yZW5kZXIgPSBmdW5jdGlvbigpIHtcblxuICAgICAgICAvLyBDaGFydCBsYXlvdXQgdmFyaWFibGVzXG4gICAgICAgIHZhciByZW5kZXJXaWR0aCwgcmVuZGVySGVpZ2h0LFxuICAgICAgICAgICAgYXZhaWxhYmxlV2lkdGgsIGF2YWlsYWJsZUhlaWdodCxcbiAgICAgICAgICAgIGlubmVyTWFyZ2luLFxuICAgICAgICAgICAgaW5uZXJXaWR0aCwgaW5uZXJIZWlnaHQ7XG5cbiAgICAgICAgY29udGFpbmVyV2lkdGggPSBwYXJzZUludChjb250YWluZXIuc3R5bGUoJ3dpZHRoJyksIDEwKTtcbiAgICAgICAgY29udGFpbmVySGVpZ2h0ID0gcGFyc2VJbnQoY29udGFpbmVyLnN0eWxlKCdoZWlnaHQnKSwgMTApO1xuXG4gICAgICAgIHJlbmRlcldpZHRoID0gd2lkdGggfHwgY29udGFpbmVyV2lkdGggfHwgOTYwO1xuICAgICAgICByZW5kZXJIZWlnaHQgPSBoZWlnaHQgfHwgY29udGFpbmVySGVpZ2h0IHx8IDQwMDtcblxuICAgICAgICBhdmFpbGFibGVXaWR0aCA9IHJlbmRlcldpZHRoIC0gbWFyZ2luLmxlZnQgLSBtYXJnaW4ucmlnaHQ7XG4gICAgICAgIGF2YWlsYWJsZUhlaWdodCA9IHJlbmRlckhlaWdodCAtIG1hcmdpbi50b3AgLSBtYXJnaW4uYm90dG9tO1xuXG4gICAgICAgIGlubmVyTWFyZ2luID0ge3RvcDogMCwgcmlnaHQ6IDAsIGJvdHRvbTogMCwgbGVmdDogMH07XG4gICAgICAgIGlubmVyV2lkdGggPSBhdmFpbGFibGVXaWR0aCAtIGlubmVyTWFyZ2luLmxlZnQgLSBpbm5lck1hcmdpbi5yaWdodDtcbiAgICAgICAgaW5uZXJIZWlnaHQgPSBhdmFpbGFibGVIZWlnaHQgLSBpbm5lck1hcmdpbi50b3AgLSBpbm5lck1hcmdpbi5ib3R0b207XG5cbiAgICAgICAgd3JhcC5hdHRyKCd0cmFuc2Zvcm0nLCAndHJhbnNsYXRlKCcgKyBtYXJnaW4ubGVmdCArICcsJyArIG1hcmdpbi50b3AgKyAnKScpO1xuICAgICAgICB3cmFwLnNlbGVjdCgnLnNjLWJhY2tncm91bmQnKVxuICAgICAgICAgIC5hdHRyKCd3aWR0aCcsIHJlbmRlcldpZHRoKVxuICAgICAgICAgIC5hdHRyKCdoZWlnaHQnLCByZW5kZXJIZWlnaHQpO1xuXG4gICAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAgIC8vIFRpdGxlICYgTGVnZW5kICYgQ29udHJvbHNcblxuICAgICAgICAvLyBIZWFkZXIgdmFyaWFibGVzXG4gICAgICAgIHZhciBtYXhDb250cm9sc1dpZHRoID0gMCxcbiAgICAgICAgICAgIG1heExlZ2VuZFdpZHRoID0gMCxcbiAgICAgICAgICAgIHdpZHRoUmF0aW8gPSAwLFxuICAgICAgICAgICAgaGVhZGVySGVpZ2h0ID0gMCxcbiAgICAgICAgICAgIHRpdGxlQkJveCA9IHt3aWR0aDogMCwgaGVpZ2h0OiAwfSxcbiAgICAgICAgICAgIGNvbnRyb2xzSGVpZ2h0ID0gMCxcbiAgICAgICAgICAgIGxlZ2VuZEhlaWdodCA9IDAsXG4gICAgICAgICAgICB0cmFucyA9ICcnO1xuXG4gICAgICAgIHRpdGxlX3dyYXAuc2VsZWN0KCcuc2MtdGl0bGUnKS5yZW1vdmUoKTtcblxuICAgICAgICBpZiAoc2hvd1RpdGxlKSB7XG4gICAgICAgICAgdGl0bGVfd3JhcFxuICAgICAgICAgICAgLmFwcGVuZCgndGV4dCcpXG4gICAgICAgICAgICAgIC5hdHRyKCdjbGFzcycsICdzYy10aXRsZScpXG4gICAgICAgICAgICAgIC5hdHRyKCd4JywgZGlyZWN0aW9uID09PSAncnRsJyA/IGF2YWlsYWJsZVdpZHRoIDogMClcbiAgICAgICAgICAgICAgLmF0dHIoJ3knLCAwKVxuICAgICAgICAgICAgICAuYXR0cignZHknLCAnLjc1ZW0nKVxuICAgICAgICAgICAgICAuYXR0cigndGV4dC1hbmNob3InLCAnc3RhcnQnKVxuICAgICAgICAgICAgICAuYXR0cignc3Ryb2tlJywgJ25vbmUnKVxuICAgICAgICAgICAgICAuYXR0cignZmlsbCcsICdibGFjaycpXG4gICAgICAgICAgICAgIC50ZXh0KHByb3BlcnRpZXMudGl0bGUpO1xuXG4gICAgICAgICAgdGl0bGVCQm94ID0gdXRpbHMuZ2V0VGV4dEJCb3godGl0bGVfd3JhcC5zZWxlY3QoJy5zYy10aXRsZScpKTtcbiAgICAgICAgICBoZWFkZXJIZWlnaHQgKz0gdGl0bGVCQm94LmhlaWdodDtcbiAgICAgICAgfVxuXG4gICAgICAgIGlmIChzaG93TGVnZW5kKSB7XG4gICAgICAgICAgbGVnZW5kXG4gICAgICAgICAgICAuaWQoJ2xlZ2VuZF8nICsgY2hhcnQuaWQoKSlcbiAgICAgICAgICAgIC5zdHJpbmdzKGNoYXJ0LnN0cmluZ3MoKS5sZWdlbmQpXG4gICAgICAgICAgICAuYWxpZ24oJ2NlbnRlcicpXG4gICAgICAgICAgICAuaGVpZ2h0KGF2YWlsYWJsZUhlaWdodCAtIGlubmVyTWFyZ2luLnRvcCk7XG4gICAgICAgICAgbGVnZW5kX3dyYXBcbiAgICAgICAgICAgIC5kYXR1bShkYXRhKVxuICAgICAgICAgICAgLmNhbGwobGVnZW5kKTtcbiAgICAgICAgICBsZWdlbmRcbiAgICAgICAgICAgIC5hcnJhbmdlKGF2YWlsYWJsZVdpZHRoKTtcblxuICAgICAgICAgIHZhciBsZWdlbmRMaW5rQkJveCA9IHV0aWxzLmdldFRleHRCQm94KGxlZ2VuZF93cmFwLnNlbGVjdCgnLnNjLWxlZ2VuZC1saW5rJykpLFxuICAgICAgICAgICAgICBsZWdlbmRTcGFjZSA9IGF2YWlsYWJsZVdpZHRoIC0gdGl0bGVCQm94LndpZHRoIC0gNixcbiAgICAgICAgICAgICAgbGVnZW5kVG9wID0gc2hvd1RpdGxlICYmIGxlZ2VuZC5jb2xsYXBzZWQoKSAmJiBsZWdlbmRTcGFjZSA+IGxlZ2VuZExpbmtCQm94LndpZHRoID8gdHJ1ZSA6IGZhbHNlLFxuICAgICAgICAgICAgICB4cG9zID0gZGlyZWN0aW9uID09PSAncnRsJyB8fCAhbGVnZW5kLmNvbGxhcHNlZCgpID8gMCA6IGF2YWlsYWJsZVdpZHRoIC0gbGVnZW5kLndpZHRoKCksXG4gICAgICAgICAgICAgIHlwb3MgPSB0aXRsZUJCb3guaGVpZ2h0O1xuXG4gICAgICAgICAgaWYgKGxlZ2VuZFRvcCkge1xuICAgICAgICAgICAgeXBvcyA9IHRpdGxlQkJveC5oZWlnaHQgLSBsZWdlbmQuaGVpZ2h0KCkgLyAyIC0gbGVnZW5kTGlua0JCb3guaGVpZ2h0IC8gMjtcbiAgICAgICAgICB9IGVsc2UgaWYgKCFzaG93VGl0bGUpIHtcbiAgICAgICAgICAgIHlwb3MgPSAtIGxlZ2VuZC5tYXJnaW4oKS50b3A7XG4gICAgICAgICAgfVxuXG4gICAgICAgICAgbGVnZW5kX3dyYXBcbiAgICAgICAgICAgIC5hdHRyKCd0cmFuc2Zvcm0nLCAndHJhbnNsYXRlKCcgKyB4cG9zICsgJywnICsgeXBvcyArICcpJyk7XG5cbiAgICAgICAgICBsZWdlbmRIZWlnaHQgPSBsZWdlbmRUb3AgPyAxMiA6IGxlZ2VuZC5oZWlnaHQoKSAtIChzaG93VGl0bGUgPyAwIDogbGVnZW5kLm1hcmdpbigpLnRvcCk7XG4gICAgICAgIH1cblxuICAgICAgICAvLyBSZWNhbGMgaW5uZXIgbWFyZ2lucyBiYXNlZCBvbiB0aXRsZSBhbmQgbGVnZW5kIGhlaWdodFxuICAgICAgICBoZWFkZXJIZWlnaHQgKz0gbGVnZW5kSGVpZ2h0O1xuICAgICAgICBpbm5lck1hcmdpbi50b3AgKz0gaGVhZGVySGVpZ2h0O1xuICAgICAgICBpbm5lckhlaWdodCA9IGF2YWlsYWJsZUhlaWdodCAtIGlubmVyTWFyZ2luLnRvcCAtIGlubmVyTWFyZ2luLmJvdHRvbTtcbiAgICAgICAgaW5uZXJXaWR0aCA9IGF2YWlsYWJsZVdpZHRoIC0gaW5uZXJNYXJnaW4ubGVmdCAtIGlubmVyTWFyZ2luLnJpZ2h0O1xuXG4gICAgICAgIC8vLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG4gICAgICAgIC8vIE1haW4gQ2hhcnQgQ29tcG9uZW50KHMpXG5cbiAgICAgICAgbW9kZWxcbiAgICAgICAgICAud2lkdGgoaW5uZXJXaWR0aClcbiAgICAgICAgICAuaGVpZ2h0KGlubmVySGVpZ2h0KTtcblxuICAgICAgICBtb2RlbF93cmFwXG4gICAgICAgICAgLmRhdHVtKG1vZGVsRGF0YSlcbiAgICAgICAgICAuYXR0cigndHJhbnNmb3JtJywgJ3RyYW5zbGF0ZSgnICsgaW5uZXJNYXJnaW4ubGVmdCArICcsJyArIGlubmVyTWFyZ2luLnRvcCArICcpJylcbiAgICAgICAgICAudHJhbnNpdGlvbigpLmR1cmF0aW9uKGR1cmF0aW9uKVxuICAgICAgICAgICAgLmNhbGwobW9kZWwpO1xuXG4gICAgICB9O1xuXG4gICAgICAvLz09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PVxuXG4gICAgICBjaGFydC5yZW5kZXIoKTtcblxuICAgICAgLy89PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT1cbiAgICAgIC8vIEV2ZW50IEhhbmRsaW5nL0Rpc3BhdGNoaW5nIChpbiBjaGFydCdzIHNjb3BlKVxuICAgICAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cblxuICAgICAgbGVnZW5kLmRpc3BhdGNoLm9uKCdsZWdlbmRDbGljaycsIGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgZC5kaXNhYmxlZCA9ICFkLmRpc2FibGVkO1xuICAgICAgICBkLmFjdGl2ZSA9IGZhbHNlO1xuXG4gICAgICAgIC8vIGlmIHRoZXJlIGFyZSBubyBlbmFibGVkIGRhdGEgc2VyaWVzLCBlbmFibGUgdGhlbSBhbGxcbiAgICAgICAgaWYgKCFkYXRhLmZpbHRlcihmdW5jdGlvbihkKSB7IHJldHVybiAhZC5kaXNhYmxlZDsgfSkubGVuZ3RoKSB7XG4gICAgICAgICAgZGF0YS5tYXAoZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgZC5kaXNhYmxlZCA9IGZhbHNlO1xuICAgICAgICAgICAgcmV0dXJuIGQ7XG4gICAgICAgICAgfSk7XG4gICAgICAgIH1cblxuICAgICAgICAvLyBpZiB0aGVyZSBhcmUgbm8gYWN0aXZlIGRhdGEgc2VyaWVzLCBhY3RpdmF0ZSB0aGVtIGFsbFxuICAgICAgICBpZiAoIWRhdGEuZmlsdGVyKGZ1bmN0aW9uKGQpIHsgcmV0dXJuIGQuYWN0aXZlID09PSAnYWN0aXZlJzsgfSkubGVuZ3RoKSB7XG4gICAgICAgICAgZGF0YS5tYXAoZnVuY3Rpb24oZCkge1xuICAgICAgICAgICAgZC5hY3RpdmUgPSAnJztcbiAgICAgICAgICAgIHJldHVybiBkO1xuICAgICAgICAgIH0pO1xuICAgICAgICB9XG5cbiAgICAgICAgc3RhdGUuZGlzYWJsZWQgPSBkYXRhLm1hcChmdW5jdGlvbihkKSB7IHJldHVybiAhIWQuZGlzYWJsZWQ7IH0pO1xuICAgICAgICBkaXNwYXRjaC5jYWxsKCdzdGF0ZUNoYW5nZScsIHRoaXMsIHN0YXRlKTtcblxuICAgICAgICBjb250YWluZXIudHJhbnNpdGlvbigpLmR1cmF0aW9uKGR1cmF0aW9uKS5jYWxsKGNoYXJ0KTtcbiAgICAgIH0pO1xuXG4gICAgICBkaXNwYXRjaC5vbigndG9vbHRpcFNob3cnLCBmdW5jdGlvbihlbykge1xuICAgICAgICBpZiAodG9vbHRpcHMpIHtcbiAgICAgICAgICB0b29sdGlwID0gc2hvd1Rvb2x0aXAoZW8sIHRoYXQucGFyZW50Tm9kZSwgcHJvcGVydGllcyk7XG4gICAgICAgIH1cbiAgICAgIH0pO1xuXG4gICAgICBkaXNwYXRjaC5vbigndG9vbHRpcE1vdmUnLCBmdW5jdGlvbihlKSB7XG4gICAgICAgIGlmICh0b29sdGlwKSB7XG4gICAgICAgICAgdG9vbHRpcC5wb3NpdGlvbih0aGF0LnBhcmVudE5vZGUsIHRvb2x0aXAsIGUpO1xuICAgICAgICB9XG4gICAgICB9KTtcblxuICAgICAgZGlzcGF0Y2gub24oJ3Rvb2x0aXBIaWRlJywgZnVuY3Rpb24oKSB7XG4gICAgICAgIGlmICh0b29sdGlwcykge1xuICAgICAgICAgIHRvb2x0aXAuY2xlYW51cCgpO1xuICAgICAgICB9XG4gICAgICB9KTtcblxuICAgICAgLy8gVXBkYXRlIGNoYXJ0IGZyb20gYSBzdGF0ZSBvYmplY3QgcGFzc2VkIHRvIGV2ZW50IGhhbmRsZXJcbiAgICAgIGRpc3BhdGNoLm9uKCdjaGFuZ2VTdGF0ZScsIGZ1bmN0aW9uKGVvKSB7XG4gICAgICAgIGlmICh0eXBlb2YgZW8uZGlzYWJsZWQgIT09ICd1bmRlZmluZWQnKSB7XG4gICAgICAgICAgbW9kZWxEYXRhLmZvckVhY2goZnVuY3Rpb24oc2VyaWVzLCBpKSB7XG4gICAgICAgICAgICBzZXJpZXMuZGlzYWJsZWQgPSBlby5kaXNhYmxlZFtpXTtcbiAgICAgICAgICB9KTtcbiAgICAgICAgICBzdGF0ZS5kaXNhYmxlZCA9IGVvLmRpc2FibGVkO1xuICAgICAgICB9XG5cbiAgICAgICAgY29udGFpbmVyLnRyYW5zaXRpb24oKS5kdXJhdGlvbihkdXJhdGlvbikuY2FsbChjaGFydCk7XG4gICAgICB9KTtcblxuICAgICAgZGlzcGF0Y2gub24oJ2NoYXJ0Q2xpY2snLCBmdW5jdGlvbigpIHtcbiAgICAgICAgLy9kaXNwYXRjaC5jYWxsKCd0b29sdGlwSGlkZScsIHRoaXMpO1xuICAgICAgICBpZiAoY29udHJvbHMuZW5hYmxlZCgpKSB7XG4gICAgICAgICAgY29udHJvbHMuZGlzcGF0Y2guY2FsbCgnY2xvc2VNZW51JywgdGhpcyk7XG4gICAgICAgIH1cbiAgICAgICAgaWYgKGxlZ2VuZC5lbmFibGVkKCkpIHtcbiAgICAgICAgICBsZWdlbmQuZGlzcGF0Y2guY2FsbCgnY2xvc2VNZW51JywgdGhpcyk7XG4gICAgICAgIH1cbiAgICAgIH0pO1xuXG4gICAgICBtb2RlbC5kaXNwYXRjaC5vbignZWxlbWVudENsaWNrJywgZnVuY3Rpb24oZW8pIHtcbiAgICAgICAgZGlzcGF0Y2guY2FsbCgnY2hhcnRDbGljaycsIHRoaXMpO1xuICAgICAgICBzZXJpZXNDbGljayhkYXRhLCBlbywgY2hhcnQpO1xuICAgICAgfSk7XG5cbiAgICB9KTtcblxuICAgIHJldHVybiBjaGFydDtcbiAgfVxuXG4gIC8vPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09XG4gIC8vIEV2ZW50IEhhbmRsaW5nL0Rpc3BhdGNoaW5nIChvdXQgb2YgY2hhcnQncyBzY29wZSlcbiAgLy8tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS1cblxuICBtb2RlbC5kaXNwYXRjaC5vbignZWxlbWVudE1vdXNlb3Zlci50b29sdGlwJywgZnVuY3Rpb24oZW8pIHtcbiAgICBkaXNwYXRjaC5jYWxsKCd0b29sdGlwU2hvdycsIHRoaXMsIGVvKTtcbiAgfSk7XG5cbiAgbW9kZWwuZGlzcGF0Y2gub24oJ2VsZW1lbnRNb3VzZW1vdmUudG9vbHRpcCcsIGZ1bmN0aW9uKGUpIHtcbiAgICBkaXNwYXRjaC5jYWxsKCd0b29sdGlwTW92ZScsIHRoaXMsIGUpO1xuICB9KTtcblxuICBtb2RlbC5kaXNwYXRjaC5vbignZWxlbWVudE1vdXNlb3V0LnRvb2x0aXAnLCBmdW5jdGlvbigpIHtcbiAgICBkaXNwYXRjaC5jYWxsKCd0b29sdGlwSGlkZScsIHRoaXMpO1xuICB9KTtcblxuICAvLz09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PVxuICAvLyBFeHBvc2UgUHVibGljIFZhcmlhYmxlc1xuICAvLy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLVxuXG4gIC8vIGV4cG9zZSBjaGFydCdzIHN1Yi1jb21wb25lbnRzXG4gIGNoYXJ0LmRpc3BhdGNoID0gZGlzcGF0Y2g7XG4gIGNoYXJ0LmZ1bm5lbCA9IGZ1bm5lbDtcbiAgY2hhcnQubGVnZW5kID0gbGVnZW5kO1xuICBjaGFydC5jb250cm9scyA9IGNvbnRyb2xzO1xuXG4gIGZjLnJlYmluZChjaGFydCwgbW9kZWwsICdpZCcsICd4JywgJ3knLCAnY29sb3InLCAnZmlsbCcsICdjbGFzc2VzJywgJ2dyYWRpZW50JywgJ2xvY2FsaXR5JywgJ3RleHR1cmVGaWxsJyk7XG4gIGZjLnJlYmluZChjaGFydCwgbW9kZWwsICdnZXRLZXknLCAnZ2V0VmFsdWUnLCAnZm10S2V5JywgJ2ZtdFZhbHVlJywgJ2ZtdENvdW50Jyk7XG4gIGZjLnJlYmluZChjaGFydCwgZnVubmVsLCAneFNjYWxlJywgJ3lTY2FsZScsICd5RG9tYWluJywgJ2ZvcmNlWScsICd3cmFwTGFiZWxzJywgJ21pbkxhYmVsV2lkdGgnKTtcblxuICBjaGFydC5jb2xvckRhdGEgPSBmdW5jdGlvbihfKSB7XG4gICAgdmFyIHR5cGUgPSBhcmd1bWVudHNbMF0sXG4gICAgICAgIHBhcmFtcyA9IGFyZ3VtZW50c1sxXSB8fCB7fTtcbiAgICB2YXIgY29sb3IgPSBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgcmV0dXJuIHV0aWxzLmRlZmF1bHRDb2xvcigpKGQsIGQuc2VyaWVzSW5kZXgpO1xuICAgICAgICB9O1xuICAgIHZhciBjbGFzc2VzID0gZnVuY3Rpb24oZCwgaSkge1xuICAgICAgICAgIHJldHVybiAnc2Mtc2VyaWVzIHNjLXNlcmllcy0nICsgZC5zZXJpZXNJbmRleDtcbiAgICAgICAgfTtcblxuICAgIHN3aXRjaCAodHlwZSkge1xuICAgICAgY2FzZSAnZ3JhZHVhdGVkJzpcbiAgICAgICAgY29sb3IgPSBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgcmV0dXJuIGQzLmludGVycG9sYXRlSHNsKGQzLnJnYihwYXJhbXMuYzEpLCBkMy5yZ2IocGFyYW1zLmMyKSkoZC5zZXJpZXNJbmRleCAvIHBhcmFtcy5sKTtcbiAgICAgICAgfTtcbiAgICAgICAgYnJlYWs7XG4gICAgICBjYXNlICdjbGFzcyc6XG4gICAgICAgIGNvbG9yID0gZnVuY3Rpb24oKSB7XG4gICAgICAgICAgcmV0dXJuICdpbmhlcml0JztcbiAgICAgICAgfTtcbiAgICAgICAgY2xhc3NlcyA9IGZ1bmN0aW9uKGQsIGkpIHtcbiAgICAgICAgICB2YXIgaUNsYXNzID0gKGQuc2VyaWVzSW5kZXggKiAocGFyYW1zLnN0ZXAgfHwgMSkpICUgMTQ7XG4gICAgICAgICAgaUNsYXNzID0gKGlDbGFzcyA+IDkgPyAnJyA6ICcwJykgKyBpQ2xhc3M7XG4gICAgICAgICAgcmV0dXJuICdzYy1zZXJpZXMgc2Mtc2VyaWVzLScgKyBkLnNlcmllc0luZGV4ICsgJyBzYy1maWxsJyArIGlDbGFzcztcbiAgICAgICAgfTtcbiAgICAgICAgYnJlYWs7XG4gICAgICBjYXNlICdkYXRhJzpcbiAgICAgICAgY29sb3IgPSBmdW5jdGlvbihkLCBpKSB7XG4gICAgICAgICAgcmV0dXJuIHV0aWxzLmRlZmF1bHRDb2xvcigpKGQsIGQuc2VyaWVzSW5kZXgpO1xuICAgICAgICB9O1xuICAgICAgICBjbGFzc2VzID0gZnVuY3Rpb24oZCwgaSkge1xuICAgICAgICAgIHJldHVybiAnc2Mtc2VyaWVzIHNjLXNlcmllcy0nICsgZC5zZXJpZXNJbmRleCArIChkLmNsYXNzZXMgPyAnICcgKyBkLmNsYXNzZXMgOiAnJyk7XG4gICAgICAgIH07XG4gICAgICAgIGJyZWFrO1xuICAgIH1cblxuICAgIHZhciBmaWxsID0gKCFwYXJhbXMuZ3JhZGllbnQpID8gY29sb3IgOiBmdW5jdGlvbihkLCBpKSB7XG4gICAgICB2YXIgcCA9IHtvcmllbnRhdGlvbjogcGFyYW1zLm9yaWVudGF0aW9uIHx8ICd2ZXJ0aWNhbCcsIHBvc2l0aW9uOiBwYXJhbXMucG9zaXRpb24gfHwgJ21pZGRsZSd9O1xuICAgICAgcmV0dXJuIG1vZGVsLmdyYWRpZW50KGQsIGQuc2VyaWVzSW5kZXgsIHApO1xuICAgIH07XG5cbiAgICBtb2RlbC5jb2xvcihjb2xvcik7XG4gICAgbW9kZWwuZmlsbChmaWxsKTtcbiAgICBtb2RlbC5jbGFzc2VzKGNsYXNzZXMpO1xuXG4gICAgbGVnZW5kLmNvbG9yKGNvbG9yKTtcbiAgICBsZWdlbmQuY2xhc3NlcyhjbGFzc2VzKTtcblxuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5tYXJnaW4gPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBtYXJnaW47IH1cbiAgICBmb3IgKHZhciBwcm9wIGluIF8pIHtcbiAgICAgIGlmIChfLmhhc093blByb3BlcnR5KHByb3ApKSB7XG4gICAgICAgIG1hcmdpbltwcm9wXSA9IF9bcHJvcF07XG4gICAgICB9XG4gICAgfVxuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC53aWR0aCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHsgcmV0dXJuIHdpZHRoOyB9XG4gICAgd2lkdGggPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5oZWlnaHQgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBoZWlnaHQ7IH1cbiAgICBoZWlnaHQgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5zaG93VGl0bGUgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBzaG93VGl0bGU7IH1cbiAgICBzaG93VGl0bGUgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5zaG93Q29udHJvbHMgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBzaG93Q29udHJvbHM7IH1cbiAgICBzaG93Q29udHJvbHMgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5zaG93TGVnZW5kID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkgeyByZXR1cm4gc2hvd0xlZ2VuZDsgfVxuICAgIHNob3dMZWdlbmQgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC50b29sdGlwID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkgeyByZXR1cm4gdG9vbHRpcDsgfVxuICAgIHRvb2x0aXAgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC50b29sdGlwcyA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHsgcmV0dXJuIHRvb2x0aXBzOyB9XG4gICAgdG9vbHRpcHMgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC50b29sdGlwQ29udGVudCA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHsgcmV0dXJuIHRvb2x0aXBDb250ZW50OyB9XG4gICAgdG9vbHRpcENvbnRlbnQgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5zdGF0ZSA9IGZ1bmN0aW9uKF8pIHtcbiAgICBpZiAoIWFyZ3VtZW50cy5sZW5ndGgpIHsgcmV0dXJuIHN0YXRlOyB9XG4gICAgc3RhdGUgPSBfO1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5zdHJpbmdzID0gZnVuY3Rpb24oXykge1xuICAgIGlmICghYXJndW1lbnRzLmxlbmd0aCkgeyByZXR1cm4gc3RyaW5nczsgfVxuICAgIGZvciAodmFyIHByb3AgaW4gXykge1xuICAgICAgaWYgKF8uaGFzT3duUHJvcGVydHkocHJvcCkpIHtcbiAgICAgICAgc3RyaW5nc1twcm9wXSA9IF9bcHJvcF07XG4gICAgICB9XG4gICAgfVxuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICBjaGFydC5kaXJlY3Rpb24gPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBkaXJlY3Rpb247IH1cbiAgICBkaXJlY3Rpb24gPSBfO1xuICAgIG1vZGVsLmRpcmVjdGlvbihfKTtcbiAgICBsZWdlbmQuZGlyZWN0aW9uKF8pO1xuICAgIGNvbnRyb2xzLmRpcmVjdGlvbihfKTtcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG5cbiAgY2hhcnQuZHVyYXRpb24gPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBkdXJhdGlvbjsgfVxuICAgIGR1cmF0aW9uID0gXztcbiAgICBtb2RlbC5kdXJhdGlvbihfKTtcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG5cbiAgY2hhcnQuZGVsYXkgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7IHJldHVybiBkZWxheTsgfVxuICAgIGRlbGF5ID0gXztcbiAgICBtb2RlbC5kZWxheShfKTtcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG5cbiAgY2hhcnQuc2VyaWVzQ2xpY2sgPSBmdW5jdGlvbihfKSB7XG4gICAgaWYgKCFhcmd1bWVudHMubGVuZ3RoKSB7XG4gICAgICByZXR1cm4gc2VyaWVzQ2xpY2s7XG4gICAgfVxuICAgIHNlcmllc0NsaWNrID0gXztcbiAgICByZXR1cm4gY2hhcnQ7XG4gIH07XG5cbiAgY2hhcnQuY29sb3JGaWxsID0gZnVuY3Rpb24oXykge1xuICAgIHJldHVybiBjaGFydDtcbiAgfTtcblxuICAvLz09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PVxuXG4gIHJldHVybiBjaGFydDtcbn1cbiIsIi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBidWJibGVDaGFydH0gZnJvbSAnLi9idWJibGVDaGFydC5qcyc7XG5leHBvcnQge2Z1bm5lbENoYXJ0IGFzIGZ1bm5lbENoYXJ0fSBmcm9tICcuL2Z1bm5lbENoYXJ0LmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBnYXVnZUNoYXJ0fSBmcm9tICcuL2dhdWdlQ2hhcnQuanMnO1xuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIGdsb2JlQ2hhcnR9IGZyb20gJy4vZ2xvYmUuanMnO1xuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIGxpbmVDaGFydH0gZnJvbSAnLi9saW5lQ2hhcnQuanMnO1xuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIG11bHRpQmFyQ2hhcnR9IGZyb20gJy4vbXVsdGlCYXJDaGFydC5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgcGFyZXRvQ2hhcnR9IGZyb20gJy4vcGFyZXRvQ2hhcnQuanMnO1xuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIHBpZUNoYXJ0fSBmcm9tICcuL3BpZUNoYXJ0LmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBzdGFja2VkQXJlYUNoYXJ0fSBmcm9tICcuL3N0YWNrZWRBcmVhQ2hhcnQuanMnO1xuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIHRyZWVtYXBDaGFydH0gZnJvbSAnLi90cmVlbWFwQ2hhcnQuanMnO1xuIiwiaW1wb3J0ICogYXMgZDMgZnJvbSAnZDMnOyAvL3dpdGhvdXQgdGhpcyByb2xsdXAgZG9lcyBzb21ldGhpbmcgZnVua3kgdG8gZDMgZ2xvYmFsXG5pbXBvcnQgKiBhcyBmYyBmcm9tICdkM2ZjLXJlYmluZCc7XG5pbXBvcnQgKiBhcyBtb2RlbHMgZnJvbSAnLi9tb2RlbHMvbW9kZWxzLmpzJztcbmltcG9ydCAqIGFzIGNoYXJ0cyBmcm9tICcuL21vZGVscy9jaGFydHMuanMnO1xuXG52YXIgdmVyID0gJzAuMC4yJzsgLy9jaGFuZ2UgdG8gMC4wLjMgd2hlbiByZWFkeVxudmFyIGRldiA9IGZhbHNlOyAvL3NldCBmYWxzZSB3aGVuIGluIHByb2R1Y3Rpb25cbmV4cG9ydCB7dmVyIGFzIHZlcnNpb259O1xuZXhwb3J0IHtkZXYgYXMgZGV2ZWxvcG1lbnR9O1xuXG5leHBvcnQge2RlZmF1bHQgYXMgdXRpbHN9IGZyb20gJy4vdXRpbHMuanMnO1xuLy8gZXhwb3J0IHsqIGFzIG1vZGVsc30gZnJvbSAnLi9tb2RlbHMvbW9kZWxzLmpzJztcbi8vIGV4cG9ydCB7KiBhcyBjaGFydHN9IGZyb20gJy4vbW9kZWxzL2NoYXJ0cy5qcyc7XG4vLyBleHBvcnQge21vZGVscyBhcyBtb2RlbHN9O1xuLy8gZXhwb3J0IHtjaGFydHMgYXMgY2hhcnRzfTtcblxuXG4vLyBleHBvcnQge2RlZmF1bHQgYXMgYXhpc30gZnJvbSAnLi9tb2RlbHMvYXhpcy5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgZnVubmVsfSBmcm9tICcuL21vZGVscy9mdW5uZWwuanMnO1xuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIGdhdWdlfSBmcm9tICcuL21vZGVscy9nYXVnZS5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgbGluZX0gZnJvbSAnLi9tb2RlbHMvbGluZS5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgbXVsdGlCYXJ9IGZyb20gJy4vbW9kZWxzL211bHRpQmFyLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBwaWV9IGZyb20gJy4vbW9kZWxzL3BpZS5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgc3RhY2tlZEFyZWF9IGZyb20gJy4vbW9kZWxzL3N0YWNrZWRBcmVhLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBzY2F0dGVyfSBmcm9tICcuL21vZGVscy9zY2F0dGVyLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBzY3JvbGx9IGZyb20gJy4vbW9kZWxzL3Njcm9sbC5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgdGFibGV9IGZyb20gJy4vbW9kZWxzL3RhYmxlLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyB0cmVlfSBmcm9tICcuL21vZGVscy90cmVlLmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyB0cmVlbWFwfSBmcm9tICcuL21vZGVscy90cmVlbWFwLmpzJztcblxuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIGJ1YmJsZUNoYXJ0fSBmcm9tICcuL21vZGVscy9idWJibGVDaGFydC5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgZnVubmVsQ2hhcnR9IGZyb20gJy4vbW9kZWxzL2Z1bm5lbENoYXJ0LmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBnYXVnZUNoYXJ0fSBmcm9tICcuL21vZGVscy9nYXVnZUNoYXJ0LmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBnbG9iZUNoYXJ0fSBmcm9tICcuL21vZGVscy9nbG9iZS5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgbGluZUNoYXJ0fSBmcm9tICcuL21vZGVscy9saW5lQ2hhcnQuanMnO1xuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIG11bHRpQmFyQ2hhcnR9IGZyb20gJy4vbW9kZWxzL211bHRpQmFyQ2hhcnQuanMnO1xuLy8gZXhwb3J0IHtkZWZhdWx0IGFzIHBhcmV0b0NoYXJ0fSBmcm9tICcuL21vZGVscy9wYXJldG9DaGFydC5qcyc7XG4vLyBleHBvcnQge2RlZmF1bHQgYXMgcGllQ2hhcnR9IGZyb20gJy4vbW9kZWxzL3BpZUNoYXJ0LmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyBzdGFja2VkQXJlYUNoYXJ0fSBmcm9tICcuL21vZGVscy9zdGFja2VkQXJlYUNoYXJ0LmpzJztcbi8vIGV4cG9ydCB7ZGVmYXVsdCBhcyB0cmVlbWFwQ2hhcnR9IGZyb20gJy4vbW9kZWxzL3RyZWVtYXBDaGFydC5qcyc7XG4iXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6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

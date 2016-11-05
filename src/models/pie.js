@@ -18,11 +18,11 @@ export default function() {
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
       fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
-      locality = sucrose.buildLocality(),
+      locality = utils.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return sucrose.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return utils.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
@@ -58,10 +58,10 @@ export default function() {
 
   var startAngle = function(d) {
         // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
-        return d.startAngle * arcDegrees / 360 + sucrose.angleToRadians(rotateDegrees);
+        return d.startAngle * arcDegrees / 360 + utils.angleToRadians(rotateDegrees);
       };
   var endAngle = function(d) {
-        return d.endAngle * arcDegrees / 360 + sucrose.angleToRadians(rotateDegrees);
+        return d.endAngle * arcDegrees / 360 + utils.angleToRadians(rotateDegrees);
       };
 
   var fixedRadius = function(chart) { return null; };
@@ -89,7 +89,7 @@ export default function() {
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
-        return sucrose.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
+        return utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -99,7 +99,7 @@ export default function() {
           doLabels = showLabels && pieLabelsOutside ? true : false;
 
       if (doLabels) {
-        labelLengths = sucrose.stringSetLengths(
+        labelLengths = utils.stringSetLengths(
             data,
             container,
             fmtKey,
@@ -128,7 +128,7 @@ export default function() {
       // Definitions
 
       if (textureFill) {
-        var mask = sucrose.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
+        var mask = utils.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
 
       //------------------------------------------------------------
@@ -336,7 +336,7 @@ export default function() {
           })
           .style('fill', function(d, i) {
             var backColor = d3.select(this.parentNode).style('fill');
-            return sucrose.getTextContrast(backColor, i);
+            return utils.getTextContrast(backColor, i);
           });
       }
 
@@ -386,7 +386,7 @@ export default function() {
                   bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
                   rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
               if (rW < 0) {
-                var label = sucrose.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
+                var label = utils.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
                 d3.select(this).select('text').text(label);
               }
             }
@@ -699,7 +699,7 @@ export default function() {
     if (!arguments.length) {
       return getY;
     }
-    getY = sucrose.functor(_);
+    getY = utils.functor(_);
     return chart;
   };
 
@@ -771,7 +771,7 @@ export default function() {
     if (!arguments.length) {
       return locality;
     }
-    locality = sucrose.buildLocality(_);
+    locality = utils.buildLocality(_);
     return chart;
   };
 
@@ -853,7 +853,7 @@ export default function() {
     if (!arguments.length) {
       return holeFormat;
     }
-    holeFormat = sucrose.functor(_);
+    holeFormat = utils.functor(_);
     return chart;
   };
 
@@ -925,7 +925,7 @@ export default function() {
     if (!arguments.length) {
       return fixedRadius;
     }
-    fixedRadius = sucrose.functor(_);
+    fixedRadius = utils.functor(_);
     return chart;
   };
 

@@ -1,8 +1,6 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import legend from './legend.js';
-import axis from './axis.js';
-import scatter from './scatter.js';
+import * as models from './models.js';
 
 export default function() {
 
@@ -49,24 +47,24 @@ export default function() {
   var xValueFormat = function(d, labels, isDate) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)] || d;
-          return isDate ? sucrose.dateFormat(val, 'MMM', chart.locality()) : val;
+          return isDate ? utils.dateFormat(val, 'MMM', chart.locality()) : val;
       };
   var yValueFormat = function(d, labels, isCurrency) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)].key || d;
-          return sucrose.numberFormatSI(val, 2, isCurrency, chart.locality());
+          return utils.numberFormatSI(val, 2, isCurrency, chart.locality());
       };
 
-  var scatter = sucrose.scatter()
+  var scatter = models.scatter()
         .padData(true)
         .padDataOuter(-1)
         .size(function(d) { return d.y; })
         .sizeRange([256, 1024])
         .singlePoint(true),
       model = scatter,
-      xAxis = sucrose.axis(),
-      yAxis = sucrose.axis(),
-      legend = sucrose.legend()
+      xAxis = models.axis(),
+      yAxis = models.axis(),
+      legend = models.legend()
         .align('center')
         .key(function(d) { return d.key + '%'; });
 
@@ -125,7 +123,7 @@ export default function() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -374,7 +372,7 @@ export default function() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -390,7 +388,7 @@ export default function() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = sucrose.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -455,7 +453,7 @@ export default function() {
           .margin(innerMargin)
           .tickFormat(function(d, i) {
             var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
-            return sucrose.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
+            return utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
           });
         yAxis_wrap
           .call(yAxis);
@@ -618,7 +616,7 @@ export default function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -642,7 +640,7 @@ export default function() {
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.defaultColor()(d, d.seriesIndex);
+          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');

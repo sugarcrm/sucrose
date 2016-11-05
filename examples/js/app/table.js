@@ -1,5 +1,5 @@
 function sucroseTable(chart) {
-  var table = sucrose.table()
+  var table = sucrose.models.table()
         .x(function (d, i) {
             return d.hasOwnProperty('x') ?
                 d.x :

@@ -1,7 +1,6 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import legend from './legend.js';
-import treemap from './treemap.js';
+import * as models from './models.js';
 
 export default function() {
 
@@ -19,7 +18,7 @@ export default function() {
       tooltips = true,
       colorData = 'default',
       //create a clone of the d3 array
-      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(sucrose.identity),
+      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utils.identity),
       x, //can be accessed via chart.xScale()
       y, //can be accessed via chart.yScale()
       strings = {
@@ -30,9 +29,9 @@ export default function() {
       },
       dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
 
-  var treemap = sucrose.treemap(),
+  var treemap = models.treemap(),
       model = treemap,
-      legend = sucrose.legend();
+      legend = models.legend();
 
 
   //============================================================
@@ -41,7 +40,7 @@ export default function() {
 
   var tooltipContent = function(point) {
         var tt = '<h3>' + point.data.name + '</h3>' +
-                 '<p>' + sucrose.numberFormatSI(point.value) + '</p>';
+                 '<p>' + utils.numberFormatSI(point.value) + '</p>';
         return tt;
       };
 
@@ -71,7 +70,7 @@ export default function() {
       // Display noData message if there's nothing to show.
 
       if (!data || !data.length || !data.filter(function(d) { return d && d.children.length; }).length) {
-        container.select('.sucrose.sc-wrap').remove();
+        container.select('.utils.sc-wrap').remove();
         var noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
@@ -82,7 +81,7 @@ export default function() {
         noDataText
           .attr('x', margin.left + availableWidth / 2)
           .attr('y', margin.top + availableHeight / 2)
-          .text(sucrose.identity);
+          .text(utils.identity);
 
         return chart;
       } else {
@@ -279,7 +278,7 @@ export default function() {
         params = arguments[1] || {};
     var color = function(d, i) {
           var c = (type === 'data' && d.color) ? {color: d.color} : {};
-          return sucrose.getColor(colorArray)(c, i);
+          return utils.getColor(colorArray)(c, i);
         };
     var classes = function(d, i) {
           return 'sc-child';

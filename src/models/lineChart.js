@@ -1,8 +1,6 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import legend from './legend.js';
-import axis from './axis.js';
-import line from './line.js';
+import * as models from './models.js';
 
 export default function() {
 
@@ -37,14 +35,14 @@ export default function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var lines = sucrose.line()
+  var lines = models.line()
         .clipEdge(true),
       model = lines,
-      xAxis = sucrose.axis(),
-      yAxis = sucrose.axis(),
-      legend = sucrose.legend()
+      xAxis = models.axis(),
+      yAxis = models.axis(),
+      legend = models.legend()
         .align('right'),
-      controls = sucrose.legend()
+      controls = models.legend()
         .align('left')
         .color(['#444']);
 
@@ -90,7 +88,7 @@ export default function() {
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
             var label = xIsDatetime ?
-                          sucrose.dateFormat(d, '%x', chart.locality()) :
+                          utils.dateFormat(d, '%x', chart.locality()) :
                           isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
                             d :
                             xTickLabels[parseInt(d, 10)];
@@ -98,7 +96,7 @@ export default function() {
           };
 
       var yValueFormat = function(d) {
-            return sucrose.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -114,7 +112,7 @@ export default function() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -155,9 +153,9 @@ export default function() {
 
       // TODO: what if the dimension is a numerical range?
       // xValuesAreDates = xTickLabels.length ?
-      //       sucrose.isValidDate(xTickLabels[0]) :
-      //       sucrose.isValidDate(model.x()(data[0].values[0]));
-      // xValuesAreDates = isArrayData && sucrose.isValidDate(data[0].values[0][0]);
+      //       utils.isValidDate(xTickLabels[0]) :
+      //       utils.isValidDate(model.x()(data[0].values[0]));
+      // xValuesAreDates = isArrayData && utils.isValidDate(data[0].values[0][0]);
 
       // SAVE FOR LATER
       // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
@@ -384,7 +382,7 @@ export default function() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -437,7 +435,7 @@ export default function() {
           controlsHeight = controls.height();
         }
         if (showLegend) {
-          var legendLinkBBox = sucrose.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -723,7 +721,7 @@ export default function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -747,7 +745,7 @@ export default function() {
         break;
       case 'data':
         color = function(d, i) {
-          return sucrose.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');

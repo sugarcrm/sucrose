@@ -1,6 +1,6 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import sparkline from '../sparkline.js';
+import * as models from './models.js';
 
 export default function() {
 
@@ -8,7 +8,7 @@ export default function() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var sparkline = sucrose.sparkline();
+  var sparkline = models.sparkline();
 
   var margin = {top: 15, right: 100, bottom: 10, left: 50}
     , width = null
@@ -82,7 +82,7 @@ export default function() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-sparklineplus').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparklineplus');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
       var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 

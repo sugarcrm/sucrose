@@ -1,23 +1,26 @@
+import d3 from 'd3';
+import utils from '../utils.js';
+import * as models from './models.js';
 
-sucrose.lineWithFocusChart = function() {
+export function lineWithFocusChart() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var lines = sucrose.line()
-    , lines2 = sucrose.line()
-    , xAxis = sucrose.axis()
-    , yAxis = sucrose.axis()
-    , x2Axis = sucrose.axis()
-    , y2Axis = sucrose.axis()
-    , legend = sucrose.legend()
+  var lines = utils.line()
+    , lines2 = utils.line()
+    , xAxis = utils.axis()
+    , yAxis = utils.axis()
+    , x2Axis = utils.axis()
+    , y2Axis = utils.axis()
+    , legend = utils.legend()
     , brush = d3.svg.brush()
     ;
 
   var margin = {top: 30, right: 30, bottom: 30, left: 60}
     , margin2 = {top: 0, right: 30, bottom: 20, left: 60}
-    , color = sucrose.defaultColor()
+    , color = utils.defaultColor()
     , width = null
     , height = null
     , height2 = 100
@@ -130,7 +133,7 @@ sucrose.lineWithFocusChart = function() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-lineWithFocusChart').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
@@ -507,7 +510,7 @@ sucrose.lineWithFocusChart = function() {
 
   chart.color = function(_) {
     if (!arguments.length) return color;
-    color =sucrose.getColor(_);
+    color =utils.getColor(_);
     legend.color(color);
     return chart;
   };

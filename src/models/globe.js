@@ -1,5 +1,6 @@
 import d3 from 'd3';
 import utils from '../utils.js';
+import * as models from './models.js';
 
 export default function() {
 
@@ -51,7 +52,7 @@ export default function() {
       world_map = [],
       country_map = {},
       country_labels = {},
-      color = function(d, i) { return sucrose.defaultColor()(d, i); },
+      color = function(d, i) { return utils.defaultColor()(d, i); },
       classes = function(d, i) { return 'sc-country-' + i; },
       fill = color,
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
@@ -123,7 +124,7 @@ export default function() {
       chart.container = this;
 
       var fillGradient = function(d, i) {
-            return sucrose.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+            return utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
           };
 
       //------------------------------------------------------------
@@ -135,7 +136,7 @@ export default function() {
         if (hasData) return false;
         x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -152,7 +153,7 @@ export default function() {
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-globe');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
       var defs = wrap.select('defs');
@@ -533,7 +534,7 @@ export default function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.defaultColor()(d, i);
+          return utils.defaultColor()(d, i);
         };
     var classes = function(d, i) {
           return 'sc-country-' + i + (d.classes ? ' ' + d.classes : '');
@@ -676,7 +677,7 @@ export default function() {
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = sucrose.functor(_);
+    getY = utils.functor(_);
     return chart;
   };
 

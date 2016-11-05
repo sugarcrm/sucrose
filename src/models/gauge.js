@@ -20,12 +20,12 @@ export default function() {
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
       fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
-      locality = sucrose.buildLocality(),
+      locality = utils.buildLocality(),
       direction = 'ltr',
       clipEdge = true,
       delay = 0,
       duration = 720,
-      color = function (d, i) { return sucrose.defaultColor()(d, d.seriesIndex); },
+      color = function (d, i) { return utils.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function (d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -59,7 +59,7 @@ export default function() {
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         var params = {x: 0, y: 0, r: radius, s: ringWidth / 100, u: 'userSpaceOnUse'};
-        return sucrose.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
+        return utils.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
       };
 
       var radius = Math.min((availableWidth / 2), availableHeight) / ((100 + labelInset) / 100),
@@ -214,7 +214,7 @@ export default function() {
         .attr('transform', function(d) {
           return 'rotate(' + newAngle(d) + ') translate(0,' + (prop(-1.5) - radius) + ')';
         })
-        .text(sucrose.identity)
+        .text(utils.identity)
         .style('text-anchor', 'middle')
         .style('font-size', prop(0.6) + 'em');
 
@@ -285,7 +285,7 @@ export default function() {
 
       function calcOdomBoxSize(wrap) {
         var bbox = wrap.select('.sc-odomText').node().getBoundingClientRect();
-        wrap.select('.sc-odomBox').attr('d', sucrose.roundedRectangle(
+        wrap.select('.sc-odomBox').attr('d', utils.roundedRectangle(
             -bbox.width / 2,
             -bbox.height + prop(1.5),
             bbox.width + prop(4),
@@ -398,7 +398,7 @@ export default function() {
     if (!arguments.length) {
       return getY;
     }
-    getY = sucrose.functor(_);
+    getY = utils.functor(_);
     return chart;
   };
 
@@ -478,7 +478,7 @@ export default function() {
     if (!arguments.length) {
       return locality;
     }
-    locality = sucrose.buildLocality(_);
+    locality = utils.buildLocality(_);
     return chart;
   };
 

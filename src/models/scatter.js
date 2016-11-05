@@ -11,7 +11,7 @@ export default function() {
       width = 960,
       height = 500,
       margin = {top: 0, right: 0, bottom: 0, left: 0},
-      color = function(d, i) { return sucrose.defaultColor()(d, d.seriesIndex); }, // chooses color
+      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); }, // chooses color
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       x = d3.scaleLinear(),
@@ -38,7 +38,7 @@ export default function() {
         return z(getZ(d, i));
       },
       getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
-      locality = sucrose.buildLocality(),
+      locality = utils.buildLocality(),
       onlyCircles = true, // Set to false to use shapes
 
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
@@ -189,7 +189,7 @@ export default function() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
-        return sucrose.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
+        return utils.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
       wrap_entr.append('g').attr('class', 'sc-group');
@@ -221,7 +221,7 @@ export default function() {
       // Series
 
       var series_bind = group_wrap.selectAll('.sc-series')
-            .data(sucrose.identity, function(d) { return d.seriesIndex; });
+            .data(utils.identity, function(d) { return d.seriesIndex; });
       var series_entr = series_bind.enter().append('g')
             .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
@@ -522,19 +522,19 @@ export default function() {
 
   chart.x = function(_) {
     if (!arguments.length) { return getX; }
-    getX = sucrose.functor(_);
+    getX = utils.functor(_);
     return chart;
   };
 
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
-    getY = sucrose.functor(_);
+    getY = utils.functor(_);
     return chart;
   };
 
   chart.z = function(_) {
     if (!arguments.length) { return getZ; }
-    getZ = sucrose.functor(_);
+    getZ = utils.functor(_);
     return chart;
   };
 
@@ -594,7 +594,7 @@ export default function() {
 
   chart.size = function(_) {
     if (!arguments.length) { return getZ; }
-    getZ = sucrose.functor(_);
+    getZ = utils.functor(_);
     return chart;
   };
 
@@ -715,7 +715,7 @@ export default function() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = sucrose.buildLocality(_);
+    locality = utils.buildLocality(_);
     return chart;
   };
 

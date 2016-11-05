@@ -136,7 +136,7 @@ export default function() {
       var axisLabel = wrap.selectAll('text.sc-axislabel').merge(axisLabel_entr);
 
       axisLabel
-        .text(sucrose.identity);
+        .text(utils.identity);
 
       //------------------------------------------------------------
       // Tick label handling
@@ -499,7 +499,7 @@ export default function() {
         tickText.each(function(d, i) {
           var textContent = axis.tickFormat()(d, i, selection, true),
               textNode = d3.select(this),
-              isDate = sucrose.isValidDate(textContent),
+              isDate = utils.isValidDate(textContent),
               textArray = (textContent && textContent !== '' ? isDate ? textContent : textContent.replace('/', '/ ') : []).split(' '),
               i = 0,
               l = textArray.length,

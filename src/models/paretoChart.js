@@ -1,9 +1,6 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import legend from './legend.js';
-import axis from './axis.js';
-import line from './line.js';
-import multibar from './multibar.js';
+import * as models from './models.js';
 
 export default function() {
   //'use strict';
@@ -35,33 +32,33 @@ export default function() {
       },
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      locality = sucrose.buildLocality(),
+      locality = utils.buildLocality(),
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var multibar = sucrose.multiBar()
+  var multibar = models.multiBar()
       .stacked(true)
       .clipEdge(false)
       .withLine(true)
       .nice(false),
-    linesBackground = sucrose.line()
+    linesBackground = models.line()
       .color(function(d, i) { return '#FFF'; })
       .fill(function(d, i) { return '#FFF'; })
       .useVoronoi(false)
       .nice(false),
-    lines = sucrose.line()
+    lines = models.line()
       .useVoronoi(false)
       .color('data')
       .nice(false),
-    xAxis = sucrose.axis(),
-    yAxis = sucrose.axis(),
-    barLegend = sucrose.legend()
+    xAxis = models.axis(),
+    yAxis = models.axis(),
+    barLegend = models.legend()
       .align('left')
       .position('middle'),
-    lineLegend = sucrose.legend()
+    lineLegend = models.legend()
       .align('right')
       .position('middle');
 
@@ -138,16 +135,16 @@ export default function() {
                           groupLabels[i] || d:
                           d;
             var label = xIsDatetime ?
-                          sucrose.dateFormat(value, '%x', chart.locality()) :
+                          utils.dateFormat(value, '%x', chart.locality()) :
                           value;
             var width = Math.max(baseDimension * 2, 75);
             return !noEllipsis ?
-                      sucrose.stringEllipsify(label, container, width) :
+                      utils.stringEllipsify(label, container, width) :
                       label;
           };
 
       var yValueFormat = function(d) {
-            return sucrose.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -163,7 +160,7 @@ export default function() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return sucrose.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -484,7 +481,7 @@ export default function() {
             .attr('fill', 'black')
             .text(properties.title);
 
-          titleBBox = sucrose.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -958,7 +955,7 @@ export default function() {
     var type = arguments[0],
       params = arguments[1] || {};
     var barColor = function(d, i) {
-      return sucrose.defaultColor()(d, d.seriesIndex);
+      return utils.defaultColor()(d, d.seriesIndex);
     };
     var barClasses = function(d, i) {
       return 'sc-series sc-series-' + d.seriesIndex;
@@ -998,7 +995,7 @@ export default function() {
         break;
       case 'data':
         barColor = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.defaultColor()(d, d.seriesIndex);
+          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
         };
         barClasses = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -1188,7 +1185,7 @@ export default function() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = sucrose.buildLocality(_);
+    locality = utils.buildLocality(_);
     multibar.locality(_);
     linesBackground.locality(_);
     return chart;

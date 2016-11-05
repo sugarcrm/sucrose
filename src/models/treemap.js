@@ -19,7 +19,7 @@ export default function() {
       clipEdge = true, // if true, masks lines within x and y scale
       duration = 500,
       leafClick = function() { return false; },
-      // color = function(d, i) { return sucrose.defaultColor()(d, i); },
+      // color = function(d, i) { return utils.defaultColor()(d, i); },
       color = d3.scaleOrdinal().range(
                 d3.schemeCategory20.map(function(c) {
                   c = d3.rgb(c);
@@ -78,7 +78,7 @@ export default function() {
       // Set up the gradient constructor function
       chart.gradient = function(d, i, p) {
         var iColor = (d.parent.colorIndex || NODES.indexOf(groupBy(d.parent)) || i);
-        return sucrose.colorLinearGradient(
+        return utils.colorLinearGradient(
           d,
           id + '-' + i,
           p,
@@ -117,7 +117,7 @@ export default function() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([TREE]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = wrap.select('g.sc-chart-wrap').merge(g_entr);
