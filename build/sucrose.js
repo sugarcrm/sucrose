@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
+ */
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
     typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
@@ -16976,14 +16979,6 @@ const charts = {
     treemapChart: treemapChart,
 };
 
-// import * as d3 from 'd3'; //without this rollup does something funky to d3 global
-// import * as path from 'path';
-// import * as fc from path.resolve( '../d3fc-rebind.js' );
-// import * as fc from './fc';
-// import rebind as fc from './d3fc-rebind';
-// import rebind from './d3fc-rebind.js';
-// import * as fc from 'd3fc-rebind';
-// import {* as fc} from './d3fc-rebind.js';
 const ver = '0.0.2'; //change to 0.0.3 when ready
 const dev = false; //set false when in production
 

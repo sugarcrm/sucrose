@@ -2,9 +2,9 @@ export {
   version,
   dev,
 
-  dispatch,
-  render,
-  addGraph,
+  // dispatch,
+  // render,
+  // addGraph,
   utils,
   tooltip,
 

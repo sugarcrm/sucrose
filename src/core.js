@@ -1,4 +1,3 @@
-sucrose.tooltip = {}; // For the tooltip system
 var charts = {}; //stores all the ready to use charts
 
 var dispatch = d3.dispatch('render_start', 'render_end');

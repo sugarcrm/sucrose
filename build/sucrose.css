@@ -1,14 +1,12 @@
 /*
  * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
  */
-/* Sucrose Global
-  ----------------*/
-/* MIXINS
-  ----------------*/
-/********************
- * General CSS
+/**********
+* Mixins
+*/
+/**********
+ *  General
  */
-/* Chart colors defined in colors.less */
 .sc-background {
   fill: #fff;
 }
@@ -29,8 +27,8 @@
     For example width should be =< margin.left + margin.right + 1,
     of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
   */
-/********************
- * SVG CSS
+/**********
+ *  SVG
  */
 svg.sc-chart {
   -webkit-touch-callout: none;
