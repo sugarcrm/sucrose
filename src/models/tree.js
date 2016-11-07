@@ -1,7 +1,7 @@
 import d3 from 'd3';
 import utils from '../utils.js';
 
-export default function() {
+export default function tree() {
 
   // issues: 1. zoom slider doesn't zoom on chart center
   // orientation

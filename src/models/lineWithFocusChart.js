@@ -1,8 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import * as models from './models.js';
+import tooltip from '../tooltip.js';
+import models from './models.js';
 
-export function lineWithFocusChart() {
+export default function lineWithFocusChart() {
 
   //============================================================
   // Public Variables with Default Settings

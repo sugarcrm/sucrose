@@ -1,6 +1,10 @@
 import d3 from 'd3';
 
-var utils = {};
+/*-------------------
+      UTILITIES
+-------------------*/
+
+const utils = {};
 
 utils.strip = function(s) {
   return s.replace(/(\s|&)/g,'');

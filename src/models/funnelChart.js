@@ -1,8 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import * as models from './models.js';
+import tooltip from '../tooltip.js';
+import models from './models.js';
 
-export default function() {
+export default function funnelChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -17,7 +18,6 @@ export default function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      tooltip = null,
       tooltips = true,
       state = {},
       strings = {
@@ -37,6 +37,8 @@ export default function() {
       controls = models.legend().align('center'),
       legend = models.legend().align('center');
 
+  var tooltip = null;
+
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
                '<p>' + y + ' on ' + x + '</p>';
@@ -48,7 +50,7 @@ export default function() {
             x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
 
-        return tooltip.show(eo.e, content, null, null, offsetElement);
+        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart) { return; };
@@ -348,13 +350,13 @@ export default function() {
 
       dispatch.on('tooltipMove', function(e) {
         if (tooltip) {
-          tooltip.position(that.parentNode, tooltip, e);
+          sucrose.tooltip.position(that.parentNode, tooltip, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          tooltip.cleanup();
+          sucrose.tooltip.cleanup();
         }
       });
 
@@ -508,12 +510,6 @@ export default function() {
   chart.showLegend = function(_) {
     if (!arguments.length) { return showLegend; }
     showLegend = _;
-    return chart;
-  };
-
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
     return chart;
   };
 

@@ -1,8 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import * as models from './models.js';
+import tooltip from '../tooltip.js';
+import models from './models.js';
 
-export default function() {
+export default function lineChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -17,7 +18,6 @@ export default function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      tooltip = null,
       tooltips = true,
       x,
       y,
@@ -45,6 +45,8 @@ export default function() {
       controls = models.legend()
         .align('left')
         .color(['#444']);
+
+  var tooltip = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -807,12 +809,6 @@ export default function() {
   chart.showLegend = function(_) {
     if (!arguments.length) { return showLegend; }
     showLegend = _;
-    return chart;
-  };
-
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
     return chart;
   };
 

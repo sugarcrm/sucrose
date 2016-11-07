@@ -1,8 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import * as models from './models.js';
+import tooltip from '../tooltip.js';
+import models from './models.js';
 
-export default function() {
+export default function bubbleChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -28,7 +29,6 @@ export default function() {
       seriesLength = 0,
       reduceYTicks = false, // if false a tick will show for every data point
       format = d3.timeFormat('%Y-%m-%d'),
-      tooltip = null,
       tooltips = true,
       x,
       y,
@@ -67,6 +67,8 @@ export default function() {
       legend = models.legend()
         .align('center')
         .key(function(d) { return d.key + '%'; });
+
+  var tooltip = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -703,14 +705,6 @@ export default function() {
       return showLegend;
     }
     showLegend = _;
-    return chart;
-  };
-
-  chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
-    tooltip = _;
     return chart;
   };
 

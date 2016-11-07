@@ -1,8 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import * as models from './models.js';
+import tooltip from '../tooltip.js';
+import models from './models.js';
 
-export default function() {
+export default function globeChart() {
 
   // http://cldr.unicode.org/
   // http://www.geonames.org/countries/
@@ -34,7 +35,6 @@ export default function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      tooltip = null,
       tooltips = true,
       initialTilt = 0,
       initialRotate = 100,
@@ -66,6 +66,8 @@ export default function() {
   var path = d3.geoPath().projection(projection);
   var graticule = d3.geoGraticule();
   var colorLimit = 0;
+
+  var tooltip = null;
 
   function tooltipContent(d) {
     return '<p><b>' + d.name + '</b></p>' +
@@ -616,14 +618,6 @@ export default function() {
         margin[prop] = _[prop];
       }
     }
-    return chart;
-  };
-
-  chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
-    tooltip = _;
     return chart;
   };
 

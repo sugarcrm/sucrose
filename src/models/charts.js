@@ -1,10 +1,29 @@
-export {default as bubbleChart} from './bubbleChart.js';
-export {default as funnelChart} from './funnelChart.js';
-export {default as gaugeChart} from './gaugeChart.js';
-export {default as globeChart} from './globe.js';
-export {default as lineChart} from './lineChart.js';
-export {default as multiBarChart} from './multiBarChart.js';
-export {default as paretoChart} from './paretoChart.js';
-export {default as pieChart} from './pieChart.js';
-export {default as stackedAreaChart} from './stackedAreaChart.js';
-export {default as treemapChart} from './treemapChart.js';
+/*-------------------
+       CHARTS
+-------------------*/
+
+import funnelChart from './funnelChart.js';
+import bubbleChart from './bubbleChart.js';
+import gaugeChart from './gaugeChart.js';
+import globeChart from './globe.js';
+import lineChart from './lineChart.js';
+import multiBarChart from './multiBarChart.js';
+import paretoChart from './paretoChart.js';
+import pieChart from './pieChart.js';
+import stackedAreaChart from './stackedAreaChart.js';
+import treemapChart from './treemapChart.js';
+
+const charts = {
+    funnelChart: funnelChart,
+    bubbleChart: bubbleChart,
+    gaugeChart: gaugeChart,
+    globeChart: globeChart,
+    lineChart: lineChart,
+    multiBarChart: multiBarChart,
+    paretoChart: paretoChart,
+    pieChart: pieChart,
+    stackedAreaChart: stackedAreaChart,
+    treemapChart: treemapChart,
+};
+
+export default charts;

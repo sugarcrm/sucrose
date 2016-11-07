@@ -1,12 +1,16 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
-  typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
-  (factory((global.sucrose = global.sucrose || {}),global.d3));
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
+    typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
+    (factory((global.sucrose = global.sucrose || {}),global.d3));
 }(this, (function (exports,d3) { 'use strict';
 
 d3 = 'default' in d3 ? d3['default'] : d3;
 
-var utils = {};
+/*-------------------
+      UTILITIES
+-------------------*/
+
+const utils = {};
 
 utils.strip = function(s) {
   return s.replace(/(\s|&)/g,'');
@@ -694,857 +698,162 @@ utils.displayNoData = function (hasData, container, label, x, y) {
   }
 };
 
-var legend = function() {
+/*-------------------
+       TOOLTIP
+-------------------*/
 
-  //============================================================
-  // Public Variables with Default Settings
-  //------------------------------------------------------------
+const tooltip = {};
 
-  var margin = {top: 10, right: 10, bottom: 15, left: 10},
-      width = 0,
-      height = 0,
-      align = 'right',
-      direction = 'ltr',
-      position = 'start',
-      radius = 6, // size of dot
-      diameter = radius * 2, // diamter of dot plus stroke
-      gutter = 10, // horizontal gap between keys
-      spacing = 12, // vertical gap between keys
-      textGap = 5, // gap between dot and label accounting for dot stroke
-      equalColumns = true,
-      showAll = false,
-      showMenu = false,
-      collapsed = false,
-      rowsCount = 3, //number of rows to display if showAll = false
-      enabled = false,
-      strings = {
-        close: 'Hide legend',
-        type: 'Show legend',
-        noLabel: 'undefined'
-      },
-      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getKey = function(d) {
-        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
-      },
-      color = function(d) {
-        return utils.defaultColor()(d, d.seriesIndex);
-      },
-      classes = function(d) {
-        return 'sc-series sc-series-' + d.seriesIndex;
-      },
-      dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout', 'toggleMenu', 'closeMenu');
+tooltip.show = function(evt, content, gravity, dist, container, classes) {
 
-  // Private Variables
-  //------------------------------------------------------------
+  var wrapper = document.createElement('div'),
+      inner = document.createElement('div'),
+      arrow = document.createElement('div');
 
-  var legendOpen = 0;
+  gravity = gravity || 's';
+  dist = dist || 5;
 
-  var useScroll = false,
-      scrollEnabled = true,
-      scrollOffset = 0,
-      overflowHandler = function(d) { return; };
+  inner.className = 'tooltip-inner';
+  arrow.className = 'tooltip-arrow';
+  inner.innerHTML = content;
+  wrapper.style.left = 0;
+  wrapper.style.top = -1000;
+  wrapper.style.opacity = 0;
+  wrapper.className = 'tooltip xy-tooltip in';
 
-  //============================================================
+  wrapper.appendChild(inner);
+  wrapper.appendChild(arrow);
+  container.appendChild(wrapper);
 
-  function legend(selection) {
+  tooltip.position(container, wrapper, evt, gravity, dist);
+  wrapper.style.opacity = 1;
 
-    selection.each(function(data) {
-
-      var container = d3.select(this),
-          containerWidth = width,
-          containerHeight = height,
-          keyWidths = [],
-          legendHeight = 0,
-          dropdownHeight = 0,
-          type = '',
-          inline = position === 'start' ? true : false,
-          rtl = direction === 'rtl' ? true : false,
-          lineSpacing = spacing * (inline ? 1 : 0.6),
-          padding = gutter + (inline ? diameter + textGap : 0);
-
-      if (!data || !data.length || !data.filter(function(d) { return !d.values || d.values.length; }).length) {
-        return legend;
-      }
-
-      // enforce existence of series for static legend keys
-      var iSeries = data.filter(function(d) { return d.hasOwnProperty('seriesIndex'); }).length;
-      data.filter(function(d) { return !d.hasOwnProperty('seriesIndex'); }).map(function(d, i) {
-        d.seriesIndex = iSeries;
-        iSeries += 1;
-      });
-
-      enabled = true;
-
-      type = !data[0].type || data[0].type === 'bar' ? 'bar' : 'line';
-      align = rtl && align !== 'center' ? align === 'left' ? 'right' : 'left' : align;
-
-      //------------------------------------------------------------
-      // Setup containers and skeleton of legend
-
-      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-legend');
-      var wrap = container.select('g.sc-wrap').merge(wrap_entr);
-      wrap.attr('transform', 'translate(0,0)');
-
-      var defs_entr = wrap_entr.append('defs');
-      var defs = wrap.select('defs');
-
-      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
-      var clip = wrap.select('#sc-edge-clip-' + id + ' rect');
-
-      wrap_entr.append('rect').attr('class', 'sc-legend-background');
-      var back = wrap.select('.sc-legend-background');
-      var backFilter = utils.dropShadow('legend_back_' + id, defs, {blur: 2});
-
-      wrap_entr.append('text').attr('class', 'sc-legend-link');
-      var link = wrap.select('.sc-legend-link');
-
-      var mask_entr = wrap_entr.append('g').attr('class', 'sc-legend-mask');
-      var mask = wrap.select('.sc-legend-mask');
-
-      mask_entr.append('g').attr('class', 'sc-group');
-      var g = wrap.select('.sc-group');
-
-      var series_bind = g.selectAll('.sc-series').data(utils.identity, function(d) { return d.seriesIndex; });
-      series_bind.exit().remove();
-      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
-            .on('mouseover', function(d, i) {
-              dispatch.call('legendMouseover', this, d);
-            })
-            .on('mouseout', function(d, i) {
-              dispatch.call('legendMouseout', this, d);
-            })
-            .on('click', function(d, i) {
-              d3.event.preventDefault();
-              d3.event.stopPropagation();
-              dispatch.call('legendClick', this, d);
-            });
-      var series = g.selectAll('.sc-series').merge(series_entr);
-
-      series
-          .attr('class', classes)
-          .attr('fill', color)
-          .attr('stroke', color);
-      series_entr
-        .append('rect')
-          .attr('x', (diameter + textGap) / -2)
-          .attr('y', (diameter + lineSpacing) / -2)
-          .attr('width', diameter + textGap)
-          .attr('height', diameter + lineSpacing)
-          .style('fill', '#FFE')
-          .style('stroke-width', 0)
-          .style('opacity', 0.1);
-
-      var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
-      circles_bind.exit().remove();
-      var circles_entr = circles_bind.enter()
-        .append('circle')
-          .attr('r', radius)
-          .style('stroke-width', '2px');
-      var circles = series.selectAll('circle').merge(circles_entr);
-
-      var line_bind = series_entr.selectAll('line').data(type === 'line' ? function(d) { return [d]; } : []);
-      line_bind.exit().remove();
-      var lines_entr = line_bind.enter()
-        .append('line')
-          .attr('x0', 0)
-          .attr('y0', 0)
-          .attr('y1', 0)
-          .style('stroke-width', '4px');
-      var lines = series.selectAll('line').merge(lines_entr);
-
-      var texts_entr = series_entr.append('text')
-        .attr('dx', 0);
-      var texts = series.selectAll('text').merge(texts_entr);
-
-      texts
-        .attr('dy', inline ? '.36em' : '.71em')
-        .text(getKey);
-
-      //------------------------------------------------------------
-      // Update legend attributes
-
-      clip
-        .attr('x', 0.5)
-        .attr('y', 0.5)
-        .attr('width', 0)
-        .attr('height', 0);
-
-      back
-        .attr('x', 0.5)
-        .attr('y', 0.5)
-        .attr('width', 0)
-        .attr('height', 0)
-        .style('opacity', 0)
-        .style('pointer-events', 'all')
-        .on('click', function(d, i) {
-          d3.event.stopPropagation();
-        });
-
-      link
-        .text(legendOpen === 1 ? legend.strings().close : legend.strings().open)
-        .attr('text-anchor', align === 'left' ? rtl ? 'end' : 'start' : rtl ? 'start' : 'end')
-        .attr('dy', '.36em')
-        .attr('dx', 0)
-        .style('opacity', 0)
-        .on('click', function(d, i) {
-          d3.event.preventDefault();
-          d3.event.stopPropagation();
-          dispatch.call('toggleMenu', this, d, i);
-        });
-
-      series.classed('disabled', function(d) {
-        return d.disabled;
-      });
-
-      //------------------------------------------------------------
-
-      //TODO: add ability to add key to legend
-      //TODO: have series display values on hover
-      //var label = g.append('text').text('Probability:').attr('class','sc-series-label').attr('transform','translate(0,0)');
-
-      // store legend label widths
-      legend.calcMaxWidth = function() {
-        keyWidths = [];
-
-        g.style('display', 'inline');
-
-        texts.each(function(d, i) {
-          var textWidth = d3.select(this).node().getBoundingClientRect().width;
-          keyWidths.push(Math.max(Math.floor(textWidth), (type === 'line' ? 50 : 20)));
-        });
-
-        legend.width(d3.sum(keyWidths) + keyWidths.length * padding - gutter);
-
-        return legend.width();
-      };
-
-      legend.getLineHeight = function() {
-        g.style('display', 'inline');
-        var lineHeightBB = Math.floor(texts.node().getBoundingClientRect().height);
-        return lineHeightBB;
-      };
-
-      legend.arrange = function(containerWidth) {
-
-        if (keyWidths.length === 0) {
-          this.calcMaxWidth();
-        }
-
-        function keyWidth(i) {
-          return keyWidths[i] + padding;
-        }
-        function keyWidthNoGutter(i) {
-          return keyWidths[i] + padding - gutter;
-        }
-        function sign(bool) {
-          return bool ? 1 : -1;
-        }
-
-        var keys = keyWidths.length,
-            rows = 1,
-            cols = keys,
-            columnWidths = [],
-            keyPositions = [],
-            maxWidth = containerWidth - margin.left - margin.right,
-            maxRowWidth = 0,
-            minRowWidth = 0,
-            textHeight = this.getLineHeight(),
-            lineHeight = diameter + (inline ? 0 : textHeight) + lineSpacing,
-            menuMargin = {top: 7, right: 7, bottom: 7, left: 7}, // account for stroke width
-            xpos = 0,
-            ypos = 0,
-            i,
-            mod,
-            shift;
-
-        if (equalColumns) {
-
-          //keep decreasing the number of keys per row until
-          //legend width is less than the available width
-          while (cols > 0) {
-            columnWidths = [];
-
-            for (i = 0; i < keys; i += 1) {
-              if (keyWidth(i) > (columnWidths[i % cols] || 0)) {
-                columnWidths[i % cols] = keyWidth(i);
-              }
-            }
-
-            if (d3.sum(columnWidths) - gutter < maxWidth) {
-              break;
-            }
-            cols -= 1;
-          }
-          cols = cols || 1;
-
-          rows = Math.ceil(keys / cols);
-          maxRowWidth = d3.sum(columnWidths) - gutter;
-
-          for (i = 0; i < keys; i += 1) {
-            mod = i % cols;
-
-            if (inline) {
-              if (mod === 0) {
-                xpos = rtl ? maxRowWidth : 0;
-              } else {
-                xpos += columnWidths[mod - 1] * sign(!rtl);
-              }
-            } else {
-              if (mod === 0) {
-                xpos = (rtl ? maxRowWidth : 0) + (columnWidths[mod] - gutter) / 2 * sign(!rtl);
-              } else {
-                xpos += (columnWidths[mod - 1] + columnWidths[mod]) / 2 * sign(!rtl);
-              }
-            }
-
-            ypos = Math.floor(i / cols) * lineHeight;
-            keyPositions[i] = {x: xpos, y: ypos};
-          }
-
-        } else {
-
-          if (rtl) {
-
-            xpos = maxWidth;
-
-            for (i = 0; i < keys; i += 1) {
-              if (xpos - keyWidthNoGutter(i) < 0) {
-                maxRowWidth = Math.max(maxRowWidth, keyWidthNoGutter(i));
-                xpos = maxWidth;
-                if (i) {
-                  rows += 1;
-                }
-              }
-              if (xpos - keyWidthNoGutter(i) > maxRowWidth) {
-                maxRowWidth = xpos - keyWidthNoGutter(i);
-              }
-              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
-              xpos -= keyWidth(i);
-            }
-
-          } else {
-
-            xpos = 0;
-
-            for (i = 0; i < keys; i += 1) {
-              if (i && xpos + keyWidthNoGutter(i) > maxWidth) {
-                xpos = 0;
-                rows += 1;
-              }
-              if (xpos + keyWidthNoGutter(i) > maxRowWidth) {
-                maxRowWidth = xpos + keyWidthNoGutter(i);
-              }
-              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
-              xpos += keyWidth(i);
-            }
-
-          }
-
-        }
-
-        if (!showMenu && (showAll || rows <= rowsCount)) {
-
-          legendOpen = 0;
-          collapsed = false;
-          useScroll = false;
-
-          legend
-            .width(margin.left + maxRowWidth + margin.right)
-            .height(margin.top + rows * lineHeight - lineSpacing + margin.bottom);
-
-          switch (align) {
-            case 'left':
-              shift = 0;
-              break;
-            case 'center':
-              shift = (containerWidth - legend.width()) / 2;
-              break;
-            case 'right':
-              shift = 0;
-              break;
-          }
-
-          clip
-            .attr('y', 0)
-            .attr('width', legend.width())
-            .attr('height', legend.height());
-
-          back
-            .attr('x', shift)
-            .attr('width', legend.width())
-            .attr('height', legend.height())
-            .attr('rx', 0)
-            .attr('ry', 0)
-            .attr('filter', 'none')
-            .style('display', 'inline')
-            .style('opacity', 0);
-
-          mask
-            .attr('clip-path', 'none')
-            .attr('transform', function(d, i) {
-              var xpos = shift + margin.left + (inline ? radius * sign(!rtl) : 0),
-                  ypos = margin.top + menuMargin.top;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            });
-
-          g
-            .style('opacity', 1)
-            .style('display', 'inline');
-
-          series
-            .attr('transform', function(d) {
-              var pos = keyPositions[d.seriesIndex];
-              return 'translate(' + pos.x + ',' + pos.y + ')';
-            });
-
-          series.select('rect')
-            .attr('x', function(d) {
-              var xpos = 0;
-              if (inline) {
-                xpos = (diameter + gutter) / 2 * sign(rtl);
-                xpos -= rtl ? keyWidth(d.seriesIndex) : 0;
-              } else {
-                xpos = keyWidth(d.seriesIndex) / -2;
-              }
-              return xpos;
-            })
-            .attr('width', function(d) {
-              return keyWidth(d.seriesIndex);
-            })
-            .attr('height', lineHeight);
-
-          circles
-            .attr('r', function(d) {
-              return d.type === 'dash' ? 0 : radius;
-            })
-            .attr('transform', function(d, i) {
-              var xpos = inline || type === 'bar' ? 0 : radius * 3 * sign(i);
-              return 'translate(' + xpos + ',0)';
-            });
-
-          lines
-            .attr('x1', function(d) {
-              return d.type === 'dash' ? radius * 8 : radius * 4;
-            })
-            .attr('transform', function(d) {
-              var xpos = radius * (d.type === 'dash' ? -4 : -2);
-              return 'translate(' + xpos + ',0)';
-            })
-            .style('stroke-dasharray', function(d) {
-              return d.type === 'dash' ? '8, 8' : 'none';
-            })
-            .style('stroke-dashoffset', -4);
-
-          texts
-            .attr('dy', inline ? '.36em' : '.71em')
-            .attr('text-anchor', position)
-            .attr('transform', function(d) {
-              var xpos = inline ? (radius + textGap) * sign(!rtl) : 0,
-                  ypos = inline ? 0 : (diameter + lineSpacing) / 2;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            });
-
-        } else {
-
-          collapsed = true;
-          useScroll = true;
-
-          legend
-            .width(menuMargin.left + d3.max(keyWidths) + diameter + textGap + menuMargin.right)
-            .height(margin.top + diameter + margin.top); //don't use bottom here because we want vertical centering
-
-          legendHeight = menuMargin.top + diameter * keys + spacing * (keys - 1) + menuMargin.bottom;
-          dropdownHeight = Math.min(containerHeight - legend.height(), legendHeight);
-
-          clip
-            .attr('x', 0.5 - menuMargin.top - radius)
-            .attr('y', 0.5 - menuMargin.top - radius)
-            .attr('width', legend.width())
-            .attr('height', dropdownHeight);
-
-          back
-            .attr('x', 0.5)
-            .attr('y', 0.5 + legend.height())
-            .attr('width', legend.width())
-            .attr('height', dropdownHeight)
-            .attr('rx', 2)
-            .attr('ry', 2)
-            .attr('filter', backFilter)
-            .style('opacity', legendOpen * 0.9)
-            .style('display', legendOpen ? 'inline' : 'none');
-
-          link
-            .attr('transform', function(d, i) {
-              var xpos = align === 'left' ? 0.5 : 0.5 + legend.width(),
-                  ypos = margin.top + radius;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            })
-            .style('opacity', 1);
-
-          mask
-            .attr('clip-path', 'url(#sc-edge-clip-' + id + ')')
-            .attr('transform', function(d, i) {
-              var xpos = menuMargin.left + radius,
-                  ypos = legend.height() + menuMargin.top + radius;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            });
-
-          g
-            .style('opacity', legendOpen)
-            .style('display', legendOpen ? 'inline' : 'none')
-            .attr('transform', function(d, i) {
-              var xpos = rtl ? d3.max(keyWidths) + radius : 0;
-              return 'translate(' + xpos + ',0)';
-            });
-
-          series
-            .attr('transform', function(d, i) {
-              var ypos = i * (diameter + spacing);
-              return 'translate(0,' + ypos + ')';
-            });
-
-          series.select('rect')
-            .attr('x', function(d) {
-              var w = (diameter + gutter) / 2 * sign(rtl);
-              w -= rtl ? keyWidth(d.seriesIndex) : 0;
-              return w;
-            })
-            .attr('width', function(d) {
-              return keyWidth(d.seriesIndex);
-            })
-            .attr('height', diameter + lineSpacing);
-
-          circles
-            .attr('r', function(d) {
-              return d.type === 'dash' ? 0 : d.type === 'line' ? radius - 2 : radius;
-            })
-            .attr('transform', '');
-
-          lines
-            .attr('x1', 16)
-            .attr('transform', 'translate(-8,0)')
-            .style('stroke-dasharray', function(d) {
-              return d.type === 'dash' ? '6, 4, 6' : 'none';
-            })
-            .style('stroke-dashoffset', 0);
-
-          texts
-            .attr('text-anchor', 'start')
-            .attr('dy', '.36em')
-            .attr('transform', function(d) {
-              var xpos = (radius + textGap) * sign(!rtl);
-              return 'translate(' + xpos + ',0)';
-            });
-
-        }
-
-        //------------------------------------------------------------
-        // Enable scrolling
-        if (scrollEnabled) {
-          var diff = dropdownHeight - legendHeight;
-
-          var assignScrollEvents = function(enable) {
-            if (enable) {
-
-              var zoom = d3.zoom()
-                    .on('zoom', panLegend);
-              var drag = d3.drag()
-                    .subject(utils.identity)
-                    .on('drag', panLegend);
-
-              back.call(zoom);
-              g.call(zoom);
-
-              back.call(drag);
-              g.call(drag);
-
-            } else {
-
-              back
-                  .on("mousedown.zoom", null)
-                  .on("mousewheel.zoom", null)
-                  .on("mousemove.zoom", null)
-                  .on("DOMMouseScroll.zoom", null)
-                  .on("dblclick.zoom", null)
-                  .on("touchstart.zoom", null)
-                  .on("touchmove.zoom", null)
-                  .on("touchend.zoom", null)
-                  .on("wheel.zoom", null);
-              g
-                  .on("mousedown.zoom", null)
-                  .on("mousewheel.zoom", null)
-                  .on("mousemove.zoom", null)
-                  .on("DOMMouseScroll.zoom", null)
-                  .on("dblclick.zoom", null)
-                  .on("touchstart.zoom", null)
-                  .on("touchmove.zoom", null)
-                  .on("touchend.zoom", null)
-                  .on("wheel.zoom", null);
-
-              back
-                  .on("mousedown.drag", null)
-                  .on("mousewheel.drag", null)
-                  .on("mousemove.drag", null)
-                  .on("DOMMouseScroll.drag", null)
-                  .on("dblclick.drag", null)
-                  .on("touchstart.drag", null)
-                  .on("touchmove.drag", null)
-                  .on("touchend.drag", null)
-                  .on("wheel.drag", null);
-              g
-                  .on("mousedown.drag", null)
-                  .on("mousewheel.drag", null)
-                  .on("mousemove.drag", null)
-                  .on("DOMMouseScroll.drag", null)
-                  .on("dblclick.drag", null)
-                  .on("touchstart.drag", null)
-                  .on("touchmove.drag", null)
-                  .on("touchend.drag", null)
-                  .on("wheel.drag", null);
-            }
-          };
-
-          var panLegend = function() {
-            var distance = 0,
-                overflowDistance = 0,
-                translate = '',
-                x = 0,
-                y = 0;
-
-            // don't fire on events other than zoom and drag
-            // we need click for handling legend toggle
-            if (d3.event) {
-              if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
-                x = d3.event.sourceEvent.deltaX || 0;
-                y = d3.event.sourceEvent.deltaY || 0;
-                distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
-              } else if (d3.event.type === 'drag') {
-                x = d3.event.dx || 0;
-                y = d3.event.dy || 0;
-                distance = y;
-              } else if (d3.event.type !== 'click') {
-                return 0;
-              }
-              overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
-            }
-
-            // reset value defined in panMultibar();
-            scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), 0);
-            translate = 'translate(' + (rtl ? d3.max(keyWidths) + radius : 0) + ',' + scrollOffset + ')';
-
-            if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
-              overflowHandler(overflowDistance);
-            }
-
-            g.attr('transform', translate);
-          };
-
-          assignScrollEvents(useScroll);
-        }
-
-      };
-
-      //============================================================
-      // Event Handling/Dispatching (in chart's scope)
-      //------------------------------------------------------------
-
-      function displayMenu() {
-        back
-          .style('opacity', legendOpen * 0.9)
-          .style('display', legendOpen ? 'inline' : 'none');
-        g
-          .style('opacity', legendOpen)
-          .style('display', legendOpen ? 'inline' : 'none');
-        link
-          .text(legendOpen === 1 ? legend.strings().close : legend.strings().open);
-      }
-
-      dispatch.on('toggleMenu', function(d) {
-        d3.event.stopPropagation();
-        legendOpen = 1 - legendOpen;
-        displayMenu();
-      });
-
-      dispatch.on('closeMenu', function(d) {
-        if (legendOpen === 1) {
-          legendOpen = 0;
-          displayMenu();
-        }
-      });
-
-    });
-
-    return legend;
-  }
-
-
-  //============================================================
-  // Expose Public Variables
-  //------------------------------------------------------------
-
-  legend.dispatch = dispatch;
-
-  legend.margin = function(_) {
-    if (!arguments.length) { return margin; }
-    margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
-    return legend;
-  };
-
-  legend.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
-    width = Math.round(_);
-    return legend;
-  };
-
-  legend.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
-    height = Math.round(_);
-    return legend;
-  };
-
-  legend.id = function(_) {
-    if (!arguments.length) {
-      return id;
-    }
-    id = _;
-    return legend;
-  };
-
-  legend.key = function(_) {
-    if (!arguments.length) {
-      return getKey;
-    }
-    getKey = _;
-    return legend;
-  };
-
-  legend.color = function(_) {
-    if (!arguments.length) {
-      return color;
-    }
-    color = utils.getColor(_);
-    return legend;
-  };
-
-  legend.classes = function(_) {
-    if (!arguments.length) {
-      return classes;
-    }
-    classes = _;
-    return legend;
-  };
-
-  legend.align = function(_) {
-    if (!arguments.length) {
-      return align;
-    }
-    align = _;
-    return legend;
-  };
-
-  legend.position = function(_) {
-    if (!arguments.length) {
-      return position;
-    }
-    position = _;
-    return legend;
-  };
-
-  legend.showAll = function(_) {
-    if (!arguments.length) { return showAll; }
-    showAll = _;
-    return legend;
-  };
-
-  legend.showMenu = function(_) {
-    if (!arguments.length) { return showMenu; }
-    showMenu = _;
-    return legend;
-  };
-
-  legend.collapsed = function(_) {
-    return collapsed;
-  };
-
-  legend.rowsCount = function(_) {
-    if (!arguments.length) {
-      return rowsCount;
-    }
-    rowsCount = _;
-    return legend;
-  };
-
-  legend.spacing = function(_) {
-    if (!arguments.length) {
-      return spacing;
-    }
-    spacing = _;
-    return legend;
-  };
-
-  legend.gutter = function(_) {
-    if (!arguments.length) {
-      return gutter;
-    }
-    gutter = _;
-    return legend;
-  };
-
-  legend.radius = function(_) {
-    if (!arguments.length) {
-      return radius;
-    }
-    radius = _;
-    return legend;
-  };
-
-  legend.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
-    strings = _;
-    return legend;
-  };
-
-  legend.equalColumns = function(_) {
-    if (!arguments.length) {
-      return equalColumns;
-    }
-    equalColumns = _;
-    return legend;
-  };
-
-  legend.enabled = function(_) {
-    if (!arguments.length) {
-      return enabled;
-    }
-    enabled = _;
-    return legend;
-  };
-
-  legend.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
-    direction = _;
-    return legend;
-  };
-
-  //============================================================
-
-
-  return legend;
+  return wrapper;
 };
 
-var axis = function() {
+tooltip.cleanup = function() {
+    // Find the tooltips, mark them for removal by this class
+    // (so others cleanups won't find it)
+    var tooltips = document.getElementsByClassName('tooltip'),
+        purging = [],
+        i = tooltips.length;
+
+    while (i > 0) {
+        i -= 1;
+
+        if (tooltips[i].className.indexOf('xy-tooltip') !== -1) {
+            purging.push(tooltips[i]);
+            tooltips[i].style.transitionDelay = '0 !important';
+            tooltips[i].style.opacity = 0;
+            tooltips[i].className = 'sctooltip-pending-removal out';
+        }
+    }
+
+    setTimeout(function() {
+        var removeMe;
+        while (purging.length) {
+            removeMe = purging.pop();
+            removeMe.parentNode.removeChild(removeMe);
+        }
+    }, 500);
+};
+
+tooltip.position = function(container, wrapper, evt, gravity, dist) {
+  gravity = gravity || 's';
+  dist = dist || 5;
+
+  var rect = container.getBoundingClientRect();
+
+  var pos = [
+        evt.clientX - rect.left,
+        evt.clientY - rect.top
+      ];
+
+  var wrapperWidth = parseInt(wrapper.offsetWidth, 10),
+      wrapperHeight = parseInt(wrapper.offsetHeight, 10),
+      containerWidth = container.clientWidth,
+      containerHeight = container.clientHeight,
+      containerLeft = container.scrollLeft,
+      containerTop = container.scrollTop,
+      class_name = wrapper.className.replace(/ top| right| bottom| left/g, ''),
+      left, top;
+
+  function alignCenter() {
+    var left = pos[0] - (wrapperWidth / 2);
+    if (left < containerLeft) left = containerLeft;
+    if (left + wrapperWidth > containerWidth) left = containerWidth - wrapperWidth;
+    return left;
+  }
+  function alignMiddle() {
+    var top = pos[1] - (wrapperHeight / 2);
+    if (top < containerTop) top = containerTop;
+    if (top + wrapperHeight > containerTop + containerHeight) top = containerTop - wrapperHeight;
+    return top;
+  }
+  function arrowLeft(left) {
+    var marginLeft = pos[0] - (wrapperWidth / 2) - left - 5,
+        arrow = wrapper.getElementsByClassName('tooltip-arrow')[0];
+    arrow.style.marginLeft = marginLeft + 'px';
+  }
+  function arrowTop(top) {
+    var marginTop = pos[1] - (wrapperHeight / 2) - top - 5,
+        arrow = wrapper.getElementsByClassName('tooltip-arrow')[0];
+    arrow.style.marginTop = marginTop + 'px';
+  }
+
+  switch (gravity) {
+    case 'e':
+      top = alignMiddle();
+      left = pos[0] - wrapperWidth - dist;
+      arrowTop(top);
+      if (left < containerLeft) {
+        left = pos[0] + dist;
+        class_name += ' right';
+      } else {
+        class_name += ' left';
+      }
+      break;
+    case 'w':
+      top = alignMiddle();
+      left = pos[0] + dist;
+      arrowTop(top);
+      if (left + wrapperWidth > containerWidth) {
+        left = pos[0] - wrapperWidth - dist;
+        class_name += ' left';
+      } else {
+        class_name += ' right';
+      }
+      break;
+    case 'n':
+      left = alignCenter();
+      top = pos[1] + dist;
+      arrowLeft(left);
+      if (top + wrapperHeight > containerTop + containerHeight) {
+        top = pos[1] - wrapperHeight - dist;
+        class_name += ' top';
+      } else {
+        class_name += ' bottom';
+      }
+      break;
+    case 's':
+      left = alignCenter();
+      top = pos[1] - wrapperHeight - dist;
+      arrowLeft(left);
+      if (containerTop > top) {
+        top = pos[1] + dist;
+        class_name += ' bottom';
+      } else {
+        class_name += ' top';
+      }
+      break;
+  }
+
+  wrapper.style.left = left + 'px';
+  wrapper.style.top = top + 'px';
+  wrapper.className = class_name;
+};
+
+function axis() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -2361,9 +1670,9 @@ var axis = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var funnel = function() {
+function funnel() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -3390,9 +2699,9 @@ var funnel = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var gauge = function() {
+function gauge() {
   /* original inspiration for this chart type is at http://bl.ocks.org/3202712 */
   //============================================================
   // Public Variables with Default Settings
@@ -3983,15 +3292,865 @@ var gauge = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var line$$1 = function() {
+function legend() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var scatter$$1 = scatter();
+  var margin = {top: 10, right: 10, bottom: 15, left: 10},
+      width = 0,
+      height = 0,
+      align = 'right',
+      direction = 'ltr',
+      position = 'start',
+      radius = 6, // size of dot
+      diameter = radius * 2, // diamter of dot plus stroke
+      gutter = 10, // horizontal gap between keys
+      spacing = 12, // vertical gap between keys
+      textGap = 5, // gap between dot and label accounting for dot stroke
+      equalColumns = true,
+      showAll = false,
+      showMenu = false,
+      collapsed = false,
+      rowsCount = 3, //number of rows to display if showAll = false
+      enabled = false,
+      strings = {
+        close: 'Hide legend',
+        type: 'Show legend',
+        noLabel: 'undefined'
+      },
+      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
+      getKey = function(d) {
+        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
+      },
+      color = function(d) {
+        return utils.defaultColor()(d, d.seriesIndex);
+      },
+      classes = function(d) {
+        return 'sc-series sc-series-' + d.seriesIndex;
+      },
+      dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout', 'toggleMenu', 'closeMenu');
+
+  // Private Variables
+  //------------------------------------------------------------
+
+  var legendOpen = 0;
+
+  var useScroll = false,
+      scrollEnabled = true,
+      scrollOffset = 0,
+      overflowHandler = function(d) { return; };
+
+  //============================================================
+
+  function legend(selection) {
+
+    selection.each(function(data) {
+
+      var container = d3.select(this),
+          containerWidth = width,
+          containerHeight = height,
+          keyWidths = [],
+          legendHeight = 0,
+          dropdownHeight = 0,
+          type = '',
+          inline = position === 'start' ? true : false,
+          rtl = direction === 'rtl' ? true : false,
+          lineSpacing = spacing * (inline ? 1 : 0.6),
+          padding = gutter + (inline ? diameter + textGap : 0);
+
+      if (!data || !data.length || !data.filter(function(d) { return !d.values || d.values.length; }).length) {
+        return legend;
+      }
+
+      // enforce existence of series for static legend keys
+      var iSeries = data.filter(function(d) { return d.hasOwnProperty('seriesIndex'); }).length;
+      data.filter(function(d) { return !d.hasOwnProperty('seriesIndex'); }).map(function(d, i) {
+        d.seriesIndex = iSeries;
+        iSeries += 1;
+      });
+
+      enabled = true;
+
+      type = !data[0].type || data[0].type === 'bar' ? 'bar' : 'line';
+      align = rtl && align !== 'center' ? align === 'left' ? 'right' : 'left' : align;
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of legend
+
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-legend');
+      var wrap = container.select('g.sc-wrap').merge(wrap_entr);
+      wrap.attr('transform', 'translate(0,0)');
+
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
+
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
+      var clip = wrap.select('#sc-edge-clip-' + id + ' rect');
+
+      wrap_entr.append('rect').attr('class', 'sc-legend-background');
+      var back = wrap.select('.sc-legend-background');
+      var backFilter = utils.dropShadow('legend_back_' + id, defs, {blur: 2});
+
+      wrap_entr.append('text').attr('class', 'sc-legend-link');
+      var link = wrap.select('.sc-legend-link');
+
+      var mask_entr = wrap_entr.append('g').attr('class', 'sc-legend-mask');
+      var mask = wrap.select('.sc-legend-mask');
+
+      mask_entr.append('g').attr('class', 'sc-group');
+      var g = wrap.select('.sc-group');
+
+      var series_bind = g.selectAll('.sc-series').data(utils.identity, function(d) { return d.seriesIndex; });
+      series_bind.exit().remove();
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
+            .on('mouseover', function(d, i) {
+              dispatch.call('legendMouseover', this, d);
+            })
+            .on('mouseout', function(d, i) {
+              dispatch.call('legendMouseout', this, d);
+            })
+            .on('click', function(d, i) {
+              d3.event.preventDefault();
+              d3.event.stopPropagation();
+              dispatch.call('legendClick', this, d);
+            });
+      var series = g.selectAll('.sc-series').merge(series_entr);
+
+      series
+          .attr('class', classes)
+          .attr('fill', color)
+          .attr('stroke', color);
+      series_entr
+        .append('rect')
+          .attr('x', (diameter + textGap) / -2)
+          .attr('y', (diameter + lineSpacing) / -2)
+          .attr('width', diameter + textGap)
+          .attr('height', diameter + lineSpacing)
+          .style('fill', '#FFE')
+          .style('stroke-width', 0)
+          .style('opacity', 0.1);
+
+      var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
+      circles_bind.exit().remove();
+      var circles_entr = circles_bind.enter()
+        .append('circle')
+          .attr('r', radius)
+          .style('stroke-width', '2px');
+      var circles = series.selectAll('circle').merge(circles_entr);
+
+      var line_bind = series_entr.selectAll('line').data(type === 'line' ? function(d) { return [d]; } : []);
+      line_bind.exit().remove();
+      var lines_entr = line_bind.enter()
+        .append('line')
+          .attr('x0', 0)
+          .attr('y0', 0)
+          .attr('y1', 0)
+          .style('stroke-width', '4px');
+      var lines = series.selectAll('line').merge(lines_entr);
+
+      var texts_entr = series_entr.append('text')
+        .attr('dx', 0);
+      var texts = series.selectAll('text').merge(texts_entr);
+
+      texts
+        .attr('dy', inline ? '.36em' : '.71em')
+        .text(getKey);
+
+      //------------------------------------------------------------
+      // Update legend attributes
+
+      clip
+        .attr('x', 0.5)
+        .attr('y', 0.5)
+        .attr('width', 0)
+        .attr('height', 0);
+
+      back
+        .attr('x', 0.5)
+        .attr('y', 0.5)
+        .attr('width', 0)
+        .attr('height', 0)
+        .style('opacity', 0)
+        .style('pointer-events', 'all')
+        .on('click', function(d, i) {
+          d3.event.stopPropagation();
+        });
+
+      link
+        .text(legendOpen === 1 ? legend.strings().close : legend.strings().open)
+        .attr('text-anchor', align === 'left' ? rtl ? 'end' : 'start' : rtl ? 'start' : 'end')
+        .attr('dy', '.36em')
+        .attr('dx', 0)
+        .style('opacity', 0)
+        .on('click', function(d, i) {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+          dispatch.call('toggleMenu', this, d, i);
+        });
+
+      series.classed('disabled', function(d) {
+        return d.disabled;
+      });
+
+      //------------------------------------------------------------
+
+      //TODO: add ability to add key to legend
+      //TODO: have series display values on hover
+      //var label = g.append('text').text('Probability:').attr('class','sc-series-label').attr('transform','translate(0,0)');
+
+      // store legend label widths
+      legend.calcMaxWidth = function() {
+        keyWidths = [];
+
+        g.style('display', 'inline');
+
+        texts.each(function(d, i) {
+          var textWidth = d3.select(this).node().getBoundingClientRect().width;
+          keyWidths.push(Math.max(Math.floor(textWidth), (type === 'line' ? 50 : 20)));
+        });
+
+        legend.width(d3.sum(keyWidths) + keyWidths.length * padding - gutter);
+
+        return legend.width();
+      };
+
+      legend.getLineHeight = function() {
+        g.style('display', 'inline');
+        var lineHeightBB = Math.floor(texts.node().getBoundingClientRect().height);
+        return lineHeightBB;
+      };
+
+      legend.arrange = function(containerWidth) {
+
+        if (keyWidths.length === 0) {
+          this.calcMaxWidth();
+        }
+
+        function keyWidth(i) {
+          return keyWidths[i] + padding;
+        }
+        function keyWidthNoGutter(i) {
+          return keyWidths[i] + padding - gutter;
+        }
+        function sign(bool) {
+          return bool ? 1 : -1;
+        }
+
+        var keys = keyWidths.length,
+            rows = 1,
+            cols = keys,
+            columnWidths = [],
+            keyPositions = [],
+            maxWidth = containerWidth - margin.left - margin.right,
+            maxRowWidth = 0,
+            minRowWidth = 0,
+            textHeight = this.getLineHeight(),
+            lineHeight = diameter + (inline ? 0 : textHeight) + lineSpacing,
+            menuMargin = {top: 7, right: 7, bottom: 7, left: 7}, // account for stroke width
+            xpos = 0,
+            ypos = 0,
+            i,
+            mod,
+            shift;
+
+        if (equalColumns) {
+
+          //keep decreasing the number of keys per row until
+          //legend width is less than the available width
+          while (cols > 0) {
+            columnWidths = [];
+
+            for (i = 0; i < keys; i += 1) {
+              if (keyWidth(i) > (columnWidths[i % cols] || 0)) {
+                columnWidths[i % cols] = keyWidth(i);
+              }
+            }
+
+            if (d3.sum(columnWidths) - gutter < maxWidth) {
+              break;
+            }
+            cols -= 1;
+          }
+          cols = cols || 1;
+
+          rows = Math.ceil(keys / cols);
+          maxRowWidth = d3.sum(columnWidths) - gutter;
+
+          for (i = 0; i < keys; i += 1) {
+            mod = i % cols;
+
+            if (inline) {
+              if (mod === 0) {
+                xpos = rtl ? maxRowWidth : 0;
+              } else {
+                xpos += columnWidths[mod - 1] * sign(!rtl);
+              }
+            } else {
+              if (mod === 0) {
+                xpos = (rtl ? maxRowWidth : 0) + (columnWidths[mod] - gutter) / 2 * sign(!rtl);
+              } else {
+                xpos += (columnWidths[mod - 1] + columnWidths[mod]) / 2 * sign(!rtl);
+              }
+            }
+
+            ypos = Math.floor(i / cols) * lineHeight;
+            keyPositions[i] = {x: xpos, y: ypos};
+          }
+
+        } else {
+
+          if (rtl) {
+
+            xpos = maxWidth;
+
+            for (i = 0; i < keys; i += 1) {
+              if (xpos - keyWidthNoGutter(i) < 0) {
+                maxRowWidth = Math.max(maxRowWidth, keyWidthNoGutter(i));
+                xpos = maxWidth;
+                if (i) {
+                  rows += 1;
+                }
+              }
+              if (xpos - keyWidthNoGutter(i) > maxRowWidth) {
+                maxRowWidth = xpos - keyWidthNoGutter(i);
+              }
+              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
+              xpos -= keyWidth(i);
+            }
+
+          } else {
+
+            xpos = 0;
+
+            for (i = 0; i < keys; i += 1) {
+              if (i && xpos + keyWidthNoGutter(i) > maxWidth) {
+                xpos = 0;
+                rows += 1;
+              }
+              if (xpos + keyWidthNoGutter(i) > maxRowWidth) {
+                maxRowWidth = xpos + keyWidthNoGutter(i);
+              }
+              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
+              xpos += keyWidth(i);
+            }
+
+          }
+
+        }
+
+        if (!showMenu && (showAll || rows <= rowsCount)) {
+
+          legendOpen = 0;
+          collapsed = false;
+          useScroll = false;
+
+          legend
+            .width(margin.left + maxRowWidth + margin.right)
+            .height(margin.top + rows * lineHeight - lineSpacing + margin.bottom);
+
+          switch (align) {
+            case 'left':
+              shift = 0;
+              break;
+            case 'center':
+              shift = (containerWidth - legend.width()) / 2;
+              break;
+            case 'right':
+              shift = 0;
+              break;
+          }
+
+          clip
+            .attr('y', 0)
+            .attr('width', legend.width())
+            .attr('height', legend.height());
+
+          back
+            .attr('x', shift)
+            .attr('width', legend.width())
+            .attr('height', legend.height())
+            .attr('rx', 0)
+            .attr('ry', 0)
+            .attr('filter', 'none')
+            .style('display', 'inline')
+            .style('opacity', 0);
+
+          mask
+            .attr('clip-path', 'none')
+            .attr('transform', function(d, i) {
+              var xpos = shift + margin.left + (inline ? radius * sign(!rtl) : 0),
+                  ypos = margin.top + menuMargin.top;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            });
+
+          g
+            .style('opacity', 1)
+            .style('display', 'inline');
+
+          series
+            .attr('transform', function(d) {
+              var pos = keyPositions[d.seriesIndex];
+              return 'translate(' + pos.x + ',' + pos.y + ')';
+            });
+
+          series.select('rect')
+            .attr('x', function(d) {
+              var xpos = 0;
+              if (inline) {
+                xpos = (diameter + gutter) / 2 * sign(rtl);
+                xpos -= rtl ? keyWidth(d.seriesIndex) : 0;
+              } else {
+                xpos = keyWidth(d.seriesIndex) / -2;
+              }
+              return xpos;
+            })
+            .attr('width', function(d) {
+              return keyWidth(d.seriesIndex);
+            })
+            .attr('height', lineHeight);
+
+          circles
+            .attr('r', function(d) {
+              return d.type === 'dash' ? 0 : radius;
+            })
+            .attr('transform', function(d, i) {
+              var xpos = inline || type === 'bar' ? 0 : radius * 3 * sign(i);
+              return 'translate(' + xpos + ',0)';
+            });
+
+          lines
+            .attr('x1', function(d) {
+              return d.type === 'dash' ? radius * 8 : radius * 4;
+            })
+            .attr('transform', function(d) {
+              var xpos = radius * (d.type === 'dash' ? -4 : -2);
+              return 'translate(' + xpos + ',0)';
+            })
+            .style('stroke-dasharray', function(d) {
+              return d.type === 'dash' ? '8, 8' : 'none';
+            })
+            .style('stroke-dashoffset', -4);
+
+          texts
+            .attr('dy', inline ? '.36em' : '.71em')
+            .attr('text-anchor', position)
+            .attr('transform', function(d) {
+              var xpos = inline ? (radius + textGap) * sign(!rtl) : 0,
+                  ypos = inline ? 0 : (diameter + lineSpacing) / 2;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            });
+
+        } else {
+
+          collapsed = true;
+          useScroll = true;
+
+          legend
+            .width(menuMargin.left + d3.max(keyWidths) + diameter + textGap + menuMargin.right)
+            .height(margin.top + diameter + margin.top); //don't use bottom here because we want vertical centering
+
+          legendHeight = menuMargin.top + diameter * keys + spacing * (keys - 1) + menuMargin.bottom;
+          dropdownHeight = Math.min(containerHeight - legend.height(), legendHeight);
+
+          clip
+            .attr('x', 0.5 - menuMargin.top - radius)
+            .attr('y', 0.5 - menuMargin.top - radius)
+            .attr('width', legend.width())
+            .attr('height', dropdownHeight);
+
+          back
+            .attr('x', 0.5)
+            .attr('y', 0.5 + legend.height())
+            .attr('width', legend.width())
+            .attr('height', dropdownHeight)
+            .attr('rx', 2)
+            .attr('ry', 2)
+            .attr('filter', backFilter)
+            .style('opacity', legendOpen * 0.9)
+            .style('display', legendOpen ? 'inline' : 'none');
+
+          link
+            .attr('transform', function(d, i) {
+              var xpos = align === 'left' ? 0.5 : 0.5 + legend.width(),
+                  ypos = margin.top + radius;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            })
+            .style('opacity', 1);
+
+          mask
+            .attr('clip-path', 'url(#sc-edge-clip-' + id + ')')
+            .attr('transform', function(d, i) {
+              var xpos = menuMargin.left + radius,
+                  ypos = legend.height() + menuMargin.top + radius;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            });
+
+          g
+            .style('opacity', legendOpen)
+            .style('display', legendOpen ? 'inline' : 'none')
+            .attr('transform', function(d, i) {
+              var xpos = rtl ? d3.max(keyWidths) + radius : 0;
+              return 'translate(' + xpos + ',0)';
+            });
+
+          series
+            .attr('transform', function(d, i) {
+              var ypos = i * (diameter + spacing);
+              return 'translate(0,' + ypos + ')';
+            });
+
+          series.select('rect')
+            .attr('x', function(d) {
+              var w = (diameter + gutter) / 2 * sign(rtl);
+              w -= rtl ? keyWidth(d.seriesIndex) : 0;
+              return w;
+            })
+            .attr('width', function(d) {
+              return keyWidth(d.seriesIndex);
+            })
+            .attr('height', diameter + lineSpacing);
+
+          circles
+            .attr('r', function(d) {
+              return d.type === 'dash' ? 0 : d.type === 'line' ? radius - 2 : radius;
+            })
+            .attr('transform', '');
+
+          lines
+            .attr('x1', 16)
+            .attr('transform', 'translate(-8,0)')
+            .style('stroke-dasharray', function(d) {
+              return d.type === 'dash' ? '6, 4, 6' : 'none';
+            })
+            .style('stroke-dashoffset', 0);
+
+          texts
+            .attr('text-anchor', 'start')
+            .attr('dy', '.36em')
+            .attr('transform', function(d) {
+              var xpos = (radius + textGap) * sign(!rtl);
+              return 'translate(' + xpos + ',0)';
+            });
+
+        }
+
+        //------------------------------------------------------------
+        // Enable scrolling
+        if (scrollEnabled) {
+          var diff = dropdownHeight - legendHeight;
+
+          var assignScrollEvents = function(enable) {
+            if (enable) {
+
+              var zoom = d3.zoom()
+                    .on('zoom', panLegend);
+              var drag = d3.drag()
+                    .subject(utils.identity)
+                    .on('drag', panLegend);
+
+              back.call(zoom);
+              g.call(zoom);
+
+              back.call(drag);
+              g.call(drag);
+
+            } else {
+
+              back
+                  .on("mousedown.zoom", null)
+                  .on("mousewheel.zoom", null)
+                  .on("mousemove.zoom", null)
+                  .on("DOMMouseScroll.zoom", null)
+                  .on("dblclick.zoom", null)
+                  .on("touchstart.zoom", null)
+                  .on("touchmove.zoom", null)
+                  .on("touchend.zoom", null)
+                  .on("wheel.zoom", null);
+              g
+                  .on("mousedown.zoom", null)
+                  .on("mousewheel.zoom", null)
+                  .on("mousemove.zoom", null)
+                  .on("DOMMouseScroll.zoom", null)
+                  .on("dblclick.zoom", null)
+                  .on("touchstart.zoom", null)
+                  .on("touchmove.zoom", null)
+                  .on("touchend.zoom", null)
+                  .on("wheel.zoom", null);
+
+              back
+                  .on("mousedown.drag", null)
+                  .on("mousewheel.drag", null)
+                  .on("mousemove.drag", null)
+                  .on("DOMMouseScroll.drag", null)
+                  .on("dblclick.drag", null)
+                  .on("touchstart.drag", null)
+                  .on("touchmove.drag", null)
+                  .on("touchend.drag", null)
+                  .on("wheel.drag", null);
+              g
+                  .on("mousedown.drag", null)
+                  .on("mousewheel.drag", null)
+                  .on("mousemove.drag", null)
+                  .on("DOMMouseScroll.drag", null)
+                  .on("dblclick.drag", null)
+                  .on("touchstart.drag", null)
+                  .on("touchmove.drag", null)
+                  .on("touchend.drag", null)
+                  .on("wheel.drag", null);
+            }
+          };
+
+          var panLegend = function() {
+            var distance = 0,
+                overflowDistance = 0,
+                translate = '',
+                x = 0,
+                y = 0;
+
+            // don't fire on events other than zoom and drag
+            // we need click for handling legend toggle
+            if (d3.event) {
+              if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
+                x = d3.event.sourceEvent.deltaX || 0;
+                y = d3.event.sourceEvent.deltaY || 0;
+                distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
+              } else if (d3.event.type === 'drag') {
+                x = d3.event.dx || 0;
+                y = d3.event.dy || 0;
+                distance = y;
+              } else if (d3.event.type !== 'click') {
+                return 0;
+              }
+              overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
+            }
+
+            // reset value defined in panMultibar();
+            scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), 0);
+            translate = 'translate(' + (rtl ? d3.max(keyWidths) + radius : 0) + ',' + scrollOffset + ')';
+
+            if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
+              overflowHandler(overflowDistance);
+            }
+
+            g.attr('transform', translate);
+          };
+
+          assignScrollEvents(useScroll);
+        }
+
+      };
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      function displayMenu() {
+        back
+          .style('opacity', legendOpen * 0.9)
+          .style('display', legendOpen ? 'inline' : 'none');
+        g
+          .style('opacity', legendOpen)
+          .style('display', legendOpen ? 'inline' : 'none');
+        link
+          .text(legendOpen === 1 ? legend.strings().close : legend.strings().open);
+      }
+
+      dispatch.on('toggleMenu', function(d) {
+        d3.event.stopPropagation();
+        legendOpen = 1 - legendOpen;
+        displayMenu();
+      });
+
+      dispatch.on('closeMenu', function(d) {
+        if (legendOpen === 1) {
+          legendOpen = 0;
+          displayMenu();
+        }
+      });
+
+    });
+
+    return legend;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  legend.dispatch = dispatch;
+
+  legend.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
+    return legend;
+  };
+
+  legend.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = Math.round(_);
+    return legend;
+  };
+
+  legend.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = Math.round(_);
+    return legend;
+  };
+
+  legend.id = function(_) {
+    if (!arguments.length) {
+      return id;
+    }
+    id = _;
+    return legend;
+  };
+
+  legend.key = function(_) {
+    if (!arguments.length) {
+      return getKey;
+    }
+    getKey = _;
+    return legend;
+  };
+
+  legend.color = function(_) {
+    if (!arguments.length) {
+      return color;
+    }
+    color = utils.getColor(_);
+    return legend;
+  };
+
+  legend.classes = function(_) {
+    if (!arguments.length) {
+      return classes;
+    }
+    classes = _;
+    return legend;
+  };
+
+  legend.align = function(_) {
+    if (!arguments.length) {
+      return align;
+    }
+    align = _;
+    return legend;
+  };
+
+  legend.position = function(_) {
+    if (!arguments.length) {
+      return position;
+    }
+    position = _;
+    return legend;
+  };
+
+  legend.showAll = function(_) {
+    if (!arguments.length) { return showAll; }
+    showAll = _;
+    return legend;
+  };
+
+  legend.showMenu = function(_) {
+    if (!arguments.length) { return showMenu; }
+    showMenu = _;
+    return legend;
+  };
+
+  legend.collapsed = function(_) {
+    return collapsed;
+  };
+
+  legend.rowsCount = function(_) {
+    if (!arguments.length) {
+      return rowsCount;
+    }
+    rowsCount = _;
+    return legend;
+  };
+
+  legend.spacing = function(_) {
+    if (!arguments.length) {
+      return spacing;
+    }
+    spacing = _;
+    return legend;
+  };
+
+  legend.gutter = function(_) {
+    if (!arguments.length) {
+      return gutter;
+    }
+    gutter = _;
+    return legend;
+  };
+
+  legend.radius = function(_) {
+    if (!arguments.length) {
+      return radius;
+    }
+    radius = _;
+    return legend;
+  };
+
+  legend.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    strings = _;
+    return legend;
+  };
+
+  legend.equalColumns = function(_) {
+    if (!arguments.length) {
+      return equalColumns;
+    }
+    equalColumns = _;
+    return legend;
+  };
+
+  legend.enabled = function(_) {
+    if (!arguments.length) {
+      return enabled;
+    }
+    enabled = _;
+    return legend;
+  };
+
+  legend.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    return legend;
+  };
+
+  //============================================================
+
+
+  return legend;
+}
+
+function line() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var scatter = models.scatter();
 
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = 960,
@@ -4051,7 +4210,7 @@ var line$$1 = function() {
             .duration(duration)
             .ease(d3.easeLinear);
 
-      var id = scatter$$1.id();
+      var id = scatter.id();
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
@@ -4061,8 +4220,8 @@ var line$$1 = function() {
       //------------------------------------------------------------
       // Setup Scales
 
-      x = scatter$$1.xScale();
-      y = scatter$$1.yScale();
+      x = scatter.xScale();
+      y = scatter.yScale();
       // x0 = x.copy();
       // y0 = y.copy();
 
@@ -4123,11 +4282,11 @@ var line$$1 = function() {
       //------------------------------------------------------------
       // Points
 
-      scatter$$1
+      scatter
         .clipEdge(clipEdge)
         .width(availableWidth)
         .height(availableHeight);
-      scatter_wrap.call(scatter$$1);
+      scatter_wrap.call(scatter);
 
       //------------------------------------------------------------
       // Areas
@@ -4246,27 +4405,27 @@ var line$$1 = function() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = scatter$$1.dispatch;
-  chart.scatter = scatter$$1;
+  chart.dispatch = scatter.dispatch;
+  chart.scatter = scatter;
 
-  fc.rebind(chart, scatter$$1, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
+  fc.rebind(chart, scatter, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
 
   chart.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    scatter$$1.color(color);
+    scatter.color(color);
     return chart;
   };
   chart.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    scatter$$1.fill(fill);
+    scatter.fill(fill);
     return chart;
   };
   chart.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    scatter$$1.classes(classes);
+    scatter.classes(classes);
     return chart;
   };
   chart.gradient = function(_) {
@@ -4298,13 +4457,13 @@ var line$$1 = function() {
   chart.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    scatter$$1.x(_);
+    scatter.x(_);
     return chart;
   };
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
-    scatter$$1.y(_);
+    scatter.y(_);
     return chart;
   };
 
@@ -4316,7 +4475,7 @@ var line$$1 = function() {
   chart.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    scatter$$1.duration(_);
+    scatter.duration(_);
     return chart;
   };
 
@@ -4347,9 +4506,9 @@ var line$$1 = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var multiBar = function() {
+function multiBar() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -5288,9 +5447,9 @@ var multiBar = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var pie = function() {
+function pie() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -6221,9 +6380,9 @@ var pie = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var scatter = function() {
+function scatter() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -6944,9 +7103,9 @@ var scatter = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var scroll = function() {
+function scroll() {
 
   //============================================================
   // Public Variables
@@ -7383,9 +7542,9 @@ var scroll = function() {
   //============================================================
 
   return scroll;
-};
+}
 
-var stackedArea = function() {
+function stackeArea() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -7849,9 +8008,9 @@ var stackedArea = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var table = function() {
+function table() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -8141,9 +8300,9 @@ var table = function() {
 
 
   return chart;
-};
+}
 
-var tree = function() {
+function tree() {
 
   // issues: 1. zoom slider doesn't zoom on chart center
   // orientation
@@ -8752,9 +8911,9 @@ var tree = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var treemap = function() {
+function treemap() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -9259,838 +9418,29 @@ var treemap = function() {
 
 
   return chart;
+}
+
+/*-------------------
+       MODELS
+-------------------*/
+
+const models = {
+    axis: axis,
+    funnel: funnel,
+    gauge: gauge,
+    legend: legend,
+    line: line,
+    multiBar: multiBar,
+    pie: pie,
+    scatter: scatter,
+    scroll: scroll,
+    stackedArea: stackeArea,
+    table: table,
+    tree: tree,
+    treemap: treemap,
 };
 
-
-
-var models = Object.freeze({
-	legend: legend,
-	axis: axis,
-	funnel: funnel,
-	gauge: gauge,
-	line: line$$1,
-	multiBar: multiBar,
-	pie: pie,
-	scatter: scatter,
-	scroll: scroll,
-	stackedArea: stackedArea,
-	table: table,
-	tree: tree,
-	treemap: treemap
-});
-
-var bubbleChart = function() {
-
-  //============================================================
-  // Public Variables with Default Settings
-  //------------------------------------------------------------
-
-  var margin = {top: 10, right: 10, bottom: 10, left: 10},
-      width = null,
-      height = null,
-      showTitle = false,
-      showControls = false,
-      showLegend = true,
-      direction = 'ltr',
-      getX = function(d) { return d.x; },
-      getY = function(d) { return d.y; },
-      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
-      xDomain,
-      yDomain,
-      delay = 200,
-      duration = 0,
-      groupBy = function(d) { return d.y; },
-      filterBy = function(d) { return d.y; },
-      clipEdge = false, // if true, masks lines within x and y scale
-      seriesLength = 0,
-      reduceYTicks = false, // if false a tick will show for every data point
-      format = d3.timeFormat('%Y-%m-%d'),
-      tooltip = null,
-      tooltips = true,
-      x,
-      y,
-      state = {},
-      strings = {
-        legend: {close: 'Hide legend', open: 'Show legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
-
-  //============================================================
-  // Private Variables
-  //------------------------------------------------------------
-  var xValueFormat = function(d, labels, isDate) {
-          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
-            d : labels[parseInt(d, 10)] || d;
-          return isDate ? utils.dateFormat(val, 'MMM', chart.locality()) : val;
-      };
-  var yValueFormat = function(d, labels, isCurrency) {
-          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
-            d : labels[parseInt(d, 10)].key || d;
-          return utils.numberFormatSI(val, 2, isCurrency, chart.locality());
-      };
-
-  var scatter$$1 = scatter()
-        .padData(true)
-        .padDataOuter(-1)
-        .size(function(d) { return d.y; })
-        .sizeRange([256, 1024])
-        .singlePoint(true),
-      model = scatter$$1,
-      xAxis = axis(),
-      yAxis = axis(),
-      legend$$1 = legend()
-        .align('center')
-        .key(function(d) { return d.key + '%'; });
-
-  var tooltipContent = function(key, x, y, e, graph) {
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
-      };
-
-  var showTooltip = function(eo, offsetElement, properties) {
-    var key = eo.series.key,
-        x = eo.point.x,
-        y = eo.point.y,
-        content = tooltipContent(key, x, y, eo, chart),
-        gravity = eo.value < 0 ? 'n' : 's';
-
-    return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
-  };
-
-  var seriesClick = function(data, e, chart) { return; };
-
-  //============================================================
-
-  function chart(selection) {
-
-    selection.each(function(chartData) {
-
-      var that = this,
-          container = d3.select(this),
-          modelClass = 'bubble';
-
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
-
-      var containerWidth = parseInt(container.style('width'), 10),
-          containerHeight = parseInt(container.style('height'), 10);
-
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
-
-      var modelData,
-          timeExtent,
-          xD,
-          yD,
-          yValues;
-
-      chart.update = function() {
-        container.transition().duration(duration).call(chart);
-      };
-
-      chart.container = this;
-
-      //------------------------------------------------------------
-      // Private method for displaying no data message.
-
-      function displayNoData(d) {
-        var hasData = d && d.length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
-      }
-
-      // Check to see if there's nothing to show.
-      if (displayNoData(data)) {
-        return chart;
-      }
-
-      //------------------------------------------------------------
-      // Process data
-
-      // set title display option
-      showTitle = showTitle && properties.title;
-
-      function getTimeDomain(data) {
-        var timeExtent =
-              d3.extent(
-                d3.merge(
-                  data.map(function(d) {
-                    return d.values.map(function(d, i) {
-                      return d3.timeParse('%Y-%m-%d')(getX(d));
-                    });
-                  })
-                )
-              );
-        var timeRange = [
-          d3.timeMonth.floor(timeExtent[0]),
-          d3.timeDay.offset(d3.timeMonth.ceil(timeExtent[1]), -1)
-        ];
-        return timeRange;
-      }
-
-      // Calculate the x-axis ticks
-      function getTimeTicks(timeDomain) {
-        function daysInMonth(date) {
-          return 32 - new Date(date.getFullYear(), date.getMonth(), 32).getDate();
-        }
-        var timeRange = d3.timeMonth.range(timeDomain[0], timeDomain[1]);
-        var timeTicks =
-              timeRange.map(function(d) {
-                return d3.timeDay.offset(d3.timeMonth.floor(d), daysInMonth(d) / 2 - 1);
-              });
-        return timeTicks;
-      }
-
-      // Group data by groupBy function to prep data for calculating y-axis groups
-      // and y scale value for points
-      function getGroupTicks(data) {
-
-        var groupedData = d3.nest()
-              .key(groupBy)
-              .entries(data);
-
-        // Calculate y scale parameters
-        var gHeight = 1000 / groupedData.length,
-            gOffset = gHeight * 0.25,
-            gDomain = [0, 1],
-            gRange = [0, 1],
-            gScale = d3.scaleLinear().domain(gDomain).range(gRange),
-            yValues = [],
-            total = 0;
-
-        // Calculate total for each data group and
-        // point y value
-        groupedData
-          .map(function(s, i) {
-            s.total = 0;
-
-            s.values = s.values.sort(function(a, b) {
-                return b.y < a.y ? -1 : b.y > a.y ? 1 : 0;
-              })
-              .map(function(p) {
-                s.total += p.y;
-                return p;
-              });
-
-            s.group = i;
-            return s;
-          })
-          .sort(function(a, b) {
-            return a.total < b.total ? -1 : a.total > b.total ? 1 : 0;
-          })
-          .map(function(s, i) {
-            total += s.total;
-
-            gDomain = d3.extent(s.values.map(function(p) { return p.y; }));
-            gRange = [gHeight * i + gOffset, gHeight * (i + 1) - gOffset];
-            gScale.domain(gDomain).range(gRange);
-
-            s.values = s.values
-              .map(function(p) {
-                p.group = s.group;
-                p.opportunity = p.y;
-                p.y = gScale(p.opportunity);
-                return p;
-              });
-
-            yValues.push({y: d3.min(s.values.map(function(p) { return p.y; })), key: s.key});
-
-            return s;
-          });
-
-        return yValues;
-      }
-
-      // set state.disabled
-      state.disabled = data.map(function(d) { return !!d.disabled; });
-
-      // Now that group calculations are done,
-      // group the data by filter so that legend filters
-      var nestedData = d3.nest()
-        .key(filterBy)
-        .entries(data);
-
-      //add series index to each data point for reference
-      modelData = nestedData
-        .sort(function(a, b) {
-          //sort legend by key
-          return parseInt(a.key, 10) < parseInt(b.key, 10) ? -1 : parseInt(a.key, 10) > parseInt(b.key, 10) ? 1 : 0;
-        })
-        .map(function(d, i) {
-          d.seriesIndex = i;
-          d.classes = d.values[0].classes;
-          d.color = d.values[0].color;
-          return d;
-        });
-
-      xD = getTimeDomain(modelData);
-
-      yValues = getGroupTicks(data);
-
-      yD = d3.extent(
-            d3.merge(
-              modelData.map(function(d) {
-                return d.values.map(function(d, i) {
-                  return getY(d, i);
-                });
-              })
-            ).concat(forceY)
-          );
-
-      //------------------------------------------------------------
-      // Setup Scales and Axes
-
-      x = scatter$$1.xScale();
-      y = scatter$$1.yScale();
-
-      xAxis
-        .orient('bottom')
-        .valueFormat(xValueFormat)
-        .tickSize(0)
-        .tickPadding(4)
-        .highlightZero(false)
-        .showMaxMin(false)
-        .ticks(d3.timeMonths, 1)
-        .scale(x)
-        .tickValues(getTimeTicks(xD));
-      yAxis
-        .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(7)
-        .highlightZero(false)
-        .showMaxMin(false)
-        .scale(y)
-        .ticks(yValues.length)
-        .tickValues(yValues.map(function(d, i) {
-          return yValues[i].y;
-        }));
-
-      //------------------------------------------------------------
-      // Main chart draw
-
-      chart.render = function() {
-
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
-
-        // Chart layout variables
-        var renderWidth, renderHeight,
-            availableWidth, availableHeight,
-            innerMargin,
-            innerWidth, innerHeight;
-
-        // Chart layout variables
-        renderWidth = width || containerWidth || 960;
-        renderHeight = height || containerHeight || 400;
-        availableWidth = renderWidth - margin.left - margin.right;
-        availableHeight = renderHeight - margin.top - margin.bottom;
-        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-
-        // Header variables
-        var maxBubbleSize = Math.sqrt(scatter$$1.sizeRange()[1] / Math.PI),
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            legendHeight = 0,
-            trans = '';
-
-        //------------------------------------------------------------
-        // Setup containers and skeleton of chart
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
-        wrap.select('.sc-background')
-          .attr('width', renderWidth)
-          .attr('height', renderHeight);
-
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
-        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
-        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
-
-        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
-        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-        //------------------------------------------------------------
-        // Title & Legend
-
-        title_wrap.select('.sc-title').remove();
-
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
-
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showLegend) {
-          legend$$1
-            .id('legend_' + chart.id())
-            .strings(chart.strings().legend)
-            .align('center')
-            .height(availableHeight - headerHeight);
-          legend_wrap
-            .datum(modelData)
-            .call(legend$$1);
-          legend$$1
-            .arrange(availableWidth);
-
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend$$1.collapsed() ? 0 : availableWidth - legend$$1.width(),
-              ypos = titleBBox.height;
-
-          if (legendTop) {
-            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = - legend$$1.margin().top;
-          }
-
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-
-          headerHeight += legendTop ? 12 : legend$$1.height();
-        }
-
-        // Recalc inner margins based on legend and control height
-        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
-
-        //------------------------------------------------------------
-        // Main Chart Components
-
-        model
-          .width(innerWidth)
-          .height(innerHeight)
-          .id(chart.id())
-          .xDomain(xD)
-          .yDomain(yD);
-
-        model_wrap
-          .datum(modelData.filter(function(d) {
-            return !d.disabled;
-          }))
-          .transition().duration(duration)
-            .call(model);
-
-        innerMargin.top += maxBubbleSize;
-
-        //------------------------------------------------------------
-        // Setup Axes
-
-        var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
-            xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
-
-        function setInnerMargins() {
-          innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
-          innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
-          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
-          innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
-        }
-
-        function setInnerDimensions() {
-          innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-          // Recalc chart dimensions and scales based on new inner dimensions
-          scatter$$1.resetDimensions(innerWidth, innerHeight);
-        }
-
-        // Y-Axis
-        yAxis
-          .margin(innerMargin)
-          .tickFormat(function(d, i) {
-            var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
-            return utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
-          });
-        yAxis_wrap
-          .call(yAxis);
-        // reset inner dimensions
-        yAxisMargin = yAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
-
-        // X-Axis
-        xAxis
-          .tickSize(0)
-          .margin(innerMargin)
-          .tickFormat(function(d) {
-            return xAxis.valueFormat()(d, null, xIsDatetime);
-          });
-        xAxis_wrap
-          .call(xAxis);
-
-        // reset inner dimensions
-        xAxisMargin = xAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
-
-        // recall y-axis to set final size based on new dimensions
-        yAxis
-          .tickSize(-innerWidth, 0)
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
-        yAxis_wrap.select('path.domain')
-          .attr('d', "M0,0V0.5H0V" + innerHeight);
-
-        // final call to lines based on new dimensions
-        model_wrap
-          .transition().duration(chart.delay())
-            .call(scatter$$1);
-
-        //------------------------------------------------------------
-        // Final repositioning
-
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
-
-        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
-        trans += innerMargin.top;
-        yAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
-
-        model_wrap
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
-
-      };
-
-      //============================================================
-
-      chart.render();
-
-      //============================================================
-      // Event Handling/Dispatching (in chart's scope)
-      //------------------------------------------------------------
-
-      legend$$1.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
-
-        if (!modelData.filter(function(d) { return !d.disabled; }).length) {
-          modelData.map(function(d) {
-            d.disabled = false;
-            container.selectAll('.sc-series').classed('disabled', false);
-            return d;
-          });
-        }
-
-        state.disabled = modelData.map(function(d) { return !!d.disabled; });
-        dispatch.call('stateChange', this, state);
-
-        container.transition().call(chart.render);
-      });
-
-      dispatch.on('tooltipShow', function(eo) {
-        if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode);
-        }
-      });
-
-      dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
-        }
-      });
-
-      dispatch.on('tooltipHide', function() {
-        if (tooltips) {
-          sucrose.tooltip.cleanup();
-        }
-      });
-
-      // Update chart from a state object passed to event handler
-      dispatch.on('changeState', function(eo) {
-        if (typeof eo.disabled !== 'undefined') {
-          data.forEach(function(series, i) {
-            series.disabled = eo.disabled[i];
-          });
-          state.disabled = eo.disabled;
-        }
-
-        container.transition().call(chart);
-      });
-
-      dispatch.on('chartClick', function() {
-        dispatch.call('tooltipHide', this);
-        if (legend$$1.enabled()) {
-          legend$$1.dispatch.call('closeMenu', this);
-        }
-      });
-
-      model.dispatch.on('elementClick', function(eo) {
-        dispatch.call('chartClick', this);
-        seriesClick(data, eo, chart);
-      });
-
-    });
-
-    return chart;
-  }
-
-  //============================================================
-  // Event Handling/Dispatching (out of chart's scope)
-  //------------------------------------------------------------
-
-  model.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.call('tooltipShow', this, eo);
-  });
-
-  model.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.call('tooltipMove', this, e);
-  });
-
-  model.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.call('tooltipHide', this);
-  });
-
-  //============================================================
-  // Expose Public Variables
-  //------------------------------------------------------------
-
-  // expose chart's sub-components
-  chart.dispatch = dispatch;
-  chart.scatter = scatter$$1;
-  chart.legend = legend$$1;
-  chart.xAxis = xAxis;
-  chart.yAxis = yAxis;
-
-  fc.rebind(chart, scatter$$1, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, scatter$$1, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
-  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
-
-  chart.colorData = function(_) {
-    var type = arguments[0],
-        params = arguments[1] || {};
-    var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
-        };
-    var classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex;
-        };
-
-    switch (type) {
-      case 'graduated':
-        color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
-        };
-        break;
-      case 'class':
-        color = function() {
-          return 'inherit';
-        };
-        classes = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
-          iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
-        };
-        break;
-      case 'data':
-        color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
-        };
-        classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
-        };
-        break;
-    }
-
-    var fill = (!params.gradient) ? color : function(d, i) {
-      return series.gradient(d, d.seriesIndex);
-    };
-
-    model.color(color);
-    model.fill(fill);
-    model.classes(classes);
-
-    legend$$1.color(color);
-    legend$$1.classes(classes);
-
-    return chart;
-  };
-
-  chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        margin[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
-    width = _;
-    return chart;
-  };
-
-  chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
-    height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
-    showLegend = _;
-    return chart;
-  };
-
-  chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
-    tooltip = _;
-    return chart;
-  };
-
-  chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
-    tooltips = _;
-    return chart;
-  };
-
-  chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
-    tooltipContent = _;
-    return chart;
-  };
-
-  chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
-    state = _;
-    return chart;
-  };
-
-  chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
-    direction = _;
-    // model.direction(_);
-    xAxis.direction(_);
-    yAxis.direction(_);
-    legend$$1.direction(_);
-    return chart;
-  };
-
-  chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
-    duration = _;
-    model.duration(_);
-    return chart;
-  };
-
-  chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
-    delay = _;
-    model.delay(_);
-    return chart;
-  };
-
-  chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
-    seriesClick = _;
-    return chart;
-  };
-
-  chart.colorFill = function(_) {
-    return chart;
-  };
-
-  chart.groupBy = function(_) {
-    if (!arguments.length) {
-      return groupBy;
-    }
-    groupBy = _;
-    return chart;
-  };
-
-  chart.filterBy = function(_) {
-    if (!arguments.length) {
-      return filterBy;
-    }
-    filterBy = _;
-    return chart;
-  };
-
-  //============================================================
-
-  return chart;
-};
-
-var funnelChart = function() {
+function funnelChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -10105,7 +9455,6 @@ var funnelChart = function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      tooltip = null,
       tooltips = true,
       state = {},
       strings = {
@@ -10120,10 +9469,12 @@ var funnelChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var funnel$$1 = funnel(),
-      model = funnel$$1,
-      controls = legend().align('center'),
-      legend$$1 = legend().align('center');
+  var funnel = models.funnel(),
+      model = funnel,
+      controls = models.legend().align('center'),
+      legend = models.legend().align('center');
+
+  var tooltip$$1 = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -10136,7 +9487,7 @@ var funnelChart = function() {
             x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
 
-        return tooltip.show(eo.e, content, null, null, offsetElement);
+        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart) { return; };
@@ -10344,33 +9695,33 @@ var funnelChart = function() {
         }
 
         if (showLegend) {
-          legend$$1
+          legend
             .id('legend_' + chart.id())
             .strings(chart.strings().legend)
             .align('center')
             .height(availableHeight - innerMargin.top);
           legend_wrap
             .datum(data)
-            .call(legend$$1);
-          legend$$1
+            .call(legend);
+          legend
             .arrange(availableWidth);
 
           var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend$$1.collapsed() ? 0 : availableWidth - legend$$1.width(),
+              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
               ypos = titleBBox.height;
 
           if (legendTop) {
-            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
-            ypos = - legend$$1.margin().top;
+            ypos = - legend.margin().top;
           }
 
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
-          legendHeight = legendTop ? 12 : legend$$1.height() - (showTitle ? 0 : legend$$1.margin().top);
+          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
         }
 
         // Recalc inner margins based on title and legend height
@@ -10402,7 +9753,7 @@ var funnelChart = function() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend$$1.dispatch.on('legendClick', function(d, i) {
+      legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
         d.active = false;
 
@@ -10430,19 +9781,19 @@ var funnelChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, properties);
+          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          tooltip.position(that.parentNode, tooltip, e);
+        if (tooltip$$1) {
+          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          tooltip.cleanup();
+          sucrose.tooltip.cleanup();
         }
       });
 
@@ -10463,8 +9814,8 @@ var funnelChart = function() {
         if (controls.enabled()) {
           controls.dispatch.call('closeMenu', this);
         }
-        if (legend$$1.enabled()) {
-          legend$$1.dispatch.call('closeMenu', this);
+        if (legend.enabled()) {
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -10500,13 +9851,13 @@ var funnelChart = function() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.funnel = funnel$$1;
-  chart.legend = legend$$1;
+  chart.funnel = funnel;
+  chart.legend = legend;
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, funnel$$1, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
+  fc.rebind(chart, funnel, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -10553,8 +9904,8 @@ var funnelChart = function() {
     model.fill(fill);
     model.classes(classes);
 
-    legend$$1.color(color);
-    legend$$1.classes(classes);
+    legend.color(color);
+    legend.classes(classes);
 
     return chart;
   };
@@ -10599,12 +9950,6 @@ var funnelChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) { return tooltips; }
     tooltips = _;
@@ -10637,7 +9982,7 @@ var funnelChart = function() {
     if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
-    legend$$1.direction(_);
+    legend.direction(_);
     controls.direction(_);
     return chart;
   };
@@ -10671,9 +10016,813 @@ var funnelChart = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var gaugeChart = function() {
+function bubbleChart() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
+      xDomain,
+      yDomain,
+      delay = 200,
+      duration = 0,
+      groupBy = function(d) { return d.y; },
+      filterBy = function(d) { return d.y; },
+      clipEdge = false, // if true, masks lines within x and y scale
+      seriesLength = 0,
+      reduceYTicks = false, // if false a tick will show for every data point
+      format = d3.timeFormat('%Y-%m-%d'),
+      tooltips = true,
+      x,
+      y,
+      state = {},
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+  var xValueFormat = function(d, labels, isDate) {
+          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
+            d : labels[parseInt(d, 10)] || d;
+          return isDate ? utils.dateFormat(val, 'MMM', chart.locality()) : val;
+      };
+  var yValueFormat = function(d, labels, isCurrency) {
+          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
+            d : labels[parseInt(d, 10)].key || d;
+          return utils.numberFormatSI(val, 2, isCurrency, chart.locality());
+      };
+
+  var scatter = models.scatter()
+        .padData(true)
+        .padDataOuter(-1)
+        .size(function(d) { return d.y; })
+        .sizeRange([256, 1024])
+        .singlePoint(true),
+      model = scatter,
+      xAxis = models.axis(),
+      yAxis = models.axis(),
+      legend = models.legend()
+        .align('center')
+        .key(function(d) { return d.key + '%'; });
+
+  var tooltip$$1 = null;
+
+  var tooltipContent = function(key, x, y, e, graph) {
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
+
+  var showTooltip = function(eo, offsetElement, properties) {
+    var key = eo.series.key,
+        x = eo.point.x,
+        y = eo.point.y,
+        content = tooltipContent(key, x, y, eo, chart),
+        gravity = eo.value < 0 ? 'n' : 's';
+
+    return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+  };
+
+  var seriesClick = function(data, e, chart) { return; };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          modelClass = 'bubble';
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var modelData,
+          timeExtent,
+          xD,
+          yD,
+          yValues;
+
+      chart.update = function() {
+        container.transition().duration(duration).call(chart);
+      };
+
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      // set title display option
+      showTitle = showTitle && properties.title;
+
+      function getTimeDomain(data) {
+        var timeExtent =
+              d3.extent(
+                d3.merge(
+                  data.map(function(d) {
+                    return d.values.map(function(d, i) {
+                      return d3.timeParse('%Y-%m-%d')(getX(d));
+                    });
+                  })
+                )
+              );
+        var timeRange = [
+          d3.timeMonth.floor(timeExtent[0]),
+          d3.timeDay.offset(d3.timeMonth.ceil(timeExtent[1]), -1)
+        ];
+        return timeRange;
+      }
+
+      // Calculate the x-axis ticks
+      function getTimeTicks(timeDomain) {
+        function daysInMonth(date) {
+          return 32 - new Date(date.getFullYear(), date.getMonth(), 32).getDate();
+        }
+        var timeRange = d3.timeMonth.range(timeDomain[0], timeDomain[1]);
+        var timeTicks =
+              timeRange.map(function(d) {
+                return d3.timeDay.offset(d3.timeMonth.floor(d), daysInMonth(d) / 2 - 1);
+              });
+        return timeTicks;
+      }
+
+      // Group data by groupBy function to prep data for calculating y-axis groups
+      // and y scale value for points
+      function getGroupTicks(data) {
+
+        var groupedData = d3.nest()
+              .key(groupBy)
+              .entries(data);
+
+        // Calculate y scale parameters
+        var gHeight = 1000 / groupedData.length,
+            gOffset = gHeight * 0.25,
+            gDomain = [0, 1],
+            gRange = [0, 1],
+            gScale = d3.scaleLinear().domain(gDomain).range(gRange),
+            yValues = [],
+            total = 0;
+
+        // Calculate total for each data group and
+        // point y value
+        groupedData
+          .map(function(s, i) {
+            s.total = 0;
+
+            s.values = s.values.sort(function(a, b) {
+                return b.y < a.y ? -1 : b.y > a.y ? 1 : 0;
+              })
+              .map(function(p) {
+                s.total += p.y;
+                return p;
+              });
+
+            s.group = i;
+            return s;
+          })
+          .sort(function(a, b) {
+            return a.total < b.total ? -1 : a.total > b.total ? 1 : 0;
+          })
+          .map(function(s, i) {
+            total += s.total;
+
+            gDomain = d3.extent(s.values.map(function(p) { return p.y; }));
+            gRange = [gHeight * i + gOffset, gHeight * (i + 1) - gOffset];
+            gScale.domain(gDomain).range(gRange);
+
+            s.values = s.values
+              .map(function(p) {
+                p.group = s.group;
+                p.opportunity = p.y;
+                p.y = gScale(p.opportunity);
+                return p;
+              });
+
+            yValues.push({y: d3.min(s.values.map(function(p) { return p.y; })), key: s.key});
+
+            return s;
+          });
+
+        return yValues;
+      }
+
+      // set state.disabled
+      state.disabled = data.map(function(d) { return !!d.disabled; });
+
+      // Now that group calculations are done,
+      // group the data by filter so that legend filters
+      var nestedData = d3.nest()
+        .key(filterBy)
+        .entries(data);
+
+      //add series index to each data point for reference
+      modelData = nestedData
+        .sort(function(a, b) {
+          //sort legend by key
+          return parseInt(a.key, 10) < parseInt(b.key, 10) ? -1 : parseInt(a.key, 10) > parseInt(b.key, 10) ? 1 : 0;
+        })
+        .map(function(d, i) {
+          d.seriesIndex = i;
+          d.classes = d.values[0].classes;
+          d.color = d.values[0].color;
+          return d;
+        });
+
+      xD = getTimeDomain(modelData);
+
+      yValues = getGroupTicks(data);
+
+      yD = d3.extent(
+            d3.merge(
+              modelData.map(function(d) {
+                return d.values.map(function(d, i) {
+                  return getY(d, i);
+                });
+              })
+            ).concat(forceY)
+          );
+
+      //------------------------------------------------------------
+      // Setup Scales and Axes
+
+      x = scatter.xScale();
+      y = scatter.yScale();
+
+      xAxis
+        .orient('bottom')
+        .valueFormat(xValueFormat)
+        .tickSize(0)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false)
+        .ticks(d3.timeMonths, 1)
+        .scale(x)
+        .tickValues(getTimeTicks(xD));
+      yAxis
+        .orient('left')
+        .valueFormat(yValueFormat)
+        .tickPadding(7)
+        .highlightZero(false)
+        .showMaxMin(false)
+        .scale(y)
+        .ticks(yValues.length)
+        .tickValues(yValues.map(function(d, i) {
+          return yValues[i].y;
+        }));
+
+      //------------------------------------------------------------
+      // Main chart draw
+
+      chart.render = function() {
+
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        // Chart layout variables
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        // Header variables
+        var maxBubbleSize = Math.sqrt(scatter.sizeRange()[1] / Math.PI),
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            legendHeight = 0,
+            trans = '';
+
+        //------------------------------------------------------------
+        // Setup containers and skeleton of chart
+
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+        wrap_entr.append('rect').attr('class', 'sc-background')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('fill', '#FFF');
+
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        wrap_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = wrap.select('.sc-title-wrap');
+
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = wrap.select('.sc-legend-wrap');
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        //------------------------------------------------------------
+        // Title & Legend
+
+        title_wrap.select('.sc-title').remove();
+
+        if (showTitle) {
+          title_wrap
+            .append('text')
+              .attr('class', 'sc-title')
+              .attr('x', direction === 'rtl' ? availableWidth : 0)
+              .attr('y', 0)
+              .attr('dy', '.75em')
+              .attr('text-anchor', 'start')
+              .attr('stroke', 'none')
+              .attr('fill', 'black')
+              .text(properties.title);
+
+          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
+
+        if (showLegend) {
+          legend
+            .id('legend_' + chart.id())
+            .strings(chart.strings().legend)
+            .align('center')
+            .height(availableHeight - headerHeight);
+          legend_wrap
+            .datum(modelData)
+            .call(legend);
+          legend
+            .arrange(availableWidth);
+
+          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+              legendSpace = availableWidth - titleBBox.width - 6,
+              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
+              ypos = titleBBox.height;
+
+          if (legendTop) {
+            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
+          } else if (!showTitle) {
+            ypos = - legend.margin().top;
+          }
+
+          legend_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+
+          headerHeight += legendTop ? 12 : legend.height();
+        }
+
+        // Recalc inner margins based on legend and control height
+        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+
+        //------------------------------------------------------------
+        // Main Chart Components
+
+        model
+          .width(innerWidth)
+          .height(innerHeight)
+          .id(chart.id())
+          .xDomain(xD)
+          .yDomain(yD);
+
+        model_wrap
+          .datum(modelData.filter(function(d) {
+            return !d.disabled;
+          }))
+          .transition().duration(duration)
+            .call(model);
+
+        innerMargin.top += maxBubbleSize;
+
+        //------------------------------------------------------------
+        // Setup Axes
+
+        var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
+            xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
+
+        function setInnerMargins() {
+          innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
+          innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
+          innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+        }
+
+        function setInnerDimensions() {
+          innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+          // Recalc chart dimensions and scales based on new inner dimensions
+          scatter.resetDimensions(innerWidth, innerHeight);
+        }
+
+        // Y-Axis
+        yAxis
+          .margin(innerMargin)
+          .tickFormat(function(d, i) {
+            var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
+            return utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
+          });
+        yAxis_wrap
+          .call(yAxis);
+        // reset inner dimensions
+        yAxisMargin = yAxis.margin();
+        setInnerMargins();
+        setInnerDimensions();
+
+        // X-Axis
+        xAxis
+          .tickSize(0)
+          .margin(innerMargin)
+          .tickFormat(function(d) {
+            return xAxis.valueFormat()(d, null, xIsDatetime);
+          });
+        xAxis_wrap
+          .call(xAxis);
+
+        // reset inner dimensions
+        xAxisMargin = xAxis.margin();
+        setInnerMargins();
+        setInnerDimensions();
+
+        // recall y-axis to set final size based on new dimensions
+        yAxis
+          .tickSize(-innerWidth, 0)
+          .margin(innerMargin);
+        yAxis_wrap
+          .call(yAxis);
+        yAxis_wrap.select('path.domain')
+          .attr('d', "M0,0V0.5H0V" + innerHeight);
+
+        // final call to lines based on new dimensions
+        model_wrap
+          .transition().duration(chart.delay())
+            .call(scatter);
+
+        //------------------------------------------------------------
+        // Final repositioning
+
+        trans = innerMargin.left + ',';
+        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
+        trans += innerMargin.top;
+        yAxis_wrap
+          .attr('transform', 'translate(' + trans + ')');
+
+        model_wrap
+          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      legend.dispatch.on('legendClick', function(d, i) {
+        d.disabled = !d.disabled;
+
+        if (!modelData.filter(function(d) { return !d.disabled; }).length) {
+          modelData.map(function(d) {
+            d.disabled = false;
+            container.selectAll('.sc-series').classed('disabled', false);
+            return d;
+          });
+        }
+
+        state.disabled = modelData.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
+
+        container.transition().call(chart.render);
+      });
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          tooltip$$1 = showTooltip(eo, that.parentNode);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip$$1) {
+          sucrose.tooltip.position(that.parentNode, tooltip$$1, e, 's');
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          data.forEach(function(series, i) {
+            series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        container.transition().call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        dispatch.call('tooltipHide', this);
+        if (legend.enabled()) {
+          legend.dispatch.call('closeMenu', this);
+        }
+      });
+
+      model.dispatch.on('elementClick', function(eo) {
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart);
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  model.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.scatter = scatter;
+  chart.legend = legend;
+  chart.xAxis = xAxis;
+  chart.yAxis = yAxis;
+
+  fc.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          return utils.defaultColor()(d, d.seriesIndex);
+        };
+    var classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return 'inherit';
+        };
+        classes = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+        };
+        break;
+      case 'data':
+        color = function(d, i) {
+          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+        };
+        classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var fill = (!params.gradient) ? color : function(d, i) {
+      return series.gradient(d, d.seriesIndex);
+    };
+
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
+
+    legend.color(color);
+    legend.classes(classes);
+
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) {
+      return showTitle;
+    }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) {
+      return showLegend;
+    }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) {
+      return tooltips;
+    }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) {
+      return tooltipContent;
+    }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) {
+      return state;
+    }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    // model.direction(_);
+    xAxis.direction(_);
+    yAxis.direction(_);
+    legend.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) {
+      return delay;
+    }
+    delay = _;
+    model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
+    return chart;
+  };
+
+  chart.groupBy = function(_) {
+    if (!arguments.length) {
+      return groupBy;
+    }
+    groupBy = _;
+    return chart;
+  };
+
+  chart.filterBy = function(_) {
+    if (!arguments.length) {
+      return filterBy;
+    }
+    filterBy = _;
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+}
+
+function gaugeChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -10687,7 +10836,6 @@ var gaugeChart = function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      tooltip = null,
       tooltips = true,
       state = {},
       x,
@@ -10703,9 +10851,11 @@ var gaugeChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var gauge$$1 = gauge(),
-      model = gauge$$1,
-      legend$$1 = legend().align('center');
+  var gauge = models.gauge(),
+      model = gauge,
+      legend = models.legend().align('center');
+
+  var tooltip$$1 = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -10890,33 +11040,33 @@ var gaugeChart = function() {
         }
 
         if (showLegend) {
-          legend$$1
+          legend
             .id('legend_' + chart.id())
             .strings(chart.strings().legend)
             .align('center')
             .height(availableHeight - innerMargin.top);
           legend_wrap
             .datum(data)
-            .call(legend$$1);
-          legend$$1
+            .call(legend);
+          legend
             .arrange(availableWidth);
 
           var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend$$1.collapsed() ? 0 : availableWidth - legend$$1.width(),
+              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
               ypos = titleBBox.height;
 
           if (legendTop) {
-            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
-            ypos = - legend$$1.margin().top;
+            ypos = - legend.margin().top;
           }
 
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
-          legendHeight = legendTop ? 12 : legend$$1.height() - (showTitle ? 0 : legend$$1.margin().top);
+          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
         }
 
         // Recalc inner margins based on title and legend height
@@ -10951,13 +11101,13 @@ var gaugeChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, properties);
+          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e);
+        if (tooltip$$1) {
+          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
         }
       });
 
@@ -10980,8 +11130,8 @@ var gaugeChart = function() {
       });
 
       dispatch.on('chartClick', function() {
-        if (legend$$1.enabled()) {
-          legend$$1.dispatch.call('closeMenu', this);
+        if (legend.enabled()) {
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -11012,8 +11162,8 @@ var gaugeChart = function() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.gauge = gauge$$1;
-  chart.legend = legend$$1;
+  chart.gauge = gauge;
+  chart.legend = legend;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
@@ -11063,8 +11213,8 @@ var gaugeChart = function() {
     model.fill(fill);
     model.classes(classes);
 
-    legend$$1.color(color);
-    legend$$1.classes(classes);
+    legend.color(color);
+    legend.classes(classes);
 
     return chart;
   };
@@ -11103,12 +11253,6 @@ var gaugeChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) { return tooltips; }
     tooltips = _;
@@ -11141,7 +11285,7 @@ var gaugeChart = function() {
     if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
-    legend$$1.direction(_);
+    legend.direction(_);
     return chart;
   };
 
@@ -11162,9 +11306,9 @@ var gaugeChart = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var globe = function() {
+function globeChart() {
 
   // http://cldr.unicode.org/
   // http://www.geonames.org/countries/
@@ -11196,7 +11340,6 @@ var globe = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      tooltip = null,
       tooltips = true,
       initialTilt = 0,
       initialRotate = 100,
@@ -11229,6 +11372,8 @@ var globe = function() {
   var graticule = d3.geoGraticule();
   var colorLimit = 0;
 
+  var tooltip$$1 = null;
+
   function tooltipContent(d) {
     return '<p><b>' + d.name + '</b></p>' +
            '<p><b>Amount:</b> $' + d3.format(',.0f')(d.amount) + '</p>';
@@ -11236,7 +11381,7 @@ var globe = function() {
 
   function showTooltip(eo, offsetElement) {
     var content = tooltipContent(eo);
-    tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+    tooltip$$1 = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
   }
 
 
@@ -11641,8 +11786,8 @@ var globe = function() {
         });
 
       dispatch.on('tooltipMove', function(e) {
-          if (tooltip) {
-            sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+          if (tooltip$$1) {
+            sucrose.tooltip.position(that.parentNode, tooltip$$1, e, 's');
           }
         });
 
@@ -11781,14 +11926,6 @@ var globe = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) {
       return tooltips;
@@ -11901,9 +12038,9 @@ var globe = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var lineChart = function() {
+function lineChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -11918,7 +12055,6 @@ var lineChart = function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      tooltip = null,
       tooltips = true,
       x,
       y,
@@ -11936,16 +12072,18 @@ var lineChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var lines = line$$1()
+  var lines = models.line()
         .clipEdge(true),
       model = lines,
-      xAxis = axis(),
-      yAxis = axis(),
-      legend$$1 = legend()
+      xAxis = models.axis(),
+      yAxis = models.axis(),
+      legend = models.legend()
         .align('right'),
-      controls = legend()
+      controls = models.legend()
         .align('left')
         .color(['#444']);
+
+  var tooltip$$1 = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -11958,7 +12096,7 @@ var lineChart = function() {
             y = lines.y()(eo.point, eo.pointIndex),
             content = tooltipContent(key, x, y, eo, chart);
 
-        tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        tooltip$$1 = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   //============================================================
@@ -12300,16 +12438,16 @@ var lineChart = function() {
           maxControlsWidth = controls.calcMaxWidth();
         }
         if (showLegend) {
-          legend$$1
+          legend
             .id('legend_' + chart.id())
             .strings(chart.strings().legend)
             .align('right')
             .height(availableHeight - headerHeight);
           legend_wrap
             .datum(data)
-            .call(legend$$1);
+            .call(legend);
 
-          maxLegendWidth = legend$$1.calcMaxWidth();
+          maxLegendWidth = legend.calcMaxWidth();
         }
 
         // calculate proportional available space
@@ -12323,9 +12461,9 @@ var lineChart = function() {
           maxLegendWidth = availableWidth - controls.width();
         }
         if (showLegend) {
-          legend$$1
+          legend
             .arrange(maxLegendWidth);
-          maxControlsWidth = availableWidth - legend$$1.width();
+          maxControlsWidth = availableWidth - legend.width();
         }
 
         if (showControls) {
@@ -12338,17 +12476,17 @@ var lineChart = function() {
         if (showLegend) {
           var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' ? 0 : availableWidth - legend$$1.width(),
+              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
               ypos = titleBBox.height;
           if (legendTop) {
-            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
-            ypos = - legend$$1.margin().top;
+            ypos = - legend.margin().top;
           }
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          legendHeight = legendTop ? 12 : legend$$1.height();
+          legendHeight = legendTop ? 12 : legend.height();
         }
 
         // Recalc inner margins based on legend and control height
@@ -12471,7 +12609,7 @@ var lineChart = function() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend$$1.dispatch.on('legendClick', function(d, i) {
+      legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
 
         if (!data.filter(function(d) { return !d.disabled; }).length) {
@@ -12532,13 +12670,13 @@ var lineChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, properties);
+          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+        if (tooltip$$1) {
+          sucrose.tooltip.position(that.parentNode, tooltip$$1, e, 's');
         }
       });
 
@@ -12575,8 +12713,8 @@ var lineChart = function() {
         if (controls.enabled()) {
           controls.dispatch.call('closeMenu', this);
         }
-        if (legend$$1.enabled()) {
-          legend$$1.dispatch.call('closeMenu', this);
+        if (legend.enabled()) {
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -12609,7 +12747,7 @@ var lineChart = function() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.lines = lines;
-  chart.legend = legend$$1;
+  chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
@@ -12665,8 +12803,8 @@ var lineChart = function() {
     // don't enable this since controls get a custom function
     // controls.color(color);
     // controls.classes(classes);
-    legend$$1.color(color);
-    legend$$1.classes(classes);
+    legend.color(color);
+    legend.classes(classes);
 
     return chart;
   };
@@ -12711,12 +12849,6 @@ var lineChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) { return tooltips; }
     tooltips = _;
@@ -12750,7 +12882,7 @@ var lineChart = function() {
     direction = _;
     xAxis.direction(_);
     yAxis.direction(_);
-    legend$$1.direction(_);
+    legend.direction(_);
     controls.direction(_);
     return chart;
   };
@@ -12772,9 +12904,9 @@ var lineChart = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var multiBarChart = function() {
+function multiBarChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -12787,7 +12919,6 @@ var multiBarChart = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      tooltip = null,
       tooltips = true,
       x,
       y,
@@ -12814,13 +12945,15 @@ var multiBarChart = function() {
   var useScroll = false,
       scrollOffset = 0;
 
-  var multibar = multiBar().stacked(false).clipEdge(false);
+  var multibar = models.multiBar().stacked(false).clipEdge(false);
   var model = multibar;
-  var xAxis = axis(); //.orient('bottom'),
-  var yAxis = axis(); //.orient('left'),
-  var controls = legend().color(['#444']);
-  var legend$$1 = legend();
-  var scroll$$1 = scroll();
+  var xAxis = models.axis(); //.orient('bottom'),
+  var yAxis = models.axis(); //.orient('left'),
+  var controls = models.legend().color(['#444']);
+  var legend = models.legend();
+  var scroll = models.scroll();
+
+  var tooltip$$1 = null;
 
   var tooltipContent = function(eo, graph) {
         var key = eo.group.label,
@@ -13243,7 +13376,7 @@ var multiBarChart = function() {
             });
           }
 
-          legend$$1
+          legend
             .id('legend_' + chart.id())
             .strings(chart.strings().legend)
             .align('right')
@@ -13251,9 +13384,9 @@ var multiBarChart = function() {
 
           legend_wrap
             .datum(data)
-            .call(legend$$1);
+            .call(legend);
 
-          maxLegendWidth = legend$$1.calcMaxWidth();
+          maxLegendWidth = legend.calcMaxWidth();
         }
 
         // calculate proportional available space
@@ -13267,9 +13400,9 @@ var multiBarChart = function() {
           maxLegendWidth = availableWidth - controls.width();
         }
         if (showLegend) {
-          legend$$1
+          legend
             .arrange(maxLegendWidth);
-          maxControlsWidth = availableWidth - legend$$1.width();
+          maxControlsWidth = availableWidth - legend.width();
         }
 
         if (showControls) {
@@ -13282,17 +13415,17 @@ var multiBarChart = function() {
         if (showLegend) {
           var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' ? 0 : availableWidth - legend$$1.width(),
+              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
               ypos = titleBBox.height;
           if (legendTop) {
-            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
-            ypos = - legend$$1.margin().top;
+            ypos = - legend.margin().top;
           }
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          legendHeight = legendTop ? 12 : legend$$1.height() - (showTitle ? 0 : legend$$1.margin().top);
+          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
         }
 
         // Recalc inner margins based on legend and control height
@@ -13425,12 +13558,12 @@ var multiBarChart = function() {
           var diff = (vertical ? innerWidth : innerHeight) - minDimension,
               panMultibar = function() {
                 dispatch.call('tooltipHide', this);
-                scrollOffset = scroll$$1.pan(diff);
+                scrollOffset = scroll.pan(diff);
                 xAxis_wrap.select('.sc-axislabel')
                   .attr('x', (vertical ? innerWidth - scrollOffset * 2 : scrollOffset * 2 - innerHeight) / 2);
               };
 
-          scroll$$1
+          scroll
             .id(chart.id())
             .enable(useScroll)
             .vertical(vertical)
@@ -13440,12 +13573,12 @@ var multiBarChart = function() {
             .minDimension(minDimension)
             .panHandler(panMultibar);
 
-          scroll$$1(wrap, wrap_entr, scroll_wrap, xAxis);
+          scroll(wrap, wrap_entr, scroll_wrap, xAxis);
 
-          scroll$$1.init(scrollOffset, overflowHandler);
+          scroll.init(scrollOffset, overflowHandler);
 
           // initial call to zoom in case of scrolled bars on window resize
-          scroll$$1.panHandler()();
+          scroll.panHandler()();
         }
       };
 
@@ -13457,7 +13590,7 @@ var multiBarChart = function() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend$$1.dispatch.on('legendClick', function(d, i) {
+      legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
         d.active = false;
 
@@ -13515,13 +13648,13 @@ var multiBarChart = function() {
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
           eo.group = groupData[eo.groupIndex];
-          tooltip = showTooltip(eo, that.parentNode, groupData);
+          tooltip$$1 = showTooltip(eo, that.parentNode, groupData);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, vertical ? 's' : 'w');
+        if (tooltip$$1) {
+          sucrose.tooltip.position(that.parentNode, tooltip$$1, e, vertical ? 's' : 'w');
         }
       });
 
@@ -13553,8 +13686,8 @@ var multiBarChart = function() {
         if (controls.enabled()) {
           controls.dispatch.call('closeMenu', this);
         }
-        if (legend$$1.enabled()) {
-          legend$$1.dispatch.call('closeMenu', this);
+        if (legend.enabled()) {
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -13591,7 +13724,7 @@ var multiBarChart = function() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.multibar = multibar;
-  chart.legend = legend$$1;
+  chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
@@ -13648,8 +13781,8 @@ var multiBarChart = function() {
     // don't enable this since controls get a custom function
     // controls.color(color);
     // controls.classes(classes);
-    legend$$1.color(color);
-    legend$$1.classes(classes);
+    legend.color(color);
+    legend.classes(classes);
 
     return chart;
   };
@@ -13694,12 +13827,6 @@ var multiBarChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) { return tooltips; }
     tooltips = _;
@@ -13734,7 +13861,7 @@ var multiBarChart = function() {
     model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
-    legend$$1.direction(_);
+    legend.direction(_);
     controls.direction(_);
     return chart;
   };
@@ -13786,10 +13913,9 @@ var multiBarChart = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var paretoChart = function() {
-  //'use strict';
+function paretoChart() {
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
@@ -13801,7 +13927,6 @@ var paretoChart = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      tooltip = null,
       tooltips = true,
       x,
       y,
@@ -13825,28 +13950,30 @@ var paretoChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var multibar = multiBar()
+  var multibar = models.multiBar()
       .stacked(true)
       .clipEdge(false)
       .withLine(true)
       .nice(false),
-    linesBackground = line$$1()
+    linesBackground = models.line()
       .color(function(d, i) { return '#FFF'; })
       .fill(function(d, i) { return '#FFF'; })
       .useVoronoi(false)
       .nice(false),
-    lines = line$$1()
+    lines = models.line()
       .useVoronoi(false)
       .color('data')
       .nice(false),
-    xAxis = axis(),
-    yAxis = axis(),
-    barLegend = legend()
+    xAxis = models.axis(),
+    yAxis = models.axis(),
+    barLegend = models.legend()
       .align('left')
       .position('middle'),
-    lineLegend = legend()
+    lineLegend = models.legend()
       .align('right')
       .position('middle');
+
+  var tooltip$$1 = null;
 
   var tooltipBar = function(key, x, y, e, graph) {
         return '<p><b>' + key + '</b></p>' +
@@ -14589,7 +14716,7 @@ var paretoChart = function() {
                 key: d.key,
                 e: d3.event
             };
-            tooltip = showQuotaTooltip(eo, that.parentNode);
+            tooltip$$1 = showQuotaTooltip(eo, that.parentNode);
           }
         })
         .on('mousemove', function() {
@@ -14639,13 +14766,13 @@ var paretoChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, groupData);
+          tooltip$$1 = showTooltip(eo, that.parentNode, groupData);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+        if (tooltip$$1) {
+          sucrose.tooltip.position(that.parentNode, tooltip$$1, e, 's');
         }
       });
 
@@ -14887,12 +15014,6 @@ var paretoChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) { return tooltips; }
     tooltips = _;
@@ -14979,9 +15100,9 @@ var paretoChart = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var pieChart = function() {
+function pieChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -14996,7 +15117,6 @@ var pieChart = function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      tooltip = null,
       tooltips = true,
       state = {},
       strings = {
@@ -15011,10 +15131,12 @@ var pieChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var pie$$1 = pie(),
-      model = pie$$1,
-      controls = legend().align('center'),
-      legend$$1 = legend().align('center');
+  var pie = models.pie(),
+      model = pie,
+      controls = models.legend().align('center'),
+      legend = models.legend().align('center');
+
+  var tooltip$$1 = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -15235,33 +15357,33 @@ var pieChart = function() {
         }
 
         if (showLegend) {
-          legend$$1
+          legend
             .id('legend_' + chart.id())
             .strings(chart.strings().legend)
             .align('center')
             .height(availableHeight - innerMargin.top);
           legend_wrap
             .datum(data)
-            .call(legend$$1);
-          legend$$1
+            .call(legend);
+          legend
             .arrange(availableWidth);
 
           var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend$$1.collapsed() ? 0 : availableWidth - legend$$1.width(),
+              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
               ypos = titleBBox.height;
 
           if (legendTop) {
-            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
-            ypos = - legend$$1.margin().top;
+            ypos = - legend.margin().top;
           }
 
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
-          legendHeight = legendTop ? 12 : legend$$1.height() - (showTitle ? 0 : legend$$1.margin().top);
+          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
         }
 
         // Recalc inner margins based on title and legend height
@@ -15293,7 +15415,7 @@ var pieChart = function() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend$$1.dispatch.on('legendClick', function(d, i) {
+      legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
         d.active = false;
 
@@ -15321,13 +15443,13 @@ var pieChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, properties);
+          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e);
+        if (tooltip$$1) {
+          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
         }
       });
 
@@ -15354,8 +15476,8 @@ var pieChart = function() {
         if (controls.enabled()) {
           controls.dispatch.call('closeMenu', this);
         }
-        if (legend$$1.enabled()) {
-          legend$$1.dispatch.call('closeMenu', this);
+        if (legend.enabled()) {
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -15391,14 +15513,14 @@ var pieChart = function() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.pie = pie$$1;
-  chart.legend = legend$$1;
+  chart.pie = pie;
+  chart.legend = legend;
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, pie$$1, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
-  fc.rebind(chart, pie$$1, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
+  fc.rebind(chart, pie, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
+  fc.rebind(chart, pie, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -15444,8 +15566,8 @@ var pieChart = function() {
     model.fill(fill);
     model.classes(classes);
 
-    legend$$1.color(color);
-    legend$$1.classes(classes);
+    legend.color(color);
+    legend.classes(classes);
 
     return chart;
   };
@@ -15490,12 +15612,6 @@ var pieChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) { return tooltips; }
     tooltips = _;
@@ -15528,7 +15644,7 @@ var pieChart = function() {
     if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
-    legend$$1.direction(_);
+    legend.direction(_);
     controls.direction(_);
     return chart;
   };
@@ -15562,9 +15678,9 @@ var pieChart = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var stackedAreaChart = function() {
+function stackeAreaChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -15579,7 +15695,6 @@ var stackedAreaChart = function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      tooltip = null,
       tooltips = true,
       guidetips = null,
       x,
@@ -15598,17 +15713,19 @@ var stackedAreaChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var stacked = stackedArea()
+  var stacked = models.stackedArea()
         .clipEdge(true),
       model = stacked,
-      xAxis = axis(),
-      yAxis = axis(),
-      legend$$1 = legend()
+      xAxis = models.axis(),
+      yAxis = models.axis(),
+      legend = models.legend()
         .align('right'),
-      controls = legend()
+      controls = models.legend()
         .align('left')
         .color(['#444']),
-      guide = line$$1().duration(0);
+      guide = models.line().duration(0);
+
+  var tooltip$$1 = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<p>' + key + ': ' + y + '</p>';
@@ -15888,16 +16005,16 @@ var stackedAreaChart = function() {
           maxControlsWidth = controls.calcMaxWidth();
         }
         if (showLegend) {
-          legend$$1
+          legend
             .id('legend_' + chart.id())
             .strings(chart.strings().legend)
             .align('right')
             .height(availableHeight - headerHeight);
           legend_wrap
             .datum(data)
-            .call(legend$$1);
+            .call(legend);
 
-          maxLegendWidth = legend$$1.calcMaxWidth();
+          maxLegendWidth = legend.calcMaxWidth();
         }
 
         // calculate proportional available space
@@ -15911,9 +16028,9 @@ var stackedAreaChart = function() {
           maxLegendWidth = availableWidth - controls.width();
         }
         if (showLegend) {
-          legend$$1
+          legend
             .arrange(maxLegendWidth);
-          maxControlsWidth = availableWidth - legend$$1.width();
+          maxControlsWidth = availableWidth - legend.width();
         }
 
         if (showControls) {
@@ -15926,17 +16043,17 @@ var stackedAreaChart = function() {
         if (showLegend) {
           var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend$$1.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' ? 0 : availableWidth - legend$$1.width(),
+              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
               ypos = titleBBox.height;
           if (legendTop) {
-            ypos = titleBBox.height - legend$$1.height() / 2 - legendLinkBBox.height / 2;
+            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
-            ypos = - legend$$1.margin().top;
+            ypos = - legend.margin().top;
           }
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          legendHeight = legendTop ? 12 : legend$$1.height();
+          legendHeight = legendTop ? 12 : legend.height();
         }
 
         // Recalc inner margins based on legend and control height
@@ -16137,20 +16254,20 @@ var stackedAreaChart = function() {
 
         dispatch.on('tooltipShow', function(eo) {
           if (tooltips) {
-            tooltip = true;
+            tooltip$$1 = true;
             guide_wrap.classed('hover', true);
           }
         });
 
         dispatch.on('tooltipMove', function(eo) {
-          if (tooltip) {
+          if (tooltip$$1) {
             chart.moveGuide(that.parentNode, container, eo);
           }
         });
 
         dispatch.on('tooltipHide', function() {
           if (tooltips) {
-            tooltip = false;
+            tooltip$$1 = false;
             sucrose.tooltip.cleanup();
             guidetips = null;
             guide_wrap.classed('hover', false);
@@ -16187,7 +16304,7 @@ var stackedAreaChart = function() {
         container.transition().duration(duration).call(chart);
       });
 
-      legend$$1.dispatch.on('legendClick', function(d, i) {
+      legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
 
         if (!data.filter(function(d) { return !d.disabled; }).length) {
@@ -16257,8 +16374,8 @@ var stackedAreaChart = function() {
         if (controls.enabled()) {
           controls.dispatch.call('closeMenu', this);
         }
-        if (legend$$1.enabled()) {
-          legend$$1.dispatch.call('closeMenu', this);
+        if (legend.enabled()) {
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -16290,7 +16407,7 @@ var stackedAreaChart = function() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.stacked = stacked;
-  chart.legend = legend$$1;
+  chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
@@ -16347,8 +16464,8 @@ var stackedAreaChart = function() {
     // don't enable this since controls get a custom function
     // controls.color(color);
     // controls.classes(classes);
-    legend$$1.color(color);
-    legend$$1.classes(classes);
+    legend.color(color);
+    legend.classes(classes);
 
     return chart;
   };
@@ -16393,12 +16510,6 @@ var stackedAreaChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) { return tooltips; }
     tooltips = _;
@@ -16432,7 +16543,7 @@ var stackedAreaChart = function() {
     direction = _;
     xAxis.direction(_);
     yAxis.direction(_);
-    legend$$1.direction(_);
+    legend.direction(_);
     controls.direction(_);
     return chart;
   };
@@ -16454,9 +16565,9 @@ var stackedAreaChart = function() {
   //============================================================
 
   return chart;
-};
+}
 
-var treemapChart = function() {
+function treemapChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -16468,7 +16579,6 @@ var treemapChart = function() {
       showTitle = false,
       showLegend = false,
       direction = 'ltr',
-      tooltip = null,
       tooltips = true,
       colorData = 'default',
       //create a clone of the d3 array
@@ -16483,14 +16593,15 @@ var treemapChart = function() {
       },
       dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
 
-  var treemap$$1 = treemap(),
-      model = treemap$$1,
-      legend$$1 = legend();
-
-
   //============================================================
   // Private Variables
   //------------------------------------------------------------
+
+  var treemap = models.treemap(),
+      model = treemap,
+      legend = models.legend();
+
+  var tooltip$$1 = null;
 
   var tooltipContent = function(point) {
         var tt = '<h3>' + point.data.name + '</h3>' +
@@ -16504,7 +16615,6 @@ var treemapChart = function() {
       };
 
   //============================================================
-
 
   function chart(selection) {
     selection.each(function(chartData) {
@@ -16579,7 +16689,7 @@ var treemapChart = function() {
       if (showLegend) {
         g_entr.append('g').attr('class', 'sc-legendWrap');
 
-        legend$$1
+        legend
           .id('legend_' + chart.id())
           .strings(chart.strings().legend)
           .width(availableWidth + margin.left)
@@ -16587,9 +16697,9 @@ var treemapChart = function() {
 
         g.select('.sc-legendWrap')
           .datum(data)
-          .call(legend$$1);
+          .call(legend);
 
-        legendHeight = legend$$1.height() + 10;
+        legendHeight = legend.height() + 10;
 
         if (margin.top !== legendHeight + titleHeight) {
           margin.top = legendHeight + titleHeight;
@@ -16631,21 +16741,21 @@ var treemapChart = function() {
       //------------------------------------------------------------
       // Main Chart Component(s)
 
-      treemap$$1
+      treemap
         .width(availableWidth)
         .height(availableHeight);
 
       treemap_wrap
         .datum(data.filter(function(d) { return !d.disabled; }))
         .transition()
-          .call(treemap$$1);
+          .call(treemap);
 
 
       //============================================================
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend$$1.dispatch.on('legendClick', function(d, i) {
+      legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
 
         if (!data.filter(function(d) { return !d.disabled; }).length) {
@@ -16661,13 +16771,13 @@ var treemapChart = function() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode);
+          tooltip$$1 = showTooltip(eo, that.parentNode);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e);
+        if (tooltip$$1) {
+          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
         }
       });
 
@@ -16702,15 +16812,15 @@ var treemapChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  treemap$$1.dispatch.on('elementMouseover', function(eo) {
+  treemap.dispatch.on('elementMouseover', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  treemap$$1.dispatch.on('elementMousemove', function(e) {
+  treemap.dispatch.on('elementMousemove', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  treemap$$1.dispatch.on('elementMouseout', function() {
+  treemap.dispatch.on('elementMouseout', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -16720,10 +16830,10 @@ var treemapChart = function() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.legend = legend$$1;
-  chart.treemap = treemap$$1;
+  chart.legend = legend;
+  chart.treemap = treemap;
 
-  fc.rebind(chart, treemap$$1, 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'id', 'delay', 'leafClick', 'getValue', 'getName', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
+  fc.rebind(chart, treemap, 'x', 'y', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'id', 'delay', 'leafClick', 'getValue', 'getName', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }
@@ -16758,15 +16868,15 @@ var treemapChart = function() {
 
     var fill = (!params.gradient) ? color : function(d, i) {
       var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return treemap$$1.gradient(d, i, p);
+      return treemap.gradient(d, i, p);
     };
 
-    treemap$$1.color(color);
-    treemap$$1.fill(fill);
-    treemap$$1.classes(classes);
+    treemap.color(color);
+    treemap.fill(fill);
+    treemap.classes(classes);
 
-    legend$$1.color(color);
-    legend$$1.classes(classes);
+    legend.color(color);
+    legend.classes(classes);
 
     colorData = arguments[0];
 
@@ -16776,14 +16886,14 @@ var treemapChart = function() {
   chart.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    treemap$$1.x(_);
+    treemap.x(_);
     return chart;
   };
 
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
-    treemap$$1.y(_);
+    treemap.y(_);
     return chart;
   };
 
@@ -16820,12 +16930,6 @@ var treemapChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) { return tooltips; }
     tooltips = _;
@@ -16853,38 +16957,42 @@ var treemapChart = function() {
   //============================================================
 
   return chart;
+}
+
+/*-------------------
+       CHARTS
+-------------------*/
+
+const charts = {
+    funnelChart: funnelChart,
+    bubbleChart: bubbleChart,
+    gaugeChart: gaugeChart,
+    globeChart: globeChart,
+    lineChart: lineChart,
+    multiBarChart: multiBarChart,
+    paretoChart: paretoChart,
+    pieChart: pieChart,
+    stackedAreaChart: stackeAreaChart,
+    treemapChart: treemapChart,
 };
-
-
-
-var charts = Object.freeze({
-	bubbleChart: bubbleChart,
-	funnelChart: funnelChart,
-	gaugeChart: gaugeChart,
-	globeChart: globe,
-	lineChart: lineChart,
-	multiBarChart: multiBarChart,
-	paretoChart: paretoChart,
-	pieChart: pieChart,
-	stackedAreaChart: stackedAreaChart,
-	treemapChart: treemapChart
-});
 
 // import * as d3 from 'd3'; //without this rollup does something funky to d3 global
 // import * as path from 'path';
 // import * as fc from path.resolve( '../d3fc-rebind.js' );
 // import * as fc from './fc';
-// import rebind as fc from '../d3fc-rebind';
-// export {rebind as rebind} from '../d3fc-rebind';
-
-var ver = '0.0.2'; //change to 0.0.3 when ready
-var dev = false; //set false when in production
+// import rebind as fc from './d3fc-rebind';
+// import rebind from './d3fc-rebind.js';
+// import * as fc from 'd3fc-rebind';
+// import {* as fc} from './d3fc-rebind.js';
+const ver = '0.0.2'; //change to 0.0.3 when ready
+const dev = false; //set false when in production
 
 exports.version = ver;
 exports.development = dev;
+exports.utils = utils;
+exports.tooltip = tooltip;
 exports.models = models;
 exports.charts = charts;
-exports.utils = utils;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

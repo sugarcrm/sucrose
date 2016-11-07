@@ -2,7 +2,7 @@
 // import babel from 'rollup-plugin-babel';
 // import eslint from 'rollup-plugin-eslint';
 import resolve from 'rollup-plugin-node-resolve';
-import commonjs from 'rollup-plugin-commonjs';
+// import commonjs from 'rollup-plugin-commonjs';
 // import * as path from 'path';
 // import * as fc from './src/fc';
 
@@ -12,10 +12,10 @@ export default {
   dest: './build2/sucrose.js',
   format: 'umd',
   // sourceMap: 'inline',
-  // external: ['d3'],
-  // external: ['d3', '../d3fc-rebind.js'],
+  external: ['d3'],
+  // external: ['d3', 'd3fc-rebind'], // need babel
+  // external: ['d3', './src/d3fc-rebind.js'],
   // external: ['d3', path.resolve( '../d3fc-rebind.js' )],
-  external: ['d3', 'd3fc-rebind'], // need babel
   treeshake: false,
   plugins: [
     resolve({
@@ -23,7 +23,15 @@ export default {
       main: true,
       browser: true,
     }),
-    commonjs(),
+    // commonjs({
+    //   namedExports: {
+    //     // left-hand side can be an absolute path, a path
+    //     // relative to the current directory, or the name
+    //     // of a module in node_modules
+    //     './src/d3fc-rebind.js': [ 'rebind' ]
+    //     // 'd3fc-rebind': [ 'fc' ]
+    //   }
+    // }),
     // eslint({
     //   exclude: [
     //     'src/styles/**',
@@ -37,6 +45,6 @@ export default {
   ],
   globals: {
     d3: 'd3',
-    // '../d3fc-rebind.js': 'fc',
+    // 'd3fc-rebind': 'fc',
   },
 };

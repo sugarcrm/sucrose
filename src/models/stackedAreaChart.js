@@ -1,8 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import * as models from './models.js';
+import tooltip from '../tooltip.js';
+import models from './models.js';
 
-export default function() {
+export default function stackeAreaChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -17,7 +18,6 @@ export default function() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      tooltip = null,
       tooltips = true,
       guidetips = null,
       x,
@@ -47,6 +47,8 @@ export default function() {
         .align('left')
         .color(['#444']),
       guide = models.line().duration(0);
+
+  var tooltip = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<p>' + key + ': ' + y + '</p>';
@@ -828,12 +830,6 @@ export default function() {
   chart.showLegend = function(_) {
     if (!arguments.length) { return showLegend; }
     showLegend = _;
-    return chart;
-  };
-
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
     return chart;
   };
 

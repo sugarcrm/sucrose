@@ -1,13 +1,35 @@
-export {default as legend} from './legend.js';
-export {default as axis} from './axis.js';
-export {default as funnel} from './funnel.js';
-export {default as gauge} from './gauge.js';
-export {default as line} from './line.js';
-export {default as multiBar} from './multiBar.js';
-export {default as pie} from './pie.js';
-export {default as scatter} from './scatter.js';
-export {default as scroll} from './scroll.js';
-export {default as stackedArea} from './stackedArea.js';
-export {default as table} from './table.js';
-export {default as tree} from './tree.js';
-export {default as treemap} from './treemap.js';
+/*-------------------
+       MODELS
+-------------------*/
+
+import axis from './axis.js';
+import funnel from './funnel.js';
+import gauge from './gauge.js';
+import legend from './legend.js';
+import line from './line.js';
+import multiBar from './multiBar.js';
+import pie from './pie.js';
+import scatter from './scatter.js';
+import scroll from './scroll.js';
+import stackedArea from './stackedArea.js';
+import table from './table.js';
+import tree from './tree.js';
+import treemap from './treemap.js';
+
+const models = {
+    axis: axis,
+    funnel: funnel,
+    gauge: gauge,
+    legend: legend,
+    line: line,
+    multiBar: multiBar,
+    pie: pie,
+    scatter: scatter,
+    scroll: scroll,
+    stackedArea: stackedArea,
+    table: table,
+    tree: tree,
+    treemap: treemap,
+};
+
+export default models;

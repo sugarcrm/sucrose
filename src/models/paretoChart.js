@@ -1,9 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
-import * as models from './models.js';
+import tooltip from '../tooltip.js';
+import models from './models.js';
 
-export default function() {
-  //'use strict';
+export default function paretoChart() {
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
@@ -15,7 +15,6 @@ export default function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      tooltip = null,
       tooltips = true,
       x,
       y,
@@ -61,6 +60,8 @@ export default function() {
     lineLegend = models.legend()
       .align('right')
       .position('middle');
+
+  var tooltip = null;
 
   var tooltipBar = function(key, x, y, e, graph) {
         return '<p><b>' + key + '</b></p>' +
@@ -1098,12 +1099,6 @@ export default function() {
   chart.tooltipQuota = function(_) {
     if (!arguments.length) { return tooltipQuota; }
     tooltipQuota = _;
-    return chart;
-  };
-
-  chart.tooltip = function(_) {
-    if (!arguments.length) { return tooltip; }
-    tooltip = _;
     return chart;
   };
 
