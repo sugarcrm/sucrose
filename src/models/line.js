@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 import models from './models.js';
 
 export default function line() {
@@ -23,7 +23,7 @@ export default function line() {
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
-      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
 
@@ -72,7 +72,7 @@ export default function line() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utility.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -357,7 +357,7 @@ export default function line() {
 
   chart.isArea = function(_) {
     if (!arguments.length) { return isArea; }
-    isArea = utils.functor(_);
+    isArea = utility.functor(_);
     return chart;
   };
 

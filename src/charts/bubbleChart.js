@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
 
@@ -47,12 +47,12 @@ export default function bubbleChart() {
   var xValueFormat = function(d, labels, isDate) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)] || d;
-          return isDate ? utils.dateFormat(val, 'MMM', chart.locality()) : val;
+          return isDate ? utility.dateFormat(val, 'MMM', chart.locality()) : val;
       };
   var yValueFormat = function(d, labels, isCurrency) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)].key || d;
-          return utils.numberFormatSI(val, 2, isCurrency, chart.locality());
+          return utility.numberFormatSI(val, 2, isCurrency, chart.locality());
       };
 
   var scatter = models.scatter()
@@ -125,7 +125,7 @@ export default function bubbleChart() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -374,7 +374,7 @@ export default function bubbleChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -390,7 +390,7 @@ export default function bubbleChart() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -455,7 +455,7 @@ export default function bubbleChart() {
           .margin(innerMargin)
           .tickFormat(function(d, i) {
             var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
-            return utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
+            return utility.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
           });
         yAxis_wrap
           .call(yAxis);
@@ -618,7 +618,7 @@ export default function bubbleChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -642,7 +642,7 @@ export default function bubbleChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+          return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');

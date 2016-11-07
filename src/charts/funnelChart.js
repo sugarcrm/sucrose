@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
 
@@ -87,7 +87,7 @@ export default function funnelChart() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -253,7 +253,7 @@ export default function funnelChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -269,7 +269,7 @@ export default function funnelChart() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -426,7 +426,7 @@ export default function funnelChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -450,7 +450,7 @@ export default function funnelChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');

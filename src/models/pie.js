@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 
 export default function pie() {
 
@@ -18,11 +18,11 @@ export default function pie() {
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
       fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return utils.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
@@ -58,10 +58,10 @@ export default function pie() {
 
   var startAngle = function(d) {
         // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
-        return d.startAngle * arcDegrees / 360 + utils.angleToRadians(rotateDegrees);
+        return d.startAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
       };
   var endAngle = function(d) {
-        return d.endAngle * arcDegrees / 360 + utils.angleToRadians(rotateDegrees);
+        return d.endAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
       };
 
   var fixedRadius = function(chart) { return null; };
@@ -89,7 +89,7 @@ export default function pie() {
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
-        return utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
+        return utility.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -99,7 +99,7 @@ export default function pie() {
           doLabels = showLabels && pieLabelsOutside ? true : false;
 
       if (doLabels) {
-        labelLengths = utils.stringSetLengths(
+        labelLengths = utility.stringSetLengths(
             data,
             container,
             fmtKey,
@@ -128,7 +128,7 @@ export default function pie() {
       // Definitions
 
       if (textureFill) {
-        var mask = utils.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
+        var mask = utility.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
 
       //------------------------------------------------------------
@@ -336,7 +336,7 @@ export default function pie() {
           })
           .style('fill', function(d, i) {
             var backColor = d3.select(this.parentNode).style('fill');
-            return utils.getTextContrast(backColor, i);
+            return utility.getTextContrast(backColor, i);
           });
       }
 
@@ -386,7 +386,7 @@ export default function pie() {
                   bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
                   rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
               if (rW < 0) {
-                var label = utils.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
+                var label = utility.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
                 d3.select(this).select('text').text(label);
               }
             }
@@ -699,7 +699,7 @@ export default function pie() {
     if (!arguments.length) {
       return getY;
     }
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -771,7 +771,7 @@ export default function pie() {
     if (!arguments.length) {
       return locality;
     }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     return chart;
   };
 
@@ -853,7 +853,7 @@ export default function pie() {
     if (!arguments.length) {
       return holeFormat;
     }
-    holeFormat = utils.functor(_);
+    holeFormat = utility.functor(_);
     return chart;
   };
 
@@ -925,7 +925,7 @@ export default function pie() {
     if (!arguments.length) {
       return fixedRadius;
     }
-    fixedRadius = utils.functor(_);
+    fixedRadius = utility.functor(_);
     return chart;
   };
 

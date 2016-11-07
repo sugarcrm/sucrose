@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 
 export default function sparkline() {
 
@@ -15,7 +15,7 @@ export default function sparkline() {
     , y = d3.scaleLinear()
     , getX = function(d) { return d.x }
     , getY = function(d) { return d.y }
-    , color = utils.getColor(['#000'])
+    , color = utility.getColor(['#000'])
     , xDomain
     , yDomain
     ;
@@ -47,7 +47,7 @@ export default function sparkline() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-sparkline').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparkline');
-      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
       var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
@@ -129,13 +129,13 @@ export default function sparkline() {
 
   chart.x = function(_) {
     if (!arguments.length) return getX;
-    getX = utils.functor(_);
+    getX = utility.functor(_);
     return chart;
   };
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -171,7 +171,7 @@ export default function sparkline() {
 
   chart.color = function(_) {
     if (!arguments.length) return color;
-    color = utils.getColor(_);
+    color = utility.getColor(_);
     return chart;
   };
 

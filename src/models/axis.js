@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 
 export default function axis() {
 
@@ -136,7 +136,7 @@ export default function axis() {
       var axisLabel = wrap.selectAll('text.sc-axislabel').merge(axisLabel_entr);
 
       axisLabel
-        .text(utils.identity);
+        .text(utility.identity);
 
       //------------------------------------------------------------
       // Tick label handling
@@ -499,7 +499,7 @@ export default function axis() {
         tickText.each(function(d, i) {
           var textContent = axis.tickFormat()(d, i, selection, true),
               textNode = d3.select(this),
-              isDate = utils.isValidDate(textContent),
+              isDate = utility.isValidDate(textContent),
               textArray = (textContent && textContent !== '' ? isDate ? textContent : textContent.replace('/', '/ ') : []).split(' '),
               i = 0,
               l = textArray.length,

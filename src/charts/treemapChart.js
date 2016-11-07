@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
 
@@ -18,7 +18,7 @@ export default function treemapChart() {
       tooltips = true,
       colorData = 'default',
       //create a clone of the d3 array
-      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utils.identity),
+      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utility.identity),
       x, //can be accessed via chart.xScale()
       y, //can be accessed via chart.yScale()
       strings = {
@@ -41,7 +41,7 @@ export default function treemapChart() {
 
   var tooltipContent = function(point) {
         var tt = '<h3>' + point.data.name + '</h3>' +
-                 '<p>' + utils.numberFormatSI(point.value) + '</p>';
+                 '<p>' + utility.numberFormatSI(point.value) + '</p>';
         return tt;
       };
 
@@ -70,7 +70,7 @@ export default function treemapChart() {
       // Display noData message if there's nothing to show.
 
       if (!data || !data.length || !data.filter(function(d) { return d && d.children.length; }).length) {
-        container.select('.utils.sc-wrap').remove();
+        container.select('.utility.sc-wrap').remove();
         var noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
@@ -81,7 +81,7 @@ export default function treemapChart() {
         noDataText
           .attr('x', margin.left + availableWidth / 2)
           .attr('y', margin.top + availableHeight / 2)
-          .text(utils.identity);
+          .text(utility.identity);
 
         return chart;
       } else {
@@ -278,7 +278,7 @@ export default function treemapChart() {
         params = arguments[1] || {};
     var color = function(d, i) {
           var c = (type === 'data' && d.color) ? {color: d.color} : {};
-          return utils.getColor(colorArray)(c, i);
+          return utility.getColor(colorArray)(c, i);
         };
     var classes = function(d, i) {
           return 'sc-child';

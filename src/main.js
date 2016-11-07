@@ -3,7 +3,7 @@ const dev = false; //set false when in production
 
 export {ver as version};
 export {dev as development};
-export {default as utils} from './utils.js';
+export {default as utility} from './utility.js';
 export {default as tooltip} from './tooltip.js';
 export {default as models} from './models/models.js';
 export {default as charts} from './charts/charts.js';

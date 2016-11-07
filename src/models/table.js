@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 
 export default function table() {
 
@@ -19,7 +19,7 @@ export default function table() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      color = utils.getColor(['#000']);
+      color = utility.getColor(['#000']);
 
   //============================================================
 
@@ -61,7 +61,7 @@ export default function table() {
         var hasData = d && d.length && d.filter(function (d) { return d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
       // Check to see if there's nothing to show.
       if (displayNoData(data)) {
@@ -259,13 +259,13 @@ export default function table() {
 
   chart.x = function (_) {
     if (!arguments.length) return getX;
-    getX = utils.functor(_);
+    getX = utility.functor(_);
     return chart;
   };
 
   chart.y = function (_) {
     if (!arguments.length) return getY;
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -283,7 +283,7 @@ export default function table() {
 
   chart.color = function (_) {
     if (!arguments.length) return color;
-    color = utils.getColor(_);
+    color = utility.getColor(_);
     return chart;
   };
 

@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
 
@@ -110,18 +110,18 @@ export default function multiBarChart() {
                           groupLabels[i] || d:
                           d;
             var label = xIsDatetime ?
-                          utils.dateFormat(value, '%x', chart.locality()) :
+                          utility.dateFormat(value, '%x', chart.locality()) :
                           value;
             var width = Math.max(vertical ?
                           baseDimension * 2 :
                           availableWidth * 0.2, 75);
             return !noEllipsis ?
-                      utils.stringEllipsify(label, container, width) :
+                      utility.stringEllipsify(label, container, width) :
                       label;
           };
 
       var yValueFormat = function(d) {
-            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -137,7 +137,7 @@ export default function multiBarChart() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -450,7 +450,7 @@ export default function multiBarChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -510,7 +510,7 @@ export default function multiBarChart() {
           controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
         }
         if (showLegend) {
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -834,7 +834,7 @@ export default function multiBarChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -858,7 +858,7 @@ export default function multiBarChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -997,7 +997,7 @@ export default function multiBarChart() {
 
   chart.overflowHandler = function(_) {
     if (!arguments.length) { return overflowHandler; }
-    overflowHandler = utils.functor(_);
+    overflowHandler = utility.functor(_);
     return chart;
   };
 

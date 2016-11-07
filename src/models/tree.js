@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 
 export default function tree() {
 
@@ -32,7 +32,7 @@ export default function tree() {
     horizontal = false;
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-    color = function (d, i) { return utils.defaultColor()(d, i); },
+    color = function (d, i) { return utility.defaultColor()(d, i); },
     fill = function(d, i) { return color(d,i); },
     gradient = function(d, i) { return color(d,i); },
 
@@ -49,10 +49,10 @@ export default function tree() {
     getId = function(d) { return d.id; },
 
     fillGradient = function(d, i) {
-        return utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+        return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
     },
     useClass = false,
-    valueFormat = utils.numberFormatSI,
+    valueFormat = utility.numberFormatSI,
     showLabels = true,
     dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 
@@ -98,13 +98,13 @@ export default function tree() {
       var wrap_entr = wrap_bind.enter().append('g')
             .attr('class', 'sucrose sc-wrap sc-treeChart')
             .attr('id', 'sc-chart-' + id);
-      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
 
       wrap.call(zoom);
 
       var defs_entr = wrap_entr.append('defs');
       var defs = wrap.select('defs').merge(defs_entr);
-      var nodeShadow = utils.dropShadow('node_back_' + id, defs, {blur: 2});
+      var nodeShadow = utility.dropShadow('node_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('svg:rect')
             .attr('class', 'sc-chartBackground')
@@ -506,7 +506,7 @@ export default function tree() {
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 

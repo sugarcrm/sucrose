@@ -106,9 +106,9 @@ clean-examples: clean-js clean-css
 
 js: $(APP_FILES) clean-js
 	# build app js files
-	cat ../header $(APP_FILES) >> js/app.js
+	cat ../src/header $(APP_FILES) >> js/app.js
 	cat $(APP_FILES) | $(JS_MINIFIER) >> js/app.min.js
-	cat ../header js/app.min.js > temp
+	cat ../src/header js/app.min.js > temp
 	rm -f js/app.min.js
 	mv temp js/app.min.js
 

@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
 
@@ -31,7 +31,7 @@ export default function paretoChart() {
       },
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
@@ -136,16 +136,16 @@ export default function paretoChart() {
                           groupLabels[i] || d:
                           d;
             var label = xIsDatetime ?
-                          utils.dateFormat(value, '%x', chart.locality()) :
+                          utility.dateFormat(value, '%x', chart.locality()) :
                           value;
             var width = Math.max(baseDimension * 2, 75);
             return !noEllipsis ?
-                      utils.stringEllipsify(label, container, width) :
+                      utility.stringEllipsify(label, container, width) :
                       label;
           };
 
       var yValueFormat = function(d) {
-            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -161,7 +161,7 @@ export default function paretoChart() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -482,7 +482,7 @@ export default function paretoChart() {
             .attr('fill', 'black')
             .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -956,7 +956,7 @@ export default function paretoChart() {
     var type = arguments[0],
       params = arguments[1] || {};
     var barColor = function(d, i) {
-      return utils.defaultColor()(d, d.seriesIndex);
+      return utility.defaultColor()(d, d.seriesIndex);
     };
     var barClasses = function(d, i) {
       return 'sc-series sc-series-' + d.seriesIndex;
@@ -996,7 +996,7 @@ export default function paretoChart() {
         break;
       case 'data':
         barColor = function(d, i) {
-          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+          return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
         barClasses = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -1180,7 +1180,7 @@ export default function paretoChart() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     multibar.locality(_);
     linesBackground.locality(_);
     return chart;

@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 
 export default function scroll() {
 
@@ -423,7 +423,7 @@ export default function scroll() {
     if (!arguments.length) {
       return panHandler;
     }
-    panHandler = utils.functor(_);
+    panHandler = utility.functor(_);
     return scroll;
   };
 

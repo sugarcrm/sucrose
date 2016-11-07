@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
 
@@ -83,7 +83,7 @@ export default function sparklinePlus() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-sparklineplus').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparklineplus');
-      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
       var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 

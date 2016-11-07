@@ -4,27 +4,27 @@ import d3 from 'd3';
       UTILITIES
 -------------------*/
 
-const utils = {};
+const utility = {};
 
-utils.strip = function(s) {
+utility.strip = function(s) {
   return s.replace(/(\s|&)/g,'');
 };
 
-utils.identity = function(d) {
+utility.identity = function(d) {
   return d;
 };
 
-utils.functor = function functor(v) {
+utility.functor = function functor(v) {
   return typeof v === "function" ? v : function() {
     return v;
   };
 };
 
-utils.daysInMonth = function(month, year) {
+utility.daysInMonth = function(month, year) {
   return (new Date(year, month+1, 0)).getDate();
 };
 
-utils.windowSize = function () {
+utility.windowSize = function () {
   // Sane defaults
   var size = {width: 640, height: 480};
 
@@ -52,7 +52,7 @@ utils.windowSize = function () {
 
 // Easy way to bind multiple functions to window.onresize
 // TODO: give a way to remove a function after its bound, other than removing alkl of them
-// utils.windowResize = function (fun)
+// utility.windowResize = function (fun)
 // {
 //   var oldresize = window.onresize;
 
@@ -62,7 +62,7 @@ utils.windowSize = function () {
 //   }
 // }
 
-utils.windowResize = function (fun) {
+utility.windowResize = function (fun) {
   if (window.attachEvent) {
       window.attachEvent('onresize', fun);
   }
@@ -74,7 +74,7 @@ utils.windowResize = function (fun) {
   }
 };
 
-utils.windowUnResize = function (fun) {
+utility.windowUnResize = function (fun) {
   if (window.detachEvent) {
       window.detachEvent('onresize', fun);
   }
@@ -86,7 +86,7 @@ utils.windowUnResize = function (fun) {
   }
 };
 
-utils.resizeOnPrint = function (fn) {
+utility.resizeOnPrint = function (fn) {
   if (window.matchMedia) {
       var mediaQueryList = window.matchMedia('print');
       mediaQueryList.addListener(function (mql) {
@@ -103,7 +103,7 @@ utils.resizeOnPrint = function (fn) {
   //window.attachEvent("onafterprint", fn);
 };
 
-utils.unResizeOnPrint = function (fn) {
+utility.unResizeOnPrint = function (fn) {
   if (window.matchMedia) {
       var mediaQueryList = window.matchMedia('print');
       mediaQueryList.removeListener(function (mql) {
@@ -121,10 +121,10 @@ utils.unResizeOnPrint = function (fn) {
 // Backwards compatible way to implement more d3-like coloring of graphs.
 // If passed an array, wrap it in a function which implements the old default
 // behavior
-utils.getColor = function (color) {
+utility.getColor = function (color) {
   if (!arguments.length) {
     //if you pass in nothing, get default colors back
-    return utils.defaultColor();
+    return utility.defaultColor();
   }
 
   if (Array.isArray(color)) {
@@ -143,7 +143,7 @@ utils.getColor = function (color) {
 };
 
 // Default color chooser uses the index of an object as before.
-utils.defaultColor = function () {
+utility.defaultColor = function () {
   var colors = d3.scaleOrdinal(d3.schemeCategory20).range();
   return function (d, i) {
     return d.color || colors[i % colors.length];
@@ -153,7 +153,7 @@ utils.defaultColor = function () {
 
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
-utils.customTheme = function (dictionary, getKey, defaultColors) {
+utility.customTheme = function (dictionary, getKey, defaultColors) {
   getKey = getKey || function (series) { return series.key; }; // use default series.key if getKey is undefined
   defaultColors = defaultColors || d3.scaleOrdinal(d3.schemeCategory20).range(); //default color function
 
@@ -177,7 +177,7 @@ utils.customTheme = function (dictionary, getKey, defaultColors) {
 // From the PJAX example on d3js.org, while this is not really directly needed
 // it's a very cool method for doing pjax, I may expand upon it a little bit,
 // open to suggestions on anything that may be useful
-utils.pjax = function (links, content) {
+utility.pjax = function (links, content) {
   d3.selectAll(links).on("click", function () {
     history.pushState(this.href, this.textContent, this.href);
     load(this.href);
@@ -188,7 +188,7 @@ utils.pjax = function (links, content) {
     d3.html(href, function (fragment) {
       var target = d3.select(content).node();
       target.parentNode.replaceChild(d3.select(fragment).select(content).node(), target);
-      utils.pjax(links, content);
+      utility.pjax(links, content);
     });
   }
 
@@ -199,7 +199,7 @@ utils.pjax = function (links, content) {
 
 /* Numbers that are undefined, null or NaN, convert them to zeros.
 */
-utils.NaNtoZero = function(n) {
+utility.NaNtoZero = function(n) {
   if (typeof n !== 'number'
       || isNaN(n)
       || n === null
@@ -209,7 +209,7 @@ utils.NaNtoZero = function(n) {
 };
 
 /*
-Snippet of code you can insert into each utils.models.* to give you the ability to
+Snippet of code you can insert into each utility.models.* to give you the ability to
 do things like:
 chart.options({
   showXAxis: true,
@@ -217,9 +217,9 @@ chart.options({
 });
 
 To enable in the chart:
-chart.options = utils.optionsFunc.bind(chart);
+chart.options = utility.optionsFunc.bind(chart);
 */
-utils.optionsFunc = function(args) {
+utility.optionsFunc = function(args) {
   if (args) {
     d3.map(args).forEach((function(key,value) {
       if (typeof this[key] === "function") {
@@ -234,14 +234,14 @@ utils.optionsFunc = function(args) {
 //SUGAR ADDITIONS
 
 //gradient color
-utils.colorLinearGradient = function (d, i, p, c, defs) {
+utility.colorLinearGradient = function (d, i, p, c, defs) {
   var id = 'lg_gradient_' + i;
   var grad = defs.select('#' + id);
   if ( grad.empty() )
   {
     if (p.position === 'middle')
     {
-      utils.createLinearGradient( id, p, defs, [
+      utility.createLinearGradient( id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '20%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
@@ -251,7 +251,7 @@ utils.colorLinearGradient = function (d, i, p, c, defs) {
     }
     else
     {
-      utils.createLinearGradient( id, p, defs, [
+      utility.createLinearGradient( id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '100%','stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 }
@@ -265,7 +265,7 @@ utils.colorLinearGradient = function (d, i, p, c, defs) {
 // id:dynamic id for arc
 // radius:outer edge of gradient
 // stops: an array of attribute objects
-utils.createLinearGradient = function (id, params, defs, stops) {
+utility.createLinearGradient = function (id, params, defs, stops) {
   var x2 = params.orientation === 'horizontal' ? '0%' : '100%';
   var y2 = params.orientation === 'horizontal' ? '100%' : '0%';
   var attrs, stop;
@@ -290,12 +290,12 @@ utils.createLinearGradient = function (id, params, defs, stops) {
   }
 };
 
-utils.colorRadialGradient = function (d, i, p, c, defs) {
+utility.colorRadialGradient = function (d, i, p, c, defs) {
   var id = 'rg_gradient_' + i;
   var grad = defs.select('#' + id);
   if ( grad.empty() )
   {
-    utils.createRadialGradient( id, p, defs, [
+    utility.createRadialGradient( id, p, defs, [
       { 'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
       { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1 }
     ]);
@@ -303,7 +303,7 @@ utils.colorRadialGradient = function (d, i, p, c, defs) {
   return 'url(#' + id + ')';
 };
 
-utils.createRadialGradient = function (id, params, defs, stops) {
+utility.createRadialGradient = function (id, params, defs, stops) {
   var attrs, stop;
   var grad = defs.append('radialGradient')
         .attr('id', id)
@@ -325,7 +325,7 @@ utils.createRadialGradient = function (id, params, defs, stops) {
   }
 };
 
-utils.getAbsoluteXY = function (element) {
+utility.getAbsoluteXY = function (element) {
   var viewportElement = document.documentElement;
   var box = element.getBoundingClientRect();
   var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
@@ -337,7 +337,7 @@ utils.getAbsoluteXY = function (element) {
 };
 
 // Creates a rectangle with rounded corners
-utils.roundedRectangle = function (x, y, width, height, radius) {
+utility.roundedRectangle = function (x, y, width, height, radius) {
   return "M" + x + "," + y +
        "h" + (width - radius * 2) +
        "a" + radius + "," + radius + " 0 0 1 " + radius + "," + radius +
@@ -350,7 +350,7 @@ utils.roundedRectangle = function (x, y, width, height, radius) {
        "z";
 };
 
-utils.dropShadow = function (id, defs, options) {
+utility.dropShadow = function (id, defs, options) {
   var opt = options || {}
     , h = opt.height || '130%'
     , o = opt.offset || 2
@@ -395,7 +395,7 @@ utils.dropShadow = function (id, defs, options) {
 //   fill="yellow" filter="url(#f1)" />
 // </svg>
 
-utils.stringSetLengths = function(_data, _container, _format, classes, styles) {
+utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
   var lengths = [],
       txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -411,7 +411,7 @@ utils.stringSetLengths = function(_data, _container, _format, classes, styles) {
   return lengths;
 };
 
-utils.stringSetThickness = function(_data, _container, _format, classes, styles) {
+utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
   var thicknesses = [],
       txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -427,12 +427,12 @@ utils.stringSetThickness = function(_data, _container, _format, classes, styles)
   return thicknesses;
 };
 
-utils.maxStringSetLength = function(_data, _container, _format) {
-  var lengths = utils.stringSetLengths(_data, _container, _format);
+utility.maxStringSetLength = function(_data, _container, _format) {
+  var lengths = utility.stringSetLengths(_data, _container, _format);
   return d3.max(lengths);
 };
 
-utils.stringEllipsify = function(_string, _container, _length) {
+utility.stringEllipsify = function(_string, _container, _length) {
   var txt = _container.select('.tmp-text-strings').select('text'),
       str = _string,
       len = 0,
@@ -456,7 +456,7 @@ utils.stringEllipsify = function(_string, _container, _length) {
   return str + (strLen > _length ? '...' : '');
 };
 
-utils.getTextBBox = function(text, floats) {
+utility.getTextBBox = function(text, floats) {
   var bbox = text.node().getBoundingClientRect(),
       size = {
         width: floats ? bbox.width : parseInt(bbox.width, 10),
@@ -465,7 +465,7 @@ utils.getTextBBox = function(text, floats) {
   return size;
 };
 
-utils.getTextContrast = function(c, i, callback) {
+utility.getTextContrast = function(c, i, callback) {
   var back = c,
       backLab = d3.lab(back),
       backLumen = backLab.l,
@@ -480,28 +480,28 @@ utils.getTextContrast = function(c, i, callback) {
   return text;
 };
 
-utils.isRTLChar = function(c) {
+utility.isRTLChar = function(c) {
   var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
       rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
   return rtlCharReg_.test(c);
 };
 
-utils.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
-  var angleInRadians = utils.angleToRadians(angleInDegrees);
+utility.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
+  var angleInRadians = utility.angleToRadians(angleInDegrees);
   var x = centerX + radius * Math.cos(angleInRadians);
   var y = centerY + radius * Math.sin(angleInRadians);
   return [x, y];
 };
 
-utils.angleToRadians = function(angleInDegrees) {
+utility.angleToRadians = function(angleInDegrees) {
   return angleInDegrees * Math.PI / 180.0;
 };
 
-utils.angleToDegrees = function(angleInRadians) {
+utility.angleToDegrees = function(angleInRadians) {
   return angleInRadians * 180.0 / Math.PI;
 };
 
-utils.createTexture = function(defs, id, x, y) {
+utility.createTexture = function(defs, id, x, y) {
   var texture = '#sc-diagonalHatch-' + id,
       mask = '#sc-textureMask-' + id;
 
@@ -536,7 +536,7 @@ utils.createTexture = function(defs, id, x, y) {
   return mask;
 };
 
-// utils.numberFormatSI = function(d, p, c, l) {
+// utility.numberFormatSI = function(d, p, c, l) {
 //     var fmtr, spec, si;
 //     if (isNaN(d)) {
 //         return d;
@@ -556,7 +556,7 @@ utils.createTexture = function(defs, id, x, y) {
 //     return fmtr(spec)(d);
 // };
 
-utils.numberFormatSI = function(d, p, c, l) {
+utility.numberFormatSI = function(d, p, c, l) {
   var fmtr, spec;
   if (isNaN(d) || d === 0) {
       return d;
@@ -579,7 +579,7 @@ utils.numberFormatSI = function(d, p, c, l) {
   return fmtr(spec)(d);
 };
 
-utils.numberFormatRound = function(d, p, c, l) {
+utility.numberFormatRound = function(d, p, c, l) {
   var fmtr, spec;
   if (isNaN(d)) {
     return d;
@@ -591,7 +591,7 @@ utils.numberFormatRound = function(d, p, c, l) {
   return fmtr(spec)(d);
 };
 
-utils.isValidDate = function(d) {
+utility.isValidDate = function(d) {
   var testDate;
   if (!d) {
     return false;
@@ -600,7 +600,7 @@ utils.isValidDate = function(d) {
   return testDate instanceof Date && !isNaN(testDate.valueOf());
 };
 
-utils.dateFormat = function(d, p, l) {
+utility.dateFormat = function(d, p, l) {
   var date, locale, spec, fmtr;
   date = new Date(d);
   if (!(date instanceof Date) || isNaN(date.valueOf())) {
@@ -613,7 +613,7 @@ utils.dateFormat = function(d, p, l) {
   } else {
     // Ensure locality object has all needed properties
     // TODO: this is expensive so consider removing
-    locale = utils.buildLocality(l);
+    locale = utility.buildLocality(l);
     fmtr = d3.timeFormatLocale(locale).format;
     spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
     // TODO: if not explicit pattern provided, we should use .multi()
@@ -621,7 +621,7 @@ utils.dateFormat = function(d, p, l) {
   return fmtr(spec)(date);
 };
 
-utils.buildLocality = function(l, d) {
+utility.buildLocality = function(l, d) {
   var locale = l || {};
   var deep = !!d;
   var unfer = function(a) {
@@ -671,7 +671,7 @@ utils.buildLocality = function(l, d) {
   return definition;
 }
 
-utils.displayNoData = function (hasData, container, label, x, y) {
+utility.displayNoData = function (hasData, container, label, x, y) {
   var data = hasData ? [] : [label];
   var noData_bind = container.selectAll('.sc-no-data').data(data);
   var noData_entr = noData_bind.enter().append('text')
@@ -684,7 +684,7 @@ utils.displayNoData = function (hasData, container, label, x, y) {
     noData
       .attr('x', x)
       .attr('y', y)
-      .text(utils.identity);
+      .text(utility.identity);
     container.selectAll('.sc-chart-wrap').remove();
     return true;
   } else {
@@ -692,4 +692,4 @@ utils.displayNoData = function (hasData, container, label, x, y) {
   }
 };
 
-export default utils;
+export default utility;

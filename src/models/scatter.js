@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 
 export default function scatter() {
 
@@ -11,7 +11,7 @@ export default function scatter() {
       width = 960,
       height = 500,
       margin = {top: 0, right: 0, bottom: 0, left: 0},
-      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); }, // chooses color
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); }, // chooses color
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       x = d3.scaleLinear(),
@@ -38,7 +38,7 @@ export default function scatter() {
         return z(getZ(d, i));
       },
       getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       onlyCircles = true, // Set to false to use shapes
 
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
@@ -189,7 +189,7 @@ export default function scatter() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
-        return utils.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
+        return utility.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
       wrap_entr.append('g').attr('class', 'sc-group');
@@ -221,7 +221,7 @@ export default function scatter() {
       // Series
 
       var series_bind = group_wrap.selectAll('.sc-series')
-            .data(utils.identity, function(d) { return d.seriesIndex; });
+            .data(utility.identity, function(d) { return d.seriesIndex; });
       var series_entr = series_bind.enter().append('g')
             .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
@@ -522,19 +522,19 @@ export default function scatter() {
 
   chart.x = function(_) {
     if (!arguments.length) { return getX; }
-    getX = utils.functor(_);
+    getX = utility.functor(_);
     return chart;
   };
 
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
   chart.z = function(_) {
     if (!arguments.length) { return getZ; }
-    getZ = utils.functor(_);
+    getZ = utility.functor(_);
     return chart;
   };
 
@@ -594,7 +594,7 @@ export default function scatter() {
 
   chart.size = function(_) {
     if (!arguments.length) { return getZ; }
-    getZ = utils.functor(_);
+    getZ = utility.functor(_);
     return chart;
   };
 
@@ -715,7 +715,7 @@ export default function scatter() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     return chart;
   };
 

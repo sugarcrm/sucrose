@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
 
@@ -90,7 +90,7 @@ export default function lineChart() {
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
             var label = xIsDatetime ?
-                          utils.dateFormat(d, '%x', chart.locality()) :
+                          utility.dateFormat(d, '%x', chart.locality()) :
                           isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
                             d :
                             xTickLabels[parseInt(d, 10)];
@@ -98,7 +98,7 @@ export default function lineChart() {
           };
 
       var yValueFormat = function(d) {
-            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -114,7 +114,7 @@ export default function lineChart() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -155,9 +155,9 @@ export default function lineChart() {
 
       // TODO: what if the dimension is a numerical range?
       // xValuesAreDates = xTickLabels.length ?
-      //       utils.isValidDate(xTickLabels[0]) :
-      //       utils.isValidDate(model.x()(data[0].values[0]));
-      // xValuesAreDates = isArrayData && utils.isValidDate(data[0].values[0][0]);
+      //       utility.isValidDate(xTickLabels[0]) :
+      //       utility.isValidDate(model.x()(data[0].values[0]));
+      // xValuesAreDates = isArrayData && utility.isValidDate(data[0].values[0][0]);
 
       // SAVE FOR LATER
       // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
@@ -384,7 +384,7 @@ export default function lineChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -437,7 +437,7 @@ export default function lineChart() {
           controlsHeight = controls.height();
         }
         if (showLegend) {
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -723,7 +723,7 @@ export default function lineChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -747,7 +747,7 @@ export default function lineChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');

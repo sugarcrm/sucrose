@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 
 export default function legend() {
 
@@ -34,7 +34,7 @@ export default function legend() {
         return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
       },
       color = function(d) {
-        return utils.defaultColor()(d, d.seriesIndex);
+        return utility.defaultColor()(d, d.seriesIndex);
       },
       classes = function(d) {
         return 'sc-series sc-series-' + d.seriesIndex;
@@ -101,7 +101,7 @@ export default function legend() {
 
       wrap_entr.append('rect').attr('class', 'sc-legend-background');
       var back = wrap.select('.sc-legend-background');
-      var backFilter = utils.dropShadow('legend_back_' + id, defs, {blur: 2});
+      var backFilter = utility.dropShadow('legend_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('text').attr('class', 'sc-legend-link');
       var link = wrap.select('.sc-legend-link');
@@ -112,7 +112,7 @@ export default function legend() {
       mask_entr.append('g').attr('class', 'sc-group');
       var g = wrap.select('.sc-group');
 
-      var series_bind = g.selectAll('.sc-series').data(utils.identity, function(d) { return d.seriesIndex; });
+      var series_bind = g.selectAll('.sc-series').data(utility.identity, function(d) { return d.seriesIndex; });
       series_bind.exit().remove();
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
             .on('mouseover', function(d, i) {
@@ -557,7 +557,7 @@ export default function legend() {
               var zoom = d3.zoom()
                     .on('zoom', panLegend);
               var drag = d3.drag()
-                    .subject(utils.identity)
+                    .subject(utility.identity)
                     .on('drag', panLegend);
 
               back.call(zoom);
@@ -737,7 +737,7 @@ export default function legend() {
     if (!arguments.length) {
       return color;
     }
-    color = utils.getColor(_);
+    color = utility.getColor(_);
     return legend;
   };
 

@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 
 export default function funnel() {
 
@@ -19,11 +19,11 @@ export default function funnel() {
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
       fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return utils.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -66,7 +66,7 @@ export default function funnel() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -149,7 +149,7 @@ export default function funnel() {
       // Definitions
 
       if (textureFill) {
-        var mask = utils.createTexture(defs_entr, id);
+        var mask = utility.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
@@ -548,7 +548,7 @@ export default function funnel() {
             dy = parseFloat(lbl.attr('dy')),
             maxWidth = fnWidth(d);
 
-        lbl.text(utils.stringEllipsify(text, container, maxWidth))
+        lbl.text(utility.stringEllipsify(text, container, maxWidth))
           .call(fmtLabel, dy);
       }
 
@@ -757,11 +757,11 @@ export default function funnel() {
 
       function fmtFill(d, i, j) {
         var backColor = d3.select(this.parentNode).style('fill');
-        return utils.getTextContrast(backColor, i);
+        return utility.getTextContrast(backColor, i);
       }
 
       function fmtDirection(d) {
-        var m = utils.isRTLChar(d.slice(-1)),
+        var m = utility.isRTLChar(d.slice(-1)),
             dir = m ? 'rtl' : 'ltr';
         return 'ltr';
       }
@@ -893,7 +893,7 @@ export default function funnel() {
     if (!arguments.length) {
       return getY;
     }
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -973,7 +973,7 @@ export default function funnel() {
     if (!arguments.length) {
       return locality;
     }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     return chart;
   };
 

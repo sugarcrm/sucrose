@@ -13,27 +13,27 @@ d3 = 'default' in d3 ? d3['default'] : d3;
       UTILITIES
 -------------------*/
 
-const utils = {};
+const utility = {};
 
-utils.strip = function(s) {
+utility.strip = function(s) {
   return s.replace(/(\s|&)/g,'');
 };
 
-utils.identity = function(d) {
+utility.identity = function(d) {
   return d;
 };
 
-utils.functor = function functor(v) {
+utility.functor = function functor(v) {
   return typeof v === "function" ? v : function() {
     return v;
   };
 };
 
-utils.daysInMonth = function(month, year) {
+utility.daysInMonth = function(month, year) {
   return (new Date(year, month+1, 0)).getDate();
 };
 
-utils.windowSize = function () {
+utility.windowSize = function () {
   // Sane defaults
   var size = {width: 640, height: 480};
 
@@ -61,7 +61,7 @@ utils.windowSize = function () {
 
 // Easy way to bind multiple functions to window.onresize
 // TODO: give a way to remove a function after its bound, other than removing alkl of them
-// utils.windowResize = function (fun)
+// utility.windowResize = function (fun)
 // {
 //   var oldresize = window.onresize;
 
@@ -71,7 +71,7 @@ utils.windowSize = function () {
 //   }
 // }
 
-utils.windowResize = function (fun) {
+utility.windowResize = function (fun) {
   if (window.attachEvent) {
       window.attachEvent('onresize', fun);
   }
@@ -83,7 +83,7 @@ utils.windowResize = function (fun) {
   }
 };
 
-utils.windowUnResize = function (fun) {
+utility.windowUnResize = function (fun) {
   if (window.detachEvent) {
       window.detachEvent('onresize', fun);
   }
@@ -95,7 +95,7 @@ utils.windowUnResize = function (fun) {
   }
 };
 
-utils.resizeOnPrint = function (fn) {
+utility.resizeOnPrint = function (fn) {
   if (window.matchMedia) {
       var mediaQueryList = window.matchMedia('print');
       mediaQueryList.addListener(function (mql) {
@@ -112,7 +112,7 @@ utils.resizeOnPrint = function (fn) {
   //window.attachEvent("onafterprint", fn);
 };
 
-utils.unResizeOnPrint = function (fn) {
+utility.unResizeOnPrint = function (fn) {
   if (window.matchMedia) {
       var mediaQueryList = window.matchMedia('print');
       mediaQueryList.removeListener(function (mql) {
@@ -130,10 +130,10 @@ utils.unResizeOnPrint = function (fn) {
 // Backwards compatible way to implement more d3-like coloring of graphs.
 // If passed an array, wrap it in a function which implements the old default
 // behavior
-utils.getColor = function (color) {
+utility.getColor = function (color) {
   if (!arguments.length) {
     //if you pass in nothing, get default colors back
-    return utils.defaultColor();
+    return utility.defaultColor();
   }
 
   if (Array.isArray(color)) {
@@ -152,7 +152,7 @@ utils.getColor = function (color) {
 };
 
 // Default color chooser uses the index of an object as before.
-utils.defaultColor = function () {
+utility.defaultColor = function () {
   var colors = d3.scaleOrdinal(d3.schemeCategory20).range();
   return function (d, i) {
     return d.color || colors[i % colors.length];
@@ -162,7 +162,7 @@ utils.defaultColor = function () {
 
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
-utils.customTheme = function (dictionary, getKey, defaultColors) {
+utility.customTheme = function (dictionary, getKey, defaultColors) {
   getKey = getKey || function (series) { return series.key; }; // use default series.key if getKey is undefined
   defaultColors = defaultColors || d3.scaleOrdinal(d3.schemeCategory20).range(); //default color function
 
@@ -186,7 +186,7 @@ utils.customTheme = function (dictionary, getKey, defaultColors) {
 // From the PJAX example on d3js.org, while this is not really directly needed
 // it's a very cool method for doing pjax, I may expand upon it a little bit,
 // open to suggestions on anything that may be useful
-utils.pjax = function (links, content) {
+utility.pjax = function (links, content) {
   d3.selectAll(links).on("click", function () {
     history.pushState(this.href, this.textContent, this.href);
     load(this.href);
@@ -197,7 +197,7 @@ utils.pjax = function (links, content) {
     d3.html(href, function (fragment) {
       var target = d3.select(content).node();
       target.parentNode.replaceChild(d3.select(fragment).select(content).node(), target);
-      utils.pjax(links, content);
+      utility.pjax(links, content);
     });
   }
 
@@ -208,7 +208,7 @@ utils.pjax = function (links, content) {
 
 /* Numbers that are undefined, null or NaN, convert them to zeros.
 */
-utils.NaNtoZero = function(n) {
+utility.NaNtoZero = function(n) {
   if (typeof n !== 'number'
       || isNaN(n)
       || n === null
@@ -218,7 +218,7 @@ utils.NaNtoZero = function(n) {
 };
 
 /*
-Snippet of code you can insert into each utils.models.* to give you the ability to
+Snippet of code you can insert into each utility.models.* to give you the ability to
 do things like:
 chart.options({
   showXAxis: true,
@@ -226,9 +226,9 @@ chart.options({
 });
 
 To enable in the chart:
-chart.options = utils.optionsFunc.bind(chart);
+chart.options = utility.optionsFunc.bind(chart);
 */
-utils.optionsFunc = function(args) {
+utility.optionsFunc = function(args) {
   if (args) {
     d3.map(args).forEach((function(key,value) {
       if (typeof this[key] === "function") {
@@ -243,14 +243,14 @@ utils.optionsFunc = function(args) {
 //SUGAR ADDITIONS
 
 //gradient color
-utils.colorLinearGradient = function (d, i, p, c, defs) {
+utility.colorLinearGradient = function (d, i, p, c, defs) {
   var id = 'lg_gradient_' + i;
   var grad = defs.select('#' + id);
   if ( grad.empty() )
   {
     if (p.position === 'middle')
     {
-      utils.createLinearGradient( id, p, defs, [
+      utility.createLinearGradient( id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '20%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
@@ -260,7 +260,7 @@ utils.colorLinearGradient = function (d, i, p, c, defs) {
     }
     else
     {
-      utils.createLinearGradient( id, p, defs, [
+      utility.createLinearGradient( id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '100%','stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 }
@@ -274,7 +274,7 @@ utils.colorLinearGradient = function (d, i, p, c, defs) {
 // id:dynamic id for arc
 // radius:outer edge of gradient
 // stops: an array of attribute objects
-utils.createLinearGradient = function (id, params, defs, stops) {
+utility.createLinearGradient = function (id, params, defs, stops) {
   var x2 = params.orientation === 'horizontal' ? '0%' : '100%';
   var y2 = params.orientation === 'horizontal' ? '100%' : '0%';
   var attrs, stop;
@@ -299,12 +299,12 @@ utils.createLinearGradient = function (id, params, defs, stops) {
   }
 };
 
-utils.colorRadialGradient = function (d, i, p, c, defs) {
+utility.colorRadialGradient = function (d, i, p, c, defs) {
   var id = 'rg_gradient_' + i;
   var grad = defs.select('#' + id);
   if ( grad.empty() )
   {
-    utils.createRadialGradient( id, p, defs, [
+    utility.createRadialGradient( id, p, defs, [
       { 'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
       { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1 }
     ]);
@@ -312,7 +312,7 @@ utils.colorRadialGradient = function (d, i, p, c, defs) {
   return 'url(#' + id + ')';
 };
 
-utils.createRadialGradient = function (id, params, defs, stops) {
+utility.createRadialGradient = function (id, params, defs, stops) {
   var attrs, stop;
   var grad = defs.append('radialGradient')
         .attr('id', id)
@@ -334,7 +334,7 @@ utils.createRadialGradient = function (id, params, defs, stops) {
   }
 };
 
-utils.getAbsoluteXY = function (element) {
+utility.getAbsoluteXY = function (element) {
   var viewportElement = document.documentElement;
   var box = element.getBoundingClientRect();
   var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
@@ -346,7 +346,7 @@ utils.getAbsoluteXY = function (element) {
 };
 
 // Creates a rectangle with rounded corners
-utils.roundedRectangle = function (x, y, width, height, radius) {
+utility.roundedRectangle = function (x, y, width, height, radius) {
   return "M" + x + "," + y +
        "h" + (width - radius * 2) +
        "a" + radius + "," + radius + " 0 0 1 " + radius + "," + radius +
@@ -359,7 +359,7 @@ utils.roundedRectangle = function (x, y, width, height, radius) {
        "z";
 };
 
-utils.dropShadow = function (id, defs, options) {
+utility.dropShadow = function (id, defs, options) {
   var opt = options || {}
     , h = opt.height || '130%'
     , o = opt.offset || 2
@@ -404,7 +404,7 @@ utils.dropShadow = function (id, defs, options) {
 //   fill="yellow" filter="url(#f1)" />
 // </svg>
 
-utils.stringSetLengths = function(_data, _container, _format, classes, styles) {
+utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
   var lengths = [],
       txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -420,7 +420,7 @@ utils.stringSetLengths = function(_data, _container, _format, classes, styles) {
   return lengths;
 };
 
-utils.stringSetThickness = function(_data, _container, _format, classes, styles) {
+utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
   var thicknesses = [],
       txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -436,12 +436,12 @@ utils.stringSetThickness = function(_data, _container, _format, classes, styles)
   return thicknesses;
 };
 
-utils.maxStringSetLength = function(_data, _container, _format) {
-  var lengths = utils.stringSetLengths(_data, _container, _format);
+utility.maxStringSetLength = function(_data, _container, _format) {
+  var lengths = utility.stringSetLengths(_data, _container, _format);
   return d3.max(lengths);
 };
 
-utils.stringEllipsify = function(_string, _container, _length) {
+utility.stringEllipsify = function(_string, _container, _length) {
   var txt = _container.select('.tmp-text-strings').select('text'),
       str = _string,
       len = 0,
@@ -465,7 +465,7 @@ utils.stringEllipsify = function(_string, _container, _length) {
   return str + (strLen > _length ? '...' : '');
 };
 
-utils.getTextBBox = function(text, floats) {
+utility.getTextBBox = function(text, floats) {
   var bbox = text.node().getBoundingClientRect(),
       size = {
         width: floats ? bbox.width : parseInt(bbox.width, 10),
@@ -474,7 +474,7 @@ utils.getTextBBox = function(text, floats) {
   return size;
 };
 
-utils.getTextContrast = function(c, i, callback) {
+utility.getTextContrast = function(c, i, callback) {
   var back = c,
       backLab = d3.lab(back),
       backLumen = backLab.l,
@@ -489,28 +489,28 @@ utils.getTextContrast = function(c, i, callback) {
   return text;
 };
 
-utils.isRTLChar = function(c) {
+utility.isRTLChar = function(c) {
   var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
       rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
   return rtlCharReg_.test(c);
 };
 
-utils.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
-  var angleInRadians = utils.angleToRadians(angleInDegrees);
+utility.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
+  var angleInRadians = utility.angleToRadians(angleInDegrees);
   var x = centerX + radius * Math.cos(angleInRadians);
   var y = centerY + radius * Math.sin(angleInRadians);
   return [x, y];
 };
 
-utils.angleToRadians = function(angleInDegrees) {
+utility.angleToRadians = function(angleInDegrees) {
   return angleInDegrees * Math.PI / 180.0;
 };
 
-utils.angleToDegrees = function(angleInRadians) {
+utility.angleToDegrees = function(angleInRadians) {
   return angleInRadians * 180.0 / Math.PI;
 };
 
-utils.createTexture = function(defs, id, x, y) {
+utility.createTexture = function(defs, id, x, y) {
   var texture = '#sc-diagonalHatch-' + id,
       mask = '#sc-textureMask-' + id;
 
@@ -545,7 +545,7 @@ utils.createTexture = function(defs, id, x, y) {
   return mask;
 };
 
-// utils.numberFormatSI = function(d, p, c, l) {
+// utility.numberFormatSI = function(d, p, c, l) {
 //     var fmtr, spec, si;
 //     if (isNaN(d)) {
 //         return d;
@@ -565,7 +565,7 @@ utils.createTexture = function(defs, id, x, y) {
 //     return fmtr(spec)(d);
 // };
 
-utils.numberFormatSI = function(d, p, c, l) {
+utility.numberFormatSI = function(d, p, c, l) {
   var fmtr, spec;
   if (isNaN(d) || d === 0) {
       return d;
@@ -588,7 +588,7 @@ utils.numberFormatSI = function(d, p, c, l) {
   return fmtr(spec)(d);
 };
 
-utils.numberFormatRound = function(d, p, c, l) {
+utility.numberFormatRound = function(d, p, c, l) {
   var fmtr, spec;
   if (isNaN(d)) {
     return d;
@@ -600,7 +600,7 @@ utils.numberFormatRound = function(d, p, c, l) {
   return fmtr(spec)(d);
 };
 
-utils.isValidDate = function(d) {
+utility.isValidDate = function(d) {
   var testDate;
   if (!d) {
     return false;
@@ -609,7 +609,7 @@ utils.isValidDate = function(d) {
   return testDate instanceof Date && !isNaN(testDate.valueOf());
 };
 
-utils.dateFormat = function(d, p, l) {
+utility.dateFormat = function(d, p, l) {
   var date, locale, spec, fmtr;
   date = new Date(d);
   if (!(date instanceof Date) || isNaN(date.valueOf())) {
@@ -622,7 +622,7 @@ utils.dateFormat = function(d, p, l) {
   } else {
     // Ensure locality object has all needed properties
     // TODO: this is expensive so consider removing
-    locale = utils.buildLocality(l);
+    locale = utility.buildLocality(l);
     fmtr = d3.timeFormatLocale(locale).format;
     spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
     // TODO: if not explicit pattern provided, we should use .multi()
@@ -630,7 +630,7 @@ utils.dateFormat = function(d, p, l) {
   return fmtr(spec)(date);
 };
 
-utils.buildLocality = function(l, d) {
+utility.buildLocality = function(l, d) {
   var locale = l || {};
   var deep = !!d;
   var unfer = function(a) {
@@ -680,7 +680,7 @@ utils.buildLocality = function(l, d) {
   return definition;
 }
 
-utils.displayNoData = function (hasData, container, label, x, y) {
+utility.displayNoData = function (hasData, container, label, x, y) {
   var data = hasData ? [] : [label];
   var noData_bind = container.selectAll('.sc-no-data').data(data);
   var noData_entr = noData_bind.enter().append('text')
@@ -693,7 +693,7 @@ utils.displayNoData = function (hasData, container, label, x, y) {
     noData
       .attr('x', x)
       .attr('y', y)
-      .text(utils.identity);
+      .text(utility.identity);
     container.selectAll('.sc-chart-wrap').remove();
     return true;
   } else {
@@ -991,7 +991,7 @@ function axis() {
       var axisLabel = wrap.selectAll('text.sc-axislabel').merge(axisLabel_entr);
 
       axisLabel
-        .text(utils.identity);
+        .text(utility.identity);
 
       //------------------------------------------------------------
       // Tick label handling
@@ -1354,7 +1354,7 @@ function axis() {
         tickText.each(function(d, i) {
           var textContent = axis.tickFormat()(d, i, selection, true),
               textNode = d3.select(this),
-              isDate = utils.isValidDate(textContent),
+              isDate = utility.isValidDate(textContent),
               textArray = (textContent && textContent !== '' ? isDate ? textContent : textContent.replace('/', '/ ') : []).split(' '),
               i = 0,
               l = textArray.length,
@@ -1693,11 +1693,11 @@ function funnel() {
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
       fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return utils.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -1740,7 +1740,7 @@ function funnel() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -1823,7 +1823,7 @@ function funnel() {
       // Definitions
 
       if (textureFill) {
-        var mask = utils.createTexture(defs_entr, id);
+        var mask = utility.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
@@ -2222,7 +2222,7 @@ function funnel() {
             dy = parseFloat(lbl.attr('dy')),
             maxWidth = fnWidth(d);
 
-        lbl.text(utils.stringEllipsify(text, container, maxWidth))
+        lbl.text(utility.stringEllipsify(text, container, maxWidth))
           .call(fmtLabel, dy);
       }
 
@@ -2431,11 +2431,11 @@ function funnel() {
 
       function fmtFill(d, i, j) {
         var backColor = d3.select(this.parentNode).style('fill');
-        return utils.getTextContrast(backColor, i);
+        return utility.getTextContrast(backColor, i);
       }
 
       function fmtDirection(d) {
-        var m = utils.isRTLChar(d.slice(-1)),
+        var m = utility.isRTLChar(d.slice(-1)),
             dir = m ? 'rtl' : 'ltr';
         return 'ltr';
       }
@@ -2567,7 +2567,7 @@ function funnel() {
     if (!arguments.length) {
       return getY;
     }
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -2647,7 +2647,7 @@ function funnel() {
     if (!arguments.length) {
       return locality;
     }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     return chart;
   };
 
@@ -2723,12 +2723,12 @@ function gauge() {
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
       fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       direction = 'ltr',
       clipEdge = true,
       delay = 0,
       duration = 720,
-      color = function (d, i) { return utils.defaultColor()(d, d.seriesIndex); },
+      color = function (d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function (d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -2762,7 +2762,7 @@ function gauge() {
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         var params = {x: 0, y: 0, r: radius, s: ringWidth / 100, u: 'userSpaceOnUse'};
-        return utils.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
+        return utility.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
       };
 
       var radius = Math.min((availableWidth / 2), availableHeight) / ((100 + labelInset) / 100),
@@ -2917,7 +2917,7 @@ function gauge() {
         .attr('transform', function(d) {
           return 'rotate(' + newAngle(d) + ') translate(0,' + (prop(-1.5) - radius) + ')';
         })
-        .text(utils.identity)
+        .text(utility.identity)
         .style('text-anchor', 'middle')
         .style('font-size', prop(0.6) + 'em');
 
@@ -2988,7 +2988,7 @@ function gauge() {
 
       function calcOdomBoxSize(wrap) {
         var bbox = wrap.select('.sc-odomText').node().getBoundingClientRect();
-        wrap.select('.sc-odomBox').attr('d', utils.roundedRectangle(
+        wrap.select('.sc-odomBox').attr('d', utility.roundedRectangle(
             -bbox.width / 2,
             -bbox.height + prop(1.5),
             bbox.width + prop(4),
@@ -3101,7 +3101,7 @@ function gauge() {
     if (!arguments.length) {
       return getY;
     }
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -3181,7 +3181,7 @@ function gauge() {
     if (!arguments.length) {
       return locality;
     }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     return chart;
   };
 
@@ -3330,7 +3330,7 @@ function legend() {
         return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
       },
       color = function(d) {
-        return utils.defaultColor()(d, d.seriesIndex);
+        return utility.defaultColor()(d, d.seriesIndex);
       },
       classes = function(d) {
         return 'sc-series sc-series-' + d.seriesIndex;
@@ -3397,7 +3397,7 @@ function legend() {
 
       wrap_entr.append('rect').attr('class', 'sc-legend-background');
       var back = wrap.select('.sc-legend-background');
-      var backFilter = utils.dropShadow('legend_back_' + id, defs, {blur: 2});
+      var backFilter = utility.dropShadow('legend_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('text').attr('class', 'sc-legend-link');
       var link = wrap.select('.sc-legend-link');
@@ -3408,7 +3408,7 @@ function legend() {
       mask_entr.append('g').attr('class', 'sc-group');
       var g = wrap.select('.sc-group');
 
-      var series_bind = g.selectAll('.sc-series').data(utils.identity, function(d) { return d.seriesIndex; });
+      var series_bind = g.selectAll('.sc-series').data(utility.identity, function(d) { return d.seriesIndex; });
       series_bind.exit().remove();
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
             .on('mouseover', function(d, i) {
@@ -3853,7 +3853,7 @@ function legend() {
               var zoom = d3.zoom()
                     .on('zoom', panLegend);
               var drag = d3.drag()
-                    .subject(utils.identity)
+                    .subject(utility.identity)
                     .on('drag', panLegend);
 
               back.call(zoom);
@@ -4033,7 +4033,7 @@ function legend() {
     if (!arguments.length) {
       return color;
     }
-    color = utils.getColor(_);
+    color = utility.getColor(_);
     return legend;
   };
 
@@ -4168,7 +4168,7 @@ function line() {
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
-      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
 
@@ -4217,7 +4217,7 @@ function line() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utility.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -4502,7 +4502,7 @@ function line() {
 
   chart.isArea = function(_) {
     if (!arguments.length) { return isArea; }
-    isArea = utils.functor(_);
+    isArea = utility.functor(_);
     return chart;
   };
 
@@ -4525,7 +4525,7 @@ function multiBar() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
       stacked = true,
       barColor = null, // adding the ability to set the color for each rather than the whole group
@@ -4542,7 +4542,7 @@ function multiBar() {
       xDomain,
       yDomain,
       nice = false,
-      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       fill = color,
       textureFill = false,
       barColor = null, // adding the ability to set the color for each rather than the whole group
@@ -4657,14 +4657,14 @@ function multiBar() {
         minSeries = seriesExtents[0];
         maxSeries = seriesExtents[1];
 
-        labelLengths = utils.stringSetLengths(
+        labelLengths = utility.stringSetLengths(
             labelData,
             container,
             valueFormat,
             'sc-label-value'
           );
 
-        labelThickness = utils.stringSetThickness(
+        labelThickness = utility.stringSetThickness(
             ['Xy'],
             container,
             valueFormat,
@@ -4784,7 +4784,7 @@ function multiBar() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i, p) {
-        return utils.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -4804,12 +4804,12 @@ function multiBar() {
 
 
       if (textureFill) {
-        var mask = utils.createTexture(defs_entr, id);
+        var mask = utility.createTexture(defs_entr, id);
       }
 
       //------------------------------------------------------------
 
-      var series_bind = wrap.selectAll('.sc-series').data(utils.identity);
+      var series_bind = wrap.selectAll('.sc-series').data(utility.identity);
       var series_entr = series_bind.enter().append('g')
             .attr('class', classes)
             .style('stroke-opacity', 1e-6)
@@ -4917,7 +4917,7 @@ function multiBar() {
             .attr(dimX, barThickness)
             .style('fill', function(d, i) {
               var backColor = fill(d),
-                  foreColor = utils.getTextContrast(backColor, i);
+                  foreColor = utility.getTextContrast(backColor, i);
               return foreColor;
             });
       }
@@ -5074,7 +5074,7 @@ function multiBar() {
               }
               // var backColor = d3.select(this.previousSibling).style('fill'),
               var backColor = fill(d),
-                  textColor = utils.getTextContrast(backColor, i);
+                  textColor = utility.getTextContrast(backColor, i);
               return textColor;
             })
             .style('fill-opacity', function(d, i) {
@@ -5333,7 +5333,7 @@ function multiBar() {
     if (!arguments.length) {
       return barColor;
     }
-    barColor = utils.getColor(_);
+    barColor = utility.getColor(_);
     return chart;
   };
 
@@ -5443,7 +5443,7 @@ function multiBar() {
     if (!arguments.length) {
       return locality;
     }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     return chart;
   };
 
@@ -5469,11 +5469,11 @@ function pie() {
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
       fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return utils.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
@@ -5509,10 +5509,10 @@ function pie() {
 
   var startAngle = function(d) {
         // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
-        return d.startAngle * arcDegrees / 360 + utils.angleToRadians(rotateDegrees);
+        return d.startAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
       };
   var endAngle = function(d) {
-        return d.endAngle * arcDegrees / 360 + utils.angleToRadians(rotateDegrees);
+        return d.endAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
       };
 
   var fixedRadius = function(chart) { return null; };
@@ -5540,7 +5540,7 @@ function pie() {
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
         var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
-        return utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
+        return utility.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -5550,7 +5550,7 @@ function pie() {
           doLabels = showLabels && pieLabelsOutside ? true : false;
 
       if (doLabels) {
-        labelLengths = utils.stringSetLengths(
+        labelLengths = utility.stringSetLengths(
             data,
             container,
             fmtKey,
@@ -5579,7 +5579,7 @@ function pie() {
       // Definitions
 
       if (textureFill) {
-        var mask = utils.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
+        var mask = utility.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
 
       //------------------------------------------------------------
@@ -5787,7 +5787,7 @@ function pie() {
           })
           .style('fill', function(d, i) {
             var backColor = d3.select(this.parentNode).style('fill');
-            return utils.getTextContrast(backColor, i);
+            return utility.getTextContrast(backColor, i);
           });
       }
 
@@ -5837,7 +5837,7 @@ function pie() {
                   bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
                   rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
               if (rW < 0) {
-                var label = utils.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
+                var label = utility.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
                 d3.select(this).select('text').text(label);
               }
             }
@@ -6150,7 +6150,7 @@ function pie() {
     if (!arguments.length) {
       return getY;
     }
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -6222,7 +6222,7 @@ function pie() {
     if (!arguments.length) {
       return locality;
     }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     return chart;
   };
 
@@ -6304,7 +6304,7 @@ function pie() {
     if (!arguments.length) {
       return holeFormat;
     }
-    holeFormat = utils.functor(_);
+    holeFormat = utility.functor(_);
     return chart;
   };
 
@@ -6376,7 +6376,7 @@ function pie() {
     if (!arguments.length) {
       return fixedRadius;
     }
-    fixedRadius = utils.functor(_);
+    fixedRadius = utility.functor(_);
     return chart;
   };
 
@@ -6395,7 +6395,7 @@ function scatter() {
       width = 960,
       height = 500,
       margin = {top: 0, right: 0, bottom: 0, left: 0},
-      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); }, // chooses color
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); }, // chooses color
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       x = d3.scaleLinear(),
@@ -6422,7 +6422,7 @@ function scatter() {
         return z(getZ(d, i));
       },
       getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       onlyCircles = true, // Set to false to use shapes
 
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
@@ -6573,7 +6573,7 @@ function scatter() {
 
       //set up the gradient constructor function
       chart.gradient = function(d, i) {
-        return utils.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
+        return utility.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
       wrap_entr.append('g').attr('class', 'sc-group');
@@ -6605,7 +6605,7 @@ function scatter() {
       // Series
 
       var series_bind = group_wrap.selectAll('.sc-series')
-            .data(utils.identity, function(d) { return d.seriesIndex; });
+            .data(utility.identity, function(d) { return d.seriesIndex; });
       var series_entr = series_bind.enter().append('g')
             .attr('class', 'sc-series')
             .style('stroke-opacity', 1e-6)
@@ -6906,19 +6906,19 @@ function scatter() {
 
   chart.x = function(_) {
     if (!arguments.length) { return getX; }
-    getX = utils.functor(_);
+    getX = utility.functor(_);
     return chart;
   };
 
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
   chart.z = function(_) {
     if (!arguments.length) { return getZ; }
-    getZ = utils.functor(_);
+    getZ = utility.functor(_);
     return chart;
   };
 
@@ -6978,7 +6978,7 @@ function scatter() {
 
   chart.size = function(_) {
     if (!arguments.length) { return getZ; }
-    getZ = utils.functor(_);
+    getZ = utility.functor(_);
     return chart;
   };
 
@@ -7099,7 +7099,7 @@ function scatter() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     return chart;
   };
 
@@ -7530,7 +7530,7 @@ function scroll() {
     if (!arguments.length) {
       return panHandler;
     }
-    panHandler = utils.functor(_);
+    panHandler = utility.functor(_);
     return scroll;
   };
 
@@ -7564,7 +7564,7 @@ function stackeArea() {
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       style = 'stack',
       offset = 'zero',
       order = 'default',
@@ -7572,7 +7572,7 @@ function stackeArea() {
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
       xDomain = null, // Override x domain (skips the calculation from data)
       yDomain = null, // Override y domain
-      color = function(d, i) { return utils.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       fill = color,
       classes = function(d, i) { return 'sc-area sc-series-' + d.seriesIndex; },
       dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -7617,7 +7617,7 @@ function stackeArea() {
 
       // gradient constructor function
       chart.gradient = function(d, i, p) {
-        return utils.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utility.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -7957,7 +7957,7 @@ function stackeArea() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     return chart;
   };
   chart.clipEdge = function(_) {
@@ -8031,7 +8031,7 @@ function table() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      color = utils.getColor(['#000']);
+      color = utility.getColor(['#000']);
 
   //============================================================
 
@@ -8073,7 +8073,7 @@ function table() {
         var hasData = d && d.length && d.filter(function (d) { return d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
       // Check to see if there's nothing to show.
       if (displayNoData(data)) {
@@ -8271,13 +8271,13 @@ function table() {
 
   chart.x = function (_) {
     if (!arguments.length) return getX;
-    getX = utils.functor(_);
+    getX = utility.functor(_);
     return chart;
   };
 
   chart.y = function (_) {
     if (!arguments.length) return getY;
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -8295,7 +8295,7 @@ function table() {
 
   chart.color = function (_) {
     if (!arguments.length) return color;
-    color = utils.getColor(_);
+    color = utility.getColor(_);
     return chart;
   };
 
@@ -8336,7 +8336,7 @@ function tree() {
     horizontal = false;
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-    color = function (d, i) { return utils.defaultColor()(d, i); },
+    color = function (d, i) { return utility.defaultColor()(d, i); },
     fill = function(d, i) { return color(d,i); },
     gradient = function(d, i) { return color(d,i); },
 
@@ -8353,10 +8353,10 @@ function tree() {
     getId = function(d) { return d.id; },
 
     fillGradient = function(d, i) {
-        return utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+        return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
     },
     useClass = false,
-    valueFormat = utils.numberFormatSI,
+    valueFormat = utility.numberFormatSI,
     showLabels = true,
     dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 
@@ -8402,13 +8402,13 @@ function tree() {
       var wrap_entr = wrap_bind.enter().append('g')
             .attr('class', 'sucrose sc-wrap sc-treeChart')
             .attr('id', 'sc-chart-' + id);
-      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
 
       wrap.call(zoom);
 
       var defs_entr = wrap_entr.append('defs');
       var defs = wrap.select('defs').merge(defs_entr);
-      var nodeShadow = utils.dropShadow('node_back_' + id, defs, {blur: 2});
+      var nodeShadow = utility.dropShadow('node_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('svg:rect')
             .attr('class', 'sc-chartBackground')
@@ -8810,7 +8810,7 @@ function tree() {
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -8934,7 +8934,7 @@ function treemap() {
       clipEdge = true, // if true, masks lines within x and y scale
       duration = 500,
       leafClick = function() { return false; },
-      // color = function(d, i) { return utils.defaultColor()(d, i); },
+      // color = function(d, i) { return utility.defaultColor()(d, i); },
       color = d3.scaleOrdinal().range(
                 d3.schemeCategory20.map(function(c) {
                   c = d3.rgb(c);
@@ -8993,7 +8993,7 @@ function treemap() {
       // Set up the gradient constructor function
       chart.gradient = function(d, i, p) {
         var iColor = (d.parent.colorIndex || NODES.indexOf(groupBy(d.parent)) || i);
-        return utils.colorLinearGradient(
+        return utility.colorLinearGradient(
           d,
           id + '-' + i,
           p,
@@ -9032,7 +9032,7 @@ function treemap() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([TREE]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
-      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = wrap.select('g.sc-chart-wrap').merge(g_entr);
@@ -9527,7 +9527,7 @@ function funnelChart() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -9693,7 +9693,7 @@ function funnelChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -9709,7 +9709,7 @@ function funnelChart() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -9866,7 +9866,7 @@ function funnelChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -9890,7 +9890,7 @@ function funnelChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -10065,12 +10065,12 @@ function bubbleChart() {
   var xValueFormat = function(d, labels, isDate) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)] || d;
-          return isDate ? utils.dateFormat(val, 'MMM', chart.locality()) : val;
+          return isDate ? utility.dateFormat(val, 'MMM', chart.locality()) : val;
       };
   var yValueFormat = function(d, labels, isCurrency) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)].key || d;
-          return utils.numberFormatSI(val, 2, isCurrency, chart.locality());
+          return utility.numberFormatSI(val, 2, isCurrency, chart.locality());
       };
 
   var scatter = models.scatter()
@@ -10143,7 +10143,7 @@ function bubbleChart() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -10392,7 +10392,7 @@ function bubbleChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -10408,7 +10408,7 @@ function bubbleChart() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -10473,7 +10473,7 @@ function bubbleChart() {
           .margin(innerMargin)
           .tickFormat(function(d, i) {
             var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
-            return utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
+            return utility.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
           });
         yAxis_wrap
           .call(yAxis);
@@ -10636,7 +10636,7 @@ function bubbleChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -10660,7 +10660,7 @@ function bubbleChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+          return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -10905,7 +10905,7 @@ function gaugeChart() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -11038,7 +11038,7 @@ function gaugeChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -11054,7 +11054,7 @@ function gaugeChart() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -11176,7 +11176,7 @@ function gaugeChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -11200,7 +11200,7 @@ function gaugeChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+          return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -11360,7 +11360,7 @@ function globeChart() {
       world_map = [],
       country_map = {},
       country_labels = {},
-      color = function(d, i) { return utils.defaultColor()(d, i); },
+      color = function(d, i) { return utility.defaultColor()(d, i); },
       classes = function(d, i) { return 'sc-country-' + i; },
       fill = color,
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
@@ -11434,7 +11434,7 @@ function globeChart() {
       chart.container = this;
 
       var fillGradient = function(d, i) {
-            return utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+            return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
           };
 
       //------------------------------------------------------------
@@ -11446,7 +11446,7 @@ function globeChart() {
         if (hasData) return false;
         x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -11463,7 +11463,7 @@ function globeChart() {
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-globe');
-      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
       var defs = wrap.select('defs');
@@ -11844,7 +11844,7 @@ function globeChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, i);
+          return utility.defaultColor()(d, i);
         };
     var classes = function(d, i) {
           return 'sc-country-' + i + (d.classes ? ' ' + d.classes : '');
@@ -11979,7 +11979,7 @@ function globeChart() {
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = utils.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -12130,7 +12130,7 @@ function lineChart() {
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
             var label = xIsDatetime ?
-                          utils.dateFormat(d, '%x', chart.locality()) :
+                          utility.dateFormat(d, '%x', chart.locality()) :
                           isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
                             d :
                             xTickLabels[parseInt(d, 10)];
@@ -12138,7 +12138,7 @@ function lineChart() {
           };
 
       var yValueFormat = function(d) {
-            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -12154,7 +12154,7 @@ function lineChart() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -12195,9 +12195,9 @@ function lineChart() {
 
       // TODO: what if the dimension is a numerical range?
       // xValuesAreDates = xTickLabels.length ?
-      //       utils.isValidDate(xTickLabels[0]) :
-      //       utils.isValidDate(model.x()(data[0].values[0]));
-      // xValuesAreDates = isArrayData && utils.isValidDate(data[0].values[0][0]);
+      //       utility.isValidDate(xTickLabels[0]) :
+      //       utility.isValidDate(model.x()(data[0].values[0]));
+      // xValuesAreDates = isArrayData && utility.isValidDate(data[0].values[0][0]);
 
       // SAVE FOR LATER
       // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
@@ -12424,7 +12424,7 @@ function lineChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -12477,7 +12477,7 @@ function lineChart() {
           controlsHeight = controls.height();
         }
         if (showLegend) {
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -12763,7 +12763,7 @@ function lineChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -12787,7 +12787,7 @@ function lineChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -13016,18 +13016,18 @@ function multiBarChart() {
                           groupLabels[i] || d:
                           d;
             var label = xIsDatetime ?
-                          utils.dateFormat(value, '%x', chart.locality()) :
+                          utility.dateFormat(value, '%x', chart.locality()) :
                           value;
             var width = Math.max(vertical ?
                           baseDimension * 2 :
                           availableWidth * 0.2, 75);
             return !noEllipsis ?
-                      utils.stringEllipsify(label, container, width) :
+                      utility.stringEllipsify(label, container, width) :
                       label;
           };
 
       var yValueFormat = function(d) {
-            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -13043,7 +13043,7 @@ function multiBarChart() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -13356,7 +13356,7 @@ function multiBarChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -13416,7 +13416,7 @@ function multiBarChart() {
           controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
         }
         if (showLegend) {
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -13740,7 +13740,7 @@ function multiBarChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -13764,7 +13764,7 @@ function multiBarChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -13903,7 +13903,7 @@ function multiBarChart() {
 
   chart.overflowHandler = function(_) {
     if (!arguments.length) { return overflowHandler; }
-    overflowHandler = utils.functor(_);
+    overflowHandler = utility.functor(_);
     return chart;
   };
 
@@ -13946,7 +13946,7 @@ function paretoChart() {
       },
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      locality = utils.buildLocality(),
+      locality = utility.buildLocality(),
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
@@ -14051,16 +14051,16 @@ function paretoChart() {
                           groupLabels[i] || d:
                           d;
             var label = xIsDatetime ?
-                          utils.dateFormat(value, '%x', chart.locality()) :
+                          utility.dateFormat(value, '%x', chart.locality()) :
                           value;
             var width = Math.max(baseDimension * 2, 75);
             return !noEllipsis ?
-                      utils.stringEllipsify(label, container, width) :
+                      utility.stringEllipsify(label, container, width) :
                       label;
           };
 
       var yValueFormat = function(d) {
-            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -14076,7 +14076,7 @@ function paretoChart() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -14397,7 +14397,7 @@ function paretoChart() {
             .attr('fill', 'black')
             .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -14871,7 +14871,7 @@ function paretoChart() {
     var type = arguments[0],
       params = arguments[1] || {};
     var barColor = function(d, i) {
-      return utils.defaultColor()(d, d.seriesIndex);
+      return utility.defaultColor()(d, d.seriesIndex);
     };
     var barClasses = function(d, i) {
       return 'sc-series sc-series-' + d.seriesIndex;
@@ -14911,7 +14911,7 @@ function paretoChart() {
         break;
       case 'data':
         barColor = function(d, i) {
-          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+          return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
         barClasses = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -15095,7 +15095,7 @@ function paretoChart() {
 
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
-    locality = utils.buildLocality(_);
+    locality = utility.buildLocality(_);
     multibar.locality(_);
     linesBackground.locality(_);
     return chart;
@@ -15189,7 +15189,7 @@ function pieChart() {
         var hasData = d && d.length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -15355,7 +15355,7 @@ function pieChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -15371,7 +15371,7 @@ function pieChart() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -15529,7 +15529,7 @@ function pieChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -15553,7 +15553,7 @@ function pieChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -15762,7 +15762,7 @@ function stackeAreaChart() {
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
             var label = xIsDatetime ?
-                          utils.dateFormat(d, 'yMMMM', chart.locality()) :
+                          utility.dateFormat(d, 'yMMMM', chart.locality()) :
                           isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
                             d :
                             xTickLabels[parseInt(d, 10)];
@@ -15770,7 +15770,7 @@ function stackeAreaChart() {
           };
 
       var yValueFormat = function(d) {
-            return utils.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
       chart.update = function() {
@@ -15786,7 +15786,7 @@ function stackeAreaChart() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utils.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -15827,9 +15827,9 @@ function stackeAreaChart() {
 
       // TODO: what if the dimension is a numerical range?
       // xValuesAreDates = xTickLabels.length ?
-      //       utils.isValidDate(xTickLabels[0]) :
-      //       utils.isValidDate(model.x()(data[0].values[0]));
-      // xValuesAreDates = isArrayData && utils.isValidDate(data[0].values[0][0]);
+      //       utility.isValidDate(xTickLabels[0]) :
+      //       utility.isValidDate(model.x()(data[0].values[0]));
+      // xValuesAreDates = isArrayData && utility.isValidDate(data[0].values[0][0]);
 
       // SAVE FOR LATER
       // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
@@ -15991,7 +15991,7 @@ function stackeAreaChart() {
               .attr('fill', 'black')
               .text(properties.title);
 
-          titleBBox = utils.getTextBBox(title_wrap.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -16044,7 +16044,7 @@ function stackeAreaChart() {
           controlsHeight = controls.height();
         }
         if (showLegend) {
-          var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
@@ -16423,7 +16423,7 @@ function stackeAreaChart() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex;
@@ -16447,7 +16447,7 @@ function stackeAreaChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return utils.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -16585,7 +16585,7 @@ function treemapChart() {
       tooltips = true,
       colorData = 'default',
       //create a clone of the d3 array
-      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utils.identity),
+      colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utility.identity),
       x, //can be accessed via chart.xScale()
       y, //can be accessed via chart.yScale()
       strings = {
@@ -16608,7 +16608,7 @@ function treemapChart() {
 
   var tooltipContent = function(point) {
         var tt = '<h3>' + point.data.name + '</h3>' +
-                 '<p>' + utils.numberFormatSI(point.value) + '</p>';
+                 '<p>' + utility.numberFormatSI(point.value) + '</p>';
         return tt;
       };
 
@@ -16637,7 +16637,7 @@ function treemapChart() {
       // Display noData message if there's nothing to show.
 
       if (!data || !data.length || !data.filter(function(d) { return d && d.children.length; }).length) {
-        container.select('.utils.sc-wrap').remove();
+        container.select('.utility.sc-wrap').remove();
         var noDataText = container.selectAll('.sc-no-data').data([chart.strings().noData]);
 
         noDataText.enter().append('text')
@@ -16648,7 +16648,7 @@ function treemapChart() {
         noDataText
           .attr('x', margin.left + availableWidth / 2)
           .attr('y', margin.top + availableHeight / 2)
-          .text(utils.identity);
+          .text(utility.identity);
 
         return chart;
       } else {
@@ -16845,7 +16845,7 @@ function treemapChart() {
         params = arguments[1] || {};
     var color = function(d, i) {
           var c = (type === 'data' && d.color) ? {color: d.color} : {};
-          return utils.getColor(colorArray)(c, i);
+          return utility.getColor(colorArray)(c, i);
         };
     var classes = function(d, i) {
           return 'sc-child';
@@ -16984,7 +16984,7 @@ const dev = false; //set false when in production
 
 exports.version = ver;
 exports.development = dev;
-exports.utils = utils;
+exports.utility = utility;
 exports.tooltip = tooltip;
 exports.models = models;
 exports.charts = charts;

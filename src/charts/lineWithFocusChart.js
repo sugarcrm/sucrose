@@ -1,5 +1,5 @@
 import d3 from 'd3';
-import utils from '../utils.js';
+import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
 
@@ -9,19 +9,19 @@ export default function lineWithFocusChart() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var lines = utils.line()
-    , lines2 = utils.line()
-    , xAxis = utils.axis()
-    , yAxis = utils.axis()
-    , x2Axis = utils.axis()
-    , y2Axis = utils.axis()
-    , legend = utils.legend()
+  var lines = utility.line()
+    , lines2 = utility.line()
+    , xAxis = utility.axis()
+    , yAxis = utility.axis()
+    , x2Axis = utility.axis()
+    , y2Axis = utility.axis()
+    , legend = utility.legend()
     , brush = d3.svg.brush()
     ;
 
   var margin = {top: 30, right: 30, bottom: 30, left: 60}
     , margin2 = {top: 0, right: 30, bottom: 20, left: 60}
-    , color = utils.defaultColor()
+    , color = utility.defaultColor()
     , width = null
     , height = null
     , height2 = 100
@@ -134,7 +134,7 @@ export default function lineWithFocusChart() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-lineWithFocusChart').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart');
-      var wrap = container.select('.utils.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
@@ -511,7 +511,7 @@ export default function lineWithFocusChart() {
 
   chart.color = function(_) {
     if (!arguments.length) return color;
-    color =utils.getColor(_);
+    color =utility.getColor(_);
     legend.color(color);
     return chart;
   };

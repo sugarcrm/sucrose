@@ -5,7 +5,7 @@ export {
   // dispatch,
   // render,
   // addGraph,
-  utils,
+  utility,
   tooltip,
 
   axis,
