@@ -1,35 +1,8 @@
 export {
   version,
-  dev,
-
-  // dispatch,
-  // render,
-  // addGraph,
+  development,
   utility,
   tooltip,
-
-  axis,
-  funnel,
-  gauge,
-  legend,
-  line,
-  multiBar,
-  pie,
-  stackedArea,
-  scatter,
-  scroll,
-  table,
-  tree,
-  treemap,
-
-  bubbleChart,
-  funnelChart,
-  gaugeChart,
-  globeChart,
-  lineChart,
-  multiBarChart,
-  paretoChart,
-  pieChart,
-  stackedAreaChart,
-  treemapChart
+  models,
+  charts,
 } from "sucrose";

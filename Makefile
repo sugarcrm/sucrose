@@ -21,8 +21,11 @@ npm-prod:
 	npm i --production
 
 dependencies: clean-dependencies
+	cp ./node_modules/d3/build/d3.js ./build/d3.js
 	cp ./node_modules/d3/build/d3.min.js ./build/d3.min.js
+	cp ./node_modules/topojson/build/topojson.js ./build/topojson.js
 	cp ./node_modules/topojson/build/topojson.min.js ./build/topojson.min.js
+	cp ./node_modules/d3fc-rebind/build/d3fc-rebind.js ./build/d3fc-rebind.js
 	cp ./node_modules/d3fc-rebind/build/d3fc-rebind.min.js ./build/d3fc-rebind.min.js
 
 clean-dependencies:
@@ -57,7 +60,6 @@ clean-js:
 
 # Stylesheets
 css: clean-css sucrose.css sucrose.min.css
-
 sucrose.css: $(CSS_FILES)
 	rm -f ./build/$@
 	node $(CSS_COMPILER) $(CSS_FILES) ./build/$@
@@ -86,3 +88,7 @@ examples-sucrose: js css
 
 reset:
 	git clean -dfx
+
+# TESTS
+tests:
+	npm test

@@ -22,8 +22,8 @@
       "url": "https://github.com/tshubbard"
     }
   ],
-  "main": "build/sucrose.js",
-  "browser": "sucrose.js",
+  "main": "build/sucrose.node.js",
+  "browser": "build/sucrose.js",
   "module": "index",
   "jsnext:main": "index",
   "repository": {
