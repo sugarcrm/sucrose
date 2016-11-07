@@ -1,3 +1,6 @@
+#-------
+#SOURCES
+
 CSS_FILES = \
 	src/less/sucrose.less
 
@@ -12,7 +15,7 @@ CSS_MINIFIER = \
 
 .PHONY: examples clean-js clean-css
 
-
+#----------
 #PRODUCTION
 
 install: npm-prod dependencies
@@ -32,6 +35,7 @@ clean-dependencies:
 	rm -rf d3.min.js topojson.min.js d3fc-rebind.min.js
 
 
+#-----------
 #DEVELOPMENT
 
 install-dev: npm-dev dependencies all
@@ -75,6 +79,7 @@ clean-css:
 	rm -rf ./build/sucrose.css ./build/sucrose.min.css
 
 
+#---------
 # EXAMPLES
 
 examples: npm-prod
@@ -89,6 +94,9 @@ examples-sucrose: js css
 reset:
 	git clean -dfx
 
+
+#------
 # TESTS
+
 tests:
 	npm test
