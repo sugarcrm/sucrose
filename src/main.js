@@ -6,4 +6,4 @@ export {dev as development};
 export {default as utils} from './utils.js';
 export {default as tooltip} from './tooltip.js';
 export {default as models} from './models/models.js';
-export {default as charts} from './models/charts.js';
+export {default as charts} from './charts/charts.js';

@@ -1,9 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
 import tooltip from '../tooltip.js';
-import models from './models.js';
+import models from '../models/models.js';
 
-export default function gaugeChart() {
+export default function pieChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -13,27 +13,28 @@ export default function gaugeChart() {
       width = null,
       height = null,
       showTitle = false,
+      showControls = false,
       showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y, //can be accessed via chart.yScale()
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var gauge = models.gauge(),
-      model = gauge,
+  var pie = models.pie(),
+      model = pie,
+      controls = models.legend().align('center'),
       legend = models.legend().align('center');
 
   var tooltip = null;
@@ -44,12 +45,15 @@ export default function gaugeChart() {
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
-        var key = model.fmtKey()(eo.point.series),
-            x = model.getCount()(eo.point.series),
-            y = model.getValue()(eo.point.y1 - eo.point.y0),
-            content = tooltipContent(key, x, y, eo.e, chart);
+        var key = model.getKey()(eo),
+            y = model.getValue()(eo),
+            x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
+            content = tooltipContent(key, x, y, eo, chart);
+
         return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
+
+  var seriesClick = function(data, e, chart) { return; };
 
   //============================================================
 
@@ -59,7 +63,7 @@ export default function gaugeChart() {
 
       var that = this,
           container = d3.select(this),
-          modelClass = 'gauge';
+          modelClass = 'pie';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
@@ -94,11 +98,39 @@ export default function gaugeChart() {
       //------------------------------------------------------------
       // Process data
 
-      //add series index to each data point for reference
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series;
+
+        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+
+        // if you have activated a data series, inactivate the rest
+        if (series.active === 'active') {
+          data
+            .filter(function(d) {
+              return d.active !== 'active';
+            })
+            .map(function(d) {
+              d.active = 'inactive';
+              return d;
+            });
+        }
+
+        // if there are no active data series, inactivate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data.map(function(d) {
+            d.active = '';
+            return d;
+          });
+        }
+
+        container.call(chart);
+      };
+
+      // add series index to each data point for reference
       data.forEach(function(s, i) {
         var y = model.y();
         s.seriesIndex = i;
-        s.value = y(s);
+
         if (!s.value && !s.values) {
           s.values = [];
         } else if (!isNaN(s.value)) {
@@ -160,6 +192,8 @@ export default function gaugeChart() {
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
       var legend_wrap = wrap.select('.sc-legend-wrap');
 
@@ -196,9 +230,12 @@ export default function gaugeChart() {
         // Title & Legend & Controls
 
         // Header variables
-        var maxLegendWidth = 0,
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
             headerHeight = 0,
             titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
             legendHeight = 0,
             trans = '';
 
@@ -269,7 +306,6 @@ export default function gaugeChart() {
           .transition().duration(duration)
             .call(model);
 
-        model.setPointer(properties.total);
       };
 
       //============================================================
@@ -279,6 +315,32 @@ export default function gaugeChart() {
       //============================================================
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
+
+      legend.dispatch.on('legendClick', function(d, i) {
+        d.disabled = !d.disabled;
+        d.active = false;
+
+        // if there are no enabled data series, enable them all
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
+          data.map(function(d) {
+            d.disabled = false;
+            return d;
+          });
+        }
+
+        // if there are no active data series, activate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data.map(function(d) {
+            d.active = '';
+            return d;
+          });
+        }
+
+        state.disabled = data.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
+
+        container.transition().duration(duration).call(chart);
+      });
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
@@ -311,9 +373,18 @@ export default function gaugeChart() {
       });
 
       dispatch.on('chartClick', function() {
+        //dispatch.call('tooltipHide', this);
+        if (controls.enabled()) {
+          controls.dispatch.call('closeMenu', this);
+        }
         if (legend.enabled()) {
           legend.dispatch.call('closeMenu', this);
         }
+      });
+
+      model.dispatch.on('elementClick', function(eo) {
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart);
       });
 
     });
@@ -343,12 +414,14 @@ export default function gaugeChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.gauge = gauge;
+  chart.pie = pie;
   chart.legend = legend;
+  chart.controls = controls;
 
-  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, model, 'values', 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue', 'transitionMs');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, pie, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
+  fc.rebind(chart, pie, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -378,7 +451,7 @@ export default function gaugeChart() {
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || utils.defaultColor()(d, d.seriesIndex);
+          return utils.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -428,6 +501,12 @@ export default function gaugeChart() {
     return chart;
   };
 
+  chart.showControls = function(_) {
+    if (!arguments.length) { return showControls; }
+    showControls = _;
+    return chart;
+  };
+
   chart.showLegend = function(_) {
     if (!arguments.length) { return showLegend; }
     showLegend = _;
@@ -467,6 +546,7 @@ export default function gaugeChart() {
     direction = _;
     model.direction(_);
     legend.direction(_);
+    controls.direction(_);
     return chart;
   };
 
@@ -484,7 +564,19 @@ export default function gaugeChart() {
     return chart;
   };
 
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
+    return chart;
+  };
+
   //============================================================
 
   return chart;
-}
+};

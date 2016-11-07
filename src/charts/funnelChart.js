@@ -1,9 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
 import tooltip from '../tooltip.js';
-import models from './models.js';
+import models from '../models/models.js';
 
-export default function pieChart() {
+export default function funnelChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -32,8 +32,8 @@ export default function pieChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var pie = models.pie(),
-      model = pie,
+  var funnel = models.funnel(),
+      model = funnel,
       controls = models.legend().align('center'),
       legend = models.legend().align('center');
 
@@ -63,7 +63,7 @@ export default function pieChart() {
 
       var that = this,
           container = d3.select(this),
-          modelClass = 'pie';
+          modelClass = 'funnel';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
@@ -414,14 +414,13 @@ export default function pieChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.pie = pie;
+  chart.funnel = funnel;
   chart.legend = legend;
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, pie, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
-  fc.rebind(chart, pie, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
+  fc.rebind(chart, funnel, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -460,7 +459,8 @@ export default function pieChart() {
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient(d, d.seriesIndex);
+      var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
+      return model.gradient(d, d.seriesIndex, p);
     };
 
     model.color(color);
@@ -579,4 +579,4 @@ export default function pieChart() {
   //============================================================
 
   return chart;
-};
+}

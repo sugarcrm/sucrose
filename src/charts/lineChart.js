@@ -1,9 +1,9 @@
 import d3 from 'd3';
 import utils from '../utils.js';
 import tooltip from '../tooltip.js';
-import models from './models.js';
+import models from '../models/models.js';
 
-export default function multiBarChart() {
+export default function lineChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -16,11 +16,11 @@ export default function multiBarChart() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
+      delay = 0,
+      duration = 0,
       tooltips = true,
       x,
       y,
-      delay = 0,
-      duration = 0,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
@@ -28,49 +28,38 @@ export default function multiBarChart() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      vertical = true,
-      scrollEnabled = true,
-      overflowHandler = function(d) { return; },
-      hideEmptyGroups = true,
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      pointRadius = 3,
+      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  // Scroll variables
-  var useScroll = false,
-      scrollOffset = 0;
-
-  var multibar = models.multiBar().stacked(false).clipEdge(false);
-  var model = multibar;
-  var xAxis = models.axis(); //.orient('bottom'),
-  var yAxis = models.axis(); //.orient('left'),
-  var controls = models.legend().color(['#444']);
-  var legend = models.legend();
-  var scroll = models.scroll();
+  var lines = models.line()
+        .clipEdge(true),
+      model = lines,
+      xAxis = models.axis(),
+      yAxis = models.axis(),
+      legend = models.legend()
+        .align('right'),
+      controls = models.legend()
+        .align('left')
+        .color(['#444']);
 
   var tooltip = null;
 
-  var tooltipContent = function(eo, graph) {
-        var key = eo.group.label,
-            y = eo.point.y,
-            x = Math.abs(y * 100 / eo.group._height).toFixed(1);
+  var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
                '<p>' + y + ' on ' + x + '</p>';
       };
 
   var showTooltip = function(eo, offsetElement) {
-        var content = tooltipContent(eo, chart),
-            gravity = eo.value < 0 ?
-              vertical ? 'n' : 'e' :
-              vertical ? 's' : 'w';
+        var key = eo.series.key,
+            x = lines.x()(eo.point, eo.pointIndex),
+            y = lines.y()(eo.point, eo.pointIndex),
+            content = tooltipContent(key, x, y, eo, chart);
 
-        return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
-      };
-
-  var seriesClick = function(data, e, chart) {
-        return;
+        tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   //============================================================
@@ -81,43 +70,31 @@ export default function multiBarChart() {
 
       var that = this,
           container = d3.select(this),
-          modelClass = vertical ? 'multibar' : 'multibar-horizontal';
+          modelClass = 'line';
 
       var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+          data = chartData ? chartData.data : null,
+          labels = properties.labels ? properties.labels.map(function(d) { return d.l || d; }) : [];
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var availableWidth = width;
-      var availableHeight = height;
-
-      var seriesData = [],
-          seriesCount = 0,
-          groupData = [],
-          groupLabels = [],
-          groupCount = 0,
+      var modelData = [],
+          xTickLabels = [],
           totalAmount = 0,
-          hasData = false,
+          singlePoint = false,
+          showMaxMin = false,
+          isArrayData = true,
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
-      var baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32;
-
       var xValueFormat = function(d, i, selection, noEllipsis) {
-            // Set axis to use trimmed array rather than data
-            var value = groupLabels && Array.isArray(groupLabels) ?
-                          groupLabels[i] || d:
-                          d;
             var label = xIsDatetime ?
-                          utils.dateFormat(value, '%x', chart.locality()) :
-                          value;
-            var width = Math.max(vertical ?
-                          baseDimension * 2 :
-                          availableWidth * 0.2, 75);
-            return !noEllipsis ?
-                      utils.stringEllipsify(label, container, width) :
-                      label;
+                          utils.dateFormat(d, '%x', chart.locality()) :
+                          isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
+                            d :
+                            xTickLabels[parseInt(d, 10)];
+            return label;
           };
 
       var yValueFormat = function(d) {
@@ -148,242 +125,203 @@ export default function multiBarChart() {
       //------------------------------------------------------------
       // Process data
 
-      chart.dataSeriesActivate = function(eo) {
-        var series = eo.series;
-
-        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
-        series.values.map(function(d) {
-          d.active = series.active;
-        });
-
-        // if you have activated a data series, inactivate the rest
-        if (series.active === 'active') {
-          data
-            .filter(function(d) {
-              return d.active !== 'active';
-            })
-            .map(function(d) {
-              d.active = 'inactive';
-              d.values.map(function(d) {
-                d.active = 'inactive';
-              });
-              return d;
-            });
-        }
-
-        // if there are no active data series, activate them all
-        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-              d.active = '';
-              d.values.map(function(d) {
-                d.active = '';
-              });
-              container.selectAll('.sc-series').classed('sc-inactive', false);
-              return d;
-            });
-        }
-
-        container.call(chart);
-      };
-
-      // add series index to each data point for reference
-      data.forEach(function(series, s) {
-        // make sure untrimmed values array exists
-        // and set immutable series values
-        if (!series._values) {
-          series._values = series.values.map(function(value, v) {
-            return {
-              'x': value.x,
-              'y': value.y
-            };
-          });
-        }
-
-        series.seriesIndex = s;
-
-        series.values = series._values.map(function(value, v) {
-            return {
-                  'seriesIndex': series.seriesIndex,
-                  'group': v,
-                  'color': typeof series.color !== 'undefined' ? series.color : '',
-                  'x': multibar.x()(value, v),
-                  'y': multibar.y()(value, v),
-                  'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
-                  'active': typeof series.active !== 'undefined' ? series.active : ''
-                };
-          });
-
-        series.total = d3.sum(series.values, function(value, v) {
-            return value.y;
-          });
-
-        // disabled if all values in series are zero
-        // or the series was disabled by the legend
-        series.disabled = series.disabled || series.total === 0;
-        // inherit values from series
-        series.values.forEach(function(value, v) {
-          // do not eval d.active because it can be false
-          value.active = typeof series.active !== 'undefined' ? series.active : '';
-        });
-      });
-
-      seriesData = data
-        .filter(function(series, s) {
-          return !series.disabled && (!series.type || series.type === 'bar');
-        })
-        .map(function(series, s) {
-          series.seri = s;
-          series.values
-            .forEach(function(value, v) {
-              value.seri = series.seri;
-            });
-          return series;
-        });
-
-      seriesCount = seriesData.length;
-      hasData = seriesCount > 0;
-
-      // update groupTotal amounts based on enabled data series
-      groupData = properties.groups.map(function(group, g) {
-          group.total = 0;
-          group._height = 0;
-          // only sum enabled series
-          seriesData
-            .forEach(function(series, s) {
-              series.values
-                .filter(function(value, v) {
-                  return value.group === g;
-                })
-                .forEach(function(value, v) {
-                  group.total += value.y;
-                  group._height += Math.abs(value.y);
-                });
-            });
-          return group;
-        });
-
-      totalAmount = d3.sum(groupData, function(group) { return group.total; });
-
-      // build a trimmed array for active group only labels
-      groupLabels = groupData
-        .filter(function(group, g) {
-          return hideEmptyGroups ? group._height !== 0 : true;
-        })
-        .map(function(group) {
-          return group.label || chart.strings().noLabel;
-        });
-
-      groupCount = groupLabels.length;
-
-      if (hideEmptyGroups) {
-        // build a discrete array of data values for the multibar
-        // based on enabled data series
-        seriesData.forEach(function(series, s) {
-          //reset series values to exlcude values for
-          //groups that have all zero values
-          series.values = series.values
-            .filter(function(value, v) {
-              return groupData[v]._height !== 0;
-            })
-            .map(function(value, v) {
-              return {
-                'seri': series.seri,
-                'seriesIndex': value.seriesIndex,
-                'group': value.group,
-                'color': value.color,
-                'x': (v + 1),
-                'y': value.y,
-                'y0': value.y0,
-                'active': value.active
-              };
-            });
-          return series;
-        });
+      isArrayData = Array.isArray(data[0].values[0]);
+      if (isArrayData) {
+        model.x(function(d) { return d ? d[0] : 0; });
+        model.y(function(d) { return d ? d[1] : 0; });
+      } else {
+        model.x(function(d) { return d.x; });
+        model.y(function(d) { return d.y; });
       }
-            // return {
-            //       'seriesIndex': series.seriesIndex,
-            //       'group': v,
-            //       'color': typeof series.color !== 'undefined' ? series.color : '',
-            //       'x': multibar.x()(value, v),
-            //       'y': multibar.y()(value, v),
-            //       'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
-            //       'active': typeof series.active !== 'undefined' ? series.active : ''
-            //     };
-      //------------------------------------------------------------
-      // Display No Data message if there's nothing to show.
-
-      if (!hasData) {
-        displayNoData();
-        return chart;
-      }
-
-      // safety array
-      if (!seriesData.length) {
-        seriesData = [{values: []}];
-      }
-
-      // set state.disabled
-      state.disabled = data.map(function(d) { return !!d.disabled; });
-      state.stacked = multibar.stacked();
 
       // set title display option
       showTitle = showTitle && properties.title;
 
+      // add series index to each data point for reference
+      // and disable data series if total is zero
+      data.map(function(d, i) {
+        d.seriesIndex = i;
+        d.total = d3.sum(d.values, function(d, i) {
+          return model.y()(d, i);
+        });
+        if (!d.total) {
+          d.disabled = true;
+        }
+      });
+
+      xTickLabels = properties.labels ?
+          properties.labels.map(function(d) { return [].concat(d.l)[0] || chart.strings().noLabel; }) :
+          [];
+
+      // TODO: what if the dimension is a numerical range?
+      // xValuesAreDates = xTickLabels.length ?
+      //       utils.isValidDate(xTickLabels[0]) :
+      //       utils.isValidDate(model.x()(data[0].values[0]));
+      // xValuesAreDates = isArrayData && utils.isValidDate(data[0].values[0][0]);
+
+      // SAVE FOR LATER
+      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
+      //   return d3.min(d.values, function(d, i) {
+      //     return model.x()(d, i);
+      //   });
+      // }) > 0;
+
+      modelData = data.filter(function(d) {
+          return !d.disabled;
+        });
+
+      // safety array
+      modelData = modelData.length ? modelData : [{series: 0, total: 0, disabled: true, values: []}];
+
+      totalAmount = d3.sum(modelData, function(d) {
+          return d.total;
+        });
+
+      //------------------------------------------------------------
+      // Display No Data message if there's nothing to show.
+
+      if (!totalAmount) {
+        displayNoData();
+        return chart;
+      }
+
+      // set state.disabled
+      state.disabled = modelData.map(function(d) { return !!d.disabled; });
+      state.interpolate = lines.interpolate();
+      state.isArea = lines.isArea()();
+
       var controlsData = [
-        { key: 'Grouped', disabled: state.stacked },
-        { key: 'Stacked', disabled: !state.stacked }
+        { key: 'Linear', disabled: lines.interpolate() !== 'linear' },
+        { key: 'Basis', disabled: lines.interpolate() !== 'basis' },
+        { key: 'Monotone', disabled: lines.interpolate() !== 'monotone' },
+        { key: 'Cardinal', disabled: lines.interpolate() !== 'cardinal' },
+        { key: 'Line', disabled: lines.isArea()() === true },
+        { key: 'Area', disabled: lines.isArea()() === false }
       ];
 
       //------------------------------------------------------------
       // Setup Scales and Axes
 
-      x = multibar.xScale();
-      y = multibar.yScale();
+      // Are all data series single points
+      singlePoint = d3.max(modelData, function(d) {
+          return d.values.length;
+        }) === 1;
+
+      var pointSize = Math.pow(pointRadius, 2) * Math.PI * (singlePoint ? 3 : 1);
+
+      lines
+        .id(chart.id())
+        //TODO: we need to reconsider use of padData
+        // .padData(singlePoint ? false : true)
+        // .padDataOuter(-1)
+        // set x-scale as time instead of linear
+        .xScale(xIsDatetime && !xTickLabels.length ? d3.scaleTime() : d3.scaleLinear())
+        .singlePoint(singlePoint)
+        .size(pointSize) // default size set to 3
+        .sizeRange([pointSize, pointSize])
+        .sizeDomain([pointSize, pointSize]); //set to speed up calculation, needs to be unset if there is a custom size accessor
+
+      if (singlePoint) {
+
+        var xValues = d3.merge(modelData.map(function(d) {
+                return d.values.map(function(d, i) {
+                  return lines.x()(d, i);
+                });
+              }))
+              .reduce(function(p, c) {
+                if (p.indexOf(c) < 0) p.push(c);
+                return p;
+              }, [])
+              .sort(function(a, b) {
+                return a - b;
+              }),
+            xExtents = d3.extent(xValues),
+            xOffset = 1 * (xIsDatetime && !xTickLabels.length ? 86400000 : 1);
+
+        var yValues = d3.merge(modelData.map(function(d) {
+                return d.values.map(function(d, i) {
+                  return lines.y()(d, i);
+                });
+              })),
+            yExtents = d3.extent(yValues),
+            yOffset = modelData.length === 1 ? 2 : Math.min((yExtents[1] - yExtents[0]) / modelData.length, yExtents[0]);
+
+        lines
+          .xDomain([
+            xExtents[0] - xOffset,
+            xExtents[1] + xOffset
+          ])
+          .yDomain([
+            yExtents[0] - yOffset,
+            yExtents[1] + yOffset
+          ]);
+
+        xAxis
+          .orient('bottom')
+          .highlightZero(false)
+          .showMaxMin(false)
+          .ticks(xValues.length)
+          .tickValues(xValues)
+          .showMaxMin(false);
+        yAxis
+          .orient('left')
+          .ticks(singlePoint ? 5 : null) //TODO: why 5?
+          .showMaxMin(false)
+          .highlightZero(false);
+
+      } else {
+
+        lines
+          .xDomain(null)  //?why null?
+          .yDomain(null);
+        xAxis
+          .orient('bottom')
+          .ticks(null)
+          .tickValues(null)
+          .showMaxMin(xIsDatetime)
+          .highlightZero(false);
+        yAxis
+          .orient('left')
+          .ticks(null)
+          .showMaxMin(true)
+          .highlightZero(true);
+
+      }
+
+      x = lines.xScale();
+      y = lines.yScale();
 
       xAxis
-        .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
         .scale(x)
-        .valueFormat(xValueFormat)
-        .tickSize(0)
-        .tickPadding(4)
-        .highlightZero(false)
-        .showMaxMin(false);
-
+        .tickPadding(6)
+        .valueFormat(xValueFormat);
       yAxis
-        .orient(vertical ? 'left' : 'bottom')
         .scale(y)
-        .valueFormat(yValueFormat)
-        .tickPadding(4)
-        .showMaxMin(true);
+        .tickPadding(6)
+        .valueFormat(yValueFormat);
 
       //------------------------------------------------------------
       // Main chart wrappers
 
-      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      /* Clipping box for scroll */
-      wrap_entr.append('defs');
-
-      /* Container for scroll elements */
-      wrap_entr.append('g').attr('class', 'sc-scroll-background');
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
       var title_wrap = wrap.select('.sc-title-wrap');
 
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
       wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
       var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
 
-      /* Append scroll group with chart mask */
-      wrap_entr.append('g').attr('class', 'sc-scroll-wrap');
-      var scroll_wrap = wrap.select('.sc-scroll-wrap');
-
-      wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-axis-wrap sc-axis-x');
-      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
-
-      wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-bars-wrap');
-      var model_wrap = wrap.select('.sc-bars-wrap');
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-controls-wrap');
       var controls_wrap = wrap.select('.sc-controls-wrap');
@@ -397,7 +335,7 @@ export default function multiBarChart() {
 
         // Chart layout variables
         var renderWidth, renderHeight,
-            // availableWidth, availableHeight,
+            availableWidth, availableHeight,
             innerMargin,
             innerWidth, innerHeight;
 
@@ -414,14 +352,10 @@ export default function multiBarChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        // Scroll variables
-        // for stacked, baseDimension is width of bar plus 1/4 of bar for gap
-        // for grouped, baseDimension is width of bar plus width of one bar for gap
-        var boundsWidth = state.stacked ? baseDimension : baseDimension * seriesCount + baseDimension,
-            gap = baseDimension * (state.stacked ? 0.25 : 1),
-            minDimension = groupCount * boundsWidth + gap;
-
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
 
         //------------------------------------------------------------
         // Title & Legend & Controls
@@ -467,18 +401,11 @@ export default function multiBarChart() {
           maxControlsWidth = controls.calcMaxWidth();
         }
         if (showLegend) {
-          if (multibar.barColor()) {
-            data.forEach(function(series, i) {
-              series.color = d3.rgb('#ccc').darker(i * 1.5).toString();
-            });
-          }
-
           legend
             .id('legend_' + chart.id())
             .strings(chart.strings().legend)
             .align('right')
             .height(availableHeight - headerHeight);
-
           legend_wrap
             .datum(data)
             .call(legend);
@@ -507,7 +434,7 @@ export default function multiBarChart() {
               ypos = showTitle ? titleBBox.height : - controls.margin().top;
           controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
+          controlsHeight = controls.height();
         }
         if (showLegend) {
           var legendLinkBBox = utils.getTextBBox(legend_wrap.select('.sc-legend-link')),
@@ -522,37 +449,22 @@ export default function multiBarChart() {
           }
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
+          legendHeight = legendTop ? 12 : legend.height();
         }
 
         // Recalc inner margins based on legend and control height
         headerHeight += Math.max(controlsHeight, legendHeight);
-        innerMargin.top += headerHeight;
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
 
         //------------------------------------------------------------
         // Main Chart Component(s)
 
-        function getDimension(d) {
-          if (d === 'width') {
-            return vertical && scrollEnabled ? Math.max(innerWidth, minDimension) : innerWidth;
-          } else if (d === 'height') {
-            return !vertical && scrollEnabled ? Math.max(innerHeight, minDimension) : innerHeight;
-          } else {
-            return 0;
-          }
-        }
-
-        multibar
-          .vertical(vertical)
-          .baseDimension(baseDimension)
-          .disabled(data.map(function(series) { return series.disabled; }))
-          .width(getDimension('width'))
-          .height(getDimension('height'));
+        model
+          .width(innerWidth)
+          .height(innerHeight);
         model_wrap
-          .data([seriesData])
-          .call(multibar);
+          .datum(modelData)
+          .call(model);
 
         //------------------------------------------------------------
         // Axes
@@ -563,120 +475,93 @@ export default function multiBarChart() {
         function setInnerMargins() {
           innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
           innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
-          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
           innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
-          setInnerDimensions();
         }
 
         function setInnerDimensions() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+          innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          multibar.resetDimensions(getDimension('width'), getDimension('height'));
+          model.width(innerWidth).height(innerHeight);
+          // This resets the scales for the whole chart
+          // unfortunately we can't call this without until line instance is called
+          lines.scatter.resetDimensions(innerWidth, innerHeight);
         }
 
         // Y-Axis
         yAxis
           .margin(innerMargin)
-          .ticks(innerHeight / 48);
+          .tickFormat(function(d, i) {
+            return yAxis.valueFormat()(d, yIsCurrency);
+          });
         yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
         yAxisMargin = yAxis.margin();
         setInnerMargins();
+        setInnerDimensions();
 
         // X-Axis
-        xAxis
-          .margin(innerMargin)
-          .ticks(groupCount);
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')')
-            .call(xAxis);
-        // reset inner dimensions
-        xAxisMargin = xAxis.margin();
-        setInnerMargins();
-
         // resize ticks based on new dimensions
         xAxis
-          .tickSize(0)
+          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
+          .margin(innerMargin)
+          .tickFormat(function(d, i, noEllipsis) {
+            return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
+          });
+        xAxis_wrap
+          .call(xAxis);
+        xAxisMargin = xAxis.margin();
+        setInnerMargins();
+        setInnerDimensions();
+        // xAxis
+        //  .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
+
+        // recall y-axis, x-axis and lines to set final size based on new dimensions
+        yAxis
+          .tickSize(-innerWidth + (lines.padData() ? pointRadius : 0), 0)
+          .margin(innerMargin);
+        yAxis_wrap
+          .call(yAxis);
+
+        xAxis
+          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
           .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);
 
-        // reset inner dimensions
-        xAxisMargin = xAxis.margin();
-        setInnerMargins();
-
-        // recall y-axis to set final size based on new dimensions
-        yAxis
-          .tickSize(vertical ? -innerWidth : -innerHeight, 0)
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
-
-        // reset inner dimensions
-        yAxisMargin = yAxis.margin();
-        setInnerMargins();
+        model
+          .width(innerWidth)
+          .height(innerHeight);
+        model_wrap
+          .datum(modelData)
+          .call(model);
 
         // final call to lines based on new dimensions
-        model_wrap
-          .transition()
-            .call(multibar);
+        // model_wrap
+        //   .transition().duration(duration)
+        //     .call(model);
 
         //------------------------------------------------------------
         // Final repositioning
 
+        innerMargin.top += headerHeight;
 
-        trans = (vertical || xAxis.orient() === 'left' ? 0 : innerWidth) + ',';
-        trans += (vertical && xAxis.orient() === 'bottom' ? innerHeight + 2 : -2);
+        trans = innerMargin.left + ',';
+        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        trans = innerMargin.left + (vertical || yAxis.orient() === 'bottom' ? 0 : innerWidth) + ',';
-        trans += innerMargin.top + (vertical || yAxis.orient() === 'left' ? 0 : innerHeight);
+        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
+        trans += innerMargin.top;
         yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        scroll_wrap
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+        trans = innerMargin.left + ',' + innerMargin.top;
+        model_wrap
+          .attr('transform', 'translate(' + trans + ')');
 
-        //------------------------------------------------------------
-        // Enable scrolling
-
-        if (scrollEnabled) {
-
-          useScroll = minDimension > (vertical ? innerWidth : innerHeight);
-
-          xAxis_wrap.select('.sc-axislabel')
-            .attr('x', (vertical ? innerWidth : -innerHeight) / 2);
-
-          var diff = (vertical ? innerWidth : innerHeight) - minDimension,
-              panMultibar = function() {
-                dispatch.call('tooltipHide', this);
-                scrollOffset = scroll.pan(diff);
-                xAxis_wrap.select('.sc-axislabel')
-                  .attr('x', (vertical ? innerWidth - scrollOffset * 2 : scrollOffset * 2 - innerHeight) / 2);
-              };
-
-          scroll
-            .id(chart.id())
-            .enable(useScroll)
-            .vertical(vertical)
-            .width(innerWidth)
-            .height(innerHeight)
-            .margin(innerMargin)
-            .minDimension(minDimension)
-            .panHandler(panMultibar);
-
-          scroll(wrap, wrap_entr, scroll_wrap, xAxis);
-
-          scroll.init(scrollOffset, overflowHandler);
-
-          // initial call to zoom in case of scrolled bars on window resize
-          scroll.panHandler()();
-        }
       };
 
       //============================================================
@@ -689,20 +574,11 @@ export default function multiBarChart() {
 
       legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
-        d.active = false;
 
-        // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.map(function(d) {
             d.disabled = false;
-            return d;
-          });
-        }
-
-        // if there are no active data series, activate them all
-        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-            d.active = '';
+            container.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
@@ -728,15 +604,28 @@ export default function multiBarChart() {
         d.disabled = false;
 
         switch (d.key) {
-          case 'Grouped':
-            multibar.stacked(false);
+          case 'Basis':
+            lines.interpolate('basis');
             break;
-          case 'Stacked':
-            multibar.stacked(true);
+          case 'Linear':
+            lines.interpolate('linear');
+            break;
+          case 'Monotone':
+            lines.interpolate('monotone');
+            break;
+          case 'Cardinal':
+            lines.interpolate('cardinal');
+            break;
+          case 'Line':
+            lines.isArea(false);
+            break;
+          case 'Area':
+            lines.isArea(true);
             break;
         }
 
-        state.stacked = multibar.stacked();
+        state.interpolate = lines.interpolate();
+        state.isArea = lines.isArea();
         dispatch.call('stateChange', this, state);
 
         container.transition().duration(duration).call(chart);
@@ -744,14 +633,13 @@ export default function multiBarChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          eo.group = groupData[eo.groupIndex];
-          tooltip = showTooltip(eo, that.parentNode, groupData);
+          tooltip = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
         if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, vertical ? 's' : 'w');
+          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
         }
       });
 
@@ -770,9 +658,14 @@ export default function multiBarChart() {
           state.disabled = eo.disabled;
         }
 
-        if (typeof eo.stacked !== 'undefined') {
-          multibar.stacked(eo.stacked);
-          state.stacked = eo.stacked;
+        if (typeof eo.interpolate !== 'undefined') {
+          lines.interpolate(eo.interpolate);
+          state.interpolate = eo.interpolate;
+        }
+
+        if (typeof eo.isArea !== 'undefined') {
+          lines.isArea(eo.isArea);
+          state.isArea = eo.isArea;
         }
 
         container.transition().duration(duration).call(chart);
@@ -786,11 +679,6 @@ export default function multiBarChart() {
         if (legend.enabled()) {
           legend.dispatch.call('closeMenu', this);
         }
-      });
-
-      model.dispatch.on('elementClick', function(eo) {
-        dispatch.call('chartClick', this);
-        seriesClick(data, eo, chart);
       });
 
     });
@@ -810,8 +698,9 @@ export default function multiBarChart() {
     dispatch.call('tooltipMove', this, e);
   });
 
-  model.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.call('tooltipHide', this);
+  model.dispatch.on('elementMouseout.tooltip', function(eo) {
+    // need eo for removing hover class on element
+    dispatch.call('tooltipHide', this, eo);
   });
 
   //============================================================
@@ -820,14 +709,14 @@ export default function multiBarChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.multibar = multibar;
+  chart.lines = lines;
   chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'labelFormat', 'nice', 'textureFill');
+  fc.rebind(chart, lines, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -853,7 +742,7 @@ export default function multiBarChart() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
@@ -867,8 +756,7 @@ export default function multiBarChart() {
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
-      var p = {orientation: params.orientation || (vertical ? 'vertical' : 'horizontal'), position: params.position || 'middle'};
-      return model.gradient(d, d.seriesIndex, p);
+      return model.gradient(d, d.seriesIndex);
     };
 
     model.color(color);
@@ -955,7 +843,6 @@ export default function multiBarChart() {
   chart.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
-    model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
     legend.direction(_);
@@ -974,36 +861,6 @@ export default function multiBarChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
-    return chart;
-  };
-
-  chart.seriesClick = function(_) {
-    if (!arguments.length) { return seriesClick; }
-    seriesClick = _;
-    return chart;
-  };
-
-  chart.vertical = function(_) {
-    if (!arguments.length) { return vertical; }
-    vertical = _;
-    return chart;
-  };
-
-  chart.allowScroll = function(_) {
-    if (!arguments.length) { return scrollEnabled; }
-    scrollEnabled = _;
-    return chart;
-  };
-
-  chart.overflowHandler = function(_) {
-    if (!arguments.length) { return overflowHandler; }
-    overflowHandler = utils.functor(_);
-    return chart;
-  };
-
-  chart.hideEmptyGroups = function(_) {
-    if (!arguments.length) { return hideEmptyGroups; }
-    hideEmptyGroups = _;
     return chart;
   };
 
