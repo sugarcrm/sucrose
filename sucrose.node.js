@@ -1,15 +1,14 @@
 'use strict';
 
 Object.defineProperty(exports, '__esModule', { value: true });
-//TODO: missing these when rollup.node runs
-// var d3 = require('d3');
-// var fc = require('d3fc-rebind');
 
-var sucrose = require('./sucrose.js');
+var sucrose = require('./build/sucrose.js');
 
+var version = "0.0.2";
 
+//TODO: why doesn't from './build/sucrose.js' work?
 
-exports.version = sucrose.version;
+exports.version = version;
 exports.development = sucrose.development;
 exports.utility = sucrose.utility;
 exports.tooltip = sucrose.tooltip;

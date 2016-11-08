@@ -32,30 +32,30 @@ tooltip.show = function(evt, content, gravity, dist, container, classes) {
 };
 
 tooltip.cleanup = function() {
-    // Find the tooltips, mark them for removal by this class
-    // (so others cleanups won't find it)
-    var tooltips = document.getElementsByClassName('tooltip'),
-        purging = [],
-        i = tooltips.length;
+  // Find the tooltips, mark them for removal by this class
+  // (so others cleanups won't find it)
+  var tooltips = document.getElementsByClassName('tooltip'),
+      purging = [],
+      i = tooltips.length;
 
-    while (i > 0) {
-        i -= 1;
+  while (i > 0) {
+    i -= 1;
 
-        if (tooltips[i].className.indexOf('xy-tooltip') !== -1) {
-            purging.push(tooltips[i]);
-            tooltips[i].style.transitionDelay = '0 !important';
-            tooltips[i].style.opacity = 0;
-            tooltips[i].className = 'sctooltip-pending-removal out';
-        }
+    if (tooltips[i].className.indexOf('xy-tooltip') !== -1) {
+      purging.push(tooltips[i]);
+      tooltips[i].style.transitionDelay = '0 !important';
+      tooltips[i].style.opacity = 0;
+      tooltips[i].className = 'sctooltip-pending-removal out';
     }
+  }
 
-    setTimeout(function() {
-        var removeMe;
-        while (purging.length) {
-            removeMe = purging.pop();
-            removeMe.parentNode.removeChild(removeMe);
-        }
-    }, 500);
+  setTimeout(function() {
+    var removeMe;
+    while (purging.length) {
+      removeMe = purging.pop();
+      removeMe.parentNode.removeChild(removeMe);
+    }
+  }, 500);
 };
 
 tooltip.position = function(container, wrapper, evt, gravity, dist) {

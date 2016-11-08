@@ -95,8 +95,12 @@ reset:
 	git clean -dfx
 
 
-#------
-# TESTS
+#----
+# RUN
 
-tests:
+rolls:
+	rollup -c
+nodes:
+	node rollup.node
+grade:
 	npm test

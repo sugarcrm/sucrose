@@ -51,15 +51,15 @@ utility.windowSize = function () {
 };
 
 // Easy way to bind multiple functions to window.onresize
-// TODO: give a way to remove a function after its bound, other than removing alkl of them
-// utility.windowResize = function (fun)
-// {
-//   var oldresize = window.onresize;
+  // TODO: give a way to remove a function after its bound, other than removing alkl of them
+  // utility.windowResize = function (fun)
+  // {
+  //   var oldresize = window.onresize;
 
-//   window.onresize = function (e) {
-//     if (typeof oldresize == 'function') oldresize(e);
-//     fun(e);
-//   }
+  //   window.onresize = function (e) {
+  //     if (typeof oldresize == 'function') oldresize(e);
+  //     fun(e);
+  //   }
 // }
 
 utility.windowResize = function (fun) {
@@ -382,17 +382,16 @@ utility.dropShadow = function (id, defs, options) {
   return 'url(#' + id + ')';
 };
 // <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
-//   <defs>
-//     <filter id="f1" x="0" y="0" width="200%" height="200%">
-//       <feOffset result="offOut" in="SourceGraphic" dx="20" dy="20" />
-//       <feColorMatrix result="matrixOut" in="offOut" type="matrix"
-//       values="0.2 0 0 0 0 0 0.2 0 0 0 0 0 0.2 0 0 0 0 0 1 0" />
-//       <feGaussianBlur result="blurOut" in="matrixOut" stdDeviation="10" />
-//       <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
-//     </filter>
-//   </defs>
-//   <rect width="90" height="90" stroke="green" stroke-width="3"
-//   fill="yellow" filter="url(#f1)" />
+  //   <defs>
+  //     <filter id="f1" x="0" y="0" width="200%" height="200%">
+  //       <feOffset result="offOut" in="SourceGraphic" dx="20" dy="20" />
+  //       <feColorMatrix result="matrixOut" in="offOut" type="matrix"
+  //       values="0.2 0 0 0 0 0 0.2 0 0 0 0 0 0.2 0 0 0 0 0 1 0" />
+  //       <feGaussianBlur result="blurOut" in="matrixOut" stdDeviation="10" />
+  //       <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+  //     </filter>
+  //   </defs>
+  //   <rect width="90" height="90" stroke="green" stroke-width="3" fill="yellow" filter="url(#f1)" />
 // </svg>
 
 utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
@@ -537,23 +536,23 @@ utility.createTexture = function(defs, id, x, y) {
 };
 
 // utility.numberFormatSI = function(d, p, c, l) {
-//     var fmtr, spec, si;
-//     if (isNaN(d)) {
-//         return d;
-//     }
-//     p = typeof p === 'undefined' ? 2 : p;
-//     c = typeof c === 'undefined' ? false : !!c;
-//     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-//     // d = d3.round(d, p);
-//     d = Math.round(d * 10 * p) / 10 * p;
-//     spec = c ? '$,' : ',';
-//     if (c && d < 1000 && d !== parseInt(d, 10)) {
-//         spec += '.2f';
-//     }
-//     if (d < 1 && d > -1) {
-//         spec += '.2s';
-//     }
-//     return fmtr(spec)(d);
+  //     var fmtr, spec, si;
+  //     if (isNaN(d)) {
+  //         return d;
+  //     }
+  //     p = typeof p === 'undefined' ? 2 : p;
+  //     c = typeof c === 'undefined' ? false : !!c;
+  //     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  //     // d = d3.round(d, p);
+  //     d = Math.round(d * 10 * p) / 10 * p;
+  //     spec = c ? '$,' : ',';
+  //     if (c && d < 1000 && d !== parseInt(d, 10)) {
+  //         spec += '.2f';
+  //     }
+  //     if (d < 1 && d > -1) {
+  //         spec += '.2s';
+  //     }
+  //     return fmtr(spec)(d);
 // };
 
 utility.numberFormatSI = function(d, p, c, l) {
