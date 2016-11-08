@@ -31,7 +31,6 @@
     "url": "https://github.com/sugarcrm/sucrose.git"
   },
   "scripts": {
-    "pretest": "make js",
     "test": "tape 'test/**/*-test.js'"
   },
   "dependencies": {

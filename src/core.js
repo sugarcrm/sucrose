@@ -1,5 +1,6 @@
 var charts = {}; //stores all the ready to use charts
-
+var ver = '0.0.2'; //change to 0.0.3 when ready
+var dev = false; //set false when in production
 var dispatch = d3.dispatch('render_start', 'render_end');
 
 // *************************************************************************

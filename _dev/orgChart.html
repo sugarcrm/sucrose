@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=320" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Organization Chart</title>
-  <link rel="stylesheet" href="sucrose.min.css">
+  <link rel="stylesheet" href="../build/sucrose.min.css">
     <style>
         .chart {
             position: absolute;
@@ -47,20 +47,21 @@
     </div>
   </div>
 
-  <script src="examples/js/jquery.min.js"></script>
+  <script src="../examples/js/jquery.min.js"></script>
 
-  <script src="d3.js"></script>
-  <script src="d3fc-rebind.min.js"></script>
+  <script src="../build/d3.js"></script>
+  <script src="../build/d3fc-rebind.min.js"></script>
+  <script src="../build/sucrose.js"></script>
 
-  <script src="src/core.js"></script>
-  <script src="src/tooltip.js"></script>
-  <script src="src/utils.js"></script>
-  <script src="src/models/axis.js"></script>
-  <script src="src/models/legend.js"></script>
-  <script src="src/models/tree.js"></script>
+<!--   <script src="../src/core.js"></script>
+  <script src="../src/tooltip.js"></script>
+  <script src="../src/utility.js"></script>
+  <script src="../src/models/axis.js"></script>
+  <script src="../src/models/legend.js"></script>
+  <script src="../src/models/tree.js"></script> -->
 
 <script>
-  sucrose.addGraph(function() {
+  // sucrose.addGraph(function() {
 
     var nodeRenderer = function(content, d, w, h) {
       if (!d.image || d.image === '') {
@@ -119,14 +120,14 @@
               });
           });
 
-    d3.json('examples/data/tree_data.json', function(data) {
+    d3.json('../examples/data/tree_data.json', function(data) {
       d3.select('#org svg')
           .datum(data)
         .transition().duration(700)
           .call(chart);
     });
 
-    sucrose.utils.windowResize(function() { chart.resize(); });
+    sucrose.utility.windowResize(function() { chart.resize(); });
 
     var toggleChart = function(e) {
         //if icon clicked get parent button
@@ -151,8 +152,8 @@
 
     $('.toggle-control').on('click', toggleChart);
 
-    return chart;
-  });
+  //   return chart;
+  // });
 </script>
 </body>
 </html>

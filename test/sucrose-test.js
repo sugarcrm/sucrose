@@ -1,5 +1,5 @@
 var tape = require("tape"),
-    sucrose = require("../"),
+    sucrose = require("../"), // loads sucrose.node.js
     testExports = require("./test-exports");
 
 tape("version matches package.json", function(test) {
