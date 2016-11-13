@@ -22,7 +22,7 @@
     <style>
         .chart {
             position: absolute;
-            top: 0;
+            top: 28px;
             right: 0;
             bottom: 0;
             left: 0;
@@ -52,6 +52,7 @@
   <script src="../build/d3.js"></script>
   <script src="../build/d3fc-rebind.min.js"></script>
   <script src="../build/sucrose.js"></script>
+  <script src="../src/models/tree.js"></script>
 
 <!--   <script src="../src/core.js"></script>
   <script src="../src/tooltip.js"></script>
@@ -64,9 +65,10 @@
   // sucrose.addGraph(function() {
 
     var nodeRenderer = function(content, d, w, h) {
-      if (!d.image || d.image === '') {
-        d.image = 'user.svg';
+      if (!d.data.image || d.data.image === '') {
+        d.data.image = 'user.svg';
       }
+
       var node = content.append('g').attr('class', 'nv-org-node');
           node.append('rect').attr('class', 'nv-org-bkgd')
             .attr('x', 0)
@@ -76,18 +78,18 @@
             .attr('width', w)
             .attr('height', h);
           node.append('image').attr('class', 'nv-org-avatar')
-            .attr('xlink:href', 'img/' + d.image)
+            .attr('xlink:href', 'img/' + d.data.image)
             .attr('width', '32px')
             .attr('height', '32px')
             .attr('transform', 'translate(3, 3)');
           node.append('text').attr('class', 'nv-org-name')
-            .attr('data-url', d.url)
+            .attr('data-url', d.data.name)
             .attr('transform', 'translate(38, 11)')
-            .text(d.name);
+            .text(d.data.name);
           node.append('text').attr('class', 'nv-org-title')
-            .attr('data-url', d.url)
+            .attr('data-url', d.data.title)
             .attr('transform', 'translate(38, 21)')
-            .text(d.title);
+            .text(d.data.title);
       return node;
     };
 
@@ -95,17 +97,17 @@
 
     var chart = sucrose.models.tree()
           .duration(500)
-          .nodeSize({'width': 124, 'height': 56})
-          .nodeRenderer(nodeRenderer)
           .zoomExtents({'min': 0.25, 'max': 4})
           .horizontal(false)
+          .nodeSize({'width': 124, 'height': 56})
+          .nodeRenderer(nodeRenderer)
           .nodeClick(function() {
             console.log(d3.select(this).select('.nv-org-name').attr('data-url'));
           })
           .nodeCallback(function(d) {
             d.selectAll('text').text(function() {
               var text = d3.select(this).text();
-              return sucrose.utils.stringEllipsify(text, container, 96);
+              return sucrose.utility.stringEllipsify(text, container, 96);
             });
             d.selectAll('image')
               .on('error', function(d) {

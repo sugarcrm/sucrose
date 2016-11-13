@@ -1,8 +1,8 @@
-import d3 from 'd3';
-import utility from '../utility.js';
+// import d3 from 'd3';
+// import utility from '../utility.js';
 
-export default function tree() {
-
+// export default function tree() {
+sucrose.models.tree = function tree() {
   // issues: 1. zoom slider doesn't zoom on chart center
   // orientation
   // bottom circles
@@ -32,7 +32,7 @@ export default function tree() {
     horizontal = false;
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-    color = function (d, i) { return utility.defaultColor()(d, i); },
+    color = function (d, i) { return sucrose.utility.defaultColor()(d, i); },
     fill = function(d, i) { return color(d,i); },
     gradient = function(d, i) { return color(d,i); },
 
@@ -46,13 +46,13 @@ export default function tree() {
     getX0 = function(d) { return horizontal ? d.y0 : d.x0; },
     getY0 = function(d) { return horizontal ? d.x0 : d.y0; },
 
-    getId = function(d) { return d.id; },
+    getId = function(d) { return d.id || d.data.id; },
 
     fillGradient = function(d, i) {
-        return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+        return sucrose.utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
     },
     useClass = false,
-    valueFormat = utility.numberFormatSI,
+    valueFormat = sucrose.utility.numberFormatSI,
     showLabels = true,
     dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 
@@ -62,27 +62,20 @@ export default function tree() {
   {
     selection.each(function(data) {
 
-      // var diagonal = d3.svg.diagonal()
-      //       .projection(function(d) {
-      //         return [getX(d), getY(d)];
-      //       });
-      var diagonal = function(d) {
-        return "M" + d.y + "," + d.x
-            + "C" + (d.y + d.parent.y) / 2 + "," + d.x
-            + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
-            + " " + d.parent.y + "," + d.parent.x;
-      };
-
       var zoom = null;
       chart.setZoom = function() {
         zoom = d3.zoom()
                     .scaleExtent([zoomExtents.min, zoomExtents.max])
                     .on('zoom', function() {
-                      treeWrapper.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
+                      tree_wrap.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
                       zoomCallback(d3.event.scale);
                     });
       };
       chart.setZoom();
+
+      var tran = d3.transition('tree')
+            .duration(5000)
+            .ease(d3.easeLinear);
 
       //------------------------------------------------------------
       // Setup svgs and skeleton of chart
@@ -94,48 +87,48 @@ export default function tree() {
           };
       var container = d3.select(svg.node().parentNode);
 
-      var wrap_bind = svg.selectAll('.sc-wrap').data([1]);
+      var wrap_bind = svg.selectAll('g.sc-wrap.sc-tree').data([1]);
       var wrap_entr = wrap_bind.enter().append('g')
-            .attr('class', 'sucrose sc-wrap sc-treeChart')
+            .attr('class', 'sc-wrap sc-tree')
             .attr('id', 'sc-chart-' + id);
-      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap').merge(wrap_entr);
 
       wrap.call(zoom);
 
       var defs_entr = wrap_entr.append('defs');
       var defs = wrap.select('defs').merge(defs_entr);
-      var nodeShadow = utility.dropShadow('node_back_' + id, defs, {blur: 2});
+      var node_shadow = sucrose.utility.dropShadow('node_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('svg:rect')
-            .attr('class', 'sc-chartBackground')
+            .attr('class', 'sc-chart-background')
             .attr('width', availableSize.width)
             .attr('height', availableSize.height)
             .attr('transform', 'translate(' + padding.left + ',' + padding.top + ')')
             .style('fill', 'transparent');
-      var backg = wrap.select('.sc-chartBackground');
+      var backg = wrap.select('.sc-chart-background');
 
-      var g_entr = wrap_entr.append('g')
-            .attr('class', 'sc-chartWrap');
-      var treeWrapper = wrap.select('.sc-chartWrap');
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var tree_wrap = wrap.select('.sc-chart-wrap');
 
-      g_entr.append('g')
-            .attr('class', 'sc-tree');
+      g_entr.append('g').attr('class', 'sc-tree');
       var treeChart = wrap.select('.sc-tree');
 
-      // Compute the new tree layout.
+      var root = null;
+      var nodeData = null;
+      var linkData = null;
       var tree = d3.tree()
-            .size([700,500])
-            // .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
-            // .separation(function separation(a, b) {
-            //   return a.parent == b.parent ? 1 : 1;
-            // });
+            .size([null, null])
+            .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
+            .separation(function separation(a, b) {
+              return a.parent == b.parent ? 1 : 1;
+            });
 
-      data.x0 = data.x0 || 0;
-      data.y0 = data.y0 || 0;
+      // Compute the new tree layout.
+      grow();
 
-      var _data = data;
+      populate0(root);
 
-      var nodes = null;
+console.log('root: ', root);
 
       chart.resize = function() {
         chart.reset();
@@ -148,29 +141,29 @@ export default function tree() {
 
         // the size of the chart itself
         var size = [
-              Math.abs(d3.min(nodes, getX)) + Math.abs(d3.max(nodes, getX)) + nodeSize.width,
-              Math.abs(d3.min(nodes, getY)) + Math.abs(d3.max(nodes, getY)) + nodeSize.height
-            ],
+              Math.abs(d3.min(nodeData, getX)) + Math.abs(d3.max(nodeData, getX)) + nodeSize.width,
+              Math.abs(d3.min(nodeData, getY)) + Math.abs(d3.max(nodeData, getY)) + nodeSize.height
+            ];
 
-            // initial chart scale to fit chart in container
-            xScale = availableSize.width / size[0],
+        // initial chart scale to fit chart in container
+        var xScale = availableSize.width / size[0],
             yScale = availableSize.height / size[1],
-            scale = d3.min([xScale, yScale]),
+            scale = d3.min([xScale, yScale]);
 
-            // initial chart translation to position chart in the center of container
-            center = [
-              Math.abs(d3.min(nodes, getX)) +
+        // initial chart translation to position chart in the center of container
+        var center = [
+              Math.abs(d3.min(nodeData, getX)) +
                 (xScale < yScale ? 0 : (availableSize.width / scale - size[0]) / 2),
-              Math.abs(d3.min(nodes, getY)) +
+              Math.abs(d3.min(nodeData, getY)) +
                 (xScale < yScale ? (availableSize.height / scale - size[1]) / 2 : 0)
-            ],
+            ];
 
-            offset = [
+        var offset = [
               nodeSize.width / (horizontal ? 1 : 2),
               nodeSize.height / (horizontal ? 2 : 1)
-            ],
+            ];
 
-            translate = [
+        var translate = [
               (center[0] + offset[0]) * scale + padding.left / (horizontal ? 2 : 1),
               (center[1] + offset[1]) * scale + padding.top / (horizontal ? 1 : 2)
             ];
@@ -179,13 +172,14 @@ export default function tree() {
           .attr('width', availableSize.width)
           .attr('height', availableSize.height);
 
-        treeChart.attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
+        treeChart.transition().duration(5000)
+          .attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
       };
 
       chart.orientation = function(orientation) {
         horizontal = (orientation === 'horizontal' || !horizontal ? true : false);
         tree.nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1]);
-        chart.update(_data);
+        chart.update(root);
       };
 
       chart.showall = function() {
@@ -198,15 +192,15 @@ export default function tree() {
             d.children.forEach(expandAll);
           }
         }
-        expandAll(_data);
-        chart.update(_data);
+        expandAll(root);
+        chart.update(root);
       };
 
       chart.reset = function() {
         chart.setZoom();
-        zoom.translate([0, 0]).scale(1);
+        // zoom.translate([0, 0]).scale(1);
         wrap.call(zoom);
-        treeWrapper.attr('transform', 'translate(' + [0, 0] + ')scale(' + 1 + ')');
+        tree_wrap.attr('transform', 'translate(' + [0, 0] + ')scale(' + 1 + ')');
       };
 
       chart.zoomStep = function(step) {
@@ -220,30 +214,30 @@ export default function tree() {
 
             prevScale = zoom.scale(),
             prevTrans = zoom.translate(),
-            treeBBox = backg.node().getBoundingClientRect(),
+            treeBBox = backg.node().getBoundingClientRect();
 
-            size = [
+        var size = [
               treeBBox.width,
               treeBBox.height
-            ],
+            ];
 
-            offset = [
+        var offset = [
               (size[0] - size[0] * scale) / 2,
               (size[1] - size[1] * scale) / 2
-            ],
+            ];
 
-            shift = [
+        var shift = [
               scale * (prevTrans[0] - (size[0] - size[0] * prevScale) / 2) / prevScale,
               scale * (prevTrans[1] - (size[1] - size[1] * prevScale) / 2) / prevScale
-            ],
+            ];
 
-            translate = [
+        var translate = [
               offset[0] + shift[0],
               offset[1] + shift[1]
             ];
 
         zoom.translate(translate).scale(scale);
-        treeWrapper.attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
+        tree_wrap.attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
 
         return scale;
       };
@@ -253,12 +247,12 @@ export default function tree() {
       };
 
       chart.filter = function(node) {
-        var __data = {}
-          , found = false;
+        var _data = {},
+            found = false;
 
         function findNode(d) {
           if (getId(d) === node) {
-            __data = d;
+            _data = d;
             found = true;
           } else if (!found && d.children) {
             d.children.forEach(findNode);
@@ -268,20 +262,17 @@ export default function tree() {
         // Initialize the display to show a few nodes.
         findNode(data);
 
-        __data.x0 = 0;
-        __data.y0 = 0;
+        _data.x0 = 0;
+        _data.y0 = 0;
 
-        _data = __data;
+        data = _data;
 
-        chart.update(_data);
+        grow();
+        chart.update(root);
       };
 
+      // source is either root or a selected node
       chart.update = function(source) {
-        // Click tree node.
-        function leafClick(d) {
-          toggle(d);
-          chart.update(d);
-        }
 
         // Toggle children.
         function toggle(d) {
@@ -293,67 +284,83 @@ export default function tree() {
             d._children = null;
           }
         }
-        //console.log(_data)
-        nodes = tree(_data);
-        var root = nodes[0];
 
-        nodes.forEach(function(d) {
-          setY(d, d.depth * 2 * (horizontal ? nodeSize.width : nodeSize.height));
-        });
+        // Click tree node.
+        function leafClick(d) {
+          // console.log('d: ', d);
+          toggle(d.data);
+          chart.update(d);
+        }
 
-        // Update the nodes…
-        var node = treeChart.selectAll('g.sc-card')
-              .data(nodes, getId);
+        // Get the link id
+        function getLinkId(d) {
+          var id = 'link-' + (d.parent ? getId(d.parent) : 0) + '-' + getId(d);
+          console.log('id: ', id);
+          return id;
+        };
 
-        // Enter any new nodes at the parent's previous position.
-        var nodeEnter = node.enter().append('svg:g')
-              .attr('class', 'sc-card')
-              .attr('id', function(d) { return 'sc-card-' + getId(d); })
-              .attr('transform', function(d) {
-                if (getY(source) === 0) {
-                  return 'translate(' + getX(root) + ',' + getY(root) + ')';
-                } else {
-                  return 'translate(' + getX0(source) + ',' + getY0(source) + ')';
-                }
-              });
+        grow();
 
         var nodeOffsetX = (horizontal ? r - nodeSize.width : nodeSize.width / -2) + 'px',
             nodeOffsetY = (horizontal ? (r - nodeSize.height) / 2 : r * 2 - nodeSize.height) + 'px';
 
-        nodeEnter.each(function(d) {
-          if (defs.select('#myshape-' + getId(d)).empty()) {
-            var nodeObject = defs.append('svg').attr('class', 'sc-foreign-object')
-                  .attr('id', 'myshape-' + getId(d))
-                  .attr('version', '1.1')
-                  .attr('xmlns', 'http://www.w3.org/2000/svg')
-                  .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
-                  .attr('x', nodeOffsetX)
-                  .attr('y', nodeOffsetY)
-                  .attr('width', nodeSize.width + 'px')
-                  .attr('height', nodeSize.height + 'px')
-                  .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
-                  .attr('xml:space', 'preserve');
+        // Update the nodes…
+        var nodes_bind = treeChart.selectAll('g.sc-card').data(nodeData, getId);
 
-            var nodeContent = nodeObject.append('g').attr('class', 'sc-tree-node-content')
-                  .attr('transform', 'translate(' + r + ',' + r + ')');
+        // Enter any new nodes at the parent's previous position.
+        var nodes_entr = nodes_bind.enter().append('g')
+              .attr('class', 'sc-card')
+              .attr('id', function(d) { return 'sc-card-' + getId(d); })
+              .attr('transform', function(d) {
+                // if the source is root
+                if (getY(source) === 0) {
+                  return 'translate(' + 0 + ',' + 0 + ')';
+                  // return 'translate(' + getX(root) + ',' + getY(root) + ')';
+                } else {
+                  return 'translate(' + getX0(source) + ',' + getY0(source) + ')';
+                }
+                // return 'translate(' + getX(root) + ',' + getY(root) + ')';
+              });
+              // .attr('transform', function(d) {
+              //   var x = d.parent ? getX(d.parent) : 0;
+              //   var y = d.parent ? getY(d.parent) : 0;
+              //   return 'translate(' + x + ',' + y + ')';
+              // });
 
-            nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
+            // For each node create a shape for node content display
+            nodes_entr.each(function(d) {
+              if (defs.select('#myshape-' + getId(d)).empty()) {
+                var nodeObject = defs.append('svg').attr('class', 'sc-foreign-object')
+                      .attr('id', 'myshape-' + getId(d))
+                      .attr('version', '1.1')
+                      .attr('xmlns', 'http://www.w3.org/2000/svg')
+                      .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+                      .attr('x', nodeOffsetX)
+                      .attr('y', nodeOffsetY)
+                      .attr('width', nodeSize.width + 'px')
+                      .attr('height', nodeSize.height + 'px')
+                      .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
+                      .attr('xml:space', 'preserve');
 
-            nodeContent.on('click', nodeClick);
+                var nodeContent = nodeObject.append('g').attr('class', 'sc-tree-node-content')
+                      .attr('transform', 'translate(' + r + ',' + r + ')');
 
-            nodeCallback(nodeObject);
-          }
-        });
+                nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
 
-        // node content
-        nodeEnter.append('use')
-            .attr('xlink:href', function(d) {
-              return '#myshape-' + getId(d);
-            })
-            .attr('filter', nodeShadow);
+                nodeContent.on('click', nodeClick);
+
+                nodeCallback(nodeObject);
+              }
+            });
+            // node content
+            nodes_entr.append('use')
+              .attr('xlink:href', function(d) {
+                return '#myshape-' + getId(d);
+              })
+              .attr('filter', node_shadow);
 
         // node circle
-        var xcCircle = nodeEnter.append('svg:g').attr('class', 'sc-expcoll')
+        var xcCircle = nodes_entr.append('svg:g').attr('class', 'sc-expcoll')
               .style('opacity', 1e-6)
               .on('click', leafClick);
             xcCircle.append('svg:circle').attr('class', 'sc-circ-back')
@@ -366,86 +373,117 @@ export default function tree() {
               .style('stroke', '#fff');
 
         //Transition nodes to their new position.
-        var nodeUpdate = node.transition()
-              .duration(duration)
+        var nodes = treeChart.selectAll('g.sc-card').merge(nodes_entr);
+            nodes.transition(tran).duration(5000)
               .attr('transform', function(d) {
                 return 'translate(' + getX(d) + ',' + getY(d) + ')';
               });
-            nodeUpdate.select('.sc-expcoll')
+            nodes.select('.sc-expcoll')
               .style('opacity', function(d) {
-                return ((d.children && d.children.length) || (d._children && d._children.length)) ? 1 : 0;
+                return ((d.data.children && d.data.children.length) || (d.data._children && d.data._children.length)) ? 1 : 0;
               });
-            nodeUpdate.select('.sc-circ-back')
+            nodes.select('.sc-circ-back')
               .style('fill', function(d) {
-                return (d._children && d._children.length) ? '#777' : (d.children ? '#bbb' : 'none');
+                return (d.data._children && d.data._children.length) ? '#777' : (d.data.children ? '#bbb' : 'none');
               });
-            nodeUpdate.select('.sc-line-vert')
+            nodes.select('.sc-line-vert')
               .style('stroke', function(d) {
-                return (d._children && d._children.length) ? '#fff' : '#bbb';
+                return (d.data._children && d.data._children.length) ? '#fff' : '#bbb';
               });
-
-            nodeUpdate.each(function(d) {
+            nodes.each(function(d) {
               container.select('#myshape-' + getId(d))
                 .attr('x', nodeOffsetX)
                 .attr('y', nodeOffsetY);
             });
 
         // Transition exiting nodes to the parent's new position.
-        var nodeExit = node.exit().transition()
-              .duration(duration)
+        var nodes_exit = nodes_bind.exit().transition(tran)
               .attr('transform', function(d) {
+                console.log(d)
+                // console.log(d.x, d.x0, getX0(d), d.parent.x, d.parent.x0, getX0(d.parent))
                 return 'translate(' + getX(source) + ',' + getY(source) + ')';
+                // return 'translate(' + getX0(d) + ',' + getY0(d) + ')';
               })
               .remove();
-            nodeExit.selectAll('.sc-expcoll')
+            nodes_exit.selectAll('.sc-expcoll')
               .style('stroke-opacity', 1e-6);
-            nodeExit.selectAll('.sc-foreign-object')
+            nodes_exit.selectAll('.sc-foreign-object')
               .attr('width', 1)
               .attr('height', 1)
               .attr('x', -1)
               .attr('y', -1);
 
         // Update the links
-        var link = treeChart.selectAll('path.link')
-              .data(tree.links(nodes), function(d) {
-                return getId(d.source) + '-' + getId(d.target);
-              });
-
+        var links_bind = treeChart.selectAll('path.link').data(linkData, getLinkId);
             // Enter any new links at the parent's previous position.
-            link.enter().insert('svg:path', 'g')
+        var links_entr = links_bind.enter().insert('path', 'g')
               .attr('class', 'link')
-              .attr('d', function(d) {
-                var o = getY(source) === 0 ? {x: source.x, y: source.y} : {x: source.x0, y: source.y0};
-                return diagonal({ source: o, target: o });
-              });
+              .attr('id', getLinkId)
+              .attr('d', initial);
+console.log(links_entr)
 
+        var links = treeChart.selectAll('path.link').merge(links_entr);
             // Transition links to their new position.
-            link.transition()
-              .duration(duration)
-              .attr('d', diagonal);
-
+            links.transition(tran).duration(5000)
+              .attr('d', extend);
             // Transition exiting nodes to the parent's new position.
-            link.exit().transition()
-              .duration(duration)
-              .attr('d', function(d) {
-                var o = { x: source.x, y: source.y };
-                return diagonal({ source: o, target: o });
-              })
+            links_bind.exit().transition(tran)
+              .attr('d', retract)
               .remove();
 
         // Stash the old positions for transition.
-        nodes
-          .forEach(function(d) {
-            setX0(d, getX(d));
-            setY0(d, getY(d));
-          });
+        populate0(root);
 
         chart.resize();
       };
 
+      function grow() {
+        root = d3.hierarchy(data, function(d) {
+          return d.children;
+        });
+
+        tree(root); // apply tree structure to data
+// console.log('root: ', root);
+        nodeData = root.descendants();
+
+        nodeData.forEach(function(d) {
+          setY(d, d.depth * 2 * (horizontal ? nodeSize.width : nodeSize.height));
+        });
+
+        linkData = nodeData.slice(1);
+      }
+
+      function populate0(d) {
+        setX0(d, getX(d));
+        setY0(d, getY(d));
+        if (d.children && d.children.length) {
+          d.children.forEach(populate0);
+        }
+      }
+
+      function diagonal(d, p) {
+        var dy = getY(d),
+            dx = getX(d),
+            py = getY(p),
+            px = getX(p);
+        return "M" + dx + "," + dy
+             + "C" + dx + "," + (dy + py) / 2
+             + " " + px + "," + (dy + py) / 2
+             + " " + px + "," + py;
+      }
+      function initial(d) {
+        return diagonal(d.parent, d.parent);
+      }
+      function extend(d) {
+        return diagonal(d, d.parent);
+      }
+      function retract(d) {
+        return diagonal(d.parent, d.parent);
+      }
+
       chart.gradient(fillGradient);
 
-      chart.update(_data);
+      chart.update(root);
 
     });
 
@@ -506,7 +544,7 @@ export default function tree() {
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = utility.functor(_);
+    getY = sucrose.utility.functor(_);
     return chart;
   };
 
