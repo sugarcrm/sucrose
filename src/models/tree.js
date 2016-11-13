@@ -20,41 +20,41 @@ sucrose.models.tree = function tree() {
 
   // specific to org chart
   var r = 6,
-    padding = {'top': 10, 'right': 10, 'bottom': 10, 'left': 10}, // this is the distance from the edges of the svg to the chart,
-    duration = 300,
-    zoomExtents = {'min': 0.25, 'max': 2},
-    nodeSize = {'width': 100, 'height': 50},
-    nodeImgPath = '../img/',
-    nodeRenderer = function(d) { return '<div class="sc-tree-node"></div>'; },
-    zoomCallback = function(d) { return; },
-    nodeCallback = function(d) { return; },
-    nodeClick = function(d) { return; },
-    horizontal = false;
+      padding = {'top': 10, 'right': 10, 'bottom': 10, 'left': 10}, // this is the distance from the edges of the svg to the chart,
+      duration = 300,
+      zoomExtents = {'min': 0.25, 'max': 2},
+      nodeSize = {'width': 100, 'height': 50},
+      nodeImgPath = '../img/',
+      nodeRenderer = function(d) { return '<div class="sc-tree-node"></div>'; },
+      zoomCallback = function(d) { return; },
+      nodeCallback = function(d) { return; },
+      nodeClick = function(d) { return; },
+      horizontal = false;
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-    color = function (d, i) { return sucrose.utility.defaultColor()(d, i); },
-    fill = function(d, i) { return color(d,i); },
-    gradient = function(d, i) { return color(d,i); },
+      color = function (d, i) { return sucrose.utility.defaultColor()(d, i); },
+      fill = function(d, i) { return color(d,i); },
+      gradient = function(d, i) { return color(d,i); },
 
-    setX = function(d, v) { d.x = v; },
-    setY = function(d, v) { d.y = v; },
-    setX0 = function(d, v) { if (horizontal) { d.y0 = v; } else { d.x0 = v; } },
-    setY0 = function(d, v) { if (horizontal) { d.x0 = v; } else { d.y0 = v; } },
+      setX = function(d, v) { d.x = v; },
+      setY = function(d, v) { d.y = v; },
+      setX0 = function(d, v) { d.data.x0 = v; },
+      setY0 = function(d, v) { d.data.y0 = v; },
 
-    getX = function(d) { return horizontal ? d.y : d.x; },
-    getY = function(d) { return horizontal ? d.x : d.y; },
-    getX0 = function(d) { return horizontal ? d.y0 : d.x0; },
-    getY0 = function(d) { return horizontal ? d.x0 : d.y0; },
+      getX = function(d) { return horizontal ? d.y : d.x; },
+      getY = function(d) { return horizontal ? d.x : d.y; },
+      getX0 = function(d) { return horizontal ? d.data.y0 : d.data.x0; },
+      getY0 = function(d) { return horizontal ? d.data.x0 : d.data.y0; },
 
-    getId = function(d) { return d.id || d.data.id; },
+      getId = function(d) { return d.id || d.data.id; },
 
-    fillGradient = function(d, i) {
-        return sucrose.utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
-    },
-    useClass = false,
-    valueFormat = sucrose.utility.numberFormatSI,
-    showLabels = true,
-    dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
+      fillGradient = function(d, i) {
+          return sucrose.utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+      },
+      useClass = false,
+      valueFormat = sucrose.utility.numberFormatSI,
+      showLabels = true,
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 
   //============================================================
 
@@ -74,7 +74,7 @@ sucrose.models.tree = function tree() {
       chart.setZoom();
 
       var tran = d3.transition('tree')
-            .duration(5000)
+            .duration(duration)
             .ease(d3.easeLinear);
 
       //------------------------------------------------------------
@@ -127,54 +127,6 @@ sucrose.models.tree = function tree() {
       grow();
 
       populate0(root);
-
-console.log('root: ', root);
-
-      chart.resize = function() {
-        chart.reset();
-
-        // the size of the svg container minus padding
-        availableSize = {
-          'width': parseInt(svg.style('width'), 10) - padding.left - padding.right,
-          'height': parseInt(svg.style('height'), 10) - padding.top - padding.bottom
-        };
-
-        // the size of the chart itself
-        var size = [
-              Math.abs(d3.min(nodeData, getX)) + Math.abs(d3.max(nodeData, getX)) + nodeSize.width,
-              Math.abs(d3.min(nodeData, getY)) + Math.abs(d3.max(nodeData, getY)) + nodeSize.height
-            ];
-
-        // initial chart scale to fit chart in container
-        var xScale = availableSize.width / size[0],
-            yScale = availableSize.height / size[1],
-            scale = d3.min([xScale, yScale]);
-
-        // initial chart translation to position chart in the center of container
-        var center = [
-              Math.abs(d3.min(nodeData, getX)) +
-                (xScale < yScale ? 0 : (availableSize.width / scale - size[0]) / 2),
-              Math.abs(d3.min(nodeData, getY)) +
-                (xScale < yScale ? (availableSize.height / scale - size[1]) / 2 : 0)
-            ];
-
-        var offset = [
-              nodeSize.width / (horizontal ? 1 : 2),
-              nodeSize.height / (horizontal ? 2 : 1)
-            ];
-
-        var translate = [
-              (center[0] + offset[0]) * scale + padding.left / (horizontal ? 2 : 1),
-              (center[1] + offset[1]) * scale + padding.top / (horizontal ? 1 : 2)
-            ];
-
-        backg
-          .attr('width', availableSize.width)
-          .attr('height', availableSize.height);
-
-        treeChart.transition().duration(5000)
-          .attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
-      };
 
       chart.orientation = function(orientation) {
         horizontal = (orientation === 'horizontal' || !horizontal ? true : false);
@@ -262,8 +214,8 @@ console.log('root: ', root);
         // Initialize the display to show a few nodes.
         findNode(data);
 
-        _data.x0 = 0;
-        _data.y0 = 0;
+        // _data.x0 = 0;
+        // _data.y0 = 0;
 
         data = _data;
 
@@ -273,6 +225,33 @@ console.log('root: ', root);
 
       // source is either root or a selected node
       chart.update = function(source) {
+        var target = {x: 0, y: 0};
+
+        function diagonal(d, p) {
+          var dy = getY(d),
+              dx = getX(d),
+              py = getY(p),
+              px = getX(p);
+          return "M" + dx + "," + dy
+               + "C" + dx + "," + (dy + py) / 2
+               + " " + px + "," + (dy + py) / 2
+               + " " + px + "," + py;
+        }
+        function initial(d) {
+          // if the source is root
+          if (getId(source) === getId(root)) {
+            return diagonal(root, root);
+          } else {
+            var node = {x: getX0(source), y: getY0(source)};
+            return diagonal(node, node);
+          }
+        }
+        function extend(d) {
+          return diagonal(d, d.parent);
+        }
+        function retract(d) {
+          return diagonal(target, target);
+        }
 
         // Toggle children.
         function toggle(d) {
@@ -287,15 +266,19 @@ console.log('root: ', root);
 
         // Click tree node.
         function leafClick(d) {
-          // console.log('d: ', d);
           toggle(d.data);
           chart.update(d);
         }
 
+        // Get the card id
+        function getCardId(d) {
+          var id = 'card-' + getId(d);
+          return id;
+        };
+
         // Get the link id
         function getLinkId(d) {
           var id = 'link-' + (d.parent ? getId(d.parent) : 0) + '-' + getId(d);
-          console.log('id: ', id);
           return id;
         };
 
@@ -310,22 +293,18 @@ console.log('root: ', root);
         // Enter any new nodes at the parent's previous position.
         var nodes_entr = nodes_bind.enter().append('g')
               .attr('class', 'sc-card')
-              .attr('id', function(d) { return 'sc-card-' + getId(d); })
+              .attr('id', getCardId)
+              .attr('opacity', function(d) {
+                return getId(source) === getId(d) ? 1 : 0;
+              })
               .attr('transform', function(d) {
                 // if the source is root
-                if (getY(source) === 0) {
-                  return 'translate(' + 0 + ',' + 0 + ')';
-                  // return 'translate(' + getX(root) + ',' + getY(root) + ')';
+                if (getId(source) === getId(root)) {
+                  return 'translate(' + getX(root) + ',' + getY(root) + ')';
                 } else {
                   return 'translate(' + getX0(source) + ',' + getY0(source) + ')';
                 }
-                // return 'translate(' + getX(root) + ',' + getY(root) + ')';
               });
-              // .attr('transform', function(d) {
-              //   var x = d.parent ? getX(d.parent) : 0;
-              //   var y = d.parent ? getY(d.parent) : 0;
-              //   return 'translate(' + x + ',' + y + ')';
-              // });
 
             // For each node create a shape for node content display
             nodes_entr.each(function(d) {
@@ -372,10 +351,15 @@ console.log('root: ', root);
               .attr('x1', 0.5 - r).attr('y1', 0).attr('x2', r - 0.5).attr('y2', 0)
               .style('stroke', '#fff');
 
+
         //Transition nodes to their new position.
         var nodes = treeChart.selectAll('g.sc-card').merge(nodes_entr);
-            nodes.transition(tran).duration(5000)
+            nodes.transition(tran).duration(duration)
+              .attr('opacity', 1)
               .attr('transform', function(d) {
+                if (getId(source) === getId(d)) {
+                  target = {x: getX(d), y: getY(d)};
+                }
                 return 'translate(' + getX(d) + ',' + getY(d) + ')';
               });
             nodes.select('.sc-expcoll')
@@ -397,12 +381,10 @@ console.log('root: ', root);
             });
 
         // Transition exiting nodes to the parent's new position.
-        var nodes_exit = nodes_bind.exit().transition(tran)
+        var nodes_exit = nodes_bind.exit().transition(tran).duration(duration)
+              .attr('opacity', 0)
               .attr('transform', function(d) {
-                console.log(d)
-                // console.log(d.x, d.x0, getX0(d), d.parent.x, d.parent.x0, getX0(d.parent))
-                return 'translate(' + getX(source) + ',' + getY(source) + ')';
-                // return 'translate(' + getX0(d) + ',' + getY0(d) + ')';
+                return 'translate(' + getX(target) + ',' + getY(target) + ')';
               })
               .remove();
             nodes_exit.selectAll('.sc-expcoll')
@@ -417,24 +399,73 @@ console.log('root: ', root);
         var links_bind = treeChart.selectAll('path.link').data(linkData, getLinkId);
             // Enter any new links at the parent's previous position.
         var links_entr = links_bind.enter().insert('path', 'g')
+              .attr('d', initial)
               .attr('class', 'link')
               .attr('id', getLinkId)
-              .attr('d', initial);
-console.log(links_entr)
+              .attr('opacity', 0);
 
         var links = treeChart.selectAll('path.link').merge(links_entr);
             // Transition links to their new position.
-            links.transition(tran).duration(5000)
-              .attr('d', extend);
+            links.transition(tran).duration(duration)
+              .attr('d', extend)
+              .attr('opacity', 1);
             // Transition exiting nodes to the parent's new position.
-            links_bind.exit().transition(tran)
+            links_bind.exit().transition(tran).duration(duration)
               .attr('d', retract)
+              .attr('opacity', 0)
               .remove();
 
         // Stash the old positions for transition.
         populate0(root);
 
-        chart.resize();
+        chart.resize(getId(source) === getId(root));
+      };
+
+
+      chart.resize = function(init) {
+        chart.reset();
+
+        // the size of the svg container minus padding
+        availableSize = {
+          'width': parseInt(svg.style('width'), 10) - padding.left - padding.right,
+          'height': parseInt(svg.style('height'), 10) - padding.top - padding.bottom
+        };
+
+        // the size of the chart itself
+        var size = [
+              Math.abs(d3.min(nodeData, getX)) + Math.abs(d3.max(nodeData, getX)) + nodeSize.width,
+              Math.abs(d3.min(nodeData, getY)) + Math.abs(d3.max(nodeData, getY)) + nodeSize.height
+            ];
+
+        // initial chart scale to fit chart in container
+        var xScale = availableSize.width / size[0],
+            yScale = availableSize.height / size[1],
+            scale = d3.min([xScale, yScale]);
+
+        // initial chart translation to position chart in the center of container
+        var center = [
+              Math.abs(d3.min(nodeData, getX)) +
+                (xScale < yScale ? 0 : (availableSize.width / scale - size[0]) / 2),
+              Math.abs(d3.min(nodeData, getY)) +
+                (xScale < yScale ? (availableSize.height / scale - size[1]) / 2 : 0)
+            ];
+
+        var offset = [
+              nodeSize.width / (horizontal ? 1 : 2),
+              nodeSize.height / (horizontal ? 2 : 1)
+            ];
+
+        var translate = [
+              (center[0] + offset[0]) * scale + padding.left / (horizontal ? 2 : 1),
+              (center[1] + offset[1]) * scale + padding.top / (horizontal ? 1 : 2)
+            ];
+
+        backg
+          .attr('width', availableSize.width)
+          .attr('height', availableSize.height);
+
+        treeChart.transition(tran).duration(init ? 0 : duration)
+          .attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
       };
 
       function grow() {
@@ -443,7 +474,6 @@ console.log(links_entr)
         });
 
         tree(root); // apply tree structure to data
-// console.log('root: ', root);
         nodeData = root.descendants();
 
         nodeData.forEach(function(d) {
@@ -459,26 +489,6 @@ console.log(links_entr)
         if (d.children && d.children.length) {
           d.children.forEach(populate0);
         }
-      }
-
-      function diagonal(d, p) {
-        var dy = getY(d),
-            dx = getX(d),
-            py = getY(p),
-            px = getX(p);
-        return "M" + dx + "," + dy
-             + "C" + dx + "," + (dy + py) / 2
-             + " " + px + "," + (dy + py) / 2
-             + " " + px + "," + py;
-      }
-      function initial(d) {
-        return diagonal(d.parent, d.parent);
-      }
-      function extend(d) {
-        return diagonal(d, d.parent);
-      }
-      function retract(d) {
-        return diagonal(d.parent, d.parent);
       }
 
       chart.gradient(fillGradient);
