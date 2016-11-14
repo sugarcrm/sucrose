@@ -87,11 +87,11 @@ sucrose.models.tree = function tree() {
           };
       var container = d3.select(svg.node().parentNode);
 
-      var wrap_bind = svg.selectAll('g.sc-wrap.sc-tree').data([1]);
+      var wrap_bind = svg.selectAll('g.sc-chart-wrap').data([1]);
       var wrap_entr = wrap_bind.enter().append('g')
-            .attr('class', 'sc-wrap sc-tree')
+            .attr('class', 'sc-chart-wrap sc-chart-tree')
             .attr('id', 'sc-chart-' + id);
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap.call(zoom);
 
@@ -291,7 +291,7 @@ sucrose.models.tree = function tree() {
         var nodes_bind = treeChart.selectAll('g.sc-card').data(nodeData, getId);
 
         // Enter any new nodes at the parent's previous position.
-        var nodes_entr = nodes_bind.enter().append('g')
+        var nodes_entr = nodes_bind.enter().insert('g')
               .attr('class', 'sc-card')
               .attr('id', getCardId)
               .attr('opacity', function(d) {

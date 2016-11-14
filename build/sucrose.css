@@ -586,6 +586,29 @@ text.sc-pie-hole-label {
   stroke: #ccc;
   stroke-width: 1.5px;
 }
+.sc-chart-org .sc-org-bkgd {
+  stroke: #d0d0d0;
+  stroke-width: 2px;
+}
+.sc-chart-org .sc-org-node text {
+  font-style: normal;
+  font-variant: normal;
+  font-weight: 300;
+  font-stretch: normal;
+  font-size: 10px;
+  line-height: normal;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+}
+.sc-chart-org .sc-org-node text.sc-org-name {
+  font-size: 10px;
+  fill: #176de5;
+}
+.sc-chart-org .sc-org-node text.sc-org-name.hover {
+  text-decoration: underline;
+}
+.sc-chart-org .sc-org-node text.sc-org-title {
+  font-size: 8px;
+}
 /**********
 * Tooltips
 * Twitter bootstrap classes
