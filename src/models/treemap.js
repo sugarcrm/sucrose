@@ -117,7 +117,7 @@ export default function treemap() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([TREE]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
-      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = wrap.select('g.sc-chart-wrap').merge(g_entr);

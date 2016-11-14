@@ -392,9 +392,10 @@ var sucroseCharts = function () {
         chart
           .nodeSize({'width': 124, 'height': 56})
           .nodeRenderer(function (content, d, w, h) {
-            if (!d.image || d.image === '') {
-              d.image = 'user.svg';
+            if (!d.data.image || d.data.image === '') {
+              d.data.image = 'user.svg';
             }
+            var container = d3.select('#chart_ svg');
             var node = content.append('g').attr('class', 'sc-org-node');
                 node.append('rect').attr('class', 'sc-org-bkgd')
                   .attr('x', 0)
@@ -404,18 +405,18 @@ var sucroseCharts = function () {
                   .attr('width', w)
                   .attr('height', h);
                 node.append('image').attr('class', 'sc-org-avatar')
-                  .attr('xlink:href', 'img/' + d.image)
+                  .attr('xlink:href', 'img/' + d.data.image)
                   .attr('width', '32px')
                   .attr('height', '32px')
                   .attr('transform', 'translate(3, 3)');
                 node.append('text').attr('class', 'sc-org-name')
-                  .attr('data-url', d.url)
+                  .attr('data-url', d.data.name)
                   .attr('transform', 'translate(38, 11)')
-                  .text(d.name);
+                  .text(sucrose.utility.stringEllipsify(d.data.name, container, w));
                 node.append('text').attr('class', 'sc-org-title')
-                  .attr('data-url', d.url)
+                  .attr('data-url', d.data.title)
                   .attr('transform', 'translate(38, 21)')
-                  .text(d.title);
+                  .text(sucrose.utility.stringEllipsify(d.data.title, container, w));
             return node;
           })
           .zoomExtents({'min': 0.25, 'max': 4})
@@ -475,9 +476,6 @@ var sucroseCharts = function () {
           break;
         case 'area':
           model = 'stackedAreaChart';
-          break;
-        case 'tree':
-          model = 'tree';
           break;
         default:
           model = type + 'Chart';

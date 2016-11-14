@@ -176,7 +176,7 @@ export default function stackeArea() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-stackedarea');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-stackedarea').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 

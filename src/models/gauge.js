@@ -86,7 +86,7 @@ export default function gauge() {
 
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class','sc-wrap sc-gauge');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-gauge').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 

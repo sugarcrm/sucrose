@@ -134,7 +134,7 @@ export default function lineWithFocusChart() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-lineWithFocusChart').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart');
-      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-lineWithFocusChart').merge(wrap_entr);
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 

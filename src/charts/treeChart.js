@@ -1,11 +1,8 @@
-// import d3 from 'd3';
-// import utility from '../utility.js';
+import d3 from 'd3';
+import utility from '../utility.js';
 
-// export default function tree() {
-sucrose.models.tree = function tree() {
+export default function treeChart() {
   // issues: 1. zoom slider doesn't zoom on chart center
-  // orientation
-  // bottom circles
 
   // all hail, stepheneb
   // https://gist.github.com/1182434
@@ -19,8 +16,10 @@ sucrose.models.tree = function tree() {
   //------------------------------------------------------------
 
   // specific to org chart
-  var r = 6,
-      padding = {'top': 10, 'right': 10, 'bottom': 10, 'left': 10}, // this is the distance from the edges of the svg to the chart,
+  var margin = {'top': 10, 'right': 10, 'bottom': 10, 'left': 10}, // this is the distance from the edges of the svg to the chart,
+      width = null,
+      height = null,
+      r = 6,
       duration = 300,
       zoomExtents = {'min': 0.25, 'max': 2},
       nodeSize = {'width': 100, 'height': 50},
@@ -52,7 +51,7 @@ sucrose.models.tree = function tree() {
           return sucrose.utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
       },
       useClass = false,
-      valueFormat = sucrose.utility.numberFormatSI,
+      clipEdge = true,
       showLabels = true,
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
 
@@ -62,35 +61,43 @@ sucrose.models.tree = function tree() {
   {
     selection.each(function(data) {
 
-      var zoom = null;
-      chart.setZoom = function() {
-        zoom = d3.zoom()
-                    .scaleExtent([zoomExtents.min, zoomExtents.max])
-                    .on('zoom', function() {
-                      tree_wrap.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
-                      zoomCallback(d3.event.scale);
-                    });
-      };
-      chart.setZoom();
+      var that = this,
+          container = d3.select(this);
 
       var tran = d3.transition('tree')
             .duration(duration)
             .ease(d3.easeLinear);
 
+      var zoom = null;
+      chart.setZoom = function() {
+        zoom = d3.zoom()
+          .scaleExtent([zoomExtents.min, zoomExtents.max])
+          .on('zoom', function() {
+            tree_wrap.attr('transform', 'translate(' + d3.event.transform.x + ',' + d3.event.transform.y + ')scale(' + d3.event.transform.k + ')');
+            zoomCallback(d3.event.scale);
+          });
+      };
+      chart.unsetZoom = function(argument) {
+        zoom.on('zoom', null);
+      }
+      chart.resetZoom = function() {
+        // chart.unSetZoom();
+        // chart.setZoom();
+        wrap.call(zoom.transform, d3.zoomIdentity);
+        // tree_wrap.attr('transform', d3.zoomIdentity);
+      };
+      chart.setZoom();
+
       //------------------------------------------------------------
       // Setup svgs and skeleton of chart
 
-      var svg = d3.select(this);
-      var availableSize = { // the size of the svg container minus padding
-            'width': parseInt(svg.style('width'), 10) - padding.left - padding.right,
-            'height': parseInt(svg.style('height'), 10) - padding.top - padding.bottom
+      var availableSize = { // the size of the svg container minus margin
+            'width': parseInt(container.style('width'), 10) - margin.left - margin.right,
+            'height': parseInt(container.style('height'), 10) - margin.top - margin.bottom
           };
-      var container = d3.select(svg.node().parentNode);
 
-      var wrap_bind = svg.selectAll('g.sc-chart-wrap').data([1]);
-      var wrap_entr = wrap_bind.enter().append('g')
-            .attr('class', 'sc-chart-wrap sc-chart-tree')
-            .attr('id', 'sc-chart-' + id);
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-tree');
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap.call(zoom);
@@ -99,16 +106,25 @@ sucrose.models.tree = function tree() {
       var defs = wrap.select('defs').merge(defs_entr);
       var node_shadow = sucrose.utility.dropShadow('node_back_' + id, defs, {blur: 2});
 
-      wrap_entr.append('svg:rect')
-            .attr('class', 'sc-chart-background')
-            .attr('width', availableSize.width)
-            .attr('height', availableSize.height)
-            .attr('transform', 'translate(' + padding.left + ',' + padding.top + ')')
-            .style('fill', 'transparent');
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
+      var clipPath = defs.select('#sc-edge-clip-' + id + ' rect');
+      clipPath
+        .attr('width', availableSize.width)
+        .attr('height', availableSize.height)
+        .attr('x', margin.left)
+        .attr('y', margin.top);
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      wrap_entr.append('rect')
+        .attr('class', 'sc-chart-background')
+        .attr('width', availableSize.width)
+        .attr('height', availableSize.height)
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+        .style('fill', 'transparent');
       var backg = wrap.select('.sc-chart-background');
 
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var tree_wrap = wrap.select('.sc-chart-wrap');
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-wrap');
+      var tree_wrap = wrap.select('.sc-wrap');
 
       g_entr.append('g').attr('class', 'sc-tree');
       var treeChart = wrap.select('.sc-tree');
@@ -123,9 +139,35 @@ sucrose.models.tree = function tree() {
               return a.parent == b.parent ? 1 : 1;
             });
 
-      // Compute the new tree layout.
-      grow();
+      function grow() {
+        root = d3.hierarchy(data, function(d) {
+          return d.children;
+        });
 
+        tree(root); // apply tree structure to data
+
+        nodeData = root.descendants();
+
+        nodeData.forEach(function(d) {
+          setY(d, d.depth * 2 * (horizontal ? nodeSize.width : nodeSize.height));
+        });
+
+        linkData = nodeData.slice(1);
+      }
+
+      function populate0(d) {
+        setX0(d, getX(d));
+        setY0(d, getY(d));
+        if (d.children && d.children.length) {
+          d.children.forEach(populate0);
+        }
+      }
+
+      // Compute the new tree layout
+      grow();
+      // Then preset X0/Y0 values for transformations
+      // Note: these cannot be combined because of chart.update
+      // which doesn't repopulate X0/Y0 until after render
       populate0(root);
 
       chart.orientation = function(orientation) {
@@ -136,23 +178,16 @@ sucrose.models.tree = function tree() {
 
       chart.showall = function() {
         function expandAll(d) {
-          if ((d.children && d.children.length) || (d._children && d._children.length)) {
-            if (d._children && d._children.length) {
+          if (d._children && d._children.length) {
               d.children = d._children;
               d._children = null;
-            }
+          }
+          if (d.children && d.children.length) {
             d.children.forEach(expandAll);
           }
         }
-        expandAll(root);
+        expandAll(data);
         chart.update(root);
-      };
-
-      chart.reset = function() {
-        chart.setZoom();
-        // zoom.translate([0, 0]).scale(1);
-        wrap.call(zoom);
-        tree_wrap.attr('transform', 'translate(' + [0, 0] + ')scale(' + 1 + ')');
       };
 
       chart.zoomStep = function(step) {
@@ -226,15 +261,18 @@ sucrose.models.tree = function tree() {
       // source is either root or a selected node
       chart.update = function(source) {
         var target = {x: 0, y: 0};
-
         function diagonal(d, p) {
-          var dy = getY(d),
-              dx = getX(d),
+          var dy = getY(d) - (horizontal ? 0 : nodeSize.height - r * 3),
+              dx = getX(d) - (horizontal ? nodeSize.width - r * 2 : 0),
               py = getY(p),
-              px = getX(p);
+              px = getX(p),
+              cdx = horizontal ? (dx + px) / 2 : dx,
+              cdy = horizontal ? dy : (dy + py) / 2,
+              cpx = horizontal ? (dx + px) / 2 : px,
+              cpy = horizontal ? py : (dy + py) / 2;
           return "M" + dx + "," + dy
-               + "C" + dx + "," + (dy + py) / 2
-               + " " + px + "," + (dy + py) / 2
+               + "C" + cdx + "," + cdy
+               + " " + cpx + "," + cpy
                + " " + px + "," + py;
         }
         function initial(d) {
@@ -254,13 +292,13 @@ sucrose.models.tree = function tree() {
         }
 
         // Toggle children.
-        function toggle(d) {
-          if (d.children) {
-            d._children = d.children;
-            d.children = null;
+        function toggle(data) {
+          if (data.children) {
+            data._children = data.children;
+            data.children = null;
           } else {
-            d.children = d._children;
-            d._children = null;
+            data.children = data._children;
+            data._children = null;
           }
         }
 
@@ -302,7 +340,7 @@ sucrose.models.tree = function tree() {
                 if (getId(source) === getId(root)) {
                   return 'translate(' + getX(root) + ',' + getY(root) + ')';
                 } else {
-                  return 'translate(' + getX0(source) + ',' + getY0(source) + ')';
+                  return 'translate(' + (horizontal ? getY0(source) : getX0(source)) + ',' + (horizontal ? getX0(source) : getY0(source)) + ')';
                 }
               });
 
@@ -339,18 +377,17 @@ sucrose.models.tree = function tree() {
               .attr('filter', node_shadow);
 
         // node circle
-        var xcCircle = nodes_entr.append('svg:g').attr('class', 'sc-expcoll')
+        var xcCircle = nodes_entr.append('g').attr('class', 'sc-expcoll')
               .style('opacity', 1e-6)
               .on('click', leafClick);
-            xcCircle.append('svg:circle').attr('class', 'sc-circ-back')
+            xcCircle.append('circle').attr('class', 'sc-circ-back')
               .attr('r', r);
-            xcCircle.append('svg:line').attr('class', 'sc-line-vert')
+            xcCircle.append('line').attr('class', 'sc-line-vert')
               .attr('x1', 0).attr('y1', 0.5 - r).attr('x2', 0).attr('y2', r - 0.5)
               .style('stroke', '#bbb');
-            xcCircle.append('svg:line').attr('class', 'sc-line-hrzn')
+            xcCircle.append('line').attr('class', 'sc-line-hrzn')
               .attr('x1', 0.5 - r).attr('y1', 0).attr('x2', r - 0.5).attr('y2', 0)
               .style('stroke', '#fff');
-
 
         //Transition nodes to their new position.
         var nodes = treeChart.selectAll('g.sc-card').merge(nodes_entr);
@@ -358,7 +395,7 @@ sucrose.models.tree = function tree() {
               .attr('opacity', 1)
               .attr('transform', function(d) {
                 if (getId(source) === getId(d)) {
-                  target = {x: getX(d), y: getY(d)};
+                  target = {x: horizontal ? getY(d) : getX(d), y: horizontal ? getX(d) : getY(d)};
                 }
                 return 'translate(' + getX(d) + ',' + getY(d) + ')';
               });
@@ -421,14 +458,19 @@ sucrose.models.tree = function tree() {
         chart.resize(getId(source) === getId(root));
       };
 
+      chart.render = function() {
+        chart.resize(true);
+      };
 
-      chart.resize = function(init) {
-        chart.reset();
+      chart.resize = function(initial) {
+        initial = typeof initial === 'undefined' ? true : initial;
 
-        // the size of the svg container minus padding
+        chart.resetZoom();
+
+        // the size of the svg container minus margin
         availableSize = {
-          'width': parseInt(svg.style('width'), 10) - padding.left - padding.right,
-          'height': parseInt(svg.style('height'), 10) - padding.top - padding.bottom
+          'width': parseInt(container.style('width'), 10) - margin.left - margin.right,
+          'height': parseInt(container.style('height'), 10) - margin.top - margin.bottom
         };
 
         // the size of the chart itself
@@ -456,40 +498,25 @@ sucrose.models.tree = function tree() {
             ];
 
         var translate = [
-              (center[0] + offset[0]) * scale + padding.left / (horizontal ? 2 : 1),
-              (center[1] + offset[1]) * scale + padding.top / (horizontal ? 1 : 2)
+              (center[0] + offset[0]) * scale + margin.left / (horizontal ? 2 : 1),
+              (center[1] + offset[1]) * scale + margin.top / (horizontal ? 1 : 2)
             ];
+
+        clipPath
+          .attr('width', availableSize.width)
+          .attr('height', availableSize.height);
 
         backg
           .attr('width', availableSize.width)
           .attr('height', availableSize.height);
 
-        treeChart.transition(tran).duration(init ? 0 : duration)
+        // TODO: do we need to interrupt transitions on resize to prevent Too late... error?
+        // treeChart.interrupt().selectAll("*").interrupt();
+
+        treeChart
+          .transition(tran).duration(initial ? 0 : duration)
           .attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
       };
-
-      function grow() {
-        root = d3.hierarchy(data, function(d) {
-          return d.children;
-        });
-
-        tree(root); // apply tree structure to data
-        nodeData = root.descendants();
-
-        nodeData.forEach(function(d) {
-          setY(d, d.depth * 2 * (horizontal ? nodeSize.width : nodeSize.height));
-        });
-
-        linkData = nodeData.slice(1);
-      }
-
-      function populate0(d) {
-        setX0(d, getX(d));
-        setY0(d, getY(d));
-        if (d.children && d.children.length) {
-          d.children.forEach(populate0);
-        }
-      }
 
       chart.gradient(fillGradient);
 
@@ -499,7 +526,6 @@ sucrose.models.tree = function tree() {
 
     return chart;
   }
-
 
   //============================================================
   // Expose Public Variables
@@ -570,18 +596,6 @@ sucrose.models.tree = function tree() {
     return chart;
   };
 
-  chart.valueFormat = function(_) {
-    if (!arguments.length) return valueFormat;
-    valueFormat = _;
-    return chart;
-  };
-
-  chart.labelThreshold = function(_) {
-    if (!arguments.length) return labelThreshold;
-    labelThreshold = _;
-    return chart;
-  };
-
   // ORG
 
   chart.radius = function(_) {
@@ -608,9 +622,9 @@ sucrose.models.tree = function tree() {
     return chart;
   };
 
-  chart.padding = function(_) {
-    if (!arguments.length) return padding;
-    padding = _;
+  chart.margin = function(_) {
+    if (!arguments.length) return margin;
+    margin = _;
     return chart;
   };
 
@@ -655,6 +669,7 @@ sucrose.models.tree = function tree() {
     getId = _;
     return chart;
   };
+
   //============================================================
 
   return chart;

@@ -1812,7 +1812,7 @@ function funnel() {
       // Setup containers and skeleton of chart
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-funnel');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-funnel').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
@@ -2788,7 +2788,7 @@ function gauge() {
 
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class','sc-wrap sc-gauge');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-gauge').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
@@ -4232,7 +4232,7 @@ function line() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-line').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-line');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-line').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
@@ -4777,7 +4777,7 @@ function multiBar() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-multibar').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-multibar').merge(wrap_entr);
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -5562,7 +5562,7 @@ function pie() {
 
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-pie');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-pie').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
@@ -6566,7 +6566,7 @@ function scatter() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-scatter');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-scatter').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
@@ -7721,7 +7721,7 @@ function stackeArea() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-stackedarea');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-stackedarea').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
@@ -8304,617 +8304,6 @@ function table() {
   return chart;
 }
 
-function tree() {
-
-  // issues: 1. zoom slider doesn't zoom on chart center
-  // orientation
-  // bottom circles
-
-  // all hail, stepheneb
-  // https://gist.github.com/1182434
-  // http://mbostock.github.com/d3/talk/20111018/tree.html
-  // https://groups.google.com/forum/#!topic/d3-js/-qUd_jcyGTw/discussion
-  // http://ajaxian.com/archives/foreignobject-hey-youve-got-html-in-my-svg
-  // [possible improvements @ http://bl.ocks.org/robschmuecker/7880033]
-
-  //============================================================
-  // Public Variables with Default Settings
-  //------------------------------------------------------------
-
-  // specific to org chart
-  var r = 6,
-    padding = {'top': 10, 'right': 10, 'bottom': 10, 'left': 10}, // this is the distance from the edges of the svg to the chart,
-    duration = 300,
-    zoomExtents = {'min': 0.25, 'max': 2},
-    nodeSize = {'width': 100, 'height': 50},
-    nodeImgPath = '../img/',
-    nodeRenderer = function(d) { return '<div class="sc-tree-node"></div>'; },
-    zoomCallback = function(d) { return; },
-    nodeCallback = function(d) { return; },
-    nodeClick = function(d) { return; },
-    horizontal = false;
-
-  var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-    color = function (d, i) { return utility.defaultColor()(d, i); },
-    fill = function(d, i) { return color(d,i); },
-    gradient = function(d, i) { return color(d,i); },
-
-    setX = function(d, v) { d.x = v; },
-    setY = function(d, v) { d.y = v; },
-    setX0 = function(d, v) { if (horizontal) { d.y0 = v; } else { d.x0 = v; } },
-    setY0 = function(d, v) { if (horizontal) { d.x0 = v; } else { d.y0 = v; } },
-
-    getX = function(d) { return horizontal ? d.y : d.x; },
-    getY = function(d) { return horizontal ? d.x : d.y; },
-    getX0 = function(d) { return horizontal ? d.y0 : d.x0; },
-    getY0 = function(d) { return horizontal ? d.x0 : d.y0; },
-
-    getId = function(d) { return d.id; },
-
-    fillGradient = function(d, i) {
-        return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
-    },
-    useClass = false,
-    valueFormat = utility.numberFormatSI,
-    showLabels = true,
-    dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
-
-  //============================================================
-
-  function chart(selection)
-  {
-    selection.each(function(data) {
-
-      // var diagonal = d3.svg.diagonal()
-      //       .projection(function(d) {
-      //         return [getX(d), getY(d)];
-      //       });
-      var diagonal = function(d) {
-        return "M" + d.y + "," + d.x
-            + "C" + (d.y + d.parent.y) / 2 + "," + d.x
-            + " " + (d.y + d.parent.y) / 2 + "," + d.parent.x
-            + " " + d.parent.y + "," + d.parent.x;
-      };
-
-      var zoom = null;
-      chart.setZoom = function() {
-        zoom = d3.zoom()
-                    .scaleExtent([zoomExtents.min, zoomExtents.max])
-                    .on('zoom', function() {
-                      treeWrapper.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
-                      zoomCallback(d3.event.scale);
-                    });
-      };
-      chart.setZoom();
-
-      //------------------------------------------------------------
-      // Setup svgs and skeleton of chart
-
-      var svg = d3.select(this);
-      var availableSize = { // the size of the svg container minus padding
-            'width': parseInt(svg.style('width'), 10) - padding.left - padding.right,
-            'height': parseInt(svg.style('height'), 10) - padding.top - padding.bottom
-          };
-      var container = d3.select(svg.node().parentNode);
-
-      var wrap_bind = svg.selectAll('.sc-wrap').data([1]);
-      var wrap_entr = wrap_bind.enter().append('g')
-            .attr('class', 'sucrose sc-wrap sc-treeChart')
-            .attr('id', 'sc-chart-' + id);
-      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
-
-      wrap.call(zoom);
-
-      var defs_entr = wrap_entr.append('defs');
-      var defs = wrap.select('defs').merge(defs_entr);
-      var nodeShadow = utility.dropShadow('node_back_' + id, defs, {blur: 2});
-
-      wrap_entr.append('svg:rect')
-            .attr('class', 'sc-chartBackground')
-            .attr('width', availableSize.width)
-            .attr('height', availableSize.height)
-            .attr('transform', 'translate(' + padding.left + ',' + padding.top + ')')
-            .style('fill', 'transparent');
-      var backg = wrap.select('.sc-chartBackground');
-
-      var g_entr = wrap_entr.append('g')
-            .attr('class', 'sc-chartWrap');
-      var treeWrapper = wrap.select('.sc-chartWrap');
-
-      g_entr.append('g')
-            .attr('class', 'sc-tree');
-      var treeChart = wrap.select('.sc-tree');
-
-      // Compute the new tree layout.
-      var tree = d3.tree()
-            .size([700,500]);
-            // .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
-            // .separation(function separation(a, b) {
-            //   return a.parent == b.parent ? 1 : 1;
-            // });
-
-      data.x0 = data.x0 || 0;
-      data.y0 = data.y0 || 0;
-
-      var _data = data;
-
-      var nodes = null;
-
-      chart.resize = function() {
-        chart.reset();
-
-        // the size of the svg container minus padding
-        availableSize = {
-          'width': parseInt(svg.style('width'), 10) - padding.left - padding.right,
-          'height': parseInt(svg.style('height'), 10) - padding.top - padding.bottom
-        };
-
-        // the size of the chart itself
-        var size = [
-              Math.abs(d3.min(nodes, getX)) + Math.abs(d3.max(nodes, getX)) + nodeSize.width,
-              Math.abs(d3.min(nodes, getY)) + Math.abs(d3.max(nodes, getY)) + nodeSize.height
-            ],
-
-            // initial chart scale to fit chart in container
-            xScale = availableSize.width / size[0],
-            yScale = availableSize.height / size[1],
-            scale = d3.min([xScale, yScale]),
-
-            // initial chart translation to position chart in the center of container
-            center = [
-              Math.abs(d3.min(nodes, getX)) +
-                (xScale < yScale ? 0 : (availableSize.width / scale - size[0]) / 2),
-              Math.abs(d3.min(nodes, getY)) +
-                (xScale < yScale ? (availableSize.height / scale - size[1]) / 2 : 0)
-            ],
-
-            offset = [
-              nodeSize.width / (horizontal ? 1 : 2),
-              nodeSize.height / (horizontal ? 2 : 1)
-            ],
-
-            translate = [
-              (center[0] + offset[0]) * scale + padding.left / (horizontal ? 2 : 1),
-              (center[1] + offset[1]) * scale + padding.top / (horizontal ? 1 : 2)
-            ];
-
-        backg
-          .attr('width', availableSize.width)
-          .attr('height', availableSize.height);
-
-        treeChart.attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
-      };
-
-      chart.orientation = function(orientation) {
-        horizontal = (orientation === 'horizontal' || !horizontal ? true : false);
-        tree.nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1]);
-        chart.update(_data);
-      };
-
-      chart.showall = function() {
-        function expandAll(d) {
-          if ((d.children && d.children.length) || (d._children && d._children.length)) {
-            if (d._children && d._children.length) {
-              d.children = d._children;
-              d._children = null;
-            }
-            d.children.forEach(expandAll);
-          }
-        }
-        expandAll(_data);
-        chart.update(_data);
-      };
-
-      chart.reset = function() {
-        chart.setZoom();
-        zoom.translate([0, 0]).scale(1);
-        wrap.call(zoom);
-        treeWrapper.attr('transform', 'translate(' + [0, 0] + ')scale(' + 1 + ')');
-      };
-
-      chart.zoomStep = function(step) {
-        var level = zoom.scale() + step;
-        return this.zoomLevel(level);
-      };
-
-      chart.zoomLevel = function(level) {
-
-        var scale = Math.min(Math.max(level, zoomExtents.min), zoomExtents.max),
-
-            prevScale = zoom.scale(),
-            prevTrans = zoom.translate(),
-            treeBBox = backg.node().getBoundingClientRect(),
-
-            size = [
-              treeBBox.width,
-              treeBBox.height
-            ],
-
-            offset = [
-              (size[0] - size[0] * scale) / 2,
-              (size[1] - size[1] * scale) / 2
-            ],
-
-            shift = [
-              scale * (prevTrans[0] - (size[0] - size[0] * prevScale) / 2) / prevScale,
-              scale * (prevTrans[1] - (size[1] - size[1] * prevScale) / 2) / prevScale
-            ],
-
-            translate = [
-              offset[0] + shift[0],
-              offset[1] + shift[1]
-            ];
-
-        zoom.translate(translate).scale(scale);
-        treeWrapper.attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
-
-        return scale;
-      };
-
-      chart.zoomScale = function() {
-        return zoom.scale();
-      };
-
-      chart.filter = function(node) {
-        var __data = {}
-          , found = false;
-
-        function findNode(d) {
-          if (getId(d) === node) {
-            __data = d;
-            found = true;
-          } else if (!found && d.children) {
-            d.children.forEach(findNode);
-          }
-        }
-
-        // Initialize the display to show a few nodes.
-        findNode(data);
-
-        __data.x0 = 0;
-        __data.y0 = 0;
-
-        _data = __data;
-
-        chart.update(_data);
-      };
-
-      chart.update = function(source) {
-        // Click tree node.
-        function leafClick(d) {
-          toggle(d);
-          chart.update(d);
-        }
-
-        // Toggle children.
-        function toggle(d) {
-          if (d.children) {
-            d._children = d.children;
-            d.children = null;
-          } else {
-            d.children = d._children;
-            d._children = null;
-          }
-        }
-        //console.log(_data)
-        nodes = tree(_data);
-        var root = nodes[0];
-
-        nodes.forEach(function(d) {
-          setY(d, d.depth * 2 * (horizontal ? nodeSize.width : nodeSize.height));
-        });
-
-        // Update the nodes…
-        var node = treeChart.selectAll('g.sc-card')
-              .data(nodes, getId);
-
-        // Enter any new nodes at the parent's previous position.
-        var nodeEnter = node.enter().append('svg:g')
-              .attr('class', 'sc-card')
-              .attr('id', function(d) { return 'sc-card-' + getId(d); })
-              .attr('transform', function(d) {
-                if (getY(source) === 0) {
-                  return 'translate(' + getX(root) + ',' + getY(root) + ')';
-                } else {
-                  return 'translate(' + getX0(source) + ',' + getY0(source) + ')';
-                }
-              });
-
-        var nodeOffsetX = (horizontal ? r - nodeSize.width : nodeSize.width / -2) + 'px',
-            nodeOffsetY = (horizontal ? (r - nodeSize.height) / 2 : r * 2 - nodeSize.height) + 'px';
-
-        nodeEnter.each(function(d) {
-          if (defs.select('#myshape-' + getId(d)).empty()) {
-            var nodeObject = defs.append('svg').attr('class', 'sc-foreign-object')
-                  .attr('id', 'myshape-' + getId(d))
-                  .attr('version', '1.1')
-                  .attr('xmlns', 'http://www.w3.org/2000/svg')
-                  .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
-                  .attr('x', nodeOffsetX)
-                  .attr('y', nodeOffsetY)
-                  .attr('width', nodeSize.width + 'px')
-                  .attr('height', nodeSize.height + 'px')
-                  .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
-                  .attr('xml:space', 'preserve');
-
-            var nodeContent = nodeObject.append('g').attr('class', 'sc-tree-node-content')
-                  .attr('transform', 'translate(' + r + ',' + r + ')');
-
-            nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
-
-            nodeContent.on('click', nodeClick);
-
-            nodeCallback(nodeObject);
-          }
-        });
-
-        // node content
-        nodeEnter.append('use')
-            .attr('xlink:href', function(d) {
-              return '#myshape-' + getId(d);
-            })
-            .attr('filter', nodeShadow);
-
-        // node circle
-        var xcCircle = nodeEnter.append('svg:g').attr('class', 'sc-expcoll')
-              .style('opacity', 1e-6)
-              .on('click', leafClick);
-            xcCircle.append('svg:circle').attr('class', 'sc-circ-back')
-              .attr('r', r);
-            xcCircle.append('svg:line').attr('class', 'sc-line-vert')
-              .attr('x1', 0).attr('y1', 0.5 - r).attr('x2', 0).attr('y2', r - 0.5)
-              .style('stroke', '#bbb');
-            xcCircle.append('svg:line').attr('class', 'sc-line-hrzn')
-              .attr('x1', 0.5 - r).attr('y1', 0).attr('x2', r - 0.5).attr('y2', 0)
-              .style('stroke', '#fff');
-
-        //Transition nodes to their new position.
-        var nodeUpdate = node.transition()
-              .duration(duration)
-              .attr('transform', function(d) {
-                return 'translate(' + getX(d) + ',' + getY(d) + ')';
-              });
-            nodeUpdate.select('.sc-expcoll')
-              .style('opacity', function(d) {
-                return ((d.children && d.children.length) || (d._children && d._children.length)) ? 1 : 0;
-              });
-            nodeUpdate.select('.sc-circ-back')
-              .style('fill', function(d) {
-                return (d._children && d._children.length) ? '#777' : (d.children ? '#bbb' : 'none');
-              });
-            nodeUpdate.select('.sc-line-vert')
-              .style('stroke', function(d) {
-                return (d._children && d._children.length) ? '#fff' : '#bbb';
-              });
-
-            nodeUpdate.each(function(d) {
-              container.select('#myshape-' + getId(d))
-                .attr('x', nodeOffsetX)
-                .attr('y', nodeOffsetY);
-            });
-
-        // Transition exiting nodes to the parent's new position.
-        var nodeExit = node.exit().transition()
-              .duration(duration)
-              .attr('transform', function(d) {
-                return 'translate(' + getX(source) + ',' + getY(source) + ')';
-              })
-              .remove();
-            nodeExit.selectAll('.sc-expcoll')
-              .style('stroke-opacity', 1e-6);
-            nodeExit.selectAll('.sc-foreign-object')
-              .attr('width', 1)
-              .attr('height', 1)
-              .attr('x', -1)
-              .attr('y', -1);
-
-        // Update the links
-        var link = treeChart.selectAll('path.link')
-              .data(tree.links(nodes), function(d) {
-                return getId(d.source) + '-' + getId(d.target);
-              });
-
-            // Enter any new links at the parent's previous position.
-            link.enter().insert('svg:path', 'g')
-              .attr('class', 'link')
-              .attr('d', function(d) {
-                var o = getY(source) === 0 ? {x: source.x, y: source.y} : {x: source.x0, y: source.y0};
-                return diagonal({ source: o, target: o });
-              });
-
-            // Transition links to their new position.
-            link.transition()
-              .duration(duration)
-              .attr('d', diagonal);
-
-            // Transition exiting nodes to the parent's new position.
-            link.exit().transition()
-              .duration(duration)
-              .attr('d', function(d) {
-                var o = { x: source.x, y: source.y };
-                return diagonal({ source: o, target: o });
-              })
-              .remove();
-
-        // Stash the old positions for transition.
-        nodes
-          .forEach(function(d) {
-            setX0(d, getX(d));
-            setY0(d, getY(d));
-          });
-
-        chart.resize();
-      };
-
-      chart.gradient(fillGradient);
-
-      chart.update(_data);
-
-    });
-
-    return chart;
-  }
-
-
-  //============================================================
-  // Expose Public Variables
-  //------------------------------------------------------------
-
-  chart.dispatch = dispatch;
-
-  chart.color = function(_) {
-    if (!arguments.length) return color;
-    color = _;
-    return chart;
-  };
-  chart.fill = function(_) {
-    if (!arguments.length) return fill;
-    fill = _;
-    return chart;
-  };
-  chart.gradient = function(_) {
-    if (!arguments.length) return gradient;
-    gradient = _;
-    return chart;
-  };
-  chart.useClass = function(_) {
-    if (!arguments.length) return useClass;
-    useClass = _;
-    return chart;
-  };
-
-  chart.width = function(_) {
-    if (!arguments.length) return width;
-    width = _;
-    return chart;
-  };
-
-  chart.height = function(_) {
-    if (!arguments.length) return height;
-    height = _;
-    return chart;
-  };
-
-  chart.values = function(_) {
-    if (!arguments.length) return getValues;
-    getValues = _;
-    return chart;
-  };
-
-  chart.x = function(_) {
-    if (!arguments.length) return getX;
-    getX = _;
-    return chart;
-  };
-
-  chart.y = function(_) {
-    if (!arguments.length) return getY;
-    getY = utility.functor(_);
-    return chart;
-  };
-
-  chart.showLabels = function(_) {
-    if (!arguments.length) return showLabels;
-    showLabels = _;
-    return chart;
-  };
-
-  chart.id = function(_) {
-    if (!arguments.length) return id;
-    id = _;
-    return chart;
-  };
-
-  chart.valueFormat = function(_) {
-    if (!arguments.length) return valueFormat;
-    valueFormat = _;
-    return chart;
-  };
-
-  chart.labelThreshold = function(_) {
-    if (!arguments.length) return labelThreshold;
-    labelThreshold = _;
-    return chart;
-  };
-
-  // ORG
-
-  chart.radius = function(_) {
-    if (!arguments.length) return r;
-    r = _;
-    return chart;
-  };
-
-  chart.duration = function(_) {
-    if (!arguments.length) return duration;
-    duration = _;
-    return chart;
-  };
-
-  chart.zoomExtents = function(_) {
-    if (!arguments.length) return zoomExtents;
-    zoomExtents = _;
-    return chart;
-  };
-
-  chart.zoomCallback = function(_) {
-    if (!arguments.length) return zoomCallback;
-    zoomCallback = _;
-    return chart;
-  };
-
-  chart.padding = function(_) {
-    if (!arguments.length) return padding;
-    padding = _;
-    return chart;
-  };
-
-  chart.nodeSize = function(_) {
-    if (!arguments.length) return nodeSize;
-    nodeSize = _;
-    return chart;
-  };
-
-  chart.nodeImgPath = function(_) {
-    if (!arguments.length) return nodeImgPath;
-    nodeImgPath = _;
-    return chart;
-  };
-
-  chart.nodeRenderer = function(_) {
-    if (!arguments.length) return nodeRenderer;
-    nodeRenderer = _;
-    return chart;
-  };
-
-  chart.nodeCallback = function(_) {
-    if (!arguments.length) return nodeCallback;
-    nodeCallback = _;
-    return chart;
-  };
-
-  chart.nodeClick = function(_) {
-    if (!arguments.length) return nodeClick;
-    nodeClick = _;
-    return chart;
-  };
-
-  chart.horizontal = function(_) {
-    if (!arguments.length) return horizontal;
-    horizontal = _;
-    return chart;
-  };
-
-  chart.getId = function(_) {
-    if (!arguments.length) return getId;
-    getId = _;
-    return chart;
-  };
-  //============================================================
-
-  return chart;
-}
-
 function treemap() {
 
   //============================================================
@@ -9031,7 +8420,7 @@ function treemap() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([TREE]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
-      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
       var defs_entr = wrap_entr.append('defs');
       var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = wrap.select('g.sc-chart-wrap').merge(g_entr);
@@ -9438,587 +8827,8 @@ const models = {
     scroll: scroll,
     stackedArea: stackeArea,
     table: table,
-    tree: tree,
     treemap: treemap,
 };
-
-function funnelChart() {
-
-  //============================================================
-  // Public Variables with Default Settings
-  //------------------------------------------------------------
-
-  var margin = {top: 10, right: 10, bottom: 10, left: 10},
-      width = null,
-      height = null,
-      showTitle = false,
-      showControls = false,
-      showLegend = true,
-      direction = 'ltr',
-      delay = 0,
-      duration = 0,
-      tooltips = true,
-      state = {},
-      strings = {
-        legend: {close: 'Hide legend', open: 'Show legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
-
-  //============================================================
-  // Private Variables
-  //------------------------------------------------------------
-
-  var funnel = models.funnel(),
-      model = funnel,
-      controls = models.legend().align('center'),
-      legend = models.legend().align('center');
-
-  var tooltip$$1 = null;
-
-  var tooltipContent = function(key, x, y, e, graph) {
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
-      };
-
-  var showTooltip = function(eo, offsetElement, properties) {
-        var key = model.getKey()(eo),
-            y = model.getValue()(eo),
-            x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
-            content = tooltipContent(key, x, y, eo, chart);
-
-        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
-      };
-
-  var seriesClick = function(data, e, chart) { return; };
-
-  //============================================================
-
-  function chart(selection) {
-
-    selection.each(function(chartData) {
-
-      var that = this,
-          container = d3.select(this),
-          modelClass = 'funnel';
-
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
-
-      var containerWidth = parseInt(container.style('width'), 10),
-          containerHeight = parseInt(container.style('height'), 10);
-
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
-
-      chart.update = function() {
-        container.transition().duration(duration).call(chart);
-      };
-
-      chart.container = this;
-
-      //------------------------------------------------------------
-      // Private method for displaying no data message.
-
-      function displayNoData(d) {
-        var hasData = d && d.length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
-      }
-
-      // Check to see if there's nothing to show.
-      if (displayNoData(data)) {
-        return chart;
-      }
-
-      //------------------------------------------------------------
-      // Process data
-
-      chart.dataSeriesActivate = function(eo) {
-        var series = eo.series;
-
-        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
-
-        // if you have activated a data series, inactivate the rest
-        if (series.active === 'active') {
-          data
-            .filter(function(d) {
-              return d.active !== 'active';
-            })
-            .map(function(d) {
-              d.active = 'inactive';
-              return d;
-            });
-        }
-
-        // if there are no active data series, inactivate them all
-        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-            d.active = '';
-            return d;
-          });
-        }
-
-        container.call(chart);
-      };
-
-      // add series index to each data point for reference
-      data.forEach(function(s, i) {
-        var y = model.y();
-        s.seriesIndex = i;
-
-        if (!s.value && !s.values) {
-          s.values = [];
-        } else if (!isNaN(s.value)) {
-          s.values = [{x: 0, y: parseInt(s.value, 10)}];
-        }
-        s.values.forEach(function(p, j) {
-          p.index = j;
-          p.series = s;
-          if (typeof p.value == 'undefined') {
-            p.value = y(p);
-          }
-        });
-
-        s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
-        s.count = s.count || s.values.length;
-        s.disabled = s.disabled || s.value === 0;
-      });
-
-      // only sum enabled series
-      var modelData = data.filter(function(d, i) { return !d.disabled; });
-
-      if (!modelData.length) {
-        modelData = [{values: []}]; // safety array
-      }
-
-      properties.count = d3.sum(modelData, function(d) { return d.count; });
-
-      properties.total = d3.sum(modelData, function(d) { return d.value; });
-
-      // set title display option
-      showTitle = showTitle && properties.title.length;
-
-      //set state.disabled
-      state.disabled = data.map(function(d) { return !!d.disabled; });
-
-      //------------------------------------------------------------
-      // Display No Data message if there's nothing to show.
-
-      if (!properties.total) {
-        displayNoData();
-        return chart;
-      }
-
-      //------------------------------------------------------------
-      // Main chart wrappers
-
-      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
-
-      wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
-
-      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
-      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
-
-      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-      var controls_wrap = wrap.select('.sc-controls-wrap');
-      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
-
-      //------------------------------------------------------------
-      // Main chart draw
-
-      chart.render = function() {
-
-        // Chart layout variables
-        var renderWidth, renderHeight,
-            availableWidth, availableHeight,
-            innerMargin,
-            innerWidth, innerHeight;
-
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
-
-        renderWidth = width || containerWidth || 960;
-        renderHeight = height || containerHeight || 400;
-
-        availableWidth = renderWidth - margin.left - margin.right;
-        availableHeight = renderHeight - margin.top - margin.bottom;
-
-        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
-          .attr('width', renderWidth)
-          .attr('height', renderHeight);
-
-        //------------------------------------------------------------
-        // Title & Legend & Controls
-
-        // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
-            widthRatio = 0,
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
-            legendHeight = 0,
-            trans = '';
-
-        title_wrap.select('.sc-title').remove();
-
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
-
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + chart.id())
-            .strings(chart.strings().legend)
-            .align('center')
-            .height(availableHeight - innerMargin.top);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-          legend
-            .arrange(availableWidth);
-
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
-
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = - legend.margin().top;
-          }
-
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-
-          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
-        }
-
-        // Recalc inner margins based on title and legend height
-        headerHeight += legendHeight;
-        innerMargin.top += headerHeight;
-        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-
-        //------------------------------------------------------------
-        // Main Chart Component(s)
-
-        model
-          .width(innerWidth)
-          .height(innerHeight);
-
-        model_wrap
-          .datum(modelData)
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
-          .transition().duration(duration)
-            .call(model);
-
-      };
-
-      //============================================================
-
-      chart.render();
-
-      //============================================================
-      // Event Handling/Dispatching (in chart's scope)
-      //------------------------------------------------------------
-
-      legend.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
-        d.active = false;
-
-        // if there are no enabled data series, enable them all
-        if (!data.filter(function(d) { return !d.disabled; }).length) {
-          data.map(function(d) {
-            d.disabled = false;
-            return d;
-          });
-        }
-
-        // if there are no active data series, activate them all
-        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-            d.active = '';
-            return d;
-          });
-        }
-
-        state.disabled = data.map(function(d) { return !!d.disabled; });
-        dispatch.call('stateChange', this, state);
-
-        container.transition().duration(duration).call(chart);
-      });
-
-      dispatch.on('tooltipShow', function(eo) {
-        if (tooltips) {
-          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
-        }
-      });
-
-      dispatch.on('tooltipMove', function(e) {
-        if (tooltip$$1) {
-          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
-        }
-      });
-
-      dispatch.on('tooltipHide', function() {
-        if (tooltips) {
-          sucrose.tooltip.cleanup();
-        }
-      });
-
-      // Update chart from a state object passed to event handler
-      dispatch.on('changeState', function(eo) {
-        if (typeof eo.disabled !== 'undefined') {
-          modelData.forEach(function(series, i) {
-            series.disabled = eo.disabled[i];
-          });
-          state.disabled = eo.disabled;
-        }
-
-        container.transition().duration(duration).call(chart);
-      });
-
-      dispatch.on('chartClick', function() {
-        //dispatch.call('tooltipHide', this);
-        if (controls.enabled()) {
-          controls.dispatch.call('closeMenu', this);
-        }
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
-        }
-      });
-
-      model.dispatch.on('elementClick', function(eo) {
-        dispatch.call('chartClick', this);
-        seriesClick(data, eo, chart);
-      });
-
-    });
-
-    return chart;
-  }
-
-  //============================================================
-  // Event Handling/Dispatching (out of chart's scope)
-  //------------------------------------------------------------
-
-  model.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.call('tooltipShow', this, eo);
-  });
-
-  model.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.call('tooltipMove', this, e);
-  });
-
-  model.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.call('tooltipHide', this);
-  });
-
-  //============================================================
-  // Expose Public Variables
-  //------------------------------------------------------------
-
-  // expose chart's sub-components
-  chart.dispatch = dispatch;
-  chart.funnel = funnel;
-  chart.legend = legend;
-  chart.controls = controls;
-
-  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
-  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, funnel, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
-
-  chart.colorData = function(_) {
-    var type = arguments[0],
-        params = arguments[1] || {};
-    var color = function(d, i) {
-          return utility.defaultColor()(d, d.seriesIndex);
-        };
-    var classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex;
-        };
-
-    switch (type) {
-      case 'graduated':
-        color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
-        };
-        break;
-      case 'class':
-        color = function() {
-          return 'inherit';
-        };
-        classes = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
-          iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
-        };
-        break;
-      case 'data':
-        color = function(d, i) {
-          return utility.defaultColor()(d, d.seriesIndex);
-        };
-        classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
-        };
-        break;
-    }
-
-    var fill = (!params.gradient) ? color : function(d, i) {
-      var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-      return model.gradient(d, d.seriesIndex, p);
-    };
-
-    model.color(color);
-    model.fill(fill);
-    model.classes(classes);
-
-    legend.color(color);
-    legend.classes(classes);
-
-    return chart;
-  };
-
-  chart.margin = function(_) {
-    if (!arguments.length) { return margin; }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        margin[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.width = function(_) {
-    if (!arguments.length) { return width; }
-    width = _;
-    return chart;
-  };
-
-  chart.height = function(_) {
-    if (!arguments.length) { return height; }
-    height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showControls = function(_) {
-    if (!arguments.length) { return showControls; }
-    showControls = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
-    return chart;
-  };
-
-  chart.tooltips = function(_) {
-    if (!arguments.length) { return tooltips; }
-    tooltips = _;
-    return chart;
-  };
-
-  chart.tooltipContent = function(_) {
-    if (!arguments.length) { return tooltipContent; }
-    tooltipContent = _;
-    return chart;
-  };
-
-  chart.state = function(_) {
-    if (!arguments.length) { return state; }
-    state = _;
-    return chart;
-  };
-
-  chart.strings = function(_) {
-    if (!arguments.length) { return strings; }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.direction = function(_) {
-    if (!arguments.length) { return direction; }
-    direction = _;
-    model.direction(_);
-    legend.direction(_);
-    controls.direction(_);
-    return chart;
-  };
-
-  chart.duration = function(_) {
-    if (!arguments.length) { return duration; }
-    duration = _;
-    model.duration(_);
-    return chart;
-  };
-
-  chart.delay = function(_) {
-    if (!arguments.length) { return delay; }
-    delay = _;
-    model.delay(_);
-    return chart;
-  };
-
-  chart.seriesClick = function(_) {
-    if (!arguments.length) {
-      return seriesClick;
-    }
-    seriesClick = _;
-    return chart;
-  };
-
-  chart.colorFill = function(_) {
-    return chart;
-  };
-
-  //============================================================
-
-  return chart;
-}
 
 function bubbleChart() {
 
@@ -10824,6 +9634,584 @@ function bubbleChart() {
   return chart;
 }
 
+function funnelChart() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 10, left: 10},
+      width = null,
+      height = null,
+      showTitle = false,
+      showControls = false,
+      showLegend = true,
+      direction = 'ltr',
+      delay = 0,
+      duration = 0,
+      tooltips = true,
+      state = {},
+      strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      },
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var funnel = models.funnel(),
+      model = funnel,
+      controls = models.legend().align('center'),
+      legend = models.legend().align('center');
+
+  var tooltip$$1 = null;
+
+  var tooltipContent = function(key, x, y, e, graph) {
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
+
+  var showTooltip = function(eo, offsetElement, properties) {
+        var key = model.getKey()(eo),
+            y = model.getValue()(eo),
+            x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
+            content = tooltipContent(key, x, y, eo, chart);
+
+        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+      };
+
+  var seriesClick = function(data, e, chart) { return; };
+
+  //============================================================
+
+  function chart(selection) {
+
+    selection.each(function(chartData) {
+
+      var that = this,
+          container = d3.select(this),
+          modelClass = 'funnel';
+
+      var properties = chartData ? chartData.properties : {},
+          data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      chart.update = function() {
+        container.transition().duration(duration).call(chart);
+      };
+
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(d) {
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Process data
+
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series;
+
+        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+
+        // if you have activated a data series, inactivate the rest
+        if (series.active === 'active') {
+          data
+            .filter(function(d) {
+              return d.active !== 'active';
+            })
+            .map(function(d) {
+              d.active = 'inactive';
+              return d;
+            });
+        }
+
+        // if there are no active data series, inactivate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data.map(function(d) {
+            d.active = '';
+            return d;
+          });
+        }
+
+        container.call(chart);
+      };
+
+      // add series index to each data point for reference
+      data.forEach(function(s, i) {
+        var y = model.y();
+        s.seriesIndex = i;
+
+        if (!s.value && !s.values) {
+          s.values = [];
+        } else if (!isNaN(s.value)) {
+          s.values = [{x: 0, y: parseInt(s.value, 10)}];
+        }
+        s.values.forEach(function(p, j) {
+          p.index = j;
+          p.series = s;
+          if (typeof p.value == 'undefined') {
+            p.value = y(p);
+          }
+        });
+
+        s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
+        s.count = s.count || s.values.length;
+        s.disabled = s.disabled || s.value === 0;
+      });
+
+      // only sum enabled series
+      var modelData = data.filter(function(d, i) { return !d.disabled; });
+
+      if (!modelData.length) {
+        modelData = [{values: []}]; // safety array
+      }
+
+      properties.count = d3.sum(modelData, function(d) { return d.count; });
+
+      properties.total = d3.sum(modelData, function(d) { return d.value; });
+
+      // set title display option
+      showTitle = showTitle && properties.title.length;
+
+      //set state.disabled
+      state.disabled = data.map(function(d) { return !!d.disabled; });
+
+      //------------------------------------------------------------
+      // Display No Data message if there's nothing to show.
+
+      if (!properties.total) {
+        displayNoData();
+        return chart;
+      }
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      //------------------------------------------------------------
+      // Main chart draw
+
+      chart.render = function() {
+
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
+        //------------------------------------------------------------
+        // Title & Legend & Controls
+
+        // Header variables
+        var maxControlsWidth = 0,
+            maxLegendWidth = 0,
+            widthRatio = 0,
+            headerHeight = 0,
+            titleBBox = {width: 0, height: 0},
+            controlsHeight = 0,
+            legendHeight = 0,
+            trans = '';
+
+        title_wrap.select('.sc-title').remove();
+
+        if (showTitle) {
+          title_wrap
+            .append('text')
+              .attr('class', 'sc-title')
+              .attr('x', direction === 'rtl' ? availableWidth : 0)
+              .attr('y', 0)
+              .attr('dy', '.75em')
+              .attr('text-anchor', 'start')
+              .attr('stroke', 'none')
+              .attr('fill', 'black')
+              .text(properties.title);
+
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
+          headerHeight += titleBBox.height;
+        }
+
+        if (showLegend) {
+          legend
+            .id('legend_' + chart.id())
+            .strings(chart.strings().legend)
+            .align('center')
+            .height(availableHeight - innerMargin.top);
+          legend_wrap
+            .datum(data)
+            .call(legend);
+          legend
+            .arrange(availableWidth);
+
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
+              legendSpace = availableWidth - titleBBox.width - 6,
+              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
+              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
+              ypos = titleBBox.height;
+
+          if (legendTop) {
+            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
+          } else if (!showTitle) {
+            ypos = - legend.margin().top;
+          }
+
+          legend_wrap
+            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
+
+          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
+        }
+
+        // Recalc inner margins based on title and legend height
+        headerHeight += legendHeight;
+        innerMargin.top += headerHeight;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
+        //------------------------------------------------------------
+        // Main Chart Component(s)
+
+        model
+          .width(innerWidth)
+          .height(innerHeight);
+
+        model_wrap
+          .datum(modelData)
+          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
+          .transition().duration(duration)
+            .call(model);
+
+      };
+
+      //============================================================
+
+      chart.render();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      legend.dispatch.on('legendClick', function(d, i) {
+        d.disabled = !d.disabled;
+        d.active = false;
+
+        // if there are no enabled data series, enable them all
+        if (!data.filter(function(d) { return !d.disabled; }).length) {
+          data.map(function(d) {
+            d.disabled = false;
+            return d;
+          });
+        }
+
+        // if there are no active data series, activate them all
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          data.map(function(d) {
+            d.active = '';
+            return d;
+          });
+        }
+
+        state.disabled = data.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(e) {
+        if (tooltip$$1) {
+          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+        }
+      });
+
+      // Update chart from a state object passed to event handler
+      dispatch.on('changeState', function(eo) {
+        if (typeof eo.disabled !== 'undefined') {
+          modelData.forEach(function(series, i) {
+            series.disabled = eo.disabled[i];
+          });
+          state.disabled = eo.disabled;
+        }
+
+        container.transition().duration(duration).call(chart);
+      });
+
+      dispatch.on('chartClick', function() {
+        //dispatch.call('tooltipHide', this);
+        if (controls.enabled()) {
+          controls.dispatch.call('closeMenu', this);
+        }
+        if (legend.enabled()) {
+          legend.dispatch.call('closeMenu', this);
+        }
+      });
+
+      model.dispatch.on('elementClick', function(eo) {
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart);
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Event Handling/Dispatching (out of chart's scope)
+  //------------------------------------------------------------
+
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
+  });
+
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
+  });
+
+  model.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
+  });
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  // expose chart's sub-components
+  chart.dispatch = dispatch;
+  chart.funnel = funnel;
+  chart.legend = legend;
+  chart.controls = controls;
+
+  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, funnel, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
+
+  chart.colorData = function(_) {
+    var type = arguments[0],
+        params = arguments[1] || {};
+    var color = function(d, i) {
+          return utility.defaultColor()(d, d.seriesIndex);
+        };
+    var classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
+
+    switch (type) {
+      case 'graduated':
+        color = function(d, i) {
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
+        };
+        break;
+      case 'class':
+        color = function() {
+          return 'inherit';
+        };
+        classes = function(d, i) {
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+          iClass = (iClass > 9 ? '' : '0') + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+        };
+        break;
+      case 'data':
+        color = function(d, i) {
+          return utility.defaultColor()(d, d.seriesIndex);
+        };
+        classes = function(d, i) {
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        };
+        break;
+    }
+
+    var fill = (!params.gradient) ? color : function(d, i) {
+      var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
+      return model.gradient(d, d.seriesIndex, p);
+    };
+
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
+
+    legend.color(color);
+    legend.classes(classes);
+
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) { return showTitle; }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.showControls = function(_) {
+    if (!arguments.length) { return showControls; }
+    showControls = _;
+    return chart;
+  };
+
+  chart.showLegend = function(_) {
+    if (!arguments.length) { return showLegend; }
+    showLegend = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) { return tooltips; }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) { return tooltipContent; }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) { return state; }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) { return strings; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    model.direction(_);
+    legend.direction(_);
+    controls.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+}
+
 function gaugeChart() {
 
   //============================================================
@@ -11462,7 +10850,7 @@ function globeChart() {
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-globe');
-      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
       var defs = wrap.select('defs');
@@ -16569,6 +15957,680 @@ function stackeAreaChart() {
   return chart;
 }
 
+function treeChart() {
+  // issues: 1. zoom slider doesn't zoom on chart center
+
+  // all hail, stepheneb
+  // https://gist.github.com/1182434
+  // http://mbostock.github.com/d3/talk/20111018/tree.html
+  // https://groups.google.com/forum/#!topic/d3-js/-qUd_jcyGTw/discussion
+  // http://ajaxian.com/archives/foreignobject-hey-youve-got-html-in-my-svg
+  // [possible improvements @ http://bl.ocks.org/robschmuecker/7880033]
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  // specific to org chart
+  var margin = {'top': 10, 'right': 10, 'bottom': 10, 'left': 10}, // this is the distance from the edges of the svg to the chart,
+      width = null,
+      height = null,
+      r = 6,
+      duration = 300,
+      zoomExtents = {'min': 0.25, 'max': 2},
+      nodeSize = {'width': 100, 'height': 50},
+      nodeImgPath = '../img/',
+      nodeRenderer = function(d) { return '<div class="sc-tree-node"></div>'; },
+      zoomCallback = function(d) { return; },
+      nodeCallback = function(d) { return; },
+      nodeClick = function(d) { return; },
+      horizontal = false;
+
+  var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
+      color = function (d, i) { return sucrose.utility.defaultColor()(d, i); },
+      fill = function(d, i) { return color(d,i); },
+      gradient = function(d, i) { return color(d,i); },
+
+      setX = function(d, v) { d.x = v; },
+      setY = function(d, v) { d.y = v; },
+      setX0 = function(d, v) { d.data.x0 = v; },
+      setY0 = function(d, v) { d.data.y0 = v; },
+
+      getX = function(d) { return horizontal ? d.y : d.x; },
+      getY = function(d) { return horizontal ? d.x : d.y; },
+      getX0 = function(d) { return horizontal ? d.data.y0 : d.data.x0; },
+      getY0 = function(d) { return horizontal ? d.data.x0 : d.data.y0; },
+
+      getId = function(d) { return d.id || d.data.id; },
+
+      fillGradient = function(d, i) {
+          return sucrose.utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+      },
+      useClass = false,
+      clipEdge = true,
+      showLabels = true,
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
+
+  //============================================================
+
+  function chart(selection)
+  {
+    selection.each(function(data) {
+
+      var that = this,
+          container = d3.select(this);
+
+      var tran = d3.transition('tree')
+            .duration(duration)
+            .ease(d3.easeLinear);
+
+      var zoom = null;
+      chart.setZoom = function() {
+        zoom = d3.zoom()
+          .scaleExtent([zoomExtents.min, zoomExtents.max])
+          .on('zoom', function() {
+            tree_wrap.attr('transform', 'translate(' + d3.event.transform.x + ',' + d3.event.transform.y + ')scale(' + d3.event.transform.k + ')');
+            zoomCallback(d3.event.scale);
+          });
+      };
+      chart.unsetZoom = function(argument) {
+        zoom.on('zoom', null);
+      };
+      chart.resetZoom = function() {
+        // chart.unSetZoom();
+        // chart.setZoom();
+        wrap.call(zoom.transform, d3.zoomIdentity);
+        // tree_wrap.attr('transform', d3.zoomIdentity);
+      };
+      chart.setZoom();
+
+      //------------------------------------------------------------
+      // Setup svgs and skeleton of chart
+
+      var availableSize = { // the size of the svg container minus margin
+            'width': parseInt(container.style('width'), 10) - margin.left - margin.right,
+            'height': parseInt(container.style('height'), 10) - margin.top - margin.bottom
+          };
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-tree');
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap.call(zoom);
+
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs').merge(defs_entr);
+      var node_shadow = sucrose.utility.dropShadow('node_back_' + id, defs, {blur: 2});
+
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
+      var clipPath = defs.select('#sc-edge-clip-' + id + ' rect');
+      clipPath
+        .attr('width', availableSize.width)
+        .attr('height', availableSize.height)
+        .attr('x', margin.left)
+        .attr('y', margin.top);
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      wrap_entr.append('rect')
+        .attr('class', 'sc-chart-background')
+        .attr('width', availableSize.width)
+        .attr('height', availableSize.height)
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+        .style('fill', 'transparent');
+      var backg = wrap.select('.sc-chart-background');
+
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-wrap');
+      var tree_wrap = wrap.select('.sc-wrap');
+
+      g_entr.append('g').attr('class', 'sc-tree');
+      var treeChart = wrap.select('.sc-tree');
+
+      var root = null;
+      var nodeData = null;
+      var linkData = null;
+      var tree = d3.tree()
+            .size([null, null])
+            .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
+            .separation(function separation(a, b) {
+              return a.parent == b.parent ? 1 : 1;
+            });
+
+      function grow() {
+        root = d3.hierarchy(data, function(d) {
+          return d.children;
+        });
+
+        tree(root); // apply tree structure to data
+
+        nodeData = root.descendants();
+
+        nodeData.forEach(function(d) {
+          setY(d, d.depth * 2 * (horizontal ? nodeSize.width : nodeSize.height));
+        });
+
+        linkData = nodeData.slice(1);
+      }
+
+      function populate0(d) {
+        setX0(d, getX(d));
+        setY0(d, getY(d));
+        if (d.children && d.children.length) {
+          d.children.forEach(populate0);
+        }
+      }
+
+      // Compute the new tree layout
+      grow();
+      // Then preset X0/Y0 values for transformations
+      // Note: these cannot be combined because of chart.update
+      // which doesn't repopulate X0/Y0 until after render
+      populate0(root);
+
+      chart.orientation = function(orientation) {
+        horizontal = (orientation === 'horizontal' || !horizontal ? true : false);
+        tree.nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1]);
+        chart.update(root);
+      };
+
+      chart.showall = function() {
+        function expandAll(d) {
+          if (d._children && d._children.length) {
+              d.children = d._children;
+              d._children = null;
+          }
+          if (d.children && d.children.length) {
+            d.children.forEach(expandAll);
+          }
+        }
+        expandAll(data);
+        chart.update(root);
+      };
+
+      chart.zoomStep = function(step) {
+        var level = zoom.scale() + step;
+        return this.zoomLevel(level);
+      };
+
+      chart.zoomLevel = function(level) {
+
+        var scale = Math.min(Math.max(level, zoomExtents.min), zoomExtents.max),
+
+            prevScale = zoom.scale(),
+            prevTrans = zoom.translate(),
+            treeBBox = backg.node().getBoundingClientRect();
+
+        var size = [
+              treeBBox.width,
+              treeBBox.height
+            ];
+
+        var offset = [
+              (size[0] - size[0] * scale) / 2,
+              (size[1] - size[1] * scale) / 2
+            ];
+
+        var shift = [
+              scale * (prevTrans[0] - (size[0] - size[0] * prevScale) / 2) / prevScale,
+              scale * (prevTrans[1] - (size[1] - size[1] * prevScale) / 2) / prevScale
+            ];
+
+        var translate = [
+              offset[0] + shift[0],
+              offset[1] + shift[1]
+            ];
+
+        zoom.translate(translate).scale(scale);
+        tree_wrap.attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
+
+        return scale;
+      };
+
+      chart.zoomScale = function() {
+        return zoom.scale();
+      };
+
+      chart.filter = function(node) {
+        var _data = {},
+            found = false;
+
+        function findNode(d) {
+          if (getId(d) === node) {
+            _data = d;
+            found = true;
+          } else if (!found && d.children) {
+            d.children.forEach(findNode);
+          }
+        }
+
+        // Initialize the display to show a few nodes.
+        findNode(data);
+
+        // _data.x0 = 0;
+        // _data.y0 = 0;
+
+        data = _data;
+
+        grow();
+        chart.update(root);
+      };
+
+      // source is either root or a selected node
+      chart.update = function(source) {
+        var target = {x: 0, y: 0};
+        function diagonal(d, p) {
+          var dy = getY(d) - (horizontal ? 0 : nodeSize.height - r * 3),
+              dx = getX(d) - (horizontal ? nodeSize.width - r * 2 : 0),
+              py = getY(p),
+              px = getX(p),
+              cdx = horizontal ? (dx + px) / 2 : dx,
+              cdy = horizontal ? dy : (dy + py) / 2,
+              cpx = horizontal ? (dx + px) / 2 : px,
+              cpy = horizontal ? py : (dy + py) / 2;
+          return "M" + dx + "," + dy
+               + "C" + cdx + "," + cdy
+               + " " + cpx + "," + cpy
+               + " " + px + "," + py;
+        }
+        function initial(d) {
+          // if the source is root
+          if (getId(source) === getId(root)) {
+            return diagonal(root, root);
+          } else {
+            var node = {x: getX0(source), y: getY0(source)};
+            return diagonal(node, node);
+          }
+        }
+        function extend(d) {
+          return diagonal(d, d.parent);
+        }
+        function retract(d) {
+          return diagonal(target, target);
+        }
+
+        // Toggle children.
+        function toggle(data) {
+          if (data.children) {
+            data._children = data.children;
+            data.children = null;
+          } else {
+            data.children = data._children;
+            data._children = null;
+          }
+        }
+
+        // Click tree node.
+        function leafClick(d) {
+          toggle(d.data);
+          chart.update(d);
+        }
+
+        // Get the card id
+        function getCardId(d) {
+          var id = 'card-' + getId(d);
+          return id;
+        }
+
+        // Get the link id
+        function getLinkId(d) {
+          var id = 'link-' + (d.parent ? getId(d.parent) : 0) + '-' + getId(d);
+          return id;
+        }
+
+        grow();
+
+        var nodeOffsetX = (horizontal ? r - nodeSize.width : nodeSize.width / -2) + 'px',
+            nodeOffsetY = (horizontal ? (r - nodeSize.height) / 2 : r * 2 - nodeSize.height) + 'px';
+
+        // Update the nodes…
+        var nodes_bind = treeChart.selectAll('g.sc-card').data(nodeData, getId);
+
+        // Enter any new nodes at the parent's previous position.
+        var nodes_entr = nodes_bind.enter().insert('g')
+              .attr('class', 'sc-card')
+              .attr('id', getCardId)
+              .attr('opacity', function(d) {
+                return getId(source) === getId(d) ? 1 : 0;
+              })
+              .attr('transform', function(d) {
+                // if the source is root
+                if (getId(source) === getId(root)) {
+                  return 'translate(' + getX(root) + ',' + getY(root) + ')';
+                } else {
+                  return 'translate(' + (horizontal ? getY0(source) : getX0(source)) + ',' + (horizontal ? getX0(source) : getY0(source)) + ')';
+                }
+              });
+
+            // For each node create a shape for node content display
+            nodes_entr.each(function(d) {
+              if (defs.select('#myshape-' + getId(d)).empty()) {
+                var nodeObject = defs.append('svg').attr('class', 'sc-foreign-object')
+                      .attr('id', 'myshape-' + getId(d))
+                      .attr('version', '1.1')
+                      .attr('xmlns', 'http://www.w3.org/2000/svg')
+                      .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+                      .attr('x', nodeOffsetX)
+                      .attr('y', nodeOffsetY)
+                      .attr('width', nodeSize.width + 'px')
+                      .attr('height', nodeSize.height + 'px')
+                      .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
+                      .attr('xml:space', 'preserve');
+
+                var nodeContent = nodeObject.append('g').attr('class', 'sc-tree-node-content')
+                      .attr('transform', 'translate(' + r + ',' + r + ')');
+
+                nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
+
+                nodeContent.on('click', nodeClick);
+
+                nodeCallback(nodeObject);
+              }
+            });
+            // node content
+            nodes_entr.append('use')
+              .attr('xlink:href', function(d) {
+                return '#myshape-' + getId(d);
+              })
+              .attr('filter', node_shadow);
+
+        // node circle
+        var xcCircle = nodes_entr.append('g').attr('class', 'sc-expcoll')
+              .style('opacity', 1e-6)
+              .on('click', leafClick);
+            xcCircle.append('circle').attr('class', 'sc-circ-back')
+              .attr('r', r);
+            xcCircle.append('line').attr('class', 'sc-line-vert')
+              .attr('x1', 0).attr('y1', 0.5 - r).attr('x2', 0).attr('y2', r - 0.5)
+              .style('stroke', '#bbb');
+            xcCircle.append('line').attr('class', 'sc-line-hrzn')
+              .attr('x1', 0.5 - r).attr('y1', 0).attr('x2', r - 0.5).attr('y2', 0)
+              .style('stroke', '#fff');
+
+        //Transition nodes to their new position.
+        var nodes = treeChart.selectAll('g.sc-card').merge(nodes_entr);
+            nodes.transition(tran).duration(duration)
+              .attr('opacity', 1)
+              .attr('transform', function(d) {
+                if (getId(source) === getId(d)) {
+                  target = {x: horizontal ? getY(d) : getX(d), y: horizontal ? getX(d) : getY(d)};
+                }
+                return 'translate(' + getX(d) + ',' + getY(d) + ')';
+              });
+            nodes.select('.sc-expcoll')
+              .style('opacity', function(d) {
+                return ((d.data.children && d.data.children.length) || (d.data._children && d.data._children.length)) ? 1 : 0;
+              });
+            nodes.select('.sc-circ-back')
+              .style('fill', function(d) {
+                return (d.data._children && d.data._children.length) ? '#777' : (d.data.children ? '#bbb' : 'none');
+              });
+            nodes.select('.sc-line-vert')
+              .style('stroke', function(d) {
+                return (d.data._children && d.data._children.length) ? '#fff' : '#bbb';
+              });
+            nodes.each(function(d) {
+              container.select('#myshape-' + getId(d))
+                .attr('x', nodeOffsetX)
+                .attr('y', nodeOffsetY);
+            });
+
+        // Transition exiting nodes to the parent's new position.
+        var nodes_exit = nodes_bind.exit().transition(tran).duration(duration)
+              .attr('opacity', 0)
+              .attr('transform', function(d) {
+                return 'translate(' + getX(target) + ',' + getY(target) + ')';
+              })
+              .remove();
+            nodes_exit.selectAll('.sc-expcoll')
+              .style('stroke-opacity', 1e-6);
+            nodes_exit.selectAll('.sc-foreign-object')
+              .attr('width', 1)
+              .attr('height', 1)
+              .attr('x', -1)
+              .attr('y', -1);
+
+        // Update the links
+        var links_bind = treeChart.selectAll('path.link').data(linkData, getLinkId);
+            // Enter any new links at the parent's previous position.
+        var links_entr = links_bind.enter().insert('path', 'g')
+              .attr('d', initial)
+              .attr('class', 'link')
+              .attr('id', getLinkId)
+              .attr('opacity', 0);
+
+        var links = treeChart.selectAll('path.link').merge(links_entr);
+            // Transition links to their new position.
+            links.transition(tran).duration(duration)
+              .attr('d', extend)
+              .attr('opacity', 1);
+            // Transition exiting nodes to the parent's new position.
+            links_bind.exit().transition(tran).duration(duration)
+              .attr('d', retract)
+              .attr('opacity', 0)
+              .remove();
+
+        // Stash the old positions for transition.
+        populate0(root);
+
+        chart.resize(getId(source) === getId(root));
+      };
+
+      chart.render = function() {
+        chart.resize(true);
+      };
+
+      chart.resize = function(initial) {
+        initial = typeof initial === 'undefined' ? true : initial;
+
+        chart.resetZoom();
+
+        // the size of the svg container minus margin
+        availableSize = {
+          'width': parseInt(container.style('width'), 10) - margin.left - margin.right,
+          'height': parseInt(container.style('height'), 10) - margin.top - margin.bottom
+        };
+
+        // the size of the chart itself
+        var size = [
+              Math.abs(d3.min(nodeData, getX)) + Math.abs(d3.max(nodeData, getX)) + nodeSize.width,
+              Math.abs(d3.min(nodeData, getY)) + Math.abs(d3.max(nodeData, getY)) + nodeSize.height
+            ];
+
+        // initial chart scale to fit chart in container
+        var xScale = availableSize.width / size[0],
+            yScale = availableSize.height / size[1],
+            scale = d3.min([xScale, yScale]);
+
+        // initial chart translation to position chart in the center of container
+        var center = [
+              Math.abs(d3.min(nodeData, getX)) +
+                (xScale < yScale ? 0 : (availableSize.width / scale - size[0]) / 2),
+              Math.abs(d3.min(nodeData, getY)) +
+                (xScale < yScale ? (availableSize.height / scale - size[1]) / 2 : 0)
+            ];
+
+        var offset = [
+              nodeSize.width / (horizontal ? 1 : 2),
+              nodeSize.height / (horizontal ? 2 : 1)
+            ];
+
+        var translate = [
+              (center[0] + offset[0]) * scale + margin.left / (horizontal ? 2 : 1),
+              (center[1] + offset[1]) * scale + margin.top / (horizontal ? 1 : 2)
+            ];
+
+        clipPath
+          .attr('width', availableSize.width)
+          .attr('height', availableSize.height);
+
+        backg
+          .attr('width', availableSize.width)
+          .attr('height', availableSize.height);
+
+        // TODO: do we need to interrupt transitions on resize to prevent Too late... error?
+        // treeChart.interrupt().selectAll("*").interrupt();
+
+        treeChart
+          .transition(tran).duration(initial ? 0 : duration)
+          .attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
+      };
+
+      chart.gradient(fillGradient);
+
+      chart.update(root);
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+
+  chart.color = function(_) {
+    if (!arguments.length) return color;
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) return fill;
+    fill = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) return gradient;
+    gradient = _;
+    return chart;
+  };
+  chart.useClass = function(_) {
+    if (!arguments.length) return useClass;
+    useClass = _;
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) return width;
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) return height;
+    height = _;
+    return chart;
+  };
+
+  chart.values = function(_) {
+    if (!arguments.length) return getValues;
+    getValues = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) return getX;
+    getX = _;
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) return getY;
+    getY = sucrose.utility.functor(_);
+    return chart;
+  };
+
+  chart.showLabels = function(_) {
+    if (!arguments.length) return showLabels;
+    showLabels = _;
+    return chart;
+  };
+
+  chart.id = function(_) {
+    if (!arguments.length) return id;
+    id = _;
+    return chart;
+  };
+
+  // ORG
+
+  chart.radius = function(_) {
+    if (!arguments.length) return r;
+    r = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) return duration;
+    duration = _;
+    return chart;
+  };
+
+  chart.zoomExtents = function(_) {
+    if (!arguments.length) return zoomExtents;
+    zoomExtents = _;
+    return chart;
+  };
+
+  chart.zoomCallback = function(_) {
+    if (!arguments.length) return zoomCallback;
+    zoomCallback = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) return margin;
+    margin = _;
+    return chart;
+  };
+
+  chart.nodeSize = function(_) {
+    if (!arguments.length) return nodeSize;
+    nodeSize = _;
+    return chart;
+  };
+
+  chart.nodeImgPath = function(_) {
+    if (!arguments.length) return nodeImgPath;
+    nodeImgPath = _;
+    return chart;
+  };
+
+  chart.nodeRenderer = function(_) {
+    if (!arguments.length) return nodeRenderer;
+    nodeRenderer = _;
+    return chart;
+  };
+
+  chart.nodeCallback = function(_) {
+    if (!arguments.length) return nodeCallback;
+    nodeCallback = _;
+    return chart;
+  };
+
+  chart.nodeClick = function(_) {
+    if (!arguments.length) return nodeClick;
+    nodeClick = _;
+    return chart;
+  };
+
+  chart.horizontal = function(_) {
+    if (!arguments.length) return horizontal;
+    horizontal = _;
+    return chart;
+  };
+
+  chart.getId = function(_) {
+    if (!arguments.length) return getId;
+    getId = _;
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+}
+
 function treemapChart() {
 
   //============================================================
@@ -16966,8 +17028,8 @@ function treemapChart() {
 -------------------*/
 
 const charts = {
-    funnelChart: funnelChart,
     bubbleChart: bubbleChart,
+    funnelChart: funnelChart,
     gaugeChart: gaugeChart,
     globeChart: globeChart,
     lineChart: lineChart,
@@ -16975,6 +17037,7 @@ const charts = {
     paretoChart: paretoChart,
     pieChart: pieChart,
     stackedAreaChart: stackeAreaChart,
+    treeChart: treeChart,
     treemapChart: treemapChart,
 };
 

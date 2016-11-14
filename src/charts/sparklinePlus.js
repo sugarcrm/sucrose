@@ -83,8 +83,8 @@ export default function sparklinePlus() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-sparklineplus').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparklineplus');
-      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
-      var g_entr =wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var wrap = container.select('.sc-wrap.sc-sparklineplus').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
       var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
       g_entr.append('g').attr('class', 'sc-sparklineWrap');

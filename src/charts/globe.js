@@ -155,7 +155,7 @@ export default function globeChart() {
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-globe');
-      var wrap = container.select('.utility.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
       var defs = wrap.select('defs');

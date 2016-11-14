@@ -1237,29 +1237,6 @@ textarea {
     opacity: 1;
   }
 }
-.sc-chart-org .sc-org-bkgd {
-  stroke: #d0d0d0;
-  stroke-width: 2px;
-}
-.sc-chart-org .sc-org-node text {
-  font-style: normal;
-  font-variant: normal;
-  font-weight: 300;
-  font-stretch: normal;
-  font-size: 10px;
-  line-height: normal;
-  font-family: "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-}
-.sc-chart-org .sc-org-node text.sc-org-name {
-  font-size: 10px;
-  fill: #176de5;
-}
-.sc-chart-org .sc-org-node text.sc-org-name.hover {
-  text-decoration: underline;
-}
-.sc-chart-org .sc-org-node text.sc-org-title {
-  font-size: 8px;
-}
 .btn-slider {
   display: inline-block;
   padding: 5px;
@@ -1716,6 +1693,9 @@ section.full-screen .tab.active {
 .form input[type=checkbox]:checked + span:before {
   content: '\0047';
 }
+.form button + button {
+  margin-left: 4px;
+}
 .rtl .form label {
   margin-left: 8px;
   margin-right: 0;
@@ -1732,6 +1712,10 @@ section.full-screen .tab.active {
 }
 .rtl .form .option-row {
   text-align: right;
+}
+.rtl .form button + button {
+  margin-left: 0;
+  margin-right: 4px;
 }
 .example .panel {
   background-color: #fff;
@@ -2048,6 +2032,9 @@ a.success:hover {
 /* Responsive
 -------------------------------------------------- */
 @media print, screen and (max-width: 720px) {
+  h2 {
+    font-size: 18px;
+  }
   .chart-selector button {
     display: block;
   }
@@ -2096,9 +2083,6 @@ a.success:hover {
   }
 }
 @media print, screen and (max-width: 480px) {
-  h2 {
-    font-size: 18px;
-  }
   h3 {
     font-size: 16px;
   }

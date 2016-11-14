@@ -52,7 +52,7 @@
   <script src="../build/d3.js"></script>
   <script src="../build/d3fc-rebind.min.js"></script>
   <script src="../build/sucrose.js"></script>
-  <script src="../src/models/tree.js"></script>
+  <script src="../src/charts/treeChart.js"></script>
 
 <!--   <script src="../src/core.js"></script>
   <script src="../src/tooltip.js"></script>
@@ -95,7 +95,7 @@
 
     var container = d3.select('#org svg');
 
-    var chart = sucrose.models.tree()
+    var chart = sucrose.charts.treeChart()
           .duration(500)
           .zoomExtents({'min': 0.25, 'max': 4})
           .horizontal(false)
@@ -129,7 +129,7 @@
           .call(chart);
     });
 
-    sucrose.utility.windowResize(function() { chart.resize(); });
+    sucrose.utility.windowResize(function() { chart.resize(true); });
 
     var toggleChart = function(e) {
         //if icon clicked get parent button
@@ -145,7 +145,7 @@
                 break;
 
             case 'zoom-to-fit':
-                chart.reset();
+                chart.resetZoom();
                 break;
 
             default:

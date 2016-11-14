@@ -13,7 +13,6 @@ import scatter from './scatter.js';
 import scroll from './scroll.js';
 import stackedArea from './stackedArea.js';
 import table from './table.js';
-import tree from './tree.js';
 import treemap from './treemap.js';
 
 const models = {
@@ -28,7 +27,6 @@ const models = {
     scroll: scroll,
     stackedArea: stackedArea,
     table: table,
-    tree: tree,
     treemap: treemap,
 };
 

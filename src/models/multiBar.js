@@ -268,7 +268,7 @@ export default function multiBar() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-multibar').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-multibar').merge(wrap_entr);
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
 

@@ -183,7 +183,7 @@ export default function scatter() {
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-scatter');
-      var wrap = container.select('.sc-wrap').merge(wrap_entr);
+      var wrap = container.select('.sc-wrap.sc-scatter').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 

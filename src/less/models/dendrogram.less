@@ -27,29 +27,29 @@
 
 // for org chart demo renderer
 .sc-chart-org {
-  .sc-org-bkgd {
+  .sc-chart-background {
     stroke: darken(@grayLighter, 15%);
     stroke-width: 2px;
   }
-  .sc-org-node {
-    text {
-      font-style: normal;
-      font-variant: normal;
-      font-weight: 300;
-      font-stretch: normal;
+}
+.sc-org-node {
+  text {
+    font-style: normal;
+    font-variant: normal;
+    font-weight: 300;
+    font-stretch: normal;
+    font-size: 10px;
+    line-height: normal;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    &.sc-org-name {
       font-size: 10px;
-      line-height: normal;
-      font-family: "Helvetica Neue", Arial, sans-serif;
-      &.sc-org-name {
-        font-size: 10px;
-        fill: @linkColor;
-        &.hover {
-          text-decoration: underline;
-        }
+      fill: @linkColor;
+      &.hover {
+        text-decoration: underline;
       }
-      &.sc-org-title {
-        font-size: 8px;
-      }
+    }
+    &.sc-org-title {
+      font-size: 8px;
     }
   }
 }
