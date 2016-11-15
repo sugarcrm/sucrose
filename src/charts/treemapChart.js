@@ -99,7 +99,7 @@ export default function treemapChart() {
       // Setup containers and skeleton of chart
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data(data);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-treemap-chart');
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-treemap');
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('rect').attr('class', 'sc-background')
@@ -110,9 +110,6 @@ export default function treemapChart() {
       wrap.select('.sc-background')
         .attr('width', availableWidth + margin.left + margin.right)
         .attr('height', availableHeight + margin.top + margin.bottom);
-
-      wrap_entr.append('g').attr('class', 'sc-treemap-wrap');
-      var treemap_wrap = wrap.select('.sc-treemap-wrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -181,7 +178,7 @@ export default function treemapChart() {
         .width(availableWidth)
         .height(availableHeight);
 
-      treemap_wrap
+      wrap
         .datum(data.filter(function(d) { return !d.disabled; }))
         .transition()
           .call(treemap);

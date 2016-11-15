@@ -116,11 +116,10 @@ export default function treemap() {
       // Setup containers and skeleton of chart
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([TREE]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-treemap');
-      var wrap = container.select('.sucrose.sc-wrap').merge(wrap_entr);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-treemap');
+      var wrap = container.select('.sc-wrap.sc-treemap').merge(wrap_entr);
+
       var defs_entr = wrap_entr.append('defs');
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
-      var g = wrap.select('g.sc-chart-wrap').merge(g_entr);
 
       // wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -133,14 +132,14 @@ export default function treemap() {
       wrap.select('#sc-edge-clip-' + id + ' rect')
         .attr('width', width)
         .attr('height', height);
-      g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
       //------------------------------------------------------------
       // Family Tree Path
 
-      var treepath_bind = g_entr.selectAll('.sc-treepath').data([TREE]);
+      var treepath_bind = wrap_entr.selectAll('.sc-treepath').data([TREE]);
       var treepath_enter = treepath_bind.enter().append('g').attr('class', 'sc-treepath');
-      var treepath = g.selectAll('.sc-treepath').merge(treepath_enter);
+      var treepath = wrap.selectAll('.sc-treepath').merge(treepath_enter);
 
       treepath_enter.append('rect')
         .attr('class', 'sc-target')
@@ -162,9 +161,9 @@ export default function treemap() {
 
       function render() {
 
-        var grandparent_bind = g.selectAll('.sc-grandparent.sc-trans').data([ROOT]);
+        var grandparent_bind = wrap.selectAll('.sc-grandparent.sc-trans').data([ROOT]);
         var grandparent_entr = grandparent_bind.enter().append('g').attr('class', 'sc-grandparent sc-trans');
-        var grandparent = g.selectAll('.sc-grandparent.sc-trans').merge(grandparent_entr);
+        var grandparent = wrap.selectAll('.sc-grandparent.sc-trans').merge(grandparent_entr);
         // We need to keep the old granparent around until transition ends
         // grandparent.exit().remove();
 
