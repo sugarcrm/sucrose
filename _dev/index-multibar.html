@@ -1,0 +1,467 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>Sucrose Chart</title>
+    <link rel="stylesheet" href="sucrose.min.css">
+    <style>
+        .chart {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 200px;
+            left: 0;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="chart_" class="chart">
+      <svg></svg>
+      <a id="toggleData">Toggle Data</a>
+    </div>
+
+    <script src="d3.min.js"></script>
+    <script src="d3fc-rebind.min.js"></script>
+    <script src="sucrose.min.js"></script>
+
+    <script>
+var type = 'multibar';
+var data1 = {
+  "properties": {
+    "title": "Forecasting for Q1 2012",
+    "yDataType": "currency",
+    "groups": [
+      {
+        "label": "Mark Gibson"
+      },
+      {
+        "label": "Terence Li"
+      },
+      {
+        "label": "James Joplin"
+      },
+      {
+        "label": "Amy McCray"
+      },
+      {
+        "label": "My Opps"
+      }
+    ]
+  },
+  "data": [
+    {
+      "key": "Qualified",
+      "values": [
+        {
+          "x": 1,
+          "y": 50
+        },
+        {
+          "x": 2,
+          "y": 80
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 100
+        },
+        {
+          "x": 5,
+          "y": 100
+        }
+      ]
+    },
+    {
+      "key": "Proposal",
+      "values": [
+        {
+          "x": 1,
+          "y": 50
+        },
+        {
+          "x": 2,
+          "y": 80
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 100
+        },
+        {
+          "x": 5,
+          "y": 90
+        }
+      ]
+    },
+    {
+      "key": "Negotiation",
+      "values": [
+        {
+          "x": 1,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 50
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 40
+        },
+        {
+          "x": 5,
+          "y": 40
+        }
+      ]
+    },
+    {
+      "key": "Closed",
+      "values": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
+        }
+      ]
+    }
+  ]
+};
+// var data1 = {
+//   "properties": {
+//     "title": "Opportunities Won/Lost by Industry",
+//     "groups": [
+//       {"label": "Info Tech"},
+//       {"label": "Discretionary"},
+//       {"label": "Health Care"},
+//       {"label": "Consumer"},
+//       {"label": "Financials"},
+//       {"label": "Industrials"},
+//       {"label": "Energy"},
+//       {"label": "Materials"},
+//       {"label": "Telecomm"}
+//     ]
+//   },
+//   "data": [
+//     {
+//       "key": "Lost",
+//       "color": "#d62728",
+//       "classes": "sc-fill00",
+//       "values": [
+//         {"x": 1, "y": -1.8746444827653},
+//         {"x": 2, "y": -8.0961543492239},
+//         {"x": 3, "y": -0.57072943117674},
+//         {"x": 4, "y": -2.4174010336624},
+//         {"x": 5, "y": -0.72009071426284},
+//         {"x": 6, "y": -0.77154485523777},
+//         {"x": 7, "y": -0.90152097798131},
+//         {"x": 8, "y": -0.91445417330854},
+//         {"x": 9, "y": -0.055746319141851}
+//       ]
+//     },
+//     {
+//       "key": "Won",
+//       "color": "#1f77b4",
+//       "classes": "sc-fill02",
+//       "values": [
+//         {"x": 1, "y": 25.307646510375},
+//         {"x": 2, "y": 16.756779544553},
+//         {"x": 3, "y": 18.451534877007},
+//         {"x": 4, "y": 8.6142352811805},
+//         {"x": 5, "y": 7.8082472075876},
+//         {"x": 6, "y": 5.259101026956},
+//         {"x": 7, "y": 0.30947953487127},
+//         {"x": 8, "y": 0},
+//         {"x": 9, "y": 0}
+//       ]
+//     }
+//   ]
+// }
+// ;
+// var data2 = {
+//   "properties": {
+//     "title": "Total is 3780.00",
+//     "groups": [
+//       {"label": "Red"},
+//       {"label": "Yellow"},
+//       {"label": "Green"}
+//     ]
+//   },
+//   "data": []
+// };
+
+var data = data1;
+
+var config = {
+  "colorData": "default",
+  "vertical": true,
+  "direction": "ltr",
+  "height": null,
+  "id": "chart_",
+  "locality": {
+    "label": "русский",
+    "decimal": ",",
+    "thousands": " ",
+    "grouping": [
+      3
+    ],
+    "currency": [
+      "",
+      " ₽"
+    ],
+    "dateTime": "%-d %B %Y г., %-H:%M:%S GMT%Z",
+    "date": "%d.%m.%Y",
+    "time": "%-H:%M",
+    "periods": [
+      "ДП",
+      "ПП"
+    ],
+    "days": [
+      "воскресенье",
+      "понедельник",
+      "вторник",
+      "среда",
+      "четверг",
+      "пятница",
+      "суббота"
+    ],
+    "shortDays": [
+      "вс",
+      "пн",
+      "вт",
+      "ср",
+      "чт",
+      "пт",
+      "сб"
+    ],
+    "months": [
+      "января",
+      "февраля",
+      "марта",
+      "апреля",
+      "мая",
+      "июня",
+      "июля",
+      "августа",
+      "сентября",
+      "октября",
+      "ноября",
+      "декабря"
+    ],
+    "shortMonths": [
+      "янв.",
+      "февр.",
+      "мар.",
+      "апр.",
+      "мая",
+      "июн.",
+      "июл.",
+      "авг.",
+      "сент.",
+      "окт.",
+      "нояб.",
+      "дек."
+    ],
+    "full": "%A, %-d %B %Y г., %-H:%M:%S GMT%Z",
+    "long": "%-d %B %Y г., %-H:%M:%S GMT%Z",
+    "medium": "%-d %b %Y г., %-H:%M:%S",
+    "short": "%d.%m.%y, %-H:%M",
+    "yMMMEd": "E, %-d %b %Y г.",
+    "yMEd": "ccc, %-d.%m.%Y г.",
+    "yMMMMd": "%b %-d, %Y",
+    "yMMMd": "%b %-d, %Y",
+    "yMd": "%d.%m.%Y",
+    "yMMMM": "%B %Y г.",
+    "yMMM": "%b %Y г.",
+    "MMMd": "%-d %b",
+    "EEEE": "%A",
+    "MMMM": "%B",
+    "MMM": "%b",
+    "M": "%-m",
+    "y": "%Y",
+    "d": "%-d",
+    "E": "%a"
+  },
+  "margin": {
+    "top": 10,
+    "right": 10,
+    "bottom": 10,
+    "left": 10
+  },
+  "showTitle": true,
+  "showLegend": true,
+  "showControls": true,
+  "strings": {
+    "legend": {
+      "close": "Hide",
+      "open": "Show",
+      "noLabel": "undefined"
+    },
+    "controls": {
+      "close": "Hide controls",
+      "open": "Show controls",
+      "noLabel": "undefined"
+    },
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "textureFill": true,
+  "tooltips": true,
+  "width": null,
+  "stacked": true,
+  // "gradient": [],
+  "locale": "ru",
+  "showLabels": true,
+  "showValues": "0",
+  "allowScroll": true,
+  "tickDisplay": [
+    "wrap",
+    "stagger",
+    "rotate"
+  ],
+  "colorOptions": {}
+};
+var chart = sucrose.multiBarChart();
+
+var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
+var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
+
+function configure(chart) {
+    var k, v;
+
+    for (k in config)
+    {
+        if (!config.hasOwnProperty(k)) {
+            continue;
+        }
+
+        switch (k)
+        {
+            case 'colorData':
+                if (!chart.colorData) {
+                    continue;
+                }
+                chart.colorData(config.colorData, config.colorOptions);
+                break;
+
+            case 'showLabels':
+                v = !!parseInt(config[k], 10);
+                if (chart.xAxis) {
+                    chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
+                }
+                if (chart.yAxis) {
+                    chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
+                }
+                break;
+
+            case 'tickDisplay':
+                v = config[k];
+                if (chart.wrapTicks) {
+                    chart.wrapTicks(v.indexOf('wrap') !== -1)
+                }
+                if (chart.staggerTicks) {
+                    chart.staggerTicks(v.indexOf('stagger') !== -1)
+                }
+                if (chart.rotateTicks) {
+                    chart.rotateTicks(v.indexOf('rotate') !== -1);
+                }
+                break;
+
+            default:
+                if (!chart[k]) {
+                    continue;
+                }
+                v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
+                chart[k](v);
+        }
+    }
+}
+
+function format(chart) {
+  chart
+    .valueFormat(function (d) {
+      return sucrose.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+    })
+    .tooltipContent(function (eo, graph) {
+      var key = eo.group.label,
+          y = eo.point.y,
+          x = (typeof eo.group._height !== 'undefined') ?
+                Math.abs(y * 100 / eo.group._height).toFixed(1) :
+                chart.xAxis.tickFormat()(eo.point.x);
+      var val = sucrose.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+          percent = sucrose.numberFormatRound(x, 2, false, chart.locality());
+      return '<p>Outcome: <b>' + key + '</b></p>' +
+             '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+             '<p>Percentage: <b>' + percent + '%</b></p>';
+    });
+    // .overflowHandler(function (d) {
+    //   var b = $('body');
+    //   b.scrollTop(b.scrollTop() + d);
+    // });
+
+  // chart.yAxis
+  //   .tickFormat(chart.multibar.valueFormat());
+
+  chart.seriesClick(function(data, eo, graph) {
+    chart.dataSeriesActivate(eo);
+  });
+}
+
+window.onload = function () {
+    configure(chart);
+    format(chart);
+
+    // Bind D3 chart to SVG element
+    d3.select('#chart_ svg')
+        .attr('class', 'sucrose sc-chart')
+        .datum(data).call(chart);
+
+    // Dismiss tooltips
+    d3.select('#chart_').on('click', chart.dispatch.chartClick);
+
+    // Rebind window resizer
+    window.addEventListener('resize', chart.render);
+
+    d3.select('#toggleData')
+      .on('click', function() {
+        // Unbind window resizer because for some reason
+        // chart is holding onto old data
+        window.removeEventListener('resize', chart.render);
+        // toggle chart
+        data = (data == data1) ? data2 : data1;
+        d3.select('#chart_ svg')
+          .attr('class', 'sucrose sc-chart')
+          .datum(data).call(chart);
+        // Rebind window resizer
+        window.addEventListener('resize', chart.render);
+      });
+};
+    </script>
+  </body>
+</html>

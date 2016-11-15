@@ -1,0 +1,278 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>Sucrose Chart</title>
+    <link rel="stylesheet" href="sucrose.min.css">
+    <style>
+        .chart {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="chart_" class="chart">
+      <svg></svg>
+    </div>
+
+    <script src="d3.min.js"></script>
+    <script src="d3fc-rebind.min.js"></script>
+
+    <script src="src/core.js"></script>
+    <script src="src/tooltip.js"></script>
+    <script src="src/utils.js"></script>
+    <script src="src/models/legend.js"></script>
+    <script src="src/models/pie.js"></script>
+    <script src="src/models/pieChart.js"></script>
+
+
+    <script>
+var type = 'pie';
+var data = {
+  "properties": {
+    "title": "All Opportunities by Lead Source"
+  },
+  "data": [
+    {
+      "key": "EEEE",
+      "value": 100
+    },
+    {
+      "key": "EEEEEEEE",
+      "value": 100
+    },
+    {
+      "key": "EEEEEEEEEEEE",
+      "value": 100
+    },
+    {
+      "key": "EEEEEEEEEEEEEEEE",
+      "value": 100
+    }
+  ]
+};
+
+
+var config = {
+  "colorData": "default",
+  "direction": "ltr",
+  "height": null,
+  "id": "chart_",
+  "locality": {
+    "label": "English (US)",
+    "decimal": ".",
+    "thousands": ",",
+    "grouping": [
+      3
+    ],
+    "currency": [
+      "$",
+      ""
+    ],
+    "dateTime": "%B %-d, %Y at %-I:%M:%S %p GMT%Z",
+    "date": "%-m/%-d/%Y",
+    "time": "%-I:%M %p",
+    "periods": [
+      "AM",
+      "PM"
+    ],
+    "days": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "shortDays": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ],
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "shortMonths": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "full": "%A, %B %-d, %Y at %-I:%M:%S %p GMT%Z",
+    "long": "%B %-d, %Y at %-I:%M:%S %p GMT%Z",
+    "medium": "%b %-d, %Y, %-I:%M:%S %p",
+    "short": "%-m/%-d/%y, %-I:%M %p",
+    "yMMMEd": "E, %b %-d, %Y",
+    "yMEd": "E, %-m/%-d/%Y",
+    "yMMMMd": "%b %-d, %Y",
+    "yMMMd": "%b %-d, %Y",
+    "yMd": "%-m/%-d/%Y",
+    "yMMMM": "%B %Y",
+    "yMMM": "%b %Y",
+    "MMMd": "%b %-d",
+    "EEEE": "%A",
+    "MMMM": "%B",
+    "MMM": "%b",
+    "M": "%-m",
+    "y": "%Y",
+    "d": "%-d",
+    "E": "%a"
+  },
+  "margin": {
+    "top": 10,
+    "right": 10,
+    "bottom": 10,
+    "left": 10
+  },
+  "showTitle": true,
+  "showLegend": true,
+  "strings": {
+    "legend": {
+      "close": "Hide legend",
+      "open": "Show legend"
+    },
+    "controls": {
+      "close": "Hide controls",
+      "open": "Show controls"
+    },
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "textureFill": true,
+  "tooltips": true,
+  "width": null,
+  "donut": "1",
+  "donutRatio": "0.4",
+  "pieLabelsOutside": true,
+  "maxRadius": 250,
+  "minRadius": 100,
+  "gradient": [
+    "0",
+    "vertical",
+    "middle"
+  ],
+  "locale": "en",
+  "wrapLabels": "1",
+  "showLabels": "1",
+  "holeLabel": "0",
+  "colorOptions": {}
+};
+var chart = sucrose.models.pieChart();
+
+var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
+var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
+
+function configure(chart) {
+    var k, v;
+
+    for (k in config)
+    {
+        if (!config.hasOwnProperty(k)) {
+            continue;
+        }
+
+        switch (k)
+        {
+            case 'colorData':
+                if (!chart.colorData) {
+                    continue;
+                }
+                chart.colorData(config.colorData, config.colorOptions);
+                break;
+
+            case 'showLabels':
+                v = !!parseInt(config[k], 10);
+                if (chart.xAxis) {
+                    chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
+                }
+                if (chart.yAxis) {
+                    chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
+                }
+                break;
+
+            case 'tickDisplay':
+                v = config[k];
+                if (chart.wrapTicks) {
+                    chart.wrapTicks(v.indexOf('wrap') !== -1)
+                }
+                if (chart.staggerTicks) {
+                    chart.staggerTicks(v.indexOf('stagger') !== -1)
+                }
+                if (chart.rotateTicks) {
+                    chart.rotateTicks(v.indexOf('rotate') !== -1);
+                }
+                break;
+
+            default:
+                if (!chart[k]) {
+                    continue;
+                }
+                chart[k](config[k]);
+        }
+    }
+}
+
+function format(chart) {
+  chart
+    // .y(function(d, i) { return d.value; })
+    .tooltipContent(function (key, x, y, e, graph) {
+      var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+          percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
+      return '<p>Stage: <b>' + key + '</b></p>' +
+             '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+             '<p>Percent: <b>' + percent + '%</b></p>';
+    });
+
+  chart.seriesClick(function(data, eo, graph) {
+    chart.dataSeriesActivate(eo);
+  });
+}
+
+window.onload = function () {
+    configure(chart);
+    format(chart);
+
+    // Bind D3 chart to SVG element
+    d3.select('#chart_ svg')
+        .attr('class', 'sucrose sc-chart')
+        .datum(data).call(chart);
+
+    // Dismiss tooltips
+    d3.select('#chart_').on('click', chart.dispatch.chartClick);
+
+    // Rebind window resizer
+    window.addEventListener('resize', chart.render);
+};
+    </script>
+  </body>
+</html>
