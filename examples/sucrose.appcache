@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# Version 0.4.6
+# Version 0.5.0
 
 CACHE:
 
@@ -118,7 +118,6 @@ js/jquerymy.min.js
 js/lib.min.js
 js/sucrose.min.js
 js/topojson.min.js
-js/queue.min.js
 
 #manifest
 manifest/area.json

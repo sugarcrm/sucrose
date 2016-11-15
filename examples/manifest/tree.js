@@ -29,7 +29,7 @@ var chartManifest = {
               this.Chart.showall();
               break;
             case 'zoom-to-fit':
-              this.Chart.reset();
+              this.Chart.resetZoom();
               break;
             default:
           }

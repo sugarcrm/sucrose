@@ -59,7 +59,7 @@
 }
 .cm-fat-cursor .CodeMirror-cursor {
   width: auto;
-  border: 0;
+  border: 0 !important;
   background: #7e7;
 }
 .cm-fat-cursor div.CodeMirror-cursors {
@@ -95,8 +95,14 @@
 
 .cm-tab { display: inline-block; text-decoration: inherit; }
 
+.CodeMirror-rulers {
+  position: absolute;
+  left: 0; right: 0; top: -50px; bottom: -20px;
+  overflow: hidden;
+}
 .CodeMirror-ruler {
   border-left: 1px solid #ccc;
+  top: 0; bottom: 0;
   position: absolute;
 }
 
@@ -198,16 +204,15 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
 
 .CodeMirror-gutters {
   position: absolute; left: 0; top: 0;
+  min-height: 100%;
   z-index: 3;
 }
 .CodeMirror-gutter {
   white-space: normal;
   height: 100%;
   display: inline-block;
+  vertical-align: top;
   margin-bottom: -30px;
-  /* Hack to make IE7 behave */
-  *zoom:1;
-  *display:inline;
 }
 .CodeMirror-gutter-wrapper {
   position: absolute;
@@ -251,6 +256,8 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   position: relative;
   overflow: visible;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-variant-ligatures: none;
+  font-variant-ligatures: none;
 }
 .CodeMirror-wrap pre {
   word-wrap: break-word;
@@ -294,7 +301,10 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
   visibility: hidden;
 }
 
-.CodeMirror-cursor { position: absolute; }
+.CodeMirror-cursor {
+  position: absolute;
+  pointer-events: none;
+}
 .CodeMirror-measure pre { position: static; }
 
 div.CodeMirror-cursors {
@@ -320,9 +330,6 @@ div.CodeMirror-dragcursors {
   background: #ffa;
   background: rgba(255, 255, 0, .4);
 }
-
-/* IE7 hack to prevent it from returning funny offsetTops on the spans */
-.CodeMirror span { *vertical-align: text-bottom; }
 
 /* Used to force a border model for a node */
 .cm-force-border { padding-right: .1px; }
@@ -367,10 +374,10 @@ span.CodeMirror-selectedtext { background: none; }
 }
 
 .CodeMirror-lint-tooltip {
-  background-color: infobackground;
+  background-color: #ffd;
   border: 1px solid black;
   border-radius: 4px 4px 4px 4px;
-  color: infotext;
+  color: black;
   font-family: monospace;
   font-size: 10pt;
   overflow: hidden;
@@ -1237,29 +1244,6 @@ textarea {
     opacity: 1;
   }
 }
-.sc-chart-org .sc-org-bkgd {
-  stroke: #d0d0d0;
-  stroke-width: 2px;
-}
-.sc-chart-org .sc-org-node text {
-  font-style: normal;
-  font-variant: normal;
-  font-weight: 300;
-  font-stretch: normal;
-  font-size: 10px;
-  line-height: normal;
-  font-family: "Noto Sans", "Helvetica Neue", Arial, sans-serif;
-}
-.sc-chart-org .sc-org-node text.sc-org-name {
-  font-size: 10px;
-  fill: #176de5;
-}
-.sc-chart-org .sc-org-node text.sc-org-name.hover {
-  text-decoration: underline;
-}
-.sc-chart-org .sc-org-node text.sc-org-title {
-  font-size: 8px;
-}
 .btn-slider {
   display: inline-block;
   padding: 5px;
@@ -1716,6 +1700,9 @@ section.full-screen .tab.active {
 .form input[type=checkbox]:checked + span:before {
   content: '\0047';
 }
+.form button + button {
+  margin-left: 4px;
+}
 .rtl .form label {
   margin-left: 8px;
   margin-right: 0;
@@ -1732,6 +1719,10 @@ section.full-screen .tab.active {
 }
 .rtl .form .option-row {
   text-align: right;
+}
+.rtl .form button + button {
+  margin-left: 0;
+  margin-right: 4px;
 }
 .example .panel {
   background-color: #fff;
@@ -2048,6 +2039,9 @@ a.success:hover {
 /* Responsive
 -------------------------------------------------- */
 @media print, screen and (max-width: 720px) {
+  h2 {
+    font-size: 18px;
+  }
   .chart-selector button {
     display: block;
   }
@@ -2096,9 +2090,6 @@ a.success:hover {
   }
 }
 @media print, screen and (max-width: 480px) {
-  h2 {
-    font-size: 18px;
-  }
   h3 {
     font-size: 16px;
   }

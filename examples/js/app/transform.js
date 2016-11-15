@@ -328,7 +328,7 @@ function postProcessData(chartData, chartType, Chart) {
             .x(function (d) { return d[0]; })
             .y(function (d) { return d[1]; });
 
-          // if (sucrose.utils.isValidDate(chartData.data[0].values[0][0])) {
+          // if (sucrose.isValidDate(chartData.data[0].values[0][0])) {
           //   Chart.xAxis
           //     .tickFormat(function (d) {
           //       return d3.time.format('%x')(new Date(d));
