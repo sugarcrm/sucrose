@@ -9,47 +9,33 @@
     pointer-events: none;
     fill: @white;
   }
-
-  .sc-depth text {
-    fill: @white;
-  }
-
-  .sc-grandparent text {
-    font-weight: bold;
-    fill: @gray;
-  }
-
   rect {
-    //fill: none;
     stroke: @white;
   }
 
-  .sc-children.hover .sc-parent {
-    fill: @white;
-    opacity: 0.3;
+  .sc-treepath text {
+    font-weight: bold;
+    fill: @gray;
   }
-
-  .sc-parent,
-  .sc-grandparent rect {
-    stroke-width: 3px;
+  .sc-parent text {
+    fill: @white;
   }
   .sc-child {
     stroke-width: 1px;
   }
-  .sc-parent {
+
+  .sc-target {
+    stroke-width: 3px;
     fill: none;
     font-weight: normal;
+    cursor: pointer;
+    pointer-events: all;
   }
-  .sc-grandparent rect {
+  .sc-treepath .sc-target {
     fill: @white;
   }
-
-  .sc-children .sc-parent,
-  .sc-grandparent rect {
-    cursor: pointer;
-  }
-
-  .sc-parent {
-    pointer-events: all;
+  .sc-parent.hover .sc-target {
+    fill: @white;
+    opacity: 0.3;
   }
 }
