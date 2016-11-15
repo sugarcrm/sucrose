@@ -1,14 +1,12 @@
 /*
  * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
  */
-/* Sucrose Global
-  ----------------*/
-/* MIXINS
-  ----------------*/
-/********************
- * General CSS
+/**********
+* Mixins
+*/
+/**********
+ *  General
  */
-/* Chart colors defined in colors.less */
 .sc-background {
   fill: #fff;
 }
@@ -29,8 +27,8 @@
     For example width should be =< margin.left + margin.right + 1,
     of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
   */
-/********************
- * SVG CSS
+/**********
+ *  SVG
  */
 svg.sc-chart {
   -webkit-touch-callout: none;
@@ -290,10 +288,11 @@ svg.sc-chart .calc-text-strings {
   fill: #1257b7;
   text-decoration: underline;
 }
-.sc-lineLegend .sc-series {
+.sc-line-legend .sc-series {
   cursor: default;
+  pointer-events: none;
 }
-.sc-lineLegend .sc-series text {
+.sc-line-legend .sc-series text {
   cursor: default;
 }
 /**********
@@ -349,14 +348,14 @@ svg.sc-chart .calc-text-strings {
 /***********
 *  Pie Chart
 */
-.sc-pie .sc-slice.hover path {
+.sc-pie .sc-series.hover path {
   fill-opacity: .75;
 }
-.sc-pie .sc-slice polyline {
+.sc-pie polyline.sc-label-leader {
   stroke-width: 1px;
   pointer-events: none;
 }
-.sc-holeWrap text {
+.sc-hole-wrap text {
   text-anchor: middle;
 }
 text.sc-pie-hole-value {
@@ -369,38 +368,37 @@ text.sc-pie-hole-label {
 /**********
 * Lines
 */
-.sc-groups path.sc-line {
+.sc-group path.sc-line {
   fill: none;
-  stroke-width: 2.5px;
+  stroke-width: 2px;
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
 }
-.sc-groups path.sc-area {
+.sc-group path.sc-area {
   stroke: none;
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
 }
+.sc-line .sc-scatter .sc-series .sc-point {
+  stroke-opacity: 1;
+  stroke: #fff;
+  fill-opacity: 1;
+}
+.sc-scatter.sc-single-point .sc-series .sc-point {
+  stroke-width: 2px;
+}
 .sc-line.hover path {
   stroke-width: 6px;
 }
-.sc-line .sc-scatter .sc-groups .sc-point {
-  fill-opacity: 1;
-  stroke-opacity: 1;
-  stroke: #fff;
-}
-.sc-scatter.sc-single-point .sc-groups .sc-point {
-  stroke-width: 2px;
-}
-.sc-scatter .sc-groups .sc-point.hover,
-.sc-groups .sc-point.hover {
-  stroke-width: 16px;
-  stroke-opacity: .5 !important;
+.sc-scatter .sc-series .sc-point.hover,
+.sc-series .sc-point.hover {
+  stroke-opacity: .3 !important;
   stroke: inherit;
 }
 .sc-point-paths path {
   stroke: transparent;
   stroke-opacity: 0;
-  fill: transparent;
+  fill: #fff;
   fill-opacity: 0;
 }
 .sc-indexLine {
@@ -415,12 +413,12 @@ text.sc-pie-hole-label {
 /**********
 *  Scatter
 */
-.sc-groups .sc-point {
+.sc-series .sc-point {
   pointer-events: none;
 }
-.sc-groups .sc-point.hover {
-  stroke-width: 20px;
-  stroke-opacity: .5;
+.sc-series .sc-point.hover {
+  stroke-width: 12px;
+  stroke-opacity: .3;
 }
 .sc-scatter .sc-point.hover {
   fill-opacity: 1;
@@ -428,21 +426,31 @@ text.sc-pie-hole-label {
 /**********
 *  Stacked Area
 */
-.sc-stackedarea path.sc-area {
+.sc-chart-stackedarea path.sc-area {
   fill-opacity: .7;
   stroke-opacity: 0;
 }
-.sc-stackedarea path.sc-area.hover {
+.sc-chart-stackedarea path.sc-area.hover {
   fill-opacity: .9;
 }
-.sc-stackedarea .sc-groups .sc-point {
-  stroke-opacity: 0;
+.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-line,
+.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-point {
+  pointer-events: none;
+  stroke: #777;
   fill-opacity: 0;
+  stroke-opacity: 0;
 }
-.sc-stackedarea .sc-groups .sc-point.hover {
-  stroke-width: 20px;
-  stroke-opacity: .75;
+.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-line {
+  stroke-width: 1.5px;
+}
+.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-point {
+  stroke-width: 1px;
+  fill: #FFF;
+}
+.sc-chart-stackedarea .sc-guide-wrap.hover .sc-series .sc-line,
+.sc-chart-stackedarea .sc-guide-wrap.hover .sc-series .sc-point {
   fill-opacity: 1;
+  stroke-opacity: 1;
 }
 /**********
 * Guage
@@ -461,61 +469,62 @@ text.sc-pie-hole-label {
 /**********
 * Funnel
 */
-.sc-funnelChart .sc-slice.hover polygon {
+.sc-chart-funnel .sc-slice.hover polygon {
   fill-opacity: .75;
 }
-.sc-funnelChart .sc-y path {
-  stroke: none;
+.sc-chart-funnel polyline.sc-label-leader {
+  stroke-width: 1px;
+  pointer-events: none;
 }
-.sc-funnelChart .sc-label-value text.sc-label {
+.sc-chart-funnel .sc-label-value text.sc-label {
   font-size: 11px;
 }
-.sc-funnelChart .sc-label-value text.sc-value {
+.sc-chart-funnel .sc-label-value text.sc-value {
   font-size: 13px;
 }
 /**********
 * Bubble
 */
-.sc-bubbleChart .sc-scatter.sc-single-point .sc-groups .sc-point {
+.sc-chart-bubble .sc-scatter.sc-single-point .sc-group .sc-point {
   fill-opacity: 1;
   stroke-opacity: 1;
 }
 /**********
 * Pareto
 */
-.sc-chart-pareto .sc-quotaWrap line {
+.sc-chart-pareto .sc-quota-wrap line {
   opacity: .8;
   stroke: #444;
   stroke-width: 4px;
   fill: none;
   /*stroke-dasharray: '20, 5'; dashed lines must be defined in JS*/
 }
-.sc-chart-pareto .sc-quotaWrap line.sc-quotaLineTarget {
+.sc-chart-pareto .sc-quota-wrap line.sc-quota-target {
   stroke: #777;
 }
-.sc-chart-pareto .sc-quotaWrap line.sc-quotaLineBackground {
+.sc-chart-pareto .sc-quota-wrap line.sc-quota-background {
   opacity: 0;
   stroke-width: 12px;
 }
-.sc-chart-pareto .sc-y.sc-axis .domain {
+.sc-chart-pareto .sc-axis-y .domain {
   display: none;
 }
-.sc-chart-pareto .sc-y.sc-axis text.sc-quotaValue,
-.sc-chart-pareto .sc-y.sc-axis text.sc-targetQuotaValue {
+.sc-chart-pareto .sc-axis-y text.sc-quota-value,
+.sc-chart-pareto .sc-axis-y text.sc-target-quota-value {
   font-weight: bold;
 }
-.sc-chart-pareto .sc-line .sc-groups path {
+.sc-chart-pareto .sc-line .sc-group path {
   stroke-width: 4px;
 }
-.sc-chart-pareto .sc-line .sc-scatter .sc-groups .sc-point {
+.sc-chart-pareto .sc-lines-wrap1 .sc-line .sc-group path {
+  stroke-width: 6px;
+}
+.sc-chart-pareto .sc-scatter .sc-group .sc-point {
   fill-opacity: 1;
   stroke-opacity: 1;
   stroke-width: 2px;
 }
-.sc-chart-pareto .sc-linesWrap1 .sc-line .sc-groups path {
-  stroke-width: 6px;
-}
-.sc-chart-pareto .sc-linesWrap2 .sc-scatter .sc-groups circle {
+.sc-chart-pareto .sc-lines-wrap2 .sc-scatter .sc-group circle {
   stroke: #fff;
 }
 /**********
@@ -528,40 +537,32 @@ text.sc-pie-hole-label {
   pointer-events: none;
   fill: #fff;
 }
-.sc-treemap .sc-depth text {
-  fill: #fff;
-}
-.sc-treemap .sc-grandparent text {
-  font-weight: bold;
-  fill: #555;
-}
 .sc-treemap rect {
   stroke: #fff;
 }
-.sc-treemap .sc-children.hover .sc-parent {
-  fill: #fff;
-  opacity: 0.3;
+.sc-treemap .sc-treepath text {
+  font-weight: bold;
+  fill: #555;
 }
-.sc-treemap .sc-parent,
-.sc-treemap .sc-grandparent rect {
-  stroke-width: 3px;
+.sc-treemap .sc-parent text {
+  fill: #fff;
 }
 .sc-treemap .sc-child {
   stroke-width: 1px;
 }
-.sc-treemap .sc-parent {
+.sc-treemap .sc-target {
+  stroke-width: 3px;
   fill: none;
   font-weight: normal;
+  cursor: pointer;
+  pointer-events: all;
 }
-.sc-treemap .sc-grandparent rect {
+.sc-treemap .sc-treepath .sc-target {
   fill: #fff;
 }
-.sc-treemap .sc-children .sc-parent,
-.sc-treemap .sc-grandparent rect {
-  cursor: pointer;
-}
-.sc-treemap .sc-parent {
-  pointer-events: all;
+.sc-treemap .sc-parent.hover .sc-target {
+  fill: #fff;
+  opacity: 0.3;
 }
 /**********
 * Dendrogram
@@ -584,6 +585,29 @@ text.sc-pie-hole-label {
   fill: none;
   stroke: #ccc;
   stroke-width: 1.5px;
+}
+.sc-chart-org .sc-chart-background {
+  stroke: #d0d0d0;
+  stroke-width: 2px;
+}
+.sc-org-node text {
+  font-style: normal;
+  font-variant: normal;
+  font-weight: 300;
+  font-stretch: normal;
+  font-size: 10px;
+  line-height: normal;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+}
+.sc-org-node text.sc-org-name {
+  font-size: 10px;
+  fill: #176de5;
+}
+.sc-org-node text.sc-org-name.hover {
+  text-decoration: underline;
+}
+.sc-org-node text.sc-org-title {
+  font-size: 8px;
 }
 /**********
 * Tooltips
@@ -698,7 +722,7 @@ text.sc-pie-hole-label {
 .sc-chart-globe svg {
   pointer-events: all;
 }
-.sc-chart-globe .sc-chartBackground {
+.sc-chart-globe .sc-chart-background {
   fill: #555;
 }
 .sc-chart-globe .sphere {

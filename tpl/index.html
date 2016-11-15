@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-    <title>Sucrose Chart</title>
+    <title>Sucrose Chart - {{Type}}</title>
     <link rel="stylesheet" href="sucrose.min.css">
     <style>
         .chart {
@@ -21,80 +21,53 @@
       <svg></svg>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.20/topojson.min.js"></script>
+    <script src="d3.min.js"></script>
+    <script src="d3fc-rebind.min.js"></script>
+    <!-- {{TopoJSON}} -->
     <script src="sucrose.min.js"></script>
-    <script>
-var KEYMETHODMAP = {
-        'show_labels': 'showLabels',
-        'show_values': 'showValues',
-        'allow_scroll': 'allowScroll',
-        'tick_display': 'tickDisplay',
-        'color_data': 'colorData',
-        'color_options': 'colorOptions',
-        'hole_label': 'holeLabel',
-        'donut_ratio': 'donutRatio',
-        'wrap_labels': 'wrapLabels',
-        'mirror_axis': 'mirrorAxis',
-        'texture_fill': 'textureFill',
-        'show_title': 'showTitle',
-        'show_legend': 'showLegend',
-        'show_controls': 'showControls',
-        'series_click': 'seriesClick',
-        'tooltips': 'tooltips'
-    };
 
-var Data = {{Data}};
-var Config = {{Config}};
+    <script>
+var type = '{{Type}}';
+var data = {{Data}};
+var config = {{Config}};
+var chart = sucrose.charts.{{Model}}();
+
+var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
+var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
+
+{{Configure}}
+
+{{Format}}
 
 window.onload = function () {
-    var type = '{{Type}}';
-    var yIsCurrency = Data.properties && Data.properties.yDataType === 'currency';
-    var k, m;
+    // apply configuration
+    configure(chart);
 
-{{Chart}}
+    // format then render chart
+    format(chart, function() {
+        // Bind D3 chart to SVG element
+        d3.select('#chart_ svg')
+            .attr('class', 'sucrose sc-chart sc-chart-' + type)
+            .datum(data)
+                .call(chart);
 
-    for (k in Config) {
-        if (!Config.hasOwnProperty(k)) {
-            continue;
-        }
+        // Dismiss tooltips
+        d3.select('#chart_')
+            .on('click', function() {
+                if (chart.dispatch && chart.dispatch.chartClick) {
+                    chart.dispatch.chartClick();
+                }
+            });
 
-        m = KEYMETHODMAP[k] || k;
-
-        if (!chart[m]) {
-            continue;
-        }
-
-        switch (m)
-        {
-            case 'colorData':
-                chart
-                    .colorData(Config.color_data, Config.color_options);
-                break;
-
-            case 'seriesClick':
-                chart
-                    .seriesClick(function (Data, eo, chart) {
-                        chart.dataSeriesActivate(eo);
-                    });
-                break;
-
-            default:
-                chart[m](Config[k]);
-        }
-    }
-
-    // Bind D3 chart to SVG element
-    d3.select('#chart_ svg')
-        .attr('class', 'sucrose sc-chart sc-chart-' + type)
-        .datum(Data).call(chart);
-
-    // Dismiss tooltips
-    d3.select('#chart_').on('click', chart.dispatch.chartClick);
-
-    // Rebind window resizer
-    window.addEventListener('resize', chart.render);
+        // Rebind window resizer
+        window.addEventListener('resize', function() {
+            if (chart.render) {
+                chart.render();
+            } else if (chart.update) {
+                chart.update();
+            }
+        });
+    });
 };
     </script>
   </body>
