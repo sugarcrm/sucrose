@@ -113,6 +113,7 @@ img/favicons/mstile-144x144.png
 #js
 js/app.min.js
 js/d3.min.js
+js/d3fc-rebind.min.js
 js/jquery.min.js
 js/jquerymy.min.js
 js/lib.min.js

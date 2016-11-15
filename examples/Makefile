@@ -76,7 +76,7 @@ lib: $(LIB_FILES) clean-lib
 	cat $(LIB_FILES) | $(JS_MINIFIER) >> js/lib.min.js
 
 clean-lib:
-	rm -rf js/d3.min.js js/topojson.min.js js/queue.min.js
+	rm -rf js/d3.min.js js/topojson.min.js js/d3fc-rebind.min.js
 	rm -rf js/jquery.min.js js/jquerymy.min.js
 	rm -rf js/lib.js js/lib.min.js
 
