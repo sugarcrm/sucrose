@@ -69,7 +69,7 @@ var Manifest =
     $('html').css('direction', this.selectedOptions.direction);
 
     // Conserve space by not prepending to title
-    $title.text(($demo.width < 480 ? '' : 'Sucrose ') + this.title);
+    $title.text(($demo.width() < 480 ? '' : 'Sucrose :: ') + this.title);
 
     // Show chart tab
     this.toggleTab('chart');
@@ -259,6 +259,7 @@ var Manifest =
 
   resetChartSize: function () {
     $chart.removeAttr('style');
+    $title.text(($demo.width() < 480 ? '' : 'Sucrose :: ') + this.title);
   },
   // Define resizable handler
   chartResizer: function (chart) {
@@ -561,7 +562,6 @@ var Manifest =
 
     return options;
   },
-
 
   /* ------------------------
    * DATA EDITOR functions -- */

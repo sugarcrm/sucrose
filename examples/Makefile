@@ -35,7 +35,7 @@ APP_FILES = \
 	js/app/main.js \
 	js/app/outro.js
 
-JS_COMPILER = \
+JS_MINIFIER = \
 	../node_modules/uglify-js/bin/uglifyjs
 
 CSS_COMPILER = \
@@ -55,10 +55,10 @@ npm-prod:
 all: sucrose lib
 
 sucrose: clean-sucrose
-	cp ../sucrose.js js/sucrose.js
-	cp ../sucrose.min.js js/sucrose.min.js
-	cp ../sucrose.css css/sucrose.css
-	cp ../sucrose.min.css css/sucrose.min.css
+	cp ../build/sucrose.js js/sucrose.js
+	cp ../build/sucrose.min.js js/sucrose.min.js
+	cp ../build/sucrose.css css/sucrose.css
+	cp ../build/sucrose.min.css css/sucrose.min.css
 
 clean-sucrose:
 	rm -rf js/sucrose.js js/sucrose.min.js \
@@ -66,17 +66,17 @@ clean-sucrose:
 
 lib: $(LIB_FILES) clean-lib
 	# copy node module files
-	cp ../node_modules/d3/d3.min.js js/d3.min.js
-	cp ../node_modules/topojson/topojson.min.js js/topojson.min.js
-	cp ../node_modules/queue-async/queue.min.js js/queue.min.js
+	cp ../node_modules/d3/build/d3.min.js js/d3.min.js
+	cp ../node_modules/topojson/build/topojson.min.js js/topojson.min.js
+	cp ../node_modules/d3fc-rebind/build/d3fc-rebind.min.js js/d3fc-rebind.min.js
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
 	cp node_modules/jquerymy/jquerymy.min.js js/jquerymy.min.js
 	# build lib js files
 	cat $(LIB_FILES) >> js/lib.js
-	cat $(LIB_FILES) | $(JS_COMPILER) >> js/lib.min.js
+	cat $(LIB_FILES) | $(JS_MINIFIER) >> js/lib.min.js
 
 clean-lib:
-	rm -rf js/d3.min.js js/topojson.min.js js/queue.min.js
+	rm -rf js/d3.min.js js/topojson.min.js js/d3fc-rebind.min.js
 	rm -rf js/jquery.min.js js/jquerymy.min.js
 	rm -rf js/lib.js js/lib.min.js
 
@@ -95,7 +95,7 @@ clean: clean-sucrose clean-libraries
 
 #DEVELOPMENT
 
-install-dev: npm-prod all npm-dev lib-dev index-dev examples
+install-dev: npm-dev sucrose lib lib-dev index-dev examples
 
 npm-dev:
 	npm i
@@ -106,9 +106,9 @@ clean-examples: clean-js clean-css
 
 js: $(APP_FILES) clean-js
 	# build app js files
-	cat ../header $(APP_FILES) >> js/app.js
-	cat $(APP_FILES) | $(JS_COMPILER) >> js/app.min.js
-	cat ../header js/app.min.js > temp
+	cat ../src/header $(APP_FILES) >> js/app.js
+	cat $(APP_FILES) | $(JS_MINIFIER) >> js/app.min.js
+	cat ../src/header js/app.min.js > temp
 	rm -f js/app.min.js
 	mv temp js/app.min.js
 

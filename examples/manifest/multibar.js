@@ -6,7 +6,7 @@ var chartManifest = {
   // These chart options will be set
   optionPresets: {
     file: 'multibar_data',
-    show_labels: '1'
+    show_labels: 1
   },
   yAxisLabel: 'Y-axis label',
   xAxisLabel: 'X-axis label',
@@ -14,10 +14,10 @@ var chartManifest = {
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {
-    show_labels: '0',
-    vertical: '1',
-    show_values: '0',
-    allow_scroll: '1',
+    show_labels: 0,
+    vertical: 1,
+    show_values: 0,
+    allow_scroll: 1,
     tick_display: ['wrap', 'stagger', 'rotate']
   },
   ui: {
@@ -31,8 +31,8 @@ var chartManifest = {
       title: 'Orientation',
       type: 'radio',
       values: [
-        {value: '1', label: 'Vertical'},
-        {value: '0', label: 'Horizontal'}
+        {value: 1, label: 'Vertical'},
+        {value: 0, label: 'Horizontal'}
       ]
     },
     '[name=show_values]': {
@@ -45,8 +45,8 @@ var chartManifest = {
       title: 'Show Values',
       type: 'select',
       values: [
-        {value: '0', label: 'No'},
-        {value: '1', label: 'Yes'},
+        {value: 0, label: 'No'},
+        {value: 1, label: 'Yes'},
         {value: 'start', label: 'Start'},
         {value: 'middle', label: 'Middle'},
         {value: 'end', label: 'End'},

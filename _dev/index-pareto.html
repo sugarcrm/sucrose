@@ -1,0 +1,398 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <title>Sucrose Chart</title>
+    <link rel="stylesheet" href="sucrose.min.css">
+    <style>
+        .chart {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="chart_" class="chart">
+      <svg></svg>
+    </div>
+
+    <script src="d3.min.js"></script>
+    <script src="d3fc-rebind.min.js"></script>
+
+    <script src="src/core.js"></script>
+    <script src="src/tooltip.js"></script>
+    <script src="src/utils.js"></script>
+    <script src="src/models/axis.js"></script>
+    <script src="src/models/legend.js"></script>
+    <script src="src/models/scatter.js"></script>
+    <script src="src/models/line.js"></script>
+    <script src="src/models/multiBar.js"></script>
+    <script src="src/models/paretoChart.js"></script>
+
+    <script>
+var type = 'pareto';
+var data = {
+  "properties": {
+    "name": " for Q3 2013",
+    "quota": 1023353,
+    "quotaLabel": "Quota (Adjusted)",
+    "yDataType": "currency",
+    "xDataType": "string",
+    "stacked": false,
+    "groupData": [
+      {
+        "group": 0,
+        "l": "Sarah Smith",
+        "t": 2617156
+      },
+      {
+        "group": 1,
+        "l": "Will Westin",
+        "t": 357952
+      },
+      {
+        "group": 2,
+        "l": "Jim Brennan",
+        "t": 340156
+      }
+    ],
+    "targetQuota": 724390,
+    "targetQuotaLabel": "Quota"
+  },
+  "data": [
+    {
+      "key": "Likely",
+      "type": "bar",
+      "values": [
+        {
+          "x": 1,
+          "y": 1308578
+        },
+        {
+          "x": 2,
+          "y": 178976
+        },
+        {
+          "x": 3,
+          "y": 170078
+        }
+      ]
+    },
+    {
+      "key": "Likely (Adjusted)",
+      "type": "bar",
+      "values": [
+        {
+          "x": 1,
+          "y": 1308578
+        },
+        {
+          "x": 2,
+          "y": 178976
+        },
+        {
+          "x": 3,
+          "y": 170078
+        }
+      ]
+    },
+    {
+      "key": "Likely",
+      "type": "line",
+      "values": [
+        {
+          "x": 1,
+          "y": 1308578
+        },
+        {
+          "x": 2,
+          "y": 1487554
+        },
+        {
+          "x": 3,
+          "y": 1657632
+        }
+      ]
+    },
+    {
+      "key": "Likely (Adjusted)",
+      "type": "line",
+      "values": [
+        {
+          "x": 1,
+          "y": 1308578
+        },
+        {
+          "x": 2,
+          "y": 1487554
+        },
+        {
+          "x": 3,
+          "y": 1657632
+        }
+      ]
+    }
+  ]
+};
+var config = {
+  "colorData": "default",
+  "direction": "ltr",
+  "height": null,
+  "id": "chart_",
+  "locality": {
+    "label": "English (US)",
+    "decimal": ".",
+    "thousands": ",",
+    "grouping": [
+      3
+    ],
+    "currency": [
+      "$",
+      ""
+    ],
+    "dateTime": "%B %-d, %Y at %-I:%M:%S %p GMT%Z",
+    "date": "%-m/%-d/%Y",
+    "time": "%-I:%M %p",
+    "periods": [
+      "AM",
+      "PM"
+    ],
+    "days": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "shortDays": [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ],
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "shortMonths": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "full": "%A, %B %-d, %Y at %-I:%M:%S %p GMT%Z",
+    "long": "%B %-d, %Y at %-I:%M:%S %p GMT%Z",
+    "medium": "%b %-d, %Y, %-I:%M:%S %p",
+    "short": "%-m/%-d/%y, %-I:%M %p",
+    "yMMMEd": "E, %b %-d, %Y",
+    "yMEd": "E, %-m/%-d/%Y",
+    "yMMMMd": "%b %-d, %Y",
+    "yMMMd": "%b %-d, %Y",
+    "yMd": "%-m/%-d/%Y",
+    "yMMMM": "%B %Y",
+    "yMMM": "%b %Y",
+    "MMMd": "%b %-d",
+    "EEEE": "%A",
+    "MMMM": "%B",
+    "MMM": "%b",
+    "M": "%-m",
+    "y": "%Y",
+    "d": "%-d",
+    "E": "%a"
+  },
+  "margin": {
+    "top": 10,
+    "right": 10,
+    "bottom": 10,
+    "left": 10
+  },
+  "showTitle": true,
+  "showLegend": true,
+  "showControls": true,
+  "strings": {
+    "legend": {
+      "close": "Hide legend",
+      "open": "Show legend"
+    },
+    "controls": {
+      "close": "Hide controls",
+      "open": "Show controls"
+    },
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "tooltips": true,
+  "width": null,
+  "stacked": false,
+  "duration": 0,
+  "clipEdge": false,
+  "gradient": [
+    "0",
+    "vertical",
+    "middle"
+  ],
+  "locale": "en",
+  "showValues": "0",
+  "colorOptions": {}
+};
+var chart = sucrose.models.paretoChart();
+
+var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
+var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
+
+function configure(chart) {
+    var k, v;
+
+    for (k in config)
+    {
+        if (!config.hasOwnProperty(k)) {
+            continue;
+        }
+
+        switch (k)
+        {
+            case 'colorData':
+                if (!chart.colorData) {
+                    continue;
+                }
+                chart.colorData(config.colorData, config.colorOptions);
+                break;
+
+            case 'showLabels':
+                v = !!parseInt(config[k], 10);
+                if (chart.xAxis) {
+                    chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
+                }
+                if (chart.yAxis) {
+                    chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
+                }
+                break;
+
+            case 'tickDisplay':
+                v = config[k];
+                if (chart.wrapTicks) {
+                    chart.wrapTicks(v.indexOf('wrap') !== -1)
+                }
+                if (chart.staggerTicks) {
+                    chart.staggerTicks(v.indexOf('stagger') !== -1)
+                }
+                if (chart.rotateTicks) {
+                    chart.rotateTicks(v.indexOf('rotate') !== -1);
+                }
+                break;
+
+            default:
+                if (!chart[k]) {
+                    continue;
+                }
+                v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
+                chart[k](v);
+        }
+    }
+}
+
+function format(chart) {
+  chart
+    .valueFormat(function (d) {
+      return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+    })
+    .tooltipBar(function (key, x, y, e, graph) {
+      var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality()),
+          percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
+      return '<p><b>' + key + '</b></p>' +
+             '<p><b>' + val + '</b></p>' +
+             '<p><b>' + percent + '%</b></p>';
+    })
+    .tooltipLine(function (key, x, y, e, graph) {
+      var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+      return '<p><p>' + key + ': <b>' + val + '</b></p>';
+    })
+    .tooltipQuota(function (key, x, y, e, graph) {
+      var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+      return '<p>' + e.key + ': <b>' + val + '</b></p>';
+    })
+    .seriesClick(function (data, eo, chart, container) {
+        var d = eo.series,
+            selectedSeries = eo.seriesIndex;
+
+        // chart.dispatch.tooltipHide();
+
+        d.disabled = !d.disabled;
+
+        if (!chart.stacked()) {
+            data.filter(function (d) {
+                return d.series === selectedSeries && d.type === 'line';
+            }).map(function (d) {
+                d.disabled = !d.disabled;
+                return d;
+            });
+        }
+
+        // if there are no enabled data series, enable them all
+        if (!data.filter(function (d) {
+            return !d.disabled && d.type === 'bar';
+        }).length) {
+            data.map(function (d) {
+                d.disabled = false;
+                container.selectAll('.sc-series').classed('disabled', false);
+                return d;
+            });
+        }
+
+        container.call(chart);
+    });
+
+
+    // chart.yAxis.valueFormat(function(d) {
+    //   var si = d3.formatPrefix(d, 2);
+    //   return '$' + d3.round(si.scale(d), 2) + si.symbol;
+    // });
+
+}
+
+window.onload = function () {
+    configure(chart);
+    format(chart);
+
+    // Bind D3 chart to SVG element
+    d3.select('#chart_ svg')
+        .attr('class', 'sucrose sc-chart')
+        .datum(data).call(chart);
+
+    // Dismiss tooltips
+    d3.select('#chart_').on('click', chart.dispatch.chartClick);
+
+    // Rebind window resizer
+    window.addEventListener('resize', chart.render);
+};
+    </script>
+  </body>
+</html>

@@ -1,45 +1,56 @@
-sucrose.models.scatter = function() {
+import d3 from 'd3';
+import utility from '../utility.js';
+
+export default function scatter() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var margin = {top: 0, right: 0, bottom: 0, left: 0},
+  var id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
       width = 960,
       height = 500,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); }, // chooses color
+      margin = {top: 0, right: 0, bottom: 0, left: 0},
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); }, // chooses color
+      gradient = null,
       fill = color,
-      classes = function(d, i) { return 'sc-group sc-series-' + d.series; },
-      id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
-      x = d3.scale.linear(),
-      y = d3.scale.linear(),
-      z = d3.scale.linear(), //linear because d3.svg.shape.size is treated as area
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
+      x = d3.scaleLinear(),
+      y = d3.scaleLinear(),
+      z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
       getX = function(d) { return d.x; }, // accessor to get the x value
       getY = function(d) { return d.y; }, // accessor to get the y value
-      getSize = function(d) { return d.size || 1; }, // accessor to get the point size
-      getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
-      locality = sucrose.utils.buildLocality(),
-      onlyCircles = true, // Set to false to use shapes
+      getZ = function(d) { return d.size || 1; }, // accessor to get the point size, set by public method .size()
       forceX = [], // List of numbers to Force into the X scale (ie. 0, or a max / min, etc.)
       forceY = [], // List of numbers to Force into the Y scale
-      forceSize = [], // List of numbers to Force into the Size scale
+      forceZ = [], // List of numbers to Force into the Size scale
+      xDomain = null, // Override x domain (skips the calculation from data)
+      yDomain = null, // Override y domain
+      zDomain = null, // Override point size domain
+      zRange = [1 * 1 * Math.PI, 5 * 5 * Math.PI],
+      circleRadius = function(d, i) {
+        // a = pi*r^2
+        // a / pi = r^2
+        // sqrt(a / pi) = r
+        // 1 = 1 * pi , 5 = 25 * pi
+        return Math.sqrt(z(getZ(d, i)) / Math.PI);
+      }, // function to get the radius for voronoi point clips
+      symbolSize = function(d, i) {
+        return z(getZ(d, i));
+      },
+      getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
+      locality = utility.buildLocality(),
+      onlyCircles = true, // Set to false to use shapes
+
       interactive = true, // If true, plots a voronoi overlay for advanced point intersection
       pointActive = function(d) { return !d.notActive; }, // any points that return false will be filtered out
       padData = false, // If true, adds half a data points width to front and back, for lining up a line chart with a bar chart
       padDataOuter = 0.1, //outerPadding to imitate ordinal scale outer padding
       clipEdge = false, // if true, masks points within x and y scale
+      delay = 0,
+      duration = 300,
       useVoronoi = true,
       clipVoronoi = true, // if true, masks each point with a circle... can turn off to slightly increase performance
-      circleRadius = function(d, i) {
-        return Math.sqrt(z(getSize(d, i)) / Math.PI);
-      }, // function to get the radius for voronoi point clips
-      symbolSize = function(d, i) {
-        return z(getSize(d, i));
-      },
-      xDomain = null, // Override x domain (skips the calculation from data)
-      yDomain = null, // Override y domain
-      sizeDomain = null, // Override point size domain
-      sizeRange = [16, 256],
       singlePoint = false,
       dispatch = d3.dispatch('elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove'),
       nice = false;
@@ -60,28 +71,26 @@ sucrose.models.scatter = function() {
 
   function chart(selection) {
     selection.each(function(data) {
+
       var availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
 
-      //add series index to each data point for reference
-      data = data.map(function(series, i) {
-        series.values = series.values.map(function(point) {
-          point.series = i;
-          return point;
-        });
-        return series;
-      });
+      var t = d3.transition('scatter')
+          .duration(duration)
+          .ease(d3.easeLinear);
+
+      needsUpdate = true;
 
       //------------------------------------------------------------
       // Setup Scales
 
       // remap and flatten the data for use in calculating the scales' domains
-      var seriesData = (xDomain && yDomain && sizeDomain) ? [] : // if we know xDomain and yDomain and sizeDomain, no need to calculate.... if Size is constant remember to set sizeDomain to speed up performance
+      var seriesData = (xDomain && yDomain && zDomain) ? [] : // if we know xDomain and yDomain and zDomain, no need to calculate.... if Size is constant remember to set zDomain to speed up performance
             d3.merge(
               data.map(function(d) {
                 return d.values.map(function(d, i) {
-                  return { x: getX(d, i), y: getY(d, i), size: getSize(d, i) };
+                  return { x: getX(d, i), y: getY(d, i), size: getZ(d, i) };
                 });
               })
             );
@@ -101,7 +110,7 @@ sucrose.models.scatter = function() {
         if (padData && data[0]) {
           if (padDataOuter === -1) {
             // shift range so that largest bubble doesn't cover scales
-            var largestPossible = Math.sqrt(sizeRange[1] / Math.PI);
+            var largestPossible = Math.sqrt(zRange[1] / Math.PI);
             x.range([
               0 + largestPossible,
               availableWidth - largestPossible
@@ -141,20 +150,23 @@ sucrose.models.scatter = function() {
           y.nice();
         }
 
-        z.domain(sizeDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceSize)))
-         .range(sizeRange);
-
         // If scale's domain don't have a range, slightly adjust to make one... so a chart can show a single data point
-        if (x.domain()[0] === x.domain()[1] || y.domain()[0] === y.domain()[1]) singlePoint = true;
-        if (x.domain()[0] === x.domain()[1])
+        singlePoint = (x.domain()[0] === x.domain()[1] || y.domain()[0] === y.domain()[1]);
+
+        if (x.domain()[0] === x.domain()[1]) {
           x.domain()[0] ?
               x.domain([x.domain()[0] - x.domain()[0] * 0.1, x.domain()[1] + x.domain()[1] * 0.1]) :
               x.domain([-1, 1]);
+        }
 
-        if (y.domain()[0] === y.domain()[1])
+        if (y.domain()[0] === y.domain()[1]) {
           y.domain()[0] ?
               y.domain([y.domain()[0] - y.domain()[0] * 0.1, y.domain()[1] + y.domain()[1] * 0.1]) :
               y.domain([-1, 1]);
+        }
+
+        z.domain(zDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceZ)))
+         .range(zRange);
 
         if (z.domain().length < 2) {
           z.domain([0, z.domain()]);
@@ -168,23 +180,24 @@ sucrose.models.scatter = function() {
       resetScale();
 
       //------------------------------------------------------------
-
-      //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-scatter sc-chart-' + id);
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-scatter');
+      var wrap = container.select('.sc-wrap.sc-scatter').merge(wrap_entr);
+
+      var defs_entr = wrap_entr.append('defs');
 
       //set up the gradient constructor function
-      chart.gradient = function(d, i) {
-        return sucrose.utils.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
+      gradient = function(d, i) {
+        return utility.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
-      gEnter.append('g').attr('class', 'sc-groups');
-      gEnter.append('g').attr('class', 'sc-point-paths');
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
+
+      wrap_entr.append('g').attr('class', 'sc-point-paths');
+      var paths_wrap = wrap.select('.sc-point-paths');
 
       wrap
         .classed('sc-single-point', singlePoint)
@@ -192,34 +205,135 @@ sucrose.models.scatter = function() {
 
       //------------------------------------------------------------
 
-
-      defsEnter.append('clipPath')
-          .attr('id', 'sc-edge-clip-' + id)
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-points-clip-' + id)
+        .attr('class', 'sc-point-clips');
 
       wrap.select('#sc-edge-clip-' + id + ' rect')
           .attr('width', availableWidth)
           .attr('height', availableHeight);
 
-      g.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
+      //------------------------------------------------------------
+      // Series
+
+      var series_bind = group_wrap.selectAll('.sc-series')
+            .data(utility.identity, function(d) { return d.seriesIndex; });
+      var series_entr = series_bind.enter().append('g')
+            .attr('class', 'sc-series')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series
+        .attr('class', function(d, i) { return classes(d, d.seriesIndex); })
+        .attr('fill', function(d, i) { return fill(d, d.seriesIndex); })
+        .attr('stroke', function(d, i) { return fill(d, d.seriesIndex); })
+        .classed('hover', function(d) { return d.hover; });
+      series
+        .transition(t)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 0.5);
+      series_bind.exit()
+        .transition(t)
+          .style('stroke-opacity', 1e-6)
+          .style('fill-opacity', 1e-6)
+          .remove();
+
+      //------------------------------------------------------------
+      // Interactive Layer
+
+      if (onlyCircles) {
+
+        var points_bind = series.selectAll('circle.sc-point')
+              .data(function(d) { return d.values; });
+        var points_entr = points_bind.enter().append('circle')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('r', circleRadius);
+        var points = series.selectAll('.sc-point').merge(points_entr);
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('cx', function(d, i) {
+            return x(getX(d, i));
+          })
+          .attr('cy', function(d, i) {
+            return y(0);
+          });
+        points
+          .transition(t)
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(getY(d, i)); })
+            .on('end', function(d) {
+              d3.select(this).classed('sc-enter', false);
+            });
+
+        series_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(0); })
+            .remove();
+
+      } else {
+
+        var points_bind = series.selectAll('path.sc-point').data(function(d) { return d.values; });
+        var points_enter = points_bind.enter().append('path')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('d',
+                d3.svg.symbol()
+                  .type(getShape)
+                  .size(symbolSize)
+              );
+        var points = series.selectAll('.sc-point').merge(points_entr)
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('transform', function(d, i) {
+            return 'translate(' + x0(getX(d, i)) + ',' + y(0) + ')';
+          })
+        points
+          .transition(t)
+            .attr('transform', function(d, i) {
+              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
+            })
+            .attr('d',
+              d3.svg.symbol()
+                .type(getShape)
+                .size(symbolSize)
+            );
+
+        series_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('transform', function(d, i) {
+              return 'translate(' + x(getX(d, i)) + ',' + y(0) + ')';
+            })
+            .remove();
+
+      }
+
+      function buildEventObject(e, d, i, s) {
+        return {
+            series: s,
+            point: s.values[i],
+            pointIndex: i,
+            seriesIndex: s.seriesIndex,
+            id: id,
+            e: e
+          };
+      }
 
       function updateInteractiveLayer() {
 
-        if (!interactive) return false;
-
-        var eventElements;
-
-        function buildEventObject(e, d, i, j) {
-          var seriesData = data[j];
-          return {
-              series: seriesData,
-              point: seriesData.values[i],
-              pointIndex: i,
-              seriesIndex: seriesData.series,
-              id: id,
-              e: e
-            };
+        if (!interactive) {
+          return false;
         }
 
         //inject series and point index for reference into voronoi
@@ -247,26 +361,19 @@ sucrose.models.scatter = function() {
           );
 
           if (clipVoronoi) {
-            var pointClipsEnter = wrap.select('defs').selectAll('.sc-point-clips')
-                .data([id])
-              .enter();
+            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle').data(vertices);
+            var clips_entr = clips_bind.enter().append('circle');
+            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle').merge(clips_entr);
 
-            pointClipsEnter.append('clipPath')
-                  .attr('class', 'sc-point-clips')
-                  .attr('id', 'sc-points-clip-' + id);
+            clips
+              .attr('cx', function(d) { return d[0] })
+              .attr('cy', function(d) { return d[1] })
+              .attr('r', function(d, i) {
+                return circleRadius(d[4], i);
+              });
+            clips_bind.exit().remove();
 
-            var pointClips = wrap.select('#sc-points-clip-' + id).selectAll('circle')
-                .data(vertices);
-            pointClips.enter().append('circle');
-            pointClips.exit().remove();
-            pointClips
-                .attr('cx', function(d) { return d[0] })
-                .attr('cy', function(d) { return d[1] })
-                .attr('r', function(d, i) {
-                  return circleRadius(d[4], i);
-                });
-
-            wrap.select('.sc-point-paths')
+            paths_wrap
                 .attr('clip-path', 'url(#sc-points-clip-' + id + ')');
           }
 
@@ -278,178 +385,109 @@ sucrose.models.scatter = function() {
             vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null]);
           }
 
-          var bounds = d3.geom.polygon([
-              [-10, -10],
-              [-10, height + 10],
-              [width + 10, height + 10],
-              [width + 10, -10]
-          ]);
+          var voronoi = d3.voronoi()
+                .extent([[-10, -10], [width + 10, height + 10]])
+                .polygons(vertices)
+                .map(function(d, i) {
+                  return {
+                    'data': d,
+                    'seriesIndex': vertices[i][2],
+                    'pointIndex': vertices[i][3]
+                  };
+                })
+                .filter(function(d) { return d.seriesIndex !== null; });
 
-          var voronoi = d3.geom.voronoi(vertices).map(function(d, i) {
-              return {
-                'data': bounds.clip(d),
-                'series': vertices[i][2],
-                'point': vertices[i][3]
-              };
-            }).filter(function(d) { return d.series !== null; });
+          var paths_bind = paths_wrap.selectAll('path').data(voronoi);
+          var paths_entr = paths_bind.enter().append('path').attr('class', function(d, i) { return 'sc-path-' + i; });
+          var paths = paths_wrap.selectAll('path').merge(paths_entr);
 
-          var pointPaths = wrap.select('.sc-point-paths').selectAll('path')
-              .data(voronoi);
-          pointPaths.enter().append('path')
-              .attr('class', function(d, i) { return 'sc-path-' + i; });
-          pointPaths.exit().remove();
-          pointPaths
-              .attr('d', function(d) { return 'M' + d.data.join('L') + 'Z'; });
+          paths
+            .attr('d', function(d) { return d ? 'M' + d.data.join('L') + 'Z' : null; });
+          paths_bind.exit().remove();
 
+          paths
+            .on('mouseover', function(d) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
+            })
+            .on('click', function(d) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementClick', this, eo);
+            });
 
-          pointPaths
-              .on('click', function(d) {
-                if (needsUpdate) return 0;
-                dispatch.elementClick(buildEventObject(d3.event, d, d.point, d.series));
-              })
-              .on('mouseover', function(d) {
-                if (needsUpdate) return 0;
-                dispatch.elementMouseover(buildEventObject(d3.event, d, d.point, d.series));
-              })
-              .on('mousemove', function(d, i) {
-                dispatch.elementMousemove(d3.event);
-              })
-              .on('mouseout', function(d, i) {
-                if (needsUpdate) return 0;
-                dispatch.elementMouseout(buildEventObject(d3.event, d, d.point, d.series));
-              });
         } else {
+
           // add event handlers to points instead voronoi paths
-          wrap.select('.sc-groups').selectAll('.sc-group')
-            .selectAll('.sc-point')
-              //.data(dataWithPoints)
-              .style('pointer-events', 'auto') // recativate events, disabled by css
-              .on('click', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.elementClick(buildEventObject(d3.event, d, i, d.series));
-              })
-              .on('mouseover', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.elementMouseover(buildEventObject(d3.event, d, i, d.series));
-              })
-              .on('mousemove', function(d, i) {
-                dispatch.elementMousemove(d3.event);
-              })
-              .on('mouseout', function(d, i) {
-                if (needsUpdate || !data[d.series]) return 0; //check if this is a dummy point
-                dispatch.elementMouseout(buildEventObject(d3.event, d, d.point, d.series));
-              });
+          series.selectAll('.sc-point')
+            //.data(dataWithPoints)
+            .style('pointer-events', 'auto') // recaptivate events, disabled by css
+            .on('mouseover', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
+            })
+            .on('click', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementClick', this, eo);
+            });
+
         }
 
         needsUpdate = false;
       }
 
-      needsUpdate = true;
-
-      var groups = wrap.select('.sc-groups').selectAll('.sc-group')
-          .data(function(d) { return d; }, function(d) { return d.key; });
-      groups.enter().append('g')
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6);
-      d3.transition(groups.exit())
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6)
-          .remove();
-      groups
-          .attr('class', function(d, i) { return classes(d, d.series); })
-          .attr('fill', function(d, i) { return fill(d, d.series); })
-          .attr('stroke', function(d, i) { return fill(d, d.series); })
-          .classed('hover', function(d) { return d.hover; });
-      d3.transition(groups)
-          .style('stroke-opacity', 1)
-          .style('fill-opacity', 0.5);
-
-
-      if (onlyCircles) {
-
-        var points = groups.selectAll('circle.sc-point')
-            .data(function(d) { return d.values; });
-        points.enter().append('circle')
-            .attr('cx', function(d, i) { return x0(getX(d, i)); })
-            .attr('cy', function(d, i) { return y0(getY(d, i)); })
-            .attr('r', circleRadius);
-        points.exit().remove();
-        d3.transition(groups.exit().selectAll('path.sc-point'))
-            .attr('cx', function(d, i) { return x(getX(d, i)); })
-            .attr('cy', function(d, i) { return y(getY(d, i)); })
-            .remove();
-        points.attr('class', function(d, i) { return 'sc-point sc-point-' + i; });
-        d3.transition(points)
-            .attr('cx', function(d, i) { return x(getX(d, i)); })
-            .attr('cy', function(d, i) { return y(getY(d, i)); })
-            .attr('r', circleRadius);
-
-      } else {
-
-        var points = groups.selectAll('path.sc-point')
-            .data(function(d) { return d.values; });
-        points.enter().append('path')
-            .attr('transform', function(d, i) {
-              return 'translate(' + x0(getX(d, i)) + ',' + y0(getY(d, i)) + ')';
-            })
-            .attr('d',
-              d3.svg.symbol()
-                .type(getShape)
-                .size(symbolSize)
-            );
-        points.exit().remove();
-        d3.transition(groups.exit().selectAll('path.sc-point'))
-            .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
-            })
-            .remove();
-        points.attr('class', function(d, i) { return 'sc-point sc-point-' + i; });
-        d3.transition(points)
-            .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
-            })
-            .attr('d',
-              d3.svg.symbol()
-                .type(getShape)
-                .size(symbolSize)
-            );
-      }
-
-
       // Delay updating the invisible interactive layer for smoother animation
       clearTimeout(timeoutID); // stop repeat calls to updateInteractiveLayer
       timeoutID = setTimeout(updateInteractiveLayer, 300);
-      //updateInteractiveLayer();
 
       //store old scales for use in transitions on update
       x0 = x.copy();
       y0 = y.copy();
       z0 = z.copy();
 
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      dispatch.on('elementMouseover.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', true);
+        }
+      });
+
+      dispatch.on('elementMouseout.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', false);
+        }
+      });
+
     });
 
     return chart;
   }
-
-
-  //============================================================
-  // Event Handling/Dispatching (out of chart's scope)
-  //------------------------------------------------------------
-
-  dispatch.on('elementMouseover.point', function(d) {
-    if (interactive)
-      d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-          .classed('hover', true);
-  });
-
-  dispatch.on('elementMouseout.point', function(d) {
-    if (interactive)
-      d3.select('.sc-chart-' + id + ' .sc-series-' + d.seriesIndex + ' .sc-point-' + d.pointIndex)
-          .classed('hover', false);
-  });
-
-  //============================================================
-
 
   //============================================================
   // Expose Public Variables
@@ -457,164 +495,186 @@ sucrose.models.scatter = function() {
 
   chart.dispatch = dispatch;
 
+  chart.id = function(_) {
+    if (!arguments.length) { return id; }
+    id = _;
+    return chart;
+  };
   chart.color = function(_) {
-    if (!arguments.length) return color;
+    if (!arguments.length) { return color; }
     color = _;
     return chart;
   };
   chart.fill = function(_) {
-    if (!arguments.length) return fill;
+    if (!arguments.length) { return fill; }
     fill = _;
     return chart;
   };
   chart.classes = function(_) {
-    if (!arguments.length) return classes;
+    if (!arguments.length) { return classes; }
     classes = _;
     return chart;
   };
   chart.gradient = function(_) {
-    if (!arguments.length) return gradient;
+    if (!arguments.length) { return gradient; }
     gradient = _;
     return chart;
   };
 
   chart.x = function(_) {
-    if (!arguments.length) return getX;
-    getX = d3.functor(_);
+    if (!arguments.length) { return getX; }
+    getX = utility.functor(_);
     return chart;
   };
 
   chart.y = function(_) {
-    if (!arguments.length) return getY;
-    getY = d3.functor(_);
+    if (!arguments.length) { return getY; }
+    getY = utility.functor(_);
     return chart;
   };
 
-  chart.size = function(_) {
-    if (!arguments.length) return getSize;
-    getSize = d3.functor(_);
-    return chart;
-  };
-
-  chart.margin = function(_) {
-    if (!arguments.length) return margin;
-    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
-    return chart;
-  };
-
-  chart.width = function(_) {
-    if (!arguments.length) return width;
-    width = _;
-    return chart;
-  };
-
-  chart.height = function(_) {
-    if (!arguments.length) return height;
-    height = _;
+  chart.z = function(_) {
+    if (!arguments.length) { return getZ; }
+    getZ = utility.functor(_);
     return chart;
   };
 
   chart.xScale = function(_) {
-    if (!arguments.length) return x;
+    if (!arguments.length) { return x; }
     x = _;
     return chart;
   };
 
   chart.yScale = function(_) {
-    if (!arguments.length) return y;
+    if (!arguments.length) { return y; }
     y = _;
     return chart;
   };
 
   chart.zScale = function(_) {
-    if (!arguments.length) return z;
+    if (!arguments.length) { return z; }
     z = _;
     return chart;
   };
 
   chart.xDomain = function(_) {
-    if (!arguments.length) return xDomain;
+    if (!arguments.length) { return xDomain; }
     xDomain = _;
     return chart;
   };
 
   chart.yDomain = function(_) {
-    if (!arguments.length) return yDomain;
+    if (!arguments.length) { return yDomain; }
     yDomain = _;
     return chart;
   };
 
-  chart.sizeDomain = function(_) {
-    if (!arguments.length) return sizeDomain;
-    sizeDomain = _;
-    return chart;
-  };
-
-  chart.sizeRange = function(_) {
-    if (!arguments.length) return sizeRange;
-    sizeRange = _;
+  chart.zDomain = function(_) {
+    if (!arguments.length) { return zDomain; }
+    zDomain = _;
     return chart;
   };
 
   chart.forceX = function(_) {
-    if (!arguments.length) return forceX;
+    if (!arguments.length) { return forceX; }
     forceX = _;
     return chart;
   };
 
   chart.forceY = function(_) {
-    if (!arguments.length) return forceY;
+    if (!arguments.length) { return forceY; }
     forceY = _;
     return chart;
   };
 
+  chart.forceZ = function(_) {
+    if (!arguments.length) { return forceZ; }
+    forceZ = _;
+    return chart;
+  };
+
+  chart.size = function(_) {
+    if (!arguments.length) { return getZ; }
+    getZ = utility.functor(_);
+    return chart;
+  };
+
+  chart.sizeRange = function(_) {
+    if (!arguments.length) { return zRange; }
+    zRange = _;
+    return chart;
+  };
+  chart.sizeDomain = function(_) {
+    if (!arguments.length) { return sizeDomain; }
+    zDomain = _;
+    return chart;
+  };
   chart.forceSize = function(_) {
-    if (!arguments.length) return forceSize;
-    forceSize = _;
+    if (!arguments.length) { return forceZ; }
+    forceZ = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
     return chart;
   };
 
   chart.interactive = function(_) {
-    if (!arguments.length) return interactive;
+    if (!arguments.length) { return interactive; }
     interactive = _;
     return chart;
   };
 
   chart.pointActive = function(_) {
-    if (!arguments.length) return pointActive;
+    if (!arguments.length) { return pointActive; }
     pointActive = _;
     return chart;
   };
 
   chart.padData = function(_) {
-    if (!arguments.length) return padData;
+    if (!arguments.length) { return padData; }
     padData = _;
     return chart;
   };
 
   chart.padDataOuter = function(_) {
-    if (!arguments.length) return padDataOuter;
+    if (!arguments.length) { return padDataOuter; }
     padDataOuter = _;
     return chart;
   };
 
   chart.clipEdge = function(_) {
-    if (!arguments.length) return clipEdge;
+    if (!arguments.length) { return clipEdge; }
     clipEdge = _;
     return chart;
   };
 
   chart.clipVoronoi = function(_) {
-    if (!arguments.length) return clipVoronoi;
+    if (!arguments.length) { return clipVoronoi; }
     clipVoronoi = _;
     return chart;
   };
 
   chart.useVoronoi = function(_) {
-    if (!arguments.length) return useVoronoi;
+    if (!arguments.length) { return useVoronoi; }
     useVoronoi = _;
     if (useVoronoi === false) {
         clipVoronoi = false;
@@ -623,52 +683,54 @@ sucrose.models.scatter = function() {
   };
 
   chart.circleRadius = function(_) {
-    if (!arguments.length) return circleRadius;
+    if (!arguments.length) { return circleRadius; }
+    circleRadius = _;
+    return chart;
+  };
+
+  chart.clipRadius = function(_) {
+    if (!arguments.length) { return circleRadius; }
     circleRadius = _;
     return chart;
   };
 
   chart.shape = function(_) {
-    if (!arguments.length) return getShape;
+    if (!arguments.length) { return getShape; }
     getShape = _;
     return chart;
   };
 
   chart.onlyCircles = function(_) {
-    if (!arguments.length) return onlyCircles;
+    if (!arguments.length) { return onlyCircles; }
     onlyCircles = _;
     return chart;
   };
 
-  chart.id = function(_) {
-    if (!arguments.length) return id;
-    id = _;
-    return chart;
-  };
-
   chart.singlePoint = function(_) {
-    if (!arguments.length) return singlePoint;
+    if (!arguments.length) { return singlePoint; }
     singlePoint = _;
     return chart;
   };
 
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    return chart;
+  };
+
   chart.nice = function(_) {
-    if (!arguments.length) {
-      return nice;
-    }
+    if (!arguments.length) { return nice; }
     nice = _;
     return chart;
   };
 
   chart.locality = function(_) {
-    if (!arguments.length) {
-      return locality;
-    }
-    locality = sucrose.utils.buildLocality(_);
+    if (!arguments.length) { return locality; }
+    locality = utility.buildLocality(_);
     return chart;
   };
 
   //============================================================
 
   return chart;
-};
+}

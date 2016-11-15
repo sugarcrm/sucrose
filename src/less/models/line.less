@@ -2,44 +2,45 @@
 * Lines
 */
 
-.sc-groups path.sc-line {
+.sc-group path.sc-line {
   fill: none;
-  stroke-width: 2.5px;
+  stroke-width: 2px;
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
 }
 
-.sc-groups path.sc-area {
+.sc-group path.sc-area {
   stroke: none;
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
 }
 
+.sc-line .sc-scatter .sc-series .sc-point {
+  stroke-opacity: 1;
+  stroke: #fff;
+  fill-opacity: 1;
+}
+
+.sc-scatter.sc-single-point .sc-series .sc-point {
+  stroke-width: 2px;
+}
+
+// still needed?
 .sc-line.hover path {
   stroke-width: 6px;
 }
 
-.sc-line .sc-scatter .sc-groups .sc-point {
-  fill-opacity: 1;
-  stroke-opacity: 1;
-  stroke: #fff;
-}
-
-.sc-scatter.sc-single-point .sc-groups .sc-point {
-  stroke-width: 2px;
-}
-
-.sc-scatter .sc-groups .sc-point.hover,
-.sc-groups .sc-point.hover {
-  stroke-width: 16px;
-  stroke-opacity: .5 !important;
+// makes the outer ring effect
+.sc-scatter .sc-series .sc-point.hover,
+.sc-series .sc-point.hover {
+  stroke-opacity: ~".3 !important";
   stroke: inherit;
 }
 
 .sc-point-paths path {
   stroke: transparent;
   stroke-opacity: 0;
-  fill: transparent;
+  fill: #fff;
   fill-opacity: 0;
 }
 

@@ -18,35 +18,6 @@
   100% { opacity: 1; }
 }
 
-// for org chart demo renderer
-.sc-chart-org {
-  .sc-org-bkgd {
-    stroke: darken(@grayLighter, 15%);
-    stroke-width: 2px;
-  }
-  .sc-org-node {
-    text {
-      font-style: normal;
-      font-variant: normal;
-      font-weight: 300;
-      font-stretch: normal;
-      font-size: 10px;
-      line-height: normal;
-      font-family: @sansFontFamily;
-      &.sc-org-name {
-        font-size: 10px;
-        fill: @linkColor;
-        &.hover {
-          text-decoration: underline;
-        }
-      }
-      &.sc-org-title {
-        font-size: 8px;
-      }
-    }
-  }
-}
-
 // org chart zoom control
 .btn-slider {
   display: inline-block;

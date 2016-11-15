@@ -1,5 +1,7 @@
+import d3 from 'd3';
+import utility from '../utility.js';
 
-sucrose.models.scroll = function() {
+export default function scroll() {
 
   //============================================================
   // Public Variables
@@ -17,14 +19,14 @@ sucrose.models.scroll = function() {
 
   //============================================================
 
-  function scroll(g, gEnter, scrollWrap, xAxis) {
+  function scroll(g, g_entr, scrollWrap, xAxis) {
 
       var defs = g.select('defs'),
-          defsEnter = gEnter.select('defs'),
+          defs_entr = g_entr.select('defs'),
           scrollMask,
           scrollTarget,
-          xAxisWrap = scrollWrap.select('.sc-x.sc-axis'),
-          barsWrap = scrollWrap.select('.sc-barsWrap'),
+          xAxisWrap = scrollWrap.select('.sc-axis-wrap.sc-axis-x'),
+          barsWrap = scrollWrap.select('.sc-bars-wrap'),
           backShadows,
           foreShadows;
 
@@ -91,10 +93,10 @@ sucrose.models.scroll = function() {
       scroll.assignEvents = function(enable) {
         if (enable) {
 
-          var zoom = d3.behavior.zoom()
+          var zoom = d3.zoom()
                 .on('zoom', panHandler);
-          var drag = d3.behavior.drag()
-                .origin(function(d) { return d; })
+          var drag = d3.drag()
+                .subject(function(d) { return d; })
                 .on('drag', panHandler);
 
           scrollWrap
@@ -110,46 +112,46 @@ sucrose.models.scroll = function() {
         } else {
 
           scrollWrap
-              .on("mousedown.zoom", null)
-              .on("mousewheel.zoom", null)
-              .on("mousemove.zoom", null)
-              .on("DOMMouseScroll.zoom", null)
-              .on("dblclick.zoom", null)
-              .on("touchstart.zoom", null)
-              .on("touchmove.zoom", null)
-              .on("touchend.zoom", null)
-              .on("wheel.zoom", null);
+              .on('mousedown.zoom', null)
+              .on('mousewheel.zoom', null)
+              .on('mousemove.zoom', null)
+              .on('DOMMouseScroll.zoom', null)
+              .on('dblclick.zoom', null)
+              .on('touchstart.zoom', null)
+              .on('touchmove.zoom', null)
+              .on('touchend.zoom', null)
+              .on('wheel.zoom', null);
           scrollTarget
-              .on("mousedown.zoom", null)
-              .on("mousewheel.zoom", null)
-              .on("mousemove.zoom", null)
-              .on("DOMMouseScroll.zoom", null)
-              .on("dblclick.zoom", null)
-              .on("touchstart.zoom", null)
-              .on("touchmove.zoom", null)
-              .on("touchend.zoom", null)
-              .on("wheel.zoom", null);
+              .on('mousedown.zoom', null)
+              .on('mousewheel.zoom', null)
+              .on('mousemove.zoom', null)
+              .on('DOMMouseScroll.zoom', null)
+              .on('dblclick.zoom', null)
+              .on('touchstart.zoom', null)
+              .on('touchmove.zoom', null)
+              .on('touchend.zoom', null)
+              .on('wheel.zoom', null);
 
           scrollWrap
-              .on("mousedown.drag", null)
-              .on("mousewheel.drag", null)
-              .on("mousemove.drag", null)
-              .on("DOMMouseScroll.drag", null)
-              .on("dblclick.drag", null)
-              .on("touchstart.drag", null)
-              .on("touchmove.drag", null)
-              .on("touchend.drag", null)
-              .on("wheel.drag", null);
+              .on('mousedown.drag', null)
+              .on('mousewheel.drag', null)
+              .on('mousemove.drag', null)
+              .on('DOMMouseScroll.drag', null)
+              .on('dblclick.drag', null)
+              .on('touchstart.drag', null)
+              .on('touchmove.drag', null)
+              .on('touchend.drag', null)
+              .on('wheel.drag', null);
           scrollTarget
-              .on("mousedown.drag", null)
-              .on("mousewheel.drag", null)
-              .on("mousemove.drag", null)
-              .on("DOMMouseScroll.drag", null)
-              .on("dblclick.drag", null)
-              .on("touchstart.drag", null)
-              .on("touchmove.drag", null)
-              .on("touchend.drag", null)
-              .on("wheel.drag", null);
+              .on('mousedown.drag', null)
+              .on('mousewheel.drag', null)
+              .on('mousemove.drag', null)
+              .on('DOMMouseScroll.drag', null)
+              .on('dblclick.drag', null)
+              .on('touchstart.drag', null)
+              .on('touchmove.drag', null)
+              .on('touchend.drag', null)
+              .on('wheel.drag', null);
         }
       };
 
@@ -202,30 +204,30 @@ sucrose.models.scroll = function() {
 
       /* Background gradients */
       scroll.gradients = function(enable) {
-        defsEnter
+        defs_entr
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-back-gradient-prev-' + id);
-        var bgpEnter = defsEnter.select('#sc-back-gradient-prev-' + id);
+        var bgpEnter = defs_entr.select('#sc-back-gradient-prev-' + id);
 
-        defsEnter
+        defs_entr
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-back-gradient-more-' + id);
-        var bgmEnter = defsEnter.select('#sc-back-gradient-more-' + id);
+        var bgmEnter = defs_entr.select('#sc-back-gradient-more-' + id);
 
         /* Foreground gradients */
-        defsEnter
+        defs_entr
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-fore-gradient-prev-' + id);
-        var fgpEnter = defsEnter.select('#sc-fore-gradient-prev-' + id);
+        var fgpEnter = defs_entr.select('#sc-fore-gradient-prev-' + id);
 
-        defsEnter
+        defs_entr
           .append('linearGradient')
           .attr('class', 'sc-scroll-gradient')
           .attr('id', 'sc-fore-gradient-more-' + id);
-        var fgmEnter = defsEnter.select('#sc-fore-gradient-more-' + id);
+        var fgmEnter = defs_entr.select('#sc-fore-gradient-more-' + id);
 
         defs.selectAll('.sc-scroll-gradient')
           .attr('gradientUnits', 'objectBoundingBox')
@@ -278,7 +280,7 @@ sucrose.models.scroll = function() {
       };
 
       scroll.mask = function(enable) {
-        defsEnter.append('clipPath')
+        defs_entr.append('clipPath')
           .attr('class', 'sc-scroll-mask')
           .attr('id', 'sc-edge-clip-' + id)
           .append('rect');
@@ -289,7 +291,7 @@ sucrose.models.scroll = function() {
       };
 
       scroll.scrollTarget = function(enable) {
-        gEnter.select('.sc-scroll-background')
+        g_entr.select('.sc-scroll-background')
           .append('rect')
           .attr('class', 'sc-scroll-target')
           //.attr('fill', '#FFF');
@@ -300,7 +302,7 @@ sucrose.models.scroll = function() {
 
       /* Background shadow rectangles */
       scroll.backShadows = function(enable) {
-        var shadowWrap = gEnter.select('.sc-scroll-background')
+        var shadowWrap = g_entr.select('.sc-scroll-background')
               .append('g')
               .attr('class', 'sc-back-shadow-wrap');
 
@@ -330,7 +332,7 @@ sucrose.models.scroll = function() {
 
       /* Foreground shadow rectangles */
       scroll.foreShadows = function(enable) {
-        var shadowWrap = gEnter.select('.sc-scroll-background')
+        var shadowWrap = g_entr.select('.sc-scroll-background')
               .insert('g')
               .attr('class', 'sc-fore-shadow-wrap');
 
@@ -421,7 +423,7 @@ sucrose.models.scroll = function() {
     if (!arguments.length) {
       return panHandler;
     }
-    panHandler = d3.functor(_);
+    panHandler = utility.functor(_);
     return scroll;
   };
 
@@ -436,4 +438,4 @@ sucrose.models.scroll = function() {
   //============================================================
 
   return scroll;
-};
+}

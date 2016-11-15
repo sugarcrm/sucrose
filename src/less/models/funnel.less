@@ -2,12 +2,13 @@
 * Funnel
 */
 
-.sc-funnelChart {
+.sc-chart-funnel {
   .sc-slice.hover polygon {
     fill-opacity: .75;
   }
-  .sc-y path {
-    stroke: none;
+  polyline.sc-label-leader {
+    stroke-width: 1px;
+    pointer-events: none;
   }
   .sc-label-value {
     text.sc-label {

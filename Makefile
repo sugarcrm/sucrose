@@ -1,44 +1,10 @@
-JS_FILES = \
-	src/intro.js \
-	src/core.js \
-	src/tooltip.js \
-	src/utils.js \
-	src/models/axis.js \
-	src/models/legend.js \
-	src/models/scroll.js \
-	src/models/scatter.js \
-	src/models/bubbleChart.js \
-	src/models/funnel.js \
-	src/models/funnelChart.js \
-	src/models/gauge.js \
-	src/models/gaugeChart.js \
-	src/models/globe.js \
-	src/models/line.js \
-	src/models/lineChart.js \
-	src/models/lineWithFocusChart.js \
-	src/models/multiBar.js \
-	src/models/multiBarChart.js \
-	src/models/paretoChart.js \
-	src/models/pie.js \
-	src/models/pieChart.js \
-	src/models/sankey.js \
-	src/models/stackedArea.js \
-	src/models/stackedAreaChart.js \
-	src/models/table.js \
-	src/models/tree.js \
-	src/models/treemap.js \
-	src/models/treemapChart.js \
-	src/outro.js
-	# src/models/sparkline.js \
-	# src/models/sparklinePlus.js \
+#-------
+#SOURCES
 
 CSS_FILES = \
 	src/less/sucrose.less
 
-D3_FILES = \
-	lib/d3.js
-
-JS_COMPILER = \
+JS_MINIFIER = \
 	node_modules/uglify-js/bin/uglifyjs
 
 CSS_COMPILER = \
@@ -49,7 +15,7 @@ CSS_MINIFIER = \
 
 .PHONY: examples clean-js clean-css
 
-
+#----------
 #PRODUCTION
 
 install: npm-prod dependencies
@@ -58,14 +24,18 @@ npm-prod:
 	npm i --production
 
 dependencies: clean-dependencies
-	cp node_modules/d3/d3.min.js d3.min.js
-	cp node_modules/topojson/topojson.min.js topojson.min.js
-	cp node_modules/queue-async/queue.min.js queue.min.js
+	cp ./node_modules/d3/build/d3.js ./build/d3.js
+	cp ./node_modules/d3/build/d3.min.js ./build/d3.min.js
+	cp ./node_modules/topojson/build/topojson.js ./build/topojson.js
+	cp ./node_modules/topojson/build/topojson.min.js ./build/topojson.min.js
+	cp ./node_modules/d3fc-rebind/build/d3fc-rebind.js ./build/d3fc-rebind.js
+	cp ./node_modules/d3fc-rebind/build/d3fc-rebind.min.js ./build/d3fc-rebind.min.js
 
 clean-dependencies:
-	rm -rf d3.min.js topojson.min.js queue.min.js
+	rm -rf d3.min.js topojson.min.js d3fc-rebind.min.js
 
 
+#-----------
 #DEVELOPMENT
 
 install-dev: npm-dev dependencies all
@@ -79,41 +49,37 @@ clean: clean-js clean-css
 
 # Javascript
 js: clean-js sucrose.js sucrose.min.js
-sucrose.js: $(JS_FILES)
-	rm -f ./$@
-	cat header $(filter %.js,$^) >> ./$@
+sucrose.js:
+	rm -f ./build/$@
+	rollup -c
+	cat src/header ./build/$@ > temp
+	mv temp ./build/$@
 sucrose.min.js: sucrose.js
-	rm -f ./$@
-	cat $^ | $(JS_COMPILER) >> ./$@
-	cat header ./$@ > temp
-	mv temp ./$@
+	rm -f ./build/$@
+	cat ./build/$^ | $(JS_MINIFIER) >> ./build/$@
+	cat src/header ./build/$@ > temp
+	mv temp ./build/$@
 clean-js:
-	rm -rf sucrose.js sucrose.min.js
+	rm -rf ./build/sucrose.js ./build/sucrose.min.js
 
 # Stylesheets
 css: clean-css sucrose.css sucrose.min.css
 sucrose.css: $(CSS_FILES)
-	rm -f ./$@
-	node $(CSS_COMPILER) $(CSS_FILES) ./$@
-	cat header ./$@ > temp
-	mv temp ./$@
+	rm -f ./build/$@
+	node $(CSS_COMPILER) $(CSS_FILES) ./build/$@
+	cat src/header ./build/$@ > temp
+	mv temp ./build/$@
 sucrose.min.css: sucrose.css
 	rm -f ./$@
-	node $(CSS_MINIFIER) -o ./$@ $^
-	cat header ./$@ > temp
-	mv temp ./$@
+	node $(CSS_MINIFIER) -o ./$@ ./build/$^
+	rm -f ./build/$@
+	cat src/header ./$@ > ./build/$@
+	rm -f ./$@
 clean-css:
-	rm -rf sucrose.css sucrose.min.css
-
-# Dependencies
-
-d3.min.js: $(D3_FILES)
-
-d3.min.js:
-	rm -f ./lib/$@
-	cat $(filter %.js,$^) | $(JS_COMPILER) >> ./lib/$@
+	rm -rf ./build/sucrose.css ./build/sucrose.min.css
 
 
+#---------
 # EXAMPLES
 
 examples: npm-prod
@@ -122,5 +88,19 @@ examples: npm-prod
 examples-dev: npm-dev
 	cd examples && make install-dev
 
+examples-sucrose: js css
+	cd examples && make sucrose
+
 reset:
 	git clean -dfx
+
+
+#----
+# RUN
+
+rolls:
+	rollup -c
+nodes:
+	node rollup.node
+grade:
+	npm test
