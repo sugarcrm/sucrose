@@ -1,23 +1,27 @@
+import d3 from 'd3';
+import utility from '../utility.js';
+import tooltip from '../tooltip.js';
+import models from '../models/models.js';
 
-sucrose.models.lineWithFocusChart = function() {
+export default function lineWithFocusChart() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var lines = sucrose.models.line()
-    , lines2 = sucrose.models.line()
-    , xAxis = sucrose.models.axis()
-    , yAxis = sucrose.models.axis()
-    , x2Axis = sucrose.models.axis()
-    , y2Axis = sucrose.models.axis()
-    , legend = sucrose.models.legend()
+  var lines = utility.line()
+    , lines2 = utility.line()
+    , xAxis = utility.axis()
+    , yAxis = utility.axis()
+    , x2Axis = utility.axis()
+    , y2Axis = utility.axis()
+    , legend = utility.legend()
     , brush = d3.svg.brush()
     ;
 
   var margin = {top: 30, right: 30, bottom: 30, left: 60}
     , margin2 = {top: 0, right: 30, bottom: 20, left: 60}
-    , color = sucrose.utils.defaultColor()
+    , color = utility.defaultColor()
     , width = null
     , height = null
     , height2 = 100
@@ -94,10 +98,10 @@ sucrose.models.lineWithFocusChart = function() {
       // Display No Data message if there's nothing to show.
 
       if (!data || !data.length || !data.filter(function(d) { return d.values.length }).length) {
-        var noDataText = container.selectAll('.sc-noData').data([noData]);
+        var noDataText = container.selectAll('.sc-no-data').data([noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -108,7 +112,7 @@ sucrose.models.lineWithFocusChart = function() {
 
         return chart;
       } else {
-        container.selectAll('.sc-noData').remove();
+        container.selectAll('.sc-no-data').remove();
       }
 
       //------------------------------------------------------------
@@ -128,20 +132,22 @@ sucrose.models.lineWithFocusChart = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-lineWithFocusChart').data([data]);
-      var gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart').append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-lineWithFocusChart').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-lineWithFocusChart');
+      var wrap = container.select('.sc-wrap.sc-lineWithFocusChart').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      gEnter.append('g').attr('class', 'sc-legendWrap');
+      g_entr.append('g').attr('class', 'sc-legendWrap');
 
-      var focusEnter = gEnter.append('g').attr('class', 'sc-focus');
-      focusEnter.append('g').attr('class', 'sc-x sc-axis');
-      focusEnter.append('g').attr('class', 'sc-y sc-axis');
+      var focusEnter = g_entr.append('g').attr('class', 'sc-focus');
+      focusEnter.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      focusEnter.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
       focusEnter.append('g').attr('class', 'sc-linesWrap');
 
-      var contextEnter = gEnter.append('g').attr('class', 'sc-context');
-      contextEnter.append('g').attr('class', 'sc-x sc-axis');
-      contextEnter.append('g').attr('class', 'sc-y sc-axis');
+      var contextEnter = g_entr.append('g').attr('class', 'sc-context');
+      contextEnter.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      contextEnter.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
       contextEnter.append('g').attr('class', 'sc-linesWrap');
       contextEnter.append('g').attr('class', 'sc-brushBackground');
       contextEnter.append('g').attr('class', 'sc-x sc-brush');
@@ -244,7 +250,7 @@ sucrose.models.lineWithFocusChart = function() {
         .ticks( availableHeight1 / 36 )
         .tickSize( -availableWidth, 0);
 
-      g.select('.sc-focus .sc-x.sc-axis')
+      g.select('.sc-focus .sc-axis-wrap.sc-axis-x')
           .attr('transform', 'translate(0,' + availableHeight1 + ')');
 
       //------------------------------------------------------------
@@ -262,16 +268,16 @@ sucrose.models.lineWithFocusChart = function() {
       var brushBG = g.select('.sc-brushBackground').selectAll('g')
           .data([brushExtent || brush.extent()])
 
-      var brushBGenter = brushBG.enter()
+      var brushBg_entr = brushBG.enter()
           .append('g');
 
-      brushBGenter.append('rect')
+      brushBg_entr.append('rect')
           .attr('class', 'left')
           .attr('x', 0)
           .attr('y', 0)
           .attr('height', availableHeight2);
 
-      brushBGenter.append('rect')
+      brushBg_entr.append('rect')
           .attr('class', 'right')
           .attr('x', 0)
           .attr('y', 0)
@@ -297,9 +303,9 @@ sucrose.models.lineWithFocusChart = function() {
         .ticks( availableWidth / 100 )
         .tickSize(-availableHeight2, 0);
 
-      g.select('.sc-context .sc-x.sc-axis')
+      g.select('.sc-context .sc-axis-wrap.sc-axis-x')
           .attr('transform', 'translate(0,' + y2.range()[0] + ')');
-      d3.transition(g.select('.sc-context .sc-x.sc-axis'))
+      d3.transition(g.select('.sc-context .sc-axis-wrap.sc-axis-x'))
           .call(x2Axis);
 
 
@@ -308,10 +314,10 @@ sucrose.models.lineWithFocusChart = function() {
         .ticks( availableHeight2 / 36 )
         .tickSize( -availableWidth, 0);
 
-      d3.transition(g.select('.sc-context .sc-y.sc-axis'))
+      d3.transition(g.select('.sc-context .sc-axis-wrap.sc-axis-y'))
           .call(y2Axis);
 
-      g.select('.sc-context .sc-x.sc-axis')
+      g.select('.sc-context .sc-axis-wrap.sc-axis-x')
           .attr('transform', 'translate(0,' + y2.range()[0] + ')');
 
       //------------------------------------------------------------
@@ -384,9 +390,7 @@ sucrose.models.lineWithFocusChart = function() {
         brushExtent = brush.empty() ? null : brush.extent();
         extent = brush.empty() ? x2.domain() : brush.extent();
 
-
-        dispatch.brush({extent: extent, brush: brush});
-
+        dispatch.call('brush', this, {extent: extent, brush: brush});
 
         updateBrushBG();
 
@@ -408,9 +412,9 @@ sucrose.models.lineWithFocusChart = function() {
 
 
         // Update Main (Focus) Axes
-        d3.transition(g.select('.sc-focus .sc-x.sc-axis'))
+        d3.transition(g.select('.sc-focus .sc-axis-wrap.sc-axis-x'))
             .call(xAxis);
-        d3.transition(g.select('.sc-focus .sc-y.sc-axis'))
+        d3.transition(g.select('.sc-focus .sc-axis-wrap.sc-axis-y'))
             .call(yAxis);
       }
 
@@ -427,12 +431,12 @@ sucrose.models.lineWithFocusChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  lines.dispatch.on('elementMouseover.tooltip', function(e) {
-    dispatch.tooltipShow(e);
+  lines.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
   });
 
   lines.dispatch.on('elementMouseout.tooltip', function(e) {
-    dispatch.tooltipHide(e);
+    dispatch.call('tooltipHide', this);
   });
 
   dispatch.on('tooltipHide', function() {
@@ -456,7 +460,7 @@ sucrose.models.lineWithFocusChart = function() {
   chart.x2Axis = x2Axis;
   chart.y2Axis = y2Axis;
 
-  d3.rebind(chart, lines, 'defined', 'isArea', 'size', 'xDomain', 'yDomain', 'forceX', 'forceY', 'interactive', 'clipEdge', 'clipVoronoi', 'id');
+  fc.rebind(chart, lines, 'defined', 'isArea', 'size', 'xDomain', 'yDomain', 'forceX', 'forceY', 'interactive', 'clipEdge', 'clipVoronoi', 'id');
 
   chart.x = function(_) {
     if (!arguments.length) return lines.x;
@@ -507,7 +511,7 @@ sucrose.models.lineWithFocusChart = function() {
 
   chart.color = function(_) {
     if (!arguments.length) return color;
-    color =sucrose.utils.getColor(_);
+    color =utility.getColor(_);
     legend.color(color);
     return chart;
   };

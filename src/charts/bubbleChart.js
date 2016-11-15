@@ -1,4 +1,9 @@
-sucrose.models.bubbleChart = function() {
+import d3 from 'd3';
+import utility from '../utility.js';
+import tooltip from '../tooltip.js';
+import models from '../models/models.js';
+
+export default function bubbleChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -17,19 +22,14 @@ sucrose.models.bubbleChart = function() {
       xDomain,
       yDomain,
       delay = 200,
+      duration = 0,
       groupBy = function(d) { return d.y; },
       filterBy = function(d) { return d.y; },
       clipEdge = false, // if true, masks lines within x and y scale
       seriesLength = 0,
       reduceYTicks = false, // if false a tick will show for every data point
-      bubbleClick = function(e) { return; },
-      format = d3.time.format('%Y-%m-%d'),
-      tooltip = null,
+      format = d3.timeFormat('%Y-%m-%d'),
       tooltips = true,
-      tooltipContent = function(key, x, y, e, graph) {
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
-      },
       x,
       y,
       state = {},
@@ -39,7 +39,7 @@ sucrose.models.bubbleChart = function() {
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
@@ -47,37 +47,33 @@ sucrose.models.bubbleChart = function() {
   var xValueFormat = function(d, labels, isDate) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)] || d;
-          return isDate ? sucrose.utils.dateFormat(val, 'MMM', chart.locality()) : val;
+          return isDate ? utility.dateFormat(val, 'MMM', chart.locality()) : val;
       };
   var yValueFormat = function(d, labels, isCurrency) {
           var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
             d : labels[parseInt(d, 10)].key || d;
-          return sucrose.utils.numberFormatSI(val, 2, isCurrency, chart.locality());
+          return utility.numberFormatSI(val, 2, isCurrency, chart.locality());
       };
 
-  var scatter = sucrose.models.scatter()
+  var scatter = models.scatter()
         .padData(true)
         .padDataOuter(-1)
         .size(function(d) { return d.y; })
         .sizeRange([256, 1024])
         .singlePoint(true),
-      xAxis = sucrose.models.axis()
-        .orient('bottom')
-        .valueFormat(xValueFormat)
-        .tickSize(0)
-        .tickPadding(4)
-        .highlightZero(false)
-        .showMaxMin(false)
-        .ticks(d3.time.months, 1),
-      yAxis = sucrose.models.axis()
-        .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(7)
-        .highlightZero(false)
-        .showMaxMin(false),
-      legend = sucrose.models.legend()
+      model = scatter,
+      xAxis = models.axis(),
+      yAxis = models.axis(),
+      legend = models.legend()
         .align('center')
         .key(function(d) { return d.key + '%'; });
+
+  var tooltip = null;
+
+  var tooltipContent = function(key, x, y, e, graph) {
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
 
   var showTooltip = function(eo, offsetElement, properties) {
     var key = eo.series.key,
@@ -86,8 +82,10 @@ sucrose.models.bubbleChart = function() {
         content = tooltipContent(key, x, y, eo, chart),
         gravity = eo.value < 0 ? 'n' : 's';
 
-    tooltip = sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+    return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
   };
+
+  var seriesClick = function(data, e, chart) { return; };
 
   //============================================================
 
@@ -96,53 +94,38 @@ sucrose.models.bubbleChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          container = d3.select(this);
+          container = d3.select(this),
+          modelClass = 'bubble';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
 
-      var filteredData,
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
+
+      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
+          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+
+      var modelData,
           timeExtent,
           xD,
           yD,
-          yValues,
-          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
-
-      chart.container = this;
+          yValues;
 
       chart.update = function() {
-        container.transition().call(chart);
+        container.transition().duration(duration).call(chart);
       };
+
+      chart.container = this;
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        if (d && d.length) {
-          container.selectAll('.sc-noData').remove();
-          return false;
-        }
-
-        container.select('.sucrose.sc-wrap').remove();
-
-        var w = width || parseInt(container.style('width'), 10) || 960,
-            h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
-
-        noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
-          .attr('dy', '-.7em')
-          .style('text-anchor', 'middle');
-
-        noDataText
-          .attr('x', margin.left + w / 2)
-          .attr('y', margin.top + h / 2)
-          .text(function(d) {
-            return d;
-          });
-
-        return true;
+        var hasData = d && d.length,
+            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
+            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -162,14 +145,14 @@ sucrose.models.bubbleChart = function() {
                 d3.merge(
                   data.map(function(d) {
                     return d.values.map(function(d, i) {
-                      return d3.time.format('%Y-%m-%d').parse(getX(d));
+                      return d3.timeParse('%Y-%m-%d')(getX(d));
                     });
                   })
                 )
               );
         var timeRange = [
-          d3.time.month.floor(timeExtent[0]),
-          d3.time.day.offset(d3.time.month.ceil(timeExtent[1]), -1)
+          d3.timeMonth.floor(timeExtent[0]),
+          d3.timeDay.offset(d3.timeMonth.ceil(timeExtent[1]), -1)
         ];
         return timeRange;
       }
@@ -179,10 +162,10 @@ sucrose.models.bubbleChart = function() {
         function daysInMonth(date) {
           return 32 - new Date(date.getFullYear(), date.getMonth(), 32).getDate();
         }
-        var timeRange = d3.time.month.range(timeDomain[0], timeDomain[1]);
+        var timeRange = d3.timeMonth.range(timeDomain[0], timeDomain[1]);
         var timeTicks =
               timeRange.map(function(d) {
-                return d3.time.day.offset(d3.time.month.floor(d), daysInMonth(d) / 2 - 1);
+                return d3.timeDay.offset(d3.timeMonth.floor(d), daysInMonth(d) / 2 - 1);
               });
         return timeTicks;
       }
@@ -200,7 +183,7 @@ sucrose.models.bubbleChart = function() {
             gOffset = gHeight * 0.25,
             gDomain = [0, 1],
             gRange = [0, 1],
-            gScale = d3.scale.linear().domain(gDomain).range(gRange),
+            gScale = d3.scaleLinear().domain(gDomain).range(gRange),
             yValues = [],
             total = 0;
 
@@ -252,30 +235,30 @@ sucrose.models.bubbleChart = function() {
 
       // Now that group calculations are done,
       // group the data by filter so that legend filters
-      filteredData = d3.nest()
+      var nestedData = d3.nest()
         .key(filterBy)
         .entries(data);
 
       //add series index to each data point for reference
-      filteredData = filteredData
+      modelData = nestedData
         .sort(function(a, b) {
           //sort legend by key
           return parseInt(a.key, 10) < parseInt(b.key, 10) ? -1 : parseInt(a.key, 10) > parseInt(b.key, 10) ? 1 : 0;
         })
         .map(function(d, i) {
-          d.series = i;
+          d.seriesIndex = i;
           d.classes = d.values[0].classes;
           d.color = d.values[0].color;
           return d;
         });
 
-      xD = getTimeDomain(filteredData);
+      xD = getTimeDomain(modelData);
 
       yValues = getGroupTicks(data);
 
       yD = d3.extent(
             d3.merge(
-              filteredData.map(function(d) {
+              modelData.map(function(d) {
                 return d.values.map(function(d, i) {
                   return getY(d, i);
                 });
@@ -290,9 +273,21 @@ sucrose.models.bubbleChart = function() {
       y = scatter.yScale();
 
       xAxis
+        .orient('bottom')
+        .valueFormat(xValueFormat)
+        .tickSize(0)
+        .tickPadding(4)
+        .highlightZero(false)
+        .showMaxMin(false)
+        .ticks(d3.timeMonths, 1)
         .scale(x)
         .tickValues(getTimeTicks(xD));
       yAxis
+        .orient('left')
+        .valueFormat(yValueFormat)
+        .tickPadding(7)
+        .highlightZero(false)
+        .showMaxMin(false)
         .scale(y)
         .ticks(yValues.length)
         .tickValues(yValues.map(function(d, i) {
@@ -304,68 +299,82 @@ sucrose.models.bubbleChart = function() {
 
       chart.render = function() {
 
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         // Chart layout variables
-        var renderWidth = width || parseInt(container.style('width'), 10) || 960,
-            renderHeight = height || parseInt(container.style('height'), 10) || 400,
-            availableWidth = renderWidth - margin.left - margin.right,
-            availableHeight = renderHeight - margin.top - margin.bottom,
-            innerWidth = availableWidth,
-            innerHeight = availableHeight,
-            innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight;
+
+        // Chart layout variables
+        renderWidth = width || containerWidth || 960;
+        renderHeight = height || containerHeight || 400;
+        availableWidth = renderWidth - margin.left - margin.right;
+        availableHeight = renderHeight - margin.top - margin.bottom;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
         // Header variables
         var maxBubbleSize = Math.sqrt(scatter.sizeRange()[1] / Math.PI),
             headerHeight = 0,
             titleBBox = {width: 0, height: 0},
+            legendHeight = 0,
             trans = '';
 
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
 
-        var wrap = container.selectAll('g.sc-wrap.sc-bubbleChart').data([filteredData]),
-            gEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-bubbleChart').append('g'),
-            g = wrap.select('g').attr('class', 'sc-chartWrap');
+        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-        gEnter.append('rect').attr('class', 'sc-background')
+        wrap_entr.append('rect').attr('class', 'sc-background')
           .attr('x', -margin.left)
           .attr('y', -margin.top)
           .attr('fill', '#FFF');
 
-        g.select('.sc-background')
-          .attr('width', availableWidth + margin.left + margin.right)
-          .attr('height', availableHeight + margin.top + margin.bottom);
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
 
-        gEnter.append('g').attr('class', 'sc-titleWrap');
-        var titleWrap = g.select('.sc-titleWrap');
-        gEnter.append('g').attr('class', 'sc-x sc-axis');
-        var xAxisWrap = g.select('.sc-x.sc-axis');
-        gEnter.append('g').attr('class', 'sc-y sc-axis');
-        var yAxisWrap = g.select('.sc-y.sc-axis');
-        gEnter.append('g').attr('class', 'sc-bubblesWrap');
-        var bubblesWrap = g.select('.sc-bubblesWrap');
-        gEnter.append('g').attr('class', 'sc-legendWrap');
-        var legendWrap = g.select('.sc-legendWrap');
+        wrap_entr.append('g').attr('class', 'sc-title-wrap');
+        var title_wrap = wrap.select('.sc-title-wrap');
+
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+
+        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+        var legend_wrap = wrap.select('.sc-legend-wrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
         //------------------------------------------------------------
         // Title & Legend
 
-        titleWrap.select('.sc-title').remove();
+        title_wrap.select('.sc-title').remove();
 
         if (showTitle) {
-          titleWrap
+          title_wrap
             .append('text')
               .attr('class', 'sc-title')
               .attr('x', direction === 'rtl' ? availableWidth : 0)
               .attr('y', 0)
               .attr('dy', '.75em')
               .attr('text-anchor', 'start')
-              .text(properties.title)
               .attr('stroke', 'none')
-              .attr('fill', 'black');
+              .attr('fill', 'black')
+              .text(properties.title);
 
-          titleBBox = sucrose.utils.getTextBBox(g.select('.sc-title'));
+          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
           headerHeight += titleBBox.height;
         }
 
@@ -375,24 +384,25 @@ sucrose.models.bubbleChart = function() {
             .strings(chart.strings().legend)
             .align('center')
             .height(availableHeight - headerHeight);
-          legendWrap
-            .datum(filteredData)
+          legend_wrap
+            .datum(modelData)
             .call(legend);
-
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = sucrose.utils.getTextBBox(legendWrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
               ypos = titleBBox.height;
+
           if (legendTop) {
             ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
             ypos = - legend.margin().top;
           }
-          legendWrap
+
+          legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
 
           headerHeight += legendTop ? 12 : legend.height();
@@ -404,19 +414,19 @@ sucrose.models.bubbleChart = function() {
         //------------------------------------------------------------
         // Main Chart Components
 
-        scatter
+        model
           .width(innerWidth)
           .height(innerHeight)
           .id(chart.id())
           .xDomain(xD)
           .yDomain(yD);
 
-        bubblesWrap
-          .datum(filteredData.filter(function(d) {
+        model_wrap
+          .datum(modelData.filter(function(d) {
             return !d.disabled;
           }))
-          .transition().duration(chart.delay())
-            .call(scatter);
+          .transition().duration(duration)
+            .call(model);
 
         innerMargin.top += maxBubbleSize;
 
@@ -429,13 +439,13 @@ sucrose.models.bubbleChart = function() {
         function setInnerMargins() {
           innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
           innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
-          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
           innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
         }
 
         function setInnerDimensions() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-          innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
+          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
           scatter.resetDimensions(innerWidth, innerHeight);
         }
@@ -445,9 +455,9 @@ sucrose.models.bubbleChart = function() {
           .margin(innerMargin)
           .tickFormat(function(d, i) {
             var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
-            return sucrose.utils.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
+            return utility.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
           });
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
         yAxisMargin = yAxis.margin();
@@ -461,8 +471,9 @@ sucrose.models.bubbleChart = function() {
           .tickFormat(function(d) {
             return xAxis.valueFormat()(d, null, xIsDatetime);
           });
-        xAxisWrap
+        xAxis_wrap
           .call(xAxis);
+
         // reset inner dimensions
         xAxisMargin = xAxis.margin();
         setInnerMargins();
@@ -472,30 +483,30 @@ sucrose.models.bubbleChart = function() {
         yAxis
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
-        yAxisWrap
+        yAxis_wrap
           .call(yAxis);
+        yAxis_wrap.select('path.domain')
+          .attr('d', "M0,0V0.5H0V" + innerHeight);
 
         // final call to lines based on new dimensions
-        bubblesWrap
+        model_wrap
           .transition().duration(chart.delay())
             .call(scatter);
 
         //------------------------------------------------------------
         // Final repositioning
 
-        innerMargin.top += headerHeight;
-
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxisWrap
+        xAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
         trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
         trans += innerMargin.top;
-        yAxisWrap
+        yAxis_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        bubblesWrap
+        model_wrap
           .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
 
       };
@@ -511,24 +522,23 @@ sucrose.models.bubbleChart = function() {
       legend.dispatch.on('legendClick', function(d, i) {
         d.disabled = !d.disabled;
 
-        if (!filteredData.filter(function(d) { return !d.disabled; }).length) {
-          filteredData.map(function(d) {
+        if (!modelData.filter(function(d) { return !d.disabled; }).length) {
+          modelData.map(function(d) {
             d.disabled = false;
             container.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
 
-        state.disabled = filteredData.map(function(d) { return !!d.disabled; });
-
-        dispatch.stateChange(state);
+        state.disabled = modelData.map(function(d) { return !!d.disabled; });
+        dispatch.call('stateChange', this, state);
 
         container.transition().call(chart.render);
       });
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          showTooltip(eo, that.parentNode);
+          tooltip = showTooltip(eo, that.parentNode);
         }
       });
 
@@ -557,15 +567,15 @@ sucrose.models.bubbleChart = function() {
       });
 
       dispatch.on('chartClick', function() {
-        dispatch.tooltipHide();
+        dispatch.call('tooltipHide', this);
         if (legend.enabled()) {
-          legend.dispatch.closeMenu();
+          legend.dispatch.call('closeMenu', this);
         }
       });
 
-      scatter.dispatch.on('elementClick', function(eo) {
-        dispatch.chartClick();
-        bubbleClick(eo);
+      model.dispatch.on('elementClick', function(eo) {
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart);
       });
 
     });
@@ -577,16 +587,16 @@ sucrose.models.bubbleChart = function() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  scatter.dispatch.on('elementMouseover.tooltip', function(eo) {
-    dispatch.tooltipShow(eo);
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
+    dispatch.call('tooltipShow', this, eo);
   });
 
-  scatter.dispatch.on('elementMousemove.tooltip', function(e) {
-    dispatch.tooltipMove(e);
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
+    dispatch.call('tooltipMove', this, e);
   });
 
-  scatter.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.tooltipHide();
+  model.dispatch.on('elementMouseout.tooltip', function() {
+    dispatch.call('tooltipHide', this);
   });
 
   //============================================================
@@ -600,24 +610,24 @@ sucrose.models.bubbleChart = function() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  d3.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
-  d3.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
-  d3.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+  fc.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, d.series);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
     var classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series;
+          return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
         color = function(d, i) {
-          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.series / params.l);
+          return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
       case 'class':
@@ -625,28 +635,28 @@ sucrose.models.bubbleChart = function() {
           return 'inherit';
         };
         classes = function(d, i) {
-          var iClass = (d.series * (params.step || 1)) % 14;
+          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-group sc-series-' + d.series + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || sucrose.utils.defaultColor()(d, d.series);
+          return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
-          return 'sc-group sc-series-' + d.series + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
     var fill = (!params.gradient) ? color : function(d, i) {
-      return scatter.gradient(d, d.series);
+      return model.gradient()(d, d.seriesIndex);
     };
 
-    scatter.color(color);
-    scatter.fill(fill);
-    scatter.classes(classes);
+    model.color(color);
+    model.fill(fill);
+    model.classes(classes);
 
     legend.color(color);
     legend.classes(classes);
@@ -698,14 +708,6 @@ sucrose.models.bubbleChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) {
       return tooltips;
@@ -730,19 +732,57 @@ sucrose.models.bubbleChart = function() {
     return chart;
   };
 
+  chart.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    // model.direction(_);
+    xAxis.direction(_);
+    yAxis.direction(_);
+    legend.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) {
+      return duration;
+    }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
   chart.delay = function(_) {
     if (!arguments.length) {
       return delay;
     }
     delay = _;
+    model.delay(_);
     return chart;
   };
 
-  chart.bubbleClick = function(_) {
+  chart.seriesClick = function(_) {
     if (!arguments.length) {
-      return bubbleClick;
+      return seriesClick;
     }
-    bubbleClick = _;
+    seriesClick = _;
+    return chart;
+  };
+
+  chart.colorFill = function(_) {
     return chart;
   };
 
@@ -762,33 +802,7 @@ sucrose.models.bubbleChart = function() {
     return chart;
   };
 
-  chart.colorFill = function(_) {
-    return chart;
-  };
-
-  chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
-    direction = _;
-    yAxis.direction(_);
-    legend.direction(_);
-    return chart;
-  };
-
   //============================================================
 
   return chart;
-};
+}

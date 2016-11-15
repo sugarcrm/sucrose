@@ -1,5 +1,9 @@
+import d3 from 'd3';
+import utility from '../utility.js';
+import tooltip from '../tooltip.js';
+import models from '../models/models.js';
 
-sucrose.models.globeChart = function() {
+export default function globeChart() {
 
   // http://cldr.unicode.org/
   // http://www.geonames.org/countries/
@@ -31,9 +35,9 @@ sucrose.models.globeChart = function() {
       showControls = false,
       showLegend = true,
       direction = 'ltr',
-      tooltip = null,
       tooltips = true,
       initialTilt = 0,
+      initialRotate = 100,
       x,
       y,
       state = {},
@@ -45,7 +49,10 @@ sucrose.models.globeChart = function() {
       showLabels = true,
       autoSpin = false,
       showGraticule = true,
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, i); },
+      world_map = [],
+      country_map = {},
+      country_labels = {},
+      color = function(d, i) { return utility.defaultColor()(d, i); },
       classes = function(d, i) { return 'sc-country-' + i; },
       fill = color,
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout');
@@ -55,15 +62,12 @@ sucrose.models.globeChart = function() {
   // Private Variables
   //------------------------------------------------------------
 
-  var projection = d3.geo.orthographic()
-        .clipAngle(90)
-        .precision(0.1);
-
-  var path = d3.geo.path();
-
-  var graticule = d3.geo.graticule();
-
+  var projection = d3.geoOrthographic().precision(0.1);
+  var path = d3.geoPath().projection(projection);
+  var graticule = d3.geoGraticule();
   var colorLimit = 0;
+
+  var tooltip = null;
 
   function tooltipContent(d) {
     return '<p><b>' + d.name + '</b></p>' +
@@ -87,10 +91,14 @@ sucrose.models.globeChart = function() {
     selection.each(function(chartData) {
 
       var that = this,
-          node = d3.select('#' + id + ' svg').node(),
-          container = d3.select(this);
+          container = d3.select(this),
+          node = d3.select('#' + id + ' svg').node();
+
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null;
+
+      var containerWidth = parseInt(container.style('width'), 10),
+          containerHeight = parseInt(container.style('height'), 10);
 
       var tooltips0 = tooltips,
           m0, n0, o0;
@@ -108,10 +116,7 @@ sucrose.models.globeChart = function() {
       // Globe variables
       var world,
           active_country = false,
-          world_map = [],
-          country_map = {},
-          country_label = {},
-          world_view = {rotate: [100, initialTilt], scale: 1, zoom: 1},
+          world_view = {rotate: [initialRotate, initialTilt], scale: 1, zoom: 1},
           country_view = {rotate: [null, null], scale: null, zoom: null},
           iRotation;
 
@@ -121,37 +126,19 @@ sucrose.models.globeChart = function() {
       chart.container = this;
 
       var fillGradient = function(d, i) {
-            return sucrose.utils.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+            return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
           };
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        if (d && d.length) {
-          container.selectAll('.sc-noData').remove();
-          return false;
-        }
-
-        container.select('.sucrose.sc-wrap').remove();
-
-        var w = width || parseInt(container.style('width'), 10) || 960,
-            h = height || parseInt(container.style('height'), 10) || 400,
-            noDataText = container.selectAll('.sc-noData').data([chart.strings().noData]);
-
-        noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
-          .attr('dy', '-.7em')
-          .style('text-anchor', 'middle');
-
-        noDataText
-          .attr('x', margin.left + w / 2)
-          .attr('y', margin.top + h / 2)
-          .text(function(d) {
-            return d;
-          });
-
-        return true;
+        var hasData = d && d.length,
+            x, y;
+        if (hasData) return false;
+        x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -166,59 +153,95 @@ sucrose.models.globeChart = function() {
       //------------------------------------------------------------
       // Setup svgs and skeleton of chart
 
-      var wrap = container.selectAll('.sucrose.sc-wrap').data([1]);
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([1]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-globe');
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      var gEnter = wrap.enter().append('g')
-            .attr('class', 'sucrose sc-wrap sc-globeChart')
-            .attr('id', 'sc-chart-' + id)
-              .append('g')
-              .attr('class', 'sc-chartWrap');
-
-      gEnter.append('defs');
+      wrap_entr.append('defs');
       var defs = wrap.select('defs');
 
-      gEnter.append('svg:rect')
-        .attr('class', 'sc-chartBackground')
+      wrap_entr.append('svg:rect')
+        .attr('class', 'sc-chart-background')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-      var backg = wrap.select('.sc-chartBackground');
+      var backg = wrap.select('.sc-chart-background');
 
-      var globeEnter = gEnter.append('g')
-            .attr('class', 'sc-globe');
-      var globeChart = wrap.select('.sc-globe');
+      var globe_entr = wrap_entr.append('g').attr('class', 'sc-globe');
+      var globe = wrap.select('.sc-globe');
 
-      globeEnter.append('path')
+      globe_entr.append('path')
         .datum({type: 'Sphere'})
         .attr('class', 'sphere');
       var sphere = d3.select('.sphere');
 
       if (showGraticule) {
-        globeEnter.append('path')
+        globe_entr.append('path')
           .datum(graticule)
           .attr('class', 'graticule');
         var grid = d3.select('.graticule');
       }
 
       // zoom and pan
-      var zoom = d3.behavior.zoom();
-      zoom
-        .on('zoom', function () {
-          var scale = calcScale(d3.event.scale);
-          projection.scale(scale);
-          refresh();
-        });
-      globeChart.call(zoom);
-
-      globeChart
-        .on('mousedown', mousedown);
-
-      wrap
-        .on('mousemove', mousemove)
-        .on('mouseup', mouseup);
+      var zoom = d3.zoom()
+            .on('start', zoomStart)
+            .on('zoom', zoomMove)
+            .on('end', zoomEnd);
+      globe.call(zoom);
 
       sphere
         .on('click', function () {
           unLoadCountry();
         });
+
+      function zoomStart() {
+        m0 = normalizeOffset(d3.event.sourceEvent);
+        n0 = projection.invert(m0);
+        o0 = projection.rotate();
+
+        if (tooltips) {
+          sucrose.tooltip.cleanup();
+          tooltips = false;
+        }
+
+        if (autoSpin) {
+          clearInterval(iRotation);
+        }
+      }
+
+      function zoomMove() {
+        if (!m0) {
+          return;
+        }
+        var scale = calcScale(d3.event.transform.k);
+        var m1, n1, o1;
+
+        m1 = normalizeOffset(d3.event.sourceEvent);
+        n1 = projection.invert(m1);
+
+        if (!n1[0]) {
+          return;
+        }
+
+        o1 = [o0[0] + n1[0] - n0[0], (country_view.rotate[1] || world_view.rotate[1])];
+        o0 = [o1[0], o1[1]];
+
+        projection
+          .rotate(o1)
+          .scale(scale);
+
+        refresh();
+      }
+
+      function zoomEnd() {
+        m0 = null;
+        tooltips = tooltips0;
+      }
+
+      function normalizeOffset(e) {
+        var rect = node.getBoundingClientRect(),
+            offsetX = (e ? e.clientX || 0 : 0) - rect.left,
+            offsetY = (e ? e.clientY || 0 : 0) - rect.top;
+        return [offsetX, offsetY];
+      }
 
       //------------------------------------------------------------
       // Main chart draw methods
@@ -230,7 +253,7 @@ sucrose.models.globeChart = function() {
       chart.resize = function () {
         var scale, translate;
         calcDimensions();
-        scale = calcScale(zoom.scale());
+        scale = calcScale(projection.scale());
         translate = calcTranslate();
         backg
           .attr('width', availableWidth)
@@ -246,9 +269,9 @@ sucrose.models.globeChart = function() {
         calcDimensions();
 
         projection
-          .scale(calcScale(1))
           .translate(calcTranslate())
-          .rotate(world_view.rotate);
+          .rotate(world_view.rotate)
+          .scale(calcScale(world_view.scale));
 
         path.projection(projection);
 
@@ -271,25 +294,11 @@ sucrose.models.globeChart = function() {
 
       chart.render();
 
-      queue()
-        .defer(d3.json, 'data/geo/world-countries-topo-110.json')
-        .defer(d3.json, 'data/geo/usa-states-topo-110.json')
-        .defer(d3.json, 'data/geo/cldr_en.json')
-        .await(function (error, world, country, labels) {
-          if (error) {
-            return;
-          }
+      loadChart(world_map, 'countries');
 
-          world_map = topojson.feature(world, world.objects.countries).features;
-          country_map['USA'] = topojson.feature(country, country.objects.states).features;
-          country_label = labels;
-
-          loadChart(world_map, 'countries');
-
-          if (autoSpin) {
-            iRotation = setInterval(spin, 10);
-          }
-        });
+      if (autoSpin) {
+        iRotation = setInterval(spin, 10);
+      }
 
       //------------------------------------------------------------
       // Internal functions
@@ -314,36 +323,39 @@ sucrose.models.globeChart = function() {
       function loadChart(data, type) {
         colorLimit = results._total;
 
-        world = globeEnter.append('g')
-            .attr('class', type)
-          .selectAll('path')
-            .data(data)
-          .enter().append('path')
-            .attr('d', clip)
-            .attr('class', classes)
-            .style('fill', function (d, i) {
-              d.amount = amount(d);
-              return fill(d, d.properties.mapcolor13 || i);
-            });
+        var world_bind = globe_entr.append('g').attr('class', type)
+              .selectAll('path').data(data);
+        var world_entr = world_bind.enter().append('path')
+              .attr('d', clip)
+              .attr('class', classes)
+              .style('fill', function (d, i) {
+                d.amount = amount(d);
+                return fill(d, d.properties.mapcolor13 || i);
+              });
+        world = globe.selectAll('path').merge(world_entr);
 
-        world
+        world_entr
           .on('click', loadCountry)
           .on('mouseover', function (d, i, j) {
+            if (!d.properties) {
+              return;
+            }
             var eo = buildEventObject(d3.event, d, i, j);
-            dispatch.tooltipShow(eo);
-          })
-          .on('mouseout', function () {
-            dispatch.tooltipHide();
+            dispatch.call('tooltipShow', this, eo);
           })
           .on('mousemove', function(d, i, j) {
-            dispatch.tooltipMove(d3.event);
+            var e = d3.event;
+            dispatch.call('tooltipMove', this, e);
+          })
+          .on('mouseout', function () {
+            dispatch.call('tooltipHide', this);
           });
 
         function buildEventObject(e, d, i, j) {
           var eo = {
               point: d,
               e: e,
-              name: (country_label[d.properties.iso_a2] || d.properties.name),
+              name: (country_labels[d.properties.iso_a2] || d.properties.name),
               amount: amount(d)
           };
           return eo;
@@ -366,31 +378,25 @@ sucrose.models.globeChart = function() {
           sucrose.tooltip.cleanup();
         }
 
-        world_view = {
-          rotate: projection.rotate(),
-          scale: projection.scale(),
-          zoom: zoom.scale()
-        };
-
-        var centroid = d3.geo.centroid(d);
-        projection.rotate([-centroid[0], -centroid[1]]);
-
+        var centroid = d3.geoCentroid(d);
         var bounds = path.bounds(d);
         var hscale = availableWidth  / (bounds[1][0] - bounds[0][0]);
         var vscale = availableHeight / (bounds[1][1] - bounds[0][1]);
+        var scale = Math.min(availableWidth * hscale, availableHeight * vscale) / 2;
+        var rotate = [-centroid[0], -centroid[1]];
 
-        if (availableWidth * hscale < availableHeight * vscale) {
-          projection.scale(availableWidth * hscale / 2);
-          zoom.scale(hscale);
-        } else {
-          projection.scale(availableHeight * vscale / 2);
-          zoom.scale(vscale);
-        }
+        world_view = {
+          rotate: projection.rotate(),
+          scale: projection.scale()
+        };
+
+        projection
+          .rotate(rotate)
+          .scale(scale);
 
         country_view = {
           rotate: projection.rotate(),
-          scale: projection.scale(),
-          zoom: zoom.scale()
+          scale: projection.scale()
         };
 
         // Flatten the results and include the state-level
@@ -398,13 +404,10 @@ sucrose.models.globeChart = function() {
         var obj = region_results(d);
         obj.parent = results;
         results = obj;
-
         colorLimit = results._total;
 
         active_country = d3.select(this);
-
         loadChart(country_map[d.id], 'states');
-
         active_country.style('display', 'none');
 
         refresh();
@@ -414,15 +417,23 @@ sucrose.models.globeChart = function() {
         if (!active_country) {
           return;
         }
+
+        projection
+          .rotate(world_view.rotate)
+          .scale(world_view.scale);
+
+        country_view = {
+          rotate: [null, null],
+          scale: null
+        };
+
         results = results.parent;
         colorLimit = results._total;
+
         active_country.style('display', 'inline');
         d3.select('.states').remove();
         active_country = false;
-        country_view = {rotate: [null, null], scale: null, zoom: null};
-        projection.rotate(world_view.rotate);
-        projection.scale(world_view.scale);
-        zoom.scale(world_view.zoom);
+
         refresh();
       }
 
@@ -438,15 +449,6 @@ sucrose.models.globeChart = function() {
         return region_results(d)._total || 0;
       }
 
-      function clip(d) {
-        return path(d) || 'M0,0Z';
-      }
-
-      function refresh(duration) {
-        globeChart.selectAll('path')
-          .attr('d', clip);
-      }
-
       function spin() {
         var o0 = projection.rotate(),
             m1 = [10, 0],
@@ -459,58 +461,18 @@ sucrose.models.globeChart = function() {
         refresh();
       }
 
+      function refresh(duration) {
+        globe.selectAll('path')
+          .attr('d', clip);
+      }
+
+      function clip(d) {
+        return path(d) || 'M0,0Z';
+      }
+
       //============================================================
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
-
-      function mousedown() {
-        d3.event.preventDefault();
-
-        m0 = normalizeOffset(d3.event);
-        n0 = projection.invert(m0);
-        o0 = projection.rotate();
-
-        if (tooltips) {
-          sucrose.tooltip.cleanup();
-          tooltips = false;
-        }
-
-        if (autoSpin) {
-          clearInterval(iRotation);
-        }
-      }
-
-      function normalizeOffset(e) {
-        var rect = node.getBoundingClientRect(),
-            offsetX = e.clientX - rect.left,
-            offsetY = e.clientY - rect.top;
-        return [offsetX, offsetY];
-      }
-
-      function mousemove() {
-        var m1, n1, o1;
-
-        if (!m0) {
-          return;
-        }
-
-        m1 = normalizeOffset(d3.event);
-        n1 = projection.invert(m1);
-
-        if (!n1[0]) {
-          return;
-        }
-
-        o1 = [o0[0] + n1[0] - n0[0], (country_view.rotate[1] || world_view.rotate[1])];
-        o0 = [o1[0], o1[1]];
-
-        rotate(o1);
-      }
-
-      function mouseup() {
-        m0 = null;
-        tooltips = tooltips0;
-      }
 
       dispatch.on('tooltipShow', function(eo) {
           if (tooltips) {
@@ -549,10 +511,10 @@ sucrose.models.globeChart = function() {
 
       // dispatch.on('chartClick', function() {
       //     if (controls.enabled()) {
-      //       controls.dispatch.closeMenu();
+      //       controls.dispatch.call('closeMenu', this);
       //     }
       //     if (legend.enabled()) {
-      //       legend.dispatch.closeMenu();
+      //       legend.dispatch.call('closeMenu', this);
       //     }
       //   });
 
@@ -574,7 +536,7 @@ sucrose.models.globeChart = function() {
     var type = arguments[0],
         params = arguments[1] || {};
     var color = function(d, i) {
-          return sucrose.utils.defaultColor()(d, i);
+          return utility.defaultColor()(d, i);
         };
     var classes = function(d, i) {
           return 'sc-country-' + i + (d.classes ? ' ' + d.classes : '');
@@ -659,14 +621,6 @@ sucrose.models.globeChart = function() {
     return chart;
   };
 
-  chart.tooltip = function(_) {
-    if (!arguments.length) {
-      return tooltip;
-    }
-    tooltip = _;
-    return chart;
-  };
-
   chart.tooltips = function(_) {
     if (!arguments.length) {
       return tooltips;
@@ -717,7 +671,7 @@ sucrose.models.globeChart = function() {
 
   chart.y = function(_) {
     if (!arguments.length) return getY;
-    getY = d3.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -753,7 +707,30 @@ sucrose.models.globeChart = function() {
     return chart;
   };
 
+  chart.worldMap = function(_) {
+    if (!arguments.length) {
+      return world_map;
+    }
+    world_map = _;
+    return chart;
+  };
+
+  chart.countryMap = function(_) {
+    if (!arguments.length) {
+      return country_map;
+    }
+    country_map = _;
+    return chart;
+  };
+
+  chart.countryLabels = function(_) {
+    if (!arguments.length) {
+      return country_labels;
+    }
+    country_labels = _;
+    return chart;
+  };
   //============================================================
 
   return chart;
-};
+}

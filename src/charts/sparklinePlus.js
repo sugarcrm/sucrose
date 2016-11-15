@@ -1,11 +1,15 @@
+import d3 from 'd3';
+import utility from '../utility.js';
+import tooltip from '../tooltip.js';
+import models from '../models/models.js';
 
-sucrose.models.sparklinePlus = function() {
+export default function sparklinePlus() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var sparkline = sucrose.models.sparkline();
+  var sparkline = models.sparkline();
 
   var margin = {top: 15, right: 100, bottom: 10, left: 50}
     , width = null
@@ -44,10 +48,10 @@ sucrose.models.sparklinePlus = function() {
       // Display No Data message if there's nothing to show.
 
       if (!data || !data.length) {
-        var noDataText = container.selectAll('.sc-noData').data([noData]);
+        var noDataText = container.selectAll('.sc-no-data').data([noData]);
 
         noDataText.enter().append('text')
-          .attr('class', 'sucrose sc-noData')
+          .attr('class', 'sucrose sc-no-data')
           .attr('dy', '-.7em')
           .style('text-anchor', 'middle');
 
@@ -58,7 +62,7 @@ sucrose.models.sparklinePlus = function() {
 
         return chart;
       } else {
-        container.selectAll('.sc-noData').remove();
+        container.selectAll('.sc-no-data').remove();
       }
 
       //------------------------------------------------------------
@@ -77,14 +81,15 @@ sucrose.models.sparklinePlus = function() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap = container.selectAll('g.sc-wrap.sc-sparklineplus').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparklineplus');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-sparklineplus').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparklineplus');
+      var wrap = container.select('.sc-wrap.sc-sparklineplus').merge(wrap_entr);
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-chart-wrap');
+      var g = container.select('g.sc-chart-wrap').merge(g_entr);
 
-      gEnter.append('g').attr('class', 'sc-sparklineWrap');
-      gEnter.append('g').attr('class', 'sc-valueWrap');
-      gEnter.append('g').attr('class', 'sc-hoverArea');
+      g_entr.append('g').attr('class', 'sc-sparklineWrap');
+      g_entr.append('g').attr('class', 'sc-valueWrap');
+      g_entr.append('g').attr('class', 'sc-hoverArea');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -124,7 +129,7 @@ sucrose.models.sparklinePlus = function() {
 
 
 
-      gEnter.select('.sc-hoverArea').append('rect')
+      g_entr.select('.sc-hoverArea').append('rect')
           .on('mousemove', sparklineHover)
           .on('click', function() { paused = !paused })
           .on('mouseout', function() { index = []; updateValueLine(); });
@@ -225,7 +230,7 @@ sucrose.models.sparklinePlus = function() {
   // expose chart's sub-components
   chart.sparkline = sparkline;
 
-  d3.rebind(chart, sparkline, 'x', 'y', 'xScale', 'yScale', 'color');
+  fc.rebind(chart, sparkline, 'x', 'y', 'xScale', 'yScale', 'color');
 
   chart.margin = function(_) {
     if (!arguments.length) return margin;

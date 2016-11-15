@@ -1,4 +1,7 @@
-sucrose.models.pie = function() {
+import d3 from 'd3';
+import utility from '../utility.js';
+
+export default function pie() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -8,189 +11,232 @@ sucrose.models.pie = function() {
       width = 500,
       height = 500,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getValues = function(d) { return d; },
-      getX = function(d) { return d.key; },
-      getY = function(d) { return d.value; },
-      locality = sucrose.utils.buildLocality(),
-      getDescription = function(d) { return d.description; },
-      valueFormat = function(d) { return d.data ? getY(d.data) : d; },
-      labelFormat = function(d) { return d.data ? getX(d.data) : d; },
-      showLabels = true,
+      getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      getKey = function(d) { return d.key; },
+      getValue = function(d, i) { return d.value; },
+      fmtKey = function(d) { return getKey(d.series || d); },
+      fmtValue = function(d) { return getValue(d.series || d); },
+      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
+      locality = utility.buildLocality(),
+      direction = 'ltr',
+      delay = 0,
+      duration = 0,
+      color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
+      gradient = null,
+      fill = color,
+      textureFill = false,
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
+
+  var showLabels = true,
       showLeaders = true,
       pieLabelsOutside = true,
       donutLabelsOutside = true,
       labelThreshold = 0.01, //if slice percentage is under this, don't show label
       donut = false,
       hole = false,
-      holeFormat = function(holeWrap, data) {
-        var wrap = holeWrap.selectAll('.sc-hole-container').data(data),
-            wrapEnter = wrap.enter().append('g').attr('class', 'sc-hole-container');
-        wrapEnter.append('text')
-          .text(data)
-          .attr('class', 'sc-pie-hole-value')
-          .attr('dy', '.35em')
-          .attr('text-anchor', 'middle')
-          .style('font-size', '50px');
-        wrap.exit().remove();
-      },
       labelSunbeamLayout = false,
       leaderLength = 20,
       textOffset = 5,
       arcDegrees = 360,
       rotateDegrees = 0,
-      startAngle = function(d) {
-        // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
-        return d.startAngle * arcDegrees / 360 + sucrose.utils.angleToRadians(rotateDegrees);
-      },
-      endAngle = function(d) {
-        return d.endAngle * arcDegrees / 360 + sucrose.utils.angleToRadians(rotateDegrees);
-      },
       donutRatio = 0.447,
       minRadius = 75,
-      maxRadius = 250,
-      fixedRadius = function(chart) { return null; },
-      durationMs = 0,
-      direction = 'ltr',
-      color = function(d, i) { return sucrose.utils.defaultColor()(d, d.series); },
-      fill = color,
-      textureFill = false,
-      classes = function(d, i) { return 'sc-slice sc-series-' + d.series; },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
+      maxRadius = 250;
+
+  var holeFormat = function(hole_wrap, data) {
+        var hole_bind = hole_wrap.selectAll('.sc-hole-container').data(data),
+            hole_entr = hole_bind.enter().append('g').attr('class', 'sc-hole-container');
+        hole_entr.append('text')
+          .text(data)
+          .attr('class', 'sc-pie-hole-value')
+          .attr('dy', '.35em')
+          .attr('text-anchor', 'middle')
+          .style('font-size', '50px');
+        hole_bind.exit().remove();
+      };
+
+  var startAngle = function(d) {
+        // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
+        return d.startAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
+      };
+  var endAngle = function(d) {
+        return d.endAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
+      };
+
+  var fixedRadius = function(chart) { return null; };
 
   //============================================================
+  // Private Variables
+  //------------------------------------------------------------
 
+  // Setup the Pie chart and choose the data element
+  var pie = d3.pie()
+        .sort(null)
+        .value(getValue);
+
+  //============================================================
+  // Update chart
 
   function chart(selection) {
+
     selection.each(function(data) {
 
       var availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
 
-      // Setup the Pie chart and choose the data element
-      var pie = d3.layout.pie()
-            .sort(null)
-            .value(function(d) { return d.disabled ? 0 : getY(d); });
+      //set up the gradient constructor function
+      gradient = function(d, i) {
+        var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
+        return utility.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
+      };
 
       //------------------------------------------------------------
       // recalculate width and height based on label length
+
       var labelLengths = [],
           doLabels = showLabels && pieLabelsOutside ? true : false;
+
       if (doLabels) {
-        labelLengths = sucrose.utils.stringSetLengths(
-            data.map(getX),
+        labelLengths = utility.stringSetLengths(
+            data,
             container,
-            labelFormat,
+            fmtKey,
             'sc-label'
           );
       }
 
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
-      var wrap = container.selectAll('.sc-wrap.sc-pie').data([data]);
-      var wrapEnter = wrap.enter().append('g').attr('class', 'sucrose sc-wrap sc-pie sc-chart-' + id);
-      var defsEnter = wrapEnter.append('defs');
-      var gEnter = wrapEnter.append('g');
-      var g = wrap.select('g');
 
-      //set up the gradient constructor function
-      chart.gradient = function(d, i) {
-        var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
-        return sucrose.utils.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
-      };
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-pie');
+      var wrap = container.select('.sc-wrap.sc-pie').merge(wrap_entr);
 
-      gEnter.append('g').attr('class', 'sc-pie');
-      var pieWrap = g.select('.sc-pie');
-      gEnter.append('g').attr('class', 'sc-holeWrap');
-      var holeWrap = g.select('.sc-holeWrap');
+      var defs_entr = wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
+
+      wrap_entr.append('g').attr('class', 'sc-hole-wrap');
+      var hole_wrap = wrap.select('.sc-hole-wrap');
 
       wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-      pieWrap.attr('transform', 'translate(' + (availableWidth / 2) + ',' + (availableHeight / 2) + ')');
 
       //------------------------------------------------------------
+      // Definitions
 
       if (textureFill) {
-        var mask = sucrose.utils.createTexture(defsEnter, id, -availableWidth / 2, -availableHeight / 2);
+        var mask = utility.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
 
       //------------------------------------------------------------
+      // Append major data series grouping containers
 
-      container
-        .on('click', function(d, i) {
-          dispatch.chartClick({
-            data: d,
-            index: i,
-            pos: d3.event,
-            id: id
-          });
+      var series_bind = group_wrap.selectAll('.sc-series').data(pie);
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
+      series_bind.exit().remove();
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series_entr
+        .style('stroke', '#FFF')
+        .style('stroke-width', 2)
+        .style('stroke-opacity', 0)
+        .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
+          d3.select(this).classed('hover', true);
+        })
+        .on('mouseout', function(d, i, j) {
+          d3.select(this).classed('hover', false);
         });
 
-      var slices = wrap.select('.sc-pie').selectAll('.sc-slice')
-            .data(pie);
+      series
+        .attr('class', function(d) { return classes(d.data, d.data.seriesIndex); })
+        .attr('fill', function(d) { return fill(d.data, d.data.seriesIndex); })
+        .classed('sc-active', function(d) { return d.data.active === 'active'; })
+        .classed('sc-inactive', function(d) { return d.data.active === 'inactive'; });
 
-      slices.exit().remove();
-
-      var ae = slices.enter().append('g')
-            .style('stroke', '#ffffff')
-            .style('stroke-width', 2)
-            .style('stroke-opacity', 0)
-            .on('mouseover', function(d, i) {
-              d3.select(this).classed('hover', true);
-              var eo = buildEventObject(d3.event, d, i);
-              dispatch.elementMouseover(eo);
-            })
-            .on('mousemove', function(d, i) {
-              dispatch.elementMousemove(d3.event);
-            })
-            .on('mouseout', function(d, i) {
-              d3.select(this).classed('hover', false);
-              dispatch.elementMouseout();
-            })
-            .on('click', function(d, i) {
-              d3.event.stopPropagation();
-              var eo = buildEventObject(d3.event, d, i);
-              dispatch.elementClick(eo);
-            })
-            .on('dblclick', function(d, i) {
-              d3.event.stopPropagation();
-              var eo = buildEventObject(d3.event, d, i);
-              dispatch.elementDblClick(eo);
-            });
-
-          ae.append('path')
-              .attr('class', 'sc-base')
-              .each(function(d, i) {
-                this._current = d;
-              });
-
-          if (textureFill) {
-            ae.append('path')
-                .attr('class', 'sc-texture')
-                .each(function(d, i) {
-                  this._current = d;
-                })
-                .style('mask', 'url(' + mask + ')');
-          }
-
-          ae.append('g')
-              .attr('transform', 'translate(0,0)')
-              .attr('class', 'sc-label');
-
-          ae.select('.sc-label')
-              .append('rect')
-              .style('fill-opacity', 0)
-              .style('stroke-opacity', 0);
-          ae.select('.sc-label')
-              .append('text')
-              .style('fill-opacity', 0);
-
-          ae.append('polyline')
-              .attr('class', 'sc-label-leader')
-              .style('stroke-opacity', 0);
-
-
-      // UPDATE
       //------------------------------------------------------------
+      // Append polygons for funnel
+
+      var slice_bind = series.selectAll('g.sc-slice').data(
+            // I wish we didn't have to do this :-(
+            function(s, i) {
+              return s.data.values.map(function(v, j) {
+                v.endAngle = s.endAngle;
+                v.padAngle = s.padAngle;
+                v.startAngle = s.startAngle;
+                return v;
+              });
+            },
+            function(d) { return d.seriesIndex; }
+          );
+      slice_bind.exit().remove();
+      var slice_entr = slice_bind.enter().append('g').attr('class', 'sc-slice');
+      var slices = series.selectAll('g.sc-slice').merge(slice_entr);
+
+      slice_entr.append('path')
+        .attr('class', 'sc-base')
+        .each(function(d, i) {
+          this._current = d;
+        });
+
+      if (textureFill) {
+        slice_entr.append('path')
+          .attr('class', 'sc-texture')
+          .each(function(d, i) {
+            this._current = d;
+          })
+          .style('mask', 'url(' + mask + ')');
+      }
+
+      slice_entr
+        .on('mouseover', function(d, i) {
+          d3.select(this).classed('hover', true);
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementMouseover', this, eo);
+        })
+        .on('mousemove', function(d, i) {
+          var e = d3.event;
+          dispatch.call('elementMousemove', this, e);
+        })
+        .on('mouseout', function(d, i) {
+          d3.select(this).classed('hover', false);
+          dispatch.call('elementMouseout', this);
+        })
+        .on('click', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementClick', this, eo);
+        })
+        .on('dblclick', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementDblClick', this, eo);
+        });
+
+      //------------------------------------------------------------
+      // Append containers for labels
+
+      slice_entr.append('g')
+        .attr('class', 'sc-label')
+        .attr('transform', 'translate(0,0)');
+
+      slice_entr.select('.sc-label')
+        .append('rect')
+        .style('fill-opacity', 0)
+        .style('stroke-opacity', 0);
+      slice_entr.select('.sc-label')
+        .append('text')
+        .style('fill-opacity', 0);
+
+      slice_entr.append('polyline')
+        .attr('class', 'sc-label-leader')
+        .style('stroke-opacity', 0);
+
+      //------------------------------------------------------------
+      // UPDATE
 
       var maxWidthRadius = availableWidth / 2,
           maxHeightRadius = availableHeight / 2,
@@ -201,13 +247,14 @@ sucrose.models.pie = function() {
           horizontalShift = 0,
           horizontalReduction = leaderLength + textOffset;
 
+      // side effect :: resets extWidths, extHeights
       slices.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
 
       // Donut Hole Text
-      holeWrap.call(holeFormat, hole ? [hole] : []);
+      hole_wrap.call(holeFormat, hole ? [hole] : []);
 
       if (hole) {
-        var heightHoleHalf = holeWrap.node().getBoundingClientRect().height * 0.30,
+        var heightHoleHalf = hole_wrap.node().getBoundingClientRect().height * 0.30,
             heightPieHalf = Math.abs(maxHeightRadius * d3.min(extHeights)),
             holeOffset = Math.round(heightHoleHalf - heightPieHalf);
 
@@ -235,24 +282,23 @@ sucrose.models.pie = function() {
 
       offsetVertical += ((d3.max(extHeights) - d3.min(extHeights)) / 2 + d3.min(extHeights)) * ((labelRadius + verticalShift) / offsetVertical);
       offsetHorizontal += ((d3.max(extWidths) - d3.min(extWidths)) / 2 - d3.max(extWidths)) * (labelRadius / offsetHorizontal);
-
       offsetVertical += verticalShift / 2;
 
-      pieWrap
+      group_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
-      holeWrap
+      hole_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
-      pieWrap.select(mask)
+      group_wrap.select(mask)
         .attr('x', -pieRadius / 2)
         .attr('y', -pieRadius / 2);
 
-      var pieArc = d3.svg.arc()
+      var pieArc = d3.arc()
             .innerRadius(donut ? pieRadius * donutRatio : 0)
             .outerRadius(pieRadius)
             .startAngle(startAngle)
             .endAngle(endAngle);
 
-      var labelArc = d3.svg.arc()
+      var labelArc = d3.arc()
             .innerRadius(0)
             .outerRadius(pieRadius)
             .startAngle(startAngle)
@@ -269,17 +315,11 @@ sucrose.models.pie = function() {
         }
       }
 
-      slices
-        .attr('class', function(d) { return classes(d.data, d.data.series); })
-        .attr('fill', function(d) { return fill(d.data, d.data.series); })
-        .classed('sc-active', function(d) { return d.data.active === 'active'; })
-        .classed('sc-inactive', function(d) { return d.data.active === 'inactive'; });
-
       // removed d3 transition in MACAROON-133 because
       // there is a "Maximum call stack size exceeded at Date.toString" error
       // in PMSE that stops d3 from calling transitions
       // this may be a logger issue or some recursion somewhere in PMSE
-      // slices.select('path').transition().duration(durationMs)
+      // slices.select('path').transition().duration(duration)
       //   .attr('d', arc)
       //   .attrTween('d', arcTween);
 
@@ -297,9 +337,12 @@ sucrose.models.pie = function() {
           })
           .style('fill', function(d, i) {
             var backColor = d3.select(this.parentNode).style('fill');
-            return sucrose.utils.getTextContrast(backColor, i);
+            return utility.getTextContrast(backColor, i);
           });
       }
+
+      //------------------------------------------------------------
+      // Update label containers
 
       if (showLabels) {
         // This does the normal label
@@ -319,9 +362,7 @@ sucrose.models.pie = function() {
           });
 
         slices.select('.sc-label text')
-          .text(function(d) {
-            return labelFormat(d);
-          })
+          .text(fmtKey)
           .attr('dy', '.35em')
           .style('fill', '#555')
           .style('fill-opacity', labelOpacity)
@@ -346,7 +387,7 @@ sucrose.models.pie = function() {
                   bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
                   rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
               if (rW < 0) {
-                var label = sucrose.utils.stringEllipsify(labelFormat(d), container, labelLengths[i] + rW);
+                var label = utility.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
                 d3.select(this).select('text').text(label);
               }
             }
@@ -368,7 +409,7 @@ sucrose.models.pie = function() {
                 .attr('transform', function() {
                   return 'translate(' + [textBox.x - 5, textBox.y - 5] + ')';
                 })
-                .style('fill', '#fff')
+                .style('fill', '#FFF')
                 .style('fill-opacity', labelOpacity);
             });
         } else if (showLeaders) {
@@ -379,7 +420,7 @@ sucrose.models.pie = function() {
                 // any defensive code around an array with 1 element, it expects 2+ els
                 return '0,0 0,0';
               }
-              var outerArc = d3.svg.arc()
+              var outerArc = d3.arc()
                     .innerRadius(pieRadius)
                     .outerRadius(pieRadius)
                     .startAngle(startAngle)
@@ -390,7 +431,7 @@ sucrose.models.pie = function() {
                   leadArcPoints = [labelArcPoints[0] + leadOffset, labelArcPoints[1]];
               return outerArcPoints + ' ' + labelArcPoints + ' ' + leadArcPoints;
             })
-            .style('stroke', '#aaa')
+            .style('stroke', '#AAA')
             .style('fill', 'none')
             .style('stroke-opacity', labelOpacity);
         }
@@ -400,18 +441,19 @@ sucrose.models.pie = function() {
         slices.select('.sc-label text').style('fill-opacity', 0);
       }
 
-      // Utility Methods
       //------------------------------------------------------------
+      // Utility functions
 
       function buildEventObject(e, d, i) {
         return {
-            label: labelFormat(d),
-            value: valueFormat(d),
-            point: d.data,
-            pointIndex: i,
-            id: id,
-            e: e
-          };
+          id: id,
+          key: fmtKey(d),
+          value: fmtValue(d),
+          count: fmtCount(d),
+          data: d,
+          series: d.series,
+          e: e
+        };
       }
 
       // calculate max and min height of slice vertices
@@ -516,14 +558,14 @@ sucrose.models.pie = function() {
         var widthRadius = [maxWidthRadius],
             heightRadius = [maxHeightRadius + leaderLength];
 
-        slices.select('.sc-base').each(function(d, i) {
+        series.select('.sc-base').each(function(d, i) {
           if (!labelOpacity(d)) {
             return;
           }
 
           var theta = (startAngle(d) + endAngle(d)) / 2,
-              sin = d3.round(Math.sin(theta), 5),
-              cos = d3.round(Math.cos(theta), 5),
+              sin = Math.sin(theta),
+              cos = Math.cos(theta),
               bW = maxWidthRadius - horizontalReduction - labelLengths[i],
               bH = maxHeightRadius - verticalReduction,
               rW = sin ? bW / sin : bW, //don't divide by zero, fool
@@ -582,39 +624,35 @@ sucrose.models.pie = function() {
 
   chart.dispatch = dispatch;
 
+  chart.id = function(_) {
+    if (!arguments.length) { return id; }
+    id = _;
+    return chart;
+  };
+
   chart.color = function(_) {
-    if (!arguments.length) {
-      return color;
-    }
+    if (!arguments.length) { return color; }
     color = _;
     return chart;
   };
   chart.fill = function(_) {
-    if (!arguments.length) {
-      return fill;
-    }
+    if (!arguments.length) { return fill; }
     fill = _;
     return chart;
   };
   chart.classes = function(_) {
-    if (!arguments.length) {
-      return classes;
-    }
+    if (!arguments.length) { return classes; }
     classes = _;
     return chart;
   };
   chart.gradient = function(_) {
-    if (!arguments.length) {
-      return gradient;
-    }
+    if (!arguments.length) { return gradient; }
     gradient = _;
     return chart;
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
     margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
     margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
@@ -623,232 +661,196 @@ sucrose.models.pie = function() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
-  chart.values = function(_) {
-    if (!arguments.length) {
-      return getValues;
-    }
-    getValues = _;
-    return chart;
-  };
-
   chart.x = function(_) {
-    if (!arguments.length) {
-      return getX;
-    }
+    if (!arguments.length) { return getX; }
     getX = _;
     return chart;
   };
 
   chart.y = function(_) {
-    if (!arguments.length) {
-      return getY;
-    }
-    getY = d3.functor(_);
+    if (!arguments.length) { return getY; }
+    getY = utility.functor(_);
     return chart;
   };
 
-  chart.description = function(_) {
-    if (!arguments.length) {
-      return getDescription;
-    }
-    getDescription = _;
+  chart.getKey = function(_) {
+    if (!arguments.length) { return getKey; }
+    getKey = _;
     return chart;
   };
+
+  chart.getValue = function(_) {
+    if (!arguments.length) { return getValue; }
+    getValue = _;
+    return chart;
+  };
+
+  chart.fmtKey = function(_) {
+    if (!arguments.length) { return fmtKey; }
+    fmtKey = _;
+    return chart;
+  };
+
+  chart.fmtValue = function(_) {
+    if (!arguments.length) { return fmtValue; }
+    fmtValue = _;
+    return chart;
+  };
+
+  chart.fmtCount = function(_) {
+    if (!arguments.length) { return fmtCount; }
+    fmtCount = _;
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) { return locality; }
+    locality = utility.buildLocality(_);
+    return chart;
+  };
+
+  chart.values = function(_) {
+    if (!arguments.length) { return getValues; }
+    getValues = _;
+    return chart;
+  };
+
+  chart.textureFill = function(_) {
+    if (!arguments.length) { return textureFill; }
+    textureFill = _;
+    return chart;
+  };
+
+  // PIE
 
   chart.showLabels = function(_) {
-    if (!arguments.length) {
-      return showLabels;
-    }
+    if (!arguments.length) { return showLabels; }
     showLabels = _;
     return chart;
   };
 
   chart.labelSunbeamLayout = function(_) {
-    if (!arguments.length) {
-      return labelSunbeamLayout;
-    }
+    if (!arguments.length) { return labelSunbeamLayout; }
     labelSunbeamLayout = _;
     return chart;
   };
 
   chart.donutLabelsOutside = function(_) {
-    if (!arguments.length) {
-      return donutLabelsOutside;
-    }
+    if (!arguments.length) { return donutLabelsOutside; }
     donutLabelsOutside = _;
     return chart;
   };
 
   chart.pieLabelsOutside = function(_) {
-    if (!arguments.length) {
-      return pieLabelsOutside;
-    }
+    if (!arguments.length) { return pieLabelsOutside; }
     pieLabelsOutside = _;
     return chart;
   };
 
   chart.showLeaders = function(_) {
-    if (!arguments.length) {
-      return showLeaders;
-    }
+    if (!arguments.length) { return showLeaders; }
     showLeaders = _;
     return chart;
   };
 
   chart.donut = function(_) {
-    if (!arguments.length) {
-      return donut;
-    }
+    if (!arguments.length) { return donut; }
     donut = _;
     return chart;
   };
 
   chart.hole = function(_) {
-    if (!arguments.length) {
-      return hole;
-    }
+    if (!arguments.length) { return hole; }
     hole = _;
     return chart;
   };
 
   chart.holeFormat = function(_) {
-    if (!arguments.length) {
-      return holeFormat;
-    }
-    holeFormat = d3.functor(_);
+    if (!arguments.length) { return holeFormat; }
+    holeFormat = utility.functor(_);
     return chart;
   };
 
   chart.donutRatio = function(_) {
-    if (!arguments.length) {
-      return donutRatio;
-    }
+    if (!arguments.length) { return donutRatio; }
     donutRatio = _;
     return chart;
   };
 
   chart.startAngle = function(_) {
-    if (!arguments.length) {
-      return startAngle;
-    }
+    if (!arguments.length) { return startAngle; }
     startAngle = _;
     return chart;
   };
 
   chart.endAngle = function(_) {
-    if (!arguments.length) {
-      return endAngle;
-    }
+    if (!arguments.length) { return endAngle; }
     endAngle = _;
     return chart;
   };
 
-  chart.id = function(_) {
-    if (!arguments.length) {
-      return id;
-    }
-    id = _;
-    return chart;
-  };
-
-  chart.valueFormat = function(_) {
-    if (!arguments.length) {
-      return valueFormat;
-    }
-    valueFormat = _;
-    return chart;
-  };
-
-  chart.labelFormat = function(_) {
-    if (!arguments.length) {
-      return labelFormat;
-    }
-    labelFormat = _;
-    return chart;
-  };
-
   chart.labelThreshold = function(_) {
-    if (!arguments.length) {
-      return labelThreshold;
-    }
+    if (!arguments.length) { return labelThreshold; }
     labelThreshold = _;
     return chart;
   };
 
-  chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
-    direction = _;
-    return chart;
-  };
-
   chart.arcDegrees = function(_) {
-    if (!arguments.length) {
-      return arcDegrees;
-    }
+    if (!arguments.length) { return arcDegrees; }
     arcDegrees = Math.max(Math.min(_, 360), 1);
     return chart;
   };
 
   chart.rotateDegrees = function(_) {
-    if (!arguments.length) {
-      return rotateDegrees;
-    }
+    if (!arguments.length) { return rotateDegrees; }
     rotateDegrees = _ % 360;
     return chart;
   };
 
   chart.minRadius = function(_) {
-    if (!arguments.length) {
-      return minRadius;
-    }
+    if (!arguments.length) { return minRadius; }
     minRadius = _;
     return chart;
   };
 
   chart.maxRadius = function(_) {
-    if (!arguments.length) {
-      return maxRadius;
-    }
+    if (!arguments.length) { return maxRadius; }
     maxRadius = _;
     return chart;
   };
 
   chart.fixedRadius = function(_) {
-    if (!arguments.length) {
-      return fixedRadius;
-    }
-    fixedRadius = d3.functor(_);
-    return chart;
-  };
-
-  chart.textureFill = function(_) {
-    if (!arguments.length) return textureFill;
-    textureFill = _;
-    return chart;
-  };
-
-  chart.locality = function(_) {
-    if (!arguments.length) {
-      return locality;
-    }
-    locality = sucrose.utils.buildLocality(_);
+    if (!arguments.length) { return fixedRadius; }
+    fixedRadius = utility.functor(_);
     return chart;
   };
 
