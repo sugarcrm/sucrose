@@ -9,6 +9,8 @@
 
 d3 = 'default' in d3 ? d3['default'] : d3;
 
+var version = "0.5.0";
+
 /*-------------------
       UTILITIES
 -------------------*/
@@ -677,7 +679,7 @@ utility.buildLocality = function(l, d) {
   }
 
   return definition;
-}
+};
 
 utility.displayNoData = function (hasData, container, label, x, y) {
   var data = hasData ? [] : [label];
@@ -16826,11 +16828,10 @@ const charts = {
     treemapChart: treemapChart,
 };
 
-const ver = '0.0.2'; //change to 0.0.3 when ready
 const dev = false; //set false when in production
 
-exports.version = ver;
 exports.development = dev;
+exports.version = version;
 exports.utility = utility;
 exports.tooltip = tooltip;
 exports.models = models;

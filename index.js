@@ -8,4 +8,4 @@ export {
   tooltip,
   models,
   charts,
-} from 'sucrose'; //TODO: why doesn't from './build/sucrose.js' work?
+} from 'sucrose'; //TODO: (from index.js) why doesn't from './build/sucrose.js' work?

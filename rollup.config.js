@@ -7,7 +7,7 @@ export default {
   format: 'umd',
   // sourceMap: 'inline',
   external: ['d3'],
-  treeshake: false,
+  // treeshake: false,
   plugins: [
     resolve({
       jsnext: true,

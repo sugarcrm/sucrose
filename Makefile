@@ -100,7 +100,9 @@ reset:
 
 rolls:
 	rollup -c
-nodes:
+nodes: packs
 	node rollup.node
 grade:
 	npm test
+packs:
+	npm run-script package

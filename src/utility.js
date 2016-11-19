@@ -668,7 +668,7 @@ utility.buildLocality = function(l, d) {
   }
 
   return definition;
-}
+};
 
 utility.displayNoData = function (hasData, container, label, x, y) {
   var data = hasData ? [] : [label];

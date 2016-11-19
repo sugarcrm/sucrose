@@ -31,6 +31,7 @@
     "url": "https://github.com/sugarcrm/sucrose.git"
   },
   "scripts": {
+    "package": "json2module package.json > build/package.js",
     "test": "tape 'test/**/*-test.js'"
   },
   "dependencies": {
@@ -41,6 +42,7 @@
   "devDependencies": {
     "clean-css": "^3.4.8",
     "jshint": "^2.9.4",
+    "json2module": "0.0.3",
     "less": "^2.6.0",
     "less-plugin-clean-css": "^1.5.1",
     "rollup": "^0.36.3",

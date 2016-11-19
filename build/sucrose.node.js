@@ -6,7 +6,7 @@ var sucrose = require('./build/sucrose.js');
 
 var version = "0.5.0";
 
-//TODO: why doesn't from './build/sucrose.js' work?
+//TODO: (from index.js) why doesn't from './build/sucrose.js' work?
 
 exports.version = version;
 exports.development = sucrose.development;

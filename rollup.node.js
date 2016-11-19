@@ -25,7 +25,7 @@ rollup
       );
 
     return new Promise(function(resolve, reject) {
-      fs.writeFile('sucrose.node.js', code, 'utf8', function(error) {
+      fs.writeFile('./build/sucrose.node.js', code, 'utf8', function(error) {
         if (error) return reject(error);
         else resolve();
       });
