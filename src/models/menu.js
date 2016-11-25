@@ -616,7 +616,7 @@ export default function menu() {
       };
 
       //============================================================
-      // Event Handling/Dispatching (in chart's scope)
+      // Event Handling/Dispatching (in legend's scope)
       //------------------------------------------------------------
 
       function displayMenu() {

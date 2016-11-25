@@ -41,7 +41,7 @@ export default function axis() {
 
   //============================================================
 
-  function chart(selection) {
+  function model(selection) {
     selection.each(function(data) {
 
       var container = d3.select(this);
@@ -90,7 +90,7 @@ export default function axis() {
       }
 
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of axis
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-axis').data([data]);
       var wrap_entr = wrap_bind.enter()
@@ -582,18 +582,18 @@ export default function axis() {
       //------------------------------------------------------------
       // Public functions
 
-      chart.resizeTickLines = function(dim) {
+      model.resizeTickLines = function(dim) {
         wrap.selectAll('g.tick, g.sc-axisMaxMin').select('line')
           .attr(vertical ? 'x2' : 'y2', dim * reflect);
       };
 
-      chart.labelThickness = function() {
+      model.labelThickness = function() {
         return labelThickness;
       };
 
     });
 
-    return chart;
+    return model;
   }
 
 
@@ -601,141 +601,141 @@ export default function axis() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  // expose chart's sub-components
-  chart.axis = axis;
+  // expose model's sub-components
+  model.axis = axis;
 
-  // fc.rebind(chart, axis, 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
-  fc.rebind(chart, scale, 'domain', 'range'); //these are also accessible by chart.scale(), but added common ones directly for ease of use
+  // fc.rebind(model, axis, 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
+  fc.rebind(model, scale, 'domain', 'range'); //these are also accessible by model.scale(), but added common ones directly for ease of use
 
   // read only
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) {
       return thickness;
     }
-    return chart;
+    return model;
   };
 
   // read only
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) {
       return thickness;
     }
-    return chart;
+    return model;
   };
 
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) {
       return margin;
     }
     margin = _;
-    return chart;
+    return model;
   };
 
-  chart.ticks = function(_) {
+  model.ticks = function(_) {
     if (!arguments.length) {
       return ticks;
     }
     ticks = _;
-    return chart;
+    return model;
   };
 
-  chart.axisLabel = function(_) {
+  model.axisLabel = function(_) {
     if (!arguments.length) {
       return axisLabelText;
     }
     axisLabelText = _;
-    return chart;
+    return model;
   };
 
-  chart.showMaxMin = function(_) {
+  model.showMaxMin = function(_) {
     if (!arguments.length) {
       return showMaxMin;
     }
     showMaxMin = _;
-    return chart;
+    return model;
   };
 
-  chart.highlightZero = function(_) {
+  model.highlightZero = function(_) {
     if (!arguments.length) {
       return highlightZero;
     }
     highlightZero = _;
-    return chart;
+    return model;
   };
 
-  chart.wrapTicks = function(_) {
+  model.wrapTicks = function(_) {
     if (!arguments.length) {
       return wrapTicks;
     }
     wrapTicks = _;
-    return chart;
+    return model;
   };
 
-  chart.rotateTicks = function(_) {
+  model.rotateTicks = function(_) {
     if (!arguments.length) {
       return rotateTicks;
     }
     rotateTicks = _;
-    return chart;
+    return model;
   };
 
-  chart.staggerTicks = function(_) {
+  model.staggerTicks = function(_) {
     if (!arguments.length) {
       return staggerTicks;
     }
     staggerTicks = _;
-    return chart;
+    return model;
   };
 
-  chart.reduceXTicks = function(_) {
+  model.reduceXTicks = function(_) {
     if (!arguments.length) {
       return reduceXTicks;
     }
     reduceXTicks = _;
-    return chart;
+    return model;
   };
 
-  chart.rotateYLabel = function(_) {
+  model.rotateYLabel = function(_) {
     if (!arguments.length) {
       return rotateYLabel;
     }
     rotateYLabel = _;
-    return chart;
+    return model;
   };
 
-  chart.axisLabelDistance = function(_) {
+  model.axisLabelDistance = function(_) {
     if (!arguments.length) {
       return axisLabelDistance;
     }
     axisLabelDistance = _;
-    return chart;
+    return model;
   };
 
-  chart.maxLabelWidth = function(_) {
+  model.maxLabelWidth = function(_) {
     if (!arguments.length) {
       return maxLabelWidth;
     }
     maxLabelWidth = _;
-    return chart;
+    return model;
   };
 
-  chart.textAnchor = function(_) {
+  model.textAnchor = function(_) {
     if (!arguments.length) {
       return textAnchor;
     }
     textAnchor = _;
-    return chart;
+    return model;
   };
 
-  chart.direction = function(_) {
+  model.direction = function(_) {
     if (!arguments.length) {
       return direction;
     }
     direction = _;
-    return chart;
+    return model;
   };
 
-  chart.orient = function(_) {
+  model.orient = function(_) {
     if (!arguments.length) {
       return orient;
     }
@@ -744,78 +744,78 @@ export default function axis() {
            orient === 'right' ? d3.axisRight() :
            orient === 'left' ? d3.axisLeft() :
            orient === 'top' ? d3.axisTop() : d3.axisBottom();
-    return chart;
+    return model;
   };
 
   // d3 properties extended
-  chart.scale = function(_) {
+  model.scale = function(_) {
     if (!arguments.length) {
       return scale;
     }
     scale = _;
     axis.scale(scale);
     hasRangeBand = typeof scale.padding === 'function';
-    fc.rebind(chart, scale, 'domain', 'range');
-    return chart;
+    fc.rebind(model, scale, 'domain', 'range');
+    return model;
   };
-  chart.tickValues = function(_) {
-    if (!arguments.length) {
-      return tickValues;
-    }
-    tickValues = _;
-    axis.tickValues(_);
-    return chart;
-  };
-  chart.tickSize = function(_) {
-    if (!arguments.length) {
-      return tickSize;
-    }
-    tickSize = _;
-    axis.tickSize(_);
-    return chart;
-  };
-  chart.tickPadding = function(_) {
-    if (!arguments.length) {
-      return tickPadding;
-    }
-    tickPadding = _;
-    axis.tickPadding(_);
-    return chart;
-  };
-  chart.tickFormat = function(_) {
-    if (!arguments.length) {
-      return tickFormat || axis.tickFormat();
-    }
-    tickFormat = _;
-    axis.tickFormat(_);
-    return chart;
-  };
-  chart.valueFormat = function(_) {
+  model.valueFormat = function(_) {
     if (!arguments.length) {
       return valueFormat || axis.tickFormat();
     }
     valueFormat = _;
     axis.tickFormat(_);
-    return chart;
+    return model;
   };
-  chart.tickSizeInner = function(_) {
+  model.tickValues = function(_) {
+    if (!arguments.length) {
+      return tickValues;
+    }
+    tickValues = _;
+    axis.tickValues(_);
+    return model;
+  };
+  model.tickSize = function(_) {
+    if (!arguments.length) {
+      return tickSize;
+    }
+    tickSize = _;
+    axis.tickSize(_);
+    return model;
+  };
+  model.tickPadding = function(_) {
+    if (!arguments.length) {
+      return tickPadding;
+    }
+    tickPadding = _;
+    axis.tickPadding(_);
+    return model;
+  };
+  model.tickFormat = function(_) {
+    if (!arguments.length) {
+      return tickFormat || axis.tickFormat();
+    }
+    tickFormat = _;
+    axis.tickFormat(_);
+    return model;
+  };
+  model.tickSizeInner = function(_) {
     if (!arguments.length) {
       return tickSizeInner;
     }
     tickSizeInner = _;
     axis.tickSizeInner(_);
-    return chart;
+    return model;
   };
-  chart.tickSizeOuter = function(_) {
+  model.tickSizeOuter = function(_) {
     if (!arguments.length) {
       return tickSizeOuter;
     }
     tickSizeOuter = _;
     axis.tickSizeOuter(_);
-    return chart;
+    return model;
   };
 
   //============================================================
 
-  return chart;
+  return model;
 }

@@ -65,21 +65,21 @@ export default function pie() {
         return d.endAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
       };
 
-  var fixedRadius = function(chart) { return null; };
+  var fixedRadius = function(model) { return null; };
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  // Setup the Pie chart and choose the data element
+  // Setup the Pie model and choose the data element
   var pie = d3.pie()
         .sort(null)
         .value(getValue);
 
   //============================================================
-  // Update chart
+  // Update model
 
-  function chart(selection) {
+  function model(selection) {
 
     selection.each(function(data) {
 
@@ -109,7 +109,7 @@ export default function pie() {
       }
 
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-pie');
@@ -272,9 +272,9 @@ export default function pie() {
         leaderLength = Math.max(Math.min(Math.min(calcMaxRadius()) / 12, 20), 10);
       }
 
-      if (fixedRadius(chart)) {
-        minRadius = fixedRadius(chart);
-        maxRadius = fixedRadius(chart);
+      if (fixedRadius(model)) {
+        minRadius = fixedRadius(model);
+        maxRadius = fixedRadius(model);
       }
 
       var labelRadius = Math.min(Math.max(calcMaxRadius(), minRadius), maxRadius),
@@ -614,7 +614,7 @@ export default function pie() {
 
     });
 
-    return chart;
+    return model;
   }
 
 
@@ -622,239 +622,239 @@ export default function pie() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = dispatch;
+  model.dispatch = dispatch;
 
-  chart.id = function(_) {
+  model.id = function(_) {
     if (!arguments.length) { return id; }
     id = _;
-    return chart;
+    return model;
   };
 
-  chart.color = function(_) {
+  model.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    return chart;
+    return model;
   };
-  chart.fill = function(_) {
+  model.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    return chart;
+    return model;
   };
-  chart.classes = function(_) {
+  model.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    return chart;
+    return model;
   };
-  chart.gradient = function(_) {
+  model.gradient = function(_) {
     if (!arguments.length) { return gradient; }
     gradient = _;
-    return chart;
+    return model;
   };
 
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) { return margin; }
     margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
     margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
     margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
     margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
-    return chart;
+    return model;
   };
 
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
-    return chart;
+    return model;
   };
 
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
+    return model;
   };
 
-  chart.x = function(_) {
+  model.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    return chart;
+    return model;
   };
 
-  chart.y = function(_) {
+  model.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.getKey = function(_) {
+  model.getKey = function(_) {
     if (!arguments.length) { return getKey; }
     getKey = _;
-    return chart;
+    return model;
   };
 
-  chart.getValue = function(_) {
+  model.getValue = function(_) {
     if (!arguments.length) { return getValue; }
     getValue = _;
-    return chart;
+    return model;
   };
 
-  chart.fmtKey = function(_) {
+  model.fmtKey = function(_) {
     if (!arguments.length) { return fmtKey; }
     fmtKey = _;
-    return chart;
+    return model;
   };
 
-  chart.fmtValue = function(_) {
+  model.fmtValue = function(_) {
     if (!arguments.length) { return fmtValue; }
     fmtValue = _;
-    return chart;
+    return model;
   };
 
-  chart.fmtCount = function(_) {
+  model.fmtCount = function(_) {
     if (!arguments.length) { return fmtCount; }
     fmtCount = _;
-    return chart;
+    return model;
   };
 
-  chart.direction = function(_) {
+  model.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
-    return chart;
+    return model;
   };
 
-  chart.delay = function(_) {
+  model.delay = function(_) {
     if (!arguments.length) { return delay; }
     delay = _;
-    return chart;
+    return model;
   };
 
-  chart.duration = function(_) {
+  model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    return chart;
+    return model;
   };
 
-  chart.locality = function(_) {
+  model.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    return chart;
+    return model;
   };
 
-  chart.values = function(_) {
+  model.values = function(_) {
     if (!arguments.length) { return getValues; }
     getValues = _;
-    return chart;
+    return model;
   };
 
-  chart.textureFill = function(_) {
+  model.textureFill = function(_) {
     if (!arguments.length) { return textureFill; }
     textureFill = _;
-    return chart;
+    return model;
   };
 
   // PIE
 
-  chart.showLabels = function(_) {
+  model.showLabels = function(_) {
     if (!arguments.length) { return showLabels; }
     showLabels = _;
-    return chart;
+    return model;
   };
 
-  chart.labelSunbeamLayout = function(_) {
+  model.labelSunbeamLayout = function(_) {
     if (!arguments.length) { return labelSunbeamLayout; }
     labelSunbeamLayout = _;
-    return chart;
+    return model;
   };
 
-  chart.donutLabelsOutside = function(_) {
+  model.donutLabelsOutside = function(_) {
     if (!arguments.length) { return donutLabelsOutside; }
     donutLabelsOutside = _;
-    return chart;
+    return model;
   };
 
-  chart.pieLabelsOutside = function(_) {
+  model.pieLabelsOutside = function(_) {
     if (!arguments.length) { return pieLabelsOutside; }
     pieLabelsOutside = _;
-    return chart;
+    return model;
   };
 
-  chart.showLeaders = function(_) {
+  model.showLeaders = function(_) {
     if (!arguments.length) { return showLeaders; }
     showLeaders = _;
-    return chart;
+    return model;
   };
 
-  chart.donut = function(_) {
+  model.donut = function(_) {
     if (!arguments.length) { return donut; }
     donut = _;
-    return chart;
+    return model;
   };
 
-  chart.hole = function(_) {
+  model.hole = function(_) {
     if (!arguments.length) { return hole; }
     hole = _;
-    return chart;
+    return model;
   };
 
-  chart.holeFormat = function(_) {
+  model.holeFormat = function(_) {
     if (!arguments.length) { return holeFormat; }
     holeFormat = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.donutRatio = function(_) {
+  model.donutRatio = function(_) {
     if (!arguments.length) { return donutRatio; }
     donutRatio = _;
-    return chart;
+    return model;
   };
 
-  chart.startAngle = function(_) {
+  model.startAngle = function(_) {
     if (!arguments.length) { return startAngle; }
     startAngle = _;
-    return chart;
+    return model;
   };
 
-  chart.endAngle = function(_) {
+  model.endAngle = function(_) {
     if (!arguments.length) { return endAngle; }
     endAngle = _;
-    return chart;
+    return model;
   };
 
-  chart.labelThreshold = function(_) {
+  model.labelThreshold = function(_) {
     if (!arguments.length) { return labelThreshold; }
     labelThreshold = _;
-    return chart;
+    return model;
   };
 
-  chart.arcDegrees = function(_) {
+  model.arcDegrees = function(_) {
     if (!arguments.length) { return arcDegrees; }
     arcDegrees = Math.max(Math.min(_, 360), 1);
-    return chart;
+    return model;
   };
 
-  chart.rotateDegrees = function(_) {
+  model.rotateDegrees = function(_) {
     if (!arguments.length) { return rotateDegrees; }
     rotateDegrees = _ % 360;
-    return chart;
+    return model;
   };
 
-  chart.minRadius = function(_) {
+  model.minRadius = function(_) {
     if (!arguments.length) { return minRadius; }
     minRadius = _;
-    return chart;
+    return model;
   };
 
-  chart.maxRadius = function(_) {
+  model.maxRadius = function(_) {
     if (!arguments.length) { return maxRadius; }
     maxRadius = _;
-    return chart;
+    return model;
   };
 
-  chart.fixedRadius = function(_) {
+  model.fixedRadius = function(_) {
     if (!arguments.length) { return fixedRadius; }
     fixedRadius = utility.functor(_);
-    return chart;
+    return model;
   };
 
   //============================================================
 
-  return chart;
+  return model;
 }

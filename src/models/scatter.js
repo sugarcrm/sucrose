@@ -69,7 +69,7 @@ export default function scatter() {
   //============================================================
 
 
-  function chart(selection) {
+  function model(selection) {
     selection.each(function(data) {
 
       var availableWidth = width - margin.left - margin.right,
@@ -95,7 +95,7 @@ export default function scatter() {
               })
             );
 
-      chart.resetDimensions = function(w, h) {
+      model.resetDimensions = function(w, h) {
         width = w;
         height = h;
         availableWidth = w - margin.left - margin.right;
@@ -180,7 +180,7 @@ export default function scatter() {
       resetScale();
 
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-scatter');
@@ -467,7 +467,7 @@ export default function scatter() {
       z0 = z.copy();
 
       //============================================================
-      // Event Handling/Dispatching (in chart's scope)
+      // Event Handling/Dispatching (in model's scope)
       //------------------------------------------------------------
 
       dispatch.on('elementMouseover.point', function(eo) {
@@ -486,251 +486,251 @@ export default function scatter() {
 
     });
 
-    return chart;
+    return model;
   }
 
   //============================================================
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = dispatch;
+  model.dispatch = dispatch;
 
-  chart.id = function(_) {
+  model.id = function(_) {
     if (!arguments.length) { return id; }
     id = _;
-    return chart;
+    return model;
   };
-  chart.color = function(_) {
+  model.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    return chart;
+    return model;
   };
-  chart.fill = function(_) {
+  model.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    return chart;
+    return model;
   };
-  chart.classes = function(_) {
+  model.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    return chart;
+    return model;
   };
-  chart.gradient = function(_) {
+  model.gradient = function(_) {
     if (!arguments.length) { return gradient; }
     gradient = _;
-    return chart;
+    return model;
   };
 
-  chart.x = function(_) {
+  model.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.y = function(_) {
+  model.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.z = function(_) {
+  model.z = function(_) {
     if (!arguments.length) { return getZ; }
     getZ = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.xScale = function(_) {
+  model.xScale = function(_) {
     if (!arguments.length) { return x; }
     x = _;
-    return chart;
+    return model;
   };
 
-  chart.yScale = function(_) {
+  model.yScale = function(_) {
     if (!arguments.length) { return y; }
     y = _;
-    return chart;
+    return model;
   };
 
-  chart.zScale = function(_) {
+  model.zScale = function(_) {
     if (!arguments.length) { return z; }
     z = _;
-    return chart;
+    return model;
   };
 
-  chart.xDomain = function(_) {
+  model.xDomain = function(_) {
     if (!arguments.length) { return xDomain; }
     xDomain = _;
-    return chart;
+    return model;
   };
 
-  chart.yDomain = function(_) {
+  model.yDomain = function(_) {
     if (!arguments.length) { return yDomain; }
     yDomain = _;
-    return chart;
+    return model;
   };
 
-  chart.zDomain = function(_) {
+  model.zDomain = function(_) {
     if (!arguments.length) { return zDomain; }
     zDomain = _;
-    return chart;
+    return model;
   };
 
-  chart.forceX = function(_) {
+  model.forceX = function(_) {
     if (!arguments.length) { return forceX; }
     forceX = _;
-    return chart;
+    return model;
   };
 
-  chart.forceY = function(_) {
+  model.forceY = function(_) {
     if (!arguments.length) { return forceY; }
     forceY = _;
-    return chart;
+    return model;
   };
 
-  chart.forceZ = function(_) {
+  model.forceZ = function(_) {
     if (!arguments.length) { return forceZ; }
     forceZ = _;
-    return chart;
+    return model;
   };
 
-  chart.size = function(_) {
+  model.size = function(_) {
     if (!arguments.length) { return getZ; }
     getZ = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.sizeRange = function(_) {
+  model.sizeRange = function(_) {
     if (!arguments.length) { return zRange; }
     zRange = _;
-    return chart;
+    return model;
   };
-  chart.sizeDomain = function(_) {
+  model.sizeDomain = function(_) {
     if (!arguments.length) { return sizeDomain; }
     zDomain = _;
-    return chart;
+    return model;
   };
-  chart.forceSize = function(_) {
+  model.forceSize = function(_) {
     if (!arguments.length) { return forceZ; }
     forceZ = _;
-    return chart;
+    return model;
   };
 
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
       }
     }
-    return chart;
+    return model;
   };
 
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
-    return chart;
+    return model;
   };
 
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
+    return model;
   };
 
-  chart.interactive = function(_) {
+  model.interactive = function(_) {
     if (!arguments.length) { return interactive; }
     interactive = _;
-    return chart;
+    return model;
   };
 
-  chart.pointActive = function(_) {
+  model.pointActive = function(_) {
     if (!arguments.length) { return pointActive; }
     pointActive = _;
-    return chart;
+    return model;
   };
 
-  chart.padData = function(_) {
+  model.padData = function(_) {
     if (!arguments.length) { return padData; }
     padData = _;
-    return chart;
+    return model;
   };
 
-  chart.padDataOuter = function(_) {
+  model.padDataOuter = function(_) {
     if (!arguments.length) { return padDataOuter; }
     padDataOuter = _;
-    return chart;
+    return model;
   };
 
-  chart.clipEdge = function(_) {
+  model.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
-    return chart;
+    return model;
   };
 
-  chart.clipVoronoi = function(_) {
+  model.clipVoronoi = function(_) {
     if (!arguments.length) { return clipVoronoi; }
     clipVoronoi = _;
-    return chart;
+    return model;
   };
 
-  chart.useVoronoi = function(_) {
+  model.useVoronoi = function(_) {
     if (!arguments.length) { return useVoronoi; }
     useVoronoi = _;
     if (useVoronoi === false) {
         clipVoronoi = false;
     }
-    return chart;
+    return model;
   };
 
-  chart.circleRadius = function(_) {
+  model.circleRadius = function(_) {
     if (!arguments.length) { return circleRadius; }
     circleRadius = _;
-    return chart;
+    return model;
   };
 
-  chart.clipRadius = function(_) {
+  model.clipRadius = function(_) {
     if (!arguments.length) { return circleRadius; }
     circleRadius = _;
-    return chart;
+    return model;
   };
 
-  chart.shape = function(_) {
+  model.shape = function(_) {
     if (!arguments.length) { return getShape; }
     getShape = _;
-    return chart;
+    return model;
   };
 
-  chart.onlyCircles = function(_) {
+  model.onlyCircles = function(_) {
     if (!arguments.length) { return onlyCircles; }
     onlyCircles = _;
-    return chart;
+    return model;
   };
 
-  chart.singlePoint = function(_) {
+  model.singlePoint = function(_) {
     if (!arguments.length) { return singlePoint; }
     singlePoint = _;
-    return chart;
+    return model;
   };
 
-  chart.duration = function(_) {
+  model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    return chart;
+    return model;
   };
 
-  chart.nice = function(_) {
+  model.nice = function(_) {
     if (!arguments.length) { return nice; }
     nice = _;
-    return chart;
+    return model;
   };
 
-  chart.locality = function(_) {
+  model.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    return chart;
+    return model;
   };
 
   //============================================================
 
-  return chart;
+  return model;
 }

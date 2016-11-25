@@ -14,8 +14,8 @@ export default function stackearea() {
       getX = function(d) { return d.x; }, // accessor to get the x value from a data point
       getY = function(d) { return d.y; }, // accessor to get the y value from a data point
       id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
-      x = d3.scaleLinear(), //can be accessed via chart.xScale()
-      y = d3.scaleLinear(), //can be accessed via chart.yScale()
+      x = d3.scaleLinear(), //can be accessed via model.xScale()
+      y = d3.scaleLinear(), //can be accessed via model.yScale()
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
       duration = 300, // transition
@@ -50,7 +50,7 @@ export default function stackearea() {
 
   //============================================================
 
-  function chart(selection) {
+  function model(selection) {
     selection.each(function(chartData) {
 
       var container = d3.select(this);
@@ -72,7 +72,7 @@ export default function stackearea() {
 
       // gradient constructor function
       gradient = function(d, i, p) {
-        return utility.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utility.colorLinearGradient(d, model.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
@@ -297,168 +297,168 @@ export default function stackearea() {
 
     });
 
-    return chart;
+    return model;
   }
 
   //============================================================
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = dispatch;
+  model.dispatch = dispatch;
 
-  chart.id = function(_) {
+  model.id = function(_) {
     if (!arguments.length) { return id; }
     id = _;
-    return chart;
+    return model;
   };
 
-  chart.color = function(_) {
+  model.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    return chart;
+    return model;
   };
-  chart.fill = function(_) {
+  model.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    return chart;
+    return model;
   };
-  chart.classes = function(_) {
+  model.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    return chart;
+    return model;
   };
-  chart.gradient = function(_) {
+  model.gradient = function(_) {
     if (!arguments.length) { return gradient; }
     gradient = _;
-    return chart;
+    return model;
   };
 
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
       }
     }
-    return chart;
+    return model;
   };
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
-    return chart;
+    return model;
   };
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
+    return model;
   };
 
-  chart.x = function(_) {
+  model.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    return chart;
+    return model;
   };
-  chart.y = function(_) {
+  model.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
-    return chart;
+    return model;
   };
-  chart.xScale = function(_) {
+  model.xScale = function(_) {
     if (!arguments.length) { return x; }
     x = _;
-    return chart;
+    return model;
   };
-  chart.yScale = function(_) {
+  model.yScale = function(_) {
     if (!arguments.length) { return y; }
     y = _;
-    return chart;
+    return model;
   };
-  chart.xDomain = function(_) {
+  model.xDomain = function(_) {
     if (!arguments.length) { return xDomain; }
     xDomain = _;
-    return chart;
+    return model;
   };
-  chart.yDomain = function(_) {
+  model.yDomain = function(_) {
     if (!arguments.length) { return yDomain; }
     yDomain = _;
-    return chart;
+    return model;
   };
-  chart.forceX = function(_) {
+  model.forceX = function(_) {
     if (!arguments.length) { return forceX; }
     forceX = _;
-    return chart;
+    return model;
   };
-  chart.forceY = function(_) {
+  model.forceY = function(_) {
     if (!arguments.length) { return forceY; }
     forceY = _;
-    return chart;
+    return model;
   };
 
-  chart.delay = function(_) {
+  model.delay = function(_) {
     if (!arguments.length) { return delay; }
     delay = _;
-    return chart;
+    return model;
   };
-  chart.duration = function(_) {
+  model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    return chart;
+    return model;
   };
 
-  chart.locality = function(_) {
+  model.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    return chart;
+    return model;
   };
-  chart.clipEdge = function(_) {
+  model.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
-    return chart;
+    return model;
   };
 
-  chart.interpolate = function(_) {
+  model.interpolate = function(_) {
     if (!arguments.length) { return interpolate; }
     interpolate = _;
-    return chart;
+    return model;
   };
-  chart.offset = function(_) {
+  model.offset = function(_) {
     if (!arguments.length) { return offset; }
     offset = _;
-    return chart;
+    return model;
   };
-  chart.order = function(_) {
+  model.order = function(_) {
     if (!arguments.length) { return order; }
     order = _;
-    return chart;
+    return model;
   };
   //shortcut for offset + order
-  chart.style = function(_) {
+  model.style = function(_) {
     if (!arguments.length) { return style; }
     style = _;
 
     switch (style) {
       case 'stack':
-        chart.offset('zero');
-        chart.order('default');
+        model.offset('zero');
+        model.order('default');
         break;
       case 'stream':
-        chart.offset('wiggle');
-        chart.order('inside-out');
+        model.offset('wiggle');
+        model.order('inside-out');
         break;
       case 'stream-center':
-          chart.offset('silhouette');
-          chart.order('inside-out');
+          model.offset('silhouette');
+          model.order('inside-out');
           break;
       case 'expand':
-        chart.offset('expand');
-        chart.order('default');
+        model.offset('expand');
+        model.order('default');
         break;
     }
 
-    return chart;
+    return model;
   };
 
   //============================================================
 
-  return chart;
+  return model;
 }

@@ -25,7 +25,7 @@ export default function table() {
   //============================================================
 
 
-  function chart(selection) {
+  function table(selection) {
     selection.each(function (chartData) {
       var container = d3.select(this);
 
@@ -62,14 +62,14 @@ export default function table() {
         var hasData = d && d.length && d.filter(function (d) { return d.values.length; }).length,
             x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
             y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, table.strings().noData, x, y);
       }
       // Check to see if there's nothing to show.
       if (displayNoData(data)) {
-        return chart;
+        return table;
       }
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('table').data([data]);
       var wrap_enter = wrap_bind.enter().append('table');
@@ -229,7 +229,7 @@ export default function table() {
 
     });
 
-    return chart;
+    return table;
   }
 
 
@@ -237,40 +237,40 @@ export default function table() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.margin = function (_) {
+  table.margin = function (_) {
     if (!arguments.length) return margin;
     margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
     margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
     margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
     margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
-    return chart;
+    return table;
   };
 
-  chart.width = function (_) {
+  table.width = function (_) {
     if (!arguments.length) return width;
     width = _;
-    return chart;
+    return table;
   };
 
-  chart.height = function (_) {
+  table.height = function (_) {
     if (!arguments.length) return height;
     height = _;
-    return chart;
+    return table;
   };
 
-  chart.x = function (_) {
+  table.x = function (_) {
     if (!arguments.length) return getX;
     getX = utility.functor(_);
-    return chart;
+    return table;
   };
 
-  chart.y = function (_) {
+  table.y = function (_) {
     if (!arguments.length) return getY;
     getY = utility.functor(_);
-    return chart;
+    return table;
   };
 
-  chart.strings = function (_) {
+  table.strings = function (_) {
     if (!arguments.length) {
       return strings;
     }
@@ -279,17 +279,17 @@ export default function table() {
         strings[prop] = _[prop];
       }
     }
-    return chart;
+    return table;
   };
 
-  chart.color = function (_) {
+  table.color = function (_) {
     if (!arguments.length) return color;
     color = utility.getColor(_);
-    return chart;
+    return table;
   };
 
   //============================================================
 
 
-  return chart;
+  return table;
 }

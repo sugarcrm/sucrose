@@ -16,7 +16,7 @@ export default function multibar() {
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       locality = utility.buildLocality(),
-      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
+      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
       stacked = true,
       barColor = null, // adding the ability to set the color for each rather than the whole group
       disabled, // used in conjunction with barColor to communicate to multibarChart what series are disabled
@@ -49,7 +49,7 @@ export default function multibar() {
 
   //============================================================
 
-  function chart(selection) {
+  function model(selection) {
     selection.each(function(data) {
 
       // baseDimension = stacked ? vertical ? 72 : 30 : 20;
@@ -163,7 +163,7 @@ export default function multibar() {
           )[0];
       }
 
-      chart.resetDimensions = function(w, h) {
+      model.resetDimensions = function(w, h) {
         width = w;
         height = h;
         availableWidth = w - margin.left - margin.right;
@@ -265,7 +265,7 @@ export default function multibar() {
 
 
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-multibar').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
@@ -690,7 +690,7 @@ export default function multibar() {
 
     });
 
-    return chart;
+    return model;
   }
 
 
@@ -698,190 +698,190 @@ export default function multibar() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = dispatch;
+  model.dispatch = dispatch;
 
-  chart.color = function(_) {
+  model.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    return chart;
+    return model;
   };
-  chart.fill = function(_) {
+  model.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    return chart;
+    return model;
   };
-  chart.classes = function(_) {
+  model.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    return chart;
+    return model;
   };
-  chart.gradient = function(_) {
+  model.gradient = function(_) {
     if (!arguments.length) { return gradient; }
     gradient = _;
-    return chart;
+    return model;
   };
 
-  chart.x = function(_) {
+  model.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    return chart;
+    return model;
   };
 
-  chart.y = function(_) {
+  model.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
-    return chart;
+    return model;
   };
 
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
       }
     }
-    return chart;
+    return model;
   };
 
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
-    return chart;
+    return model;
   };
 
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
+    return model;
   };
 
-  chart.xScale = function(_) {
+  model.xScale = function(_) {
     if (!arguments.length) { return x; }
     x = _;
-    return chart;
+    return model;
   };
 
-  chart.yScale = function(_) {
+  model.yScale = function(_) {
     if (!arguments.length) { return y; }
     y = _;
-    return chart;
+    return model;
   };
 
-  chart.xDomain = function(_) {
+  model.xDomain = function(_) {
     if (!arguments.length) { return xDomain; }
     xDomain = _;
-    return chart;
+    return model;
   };
 
-  chart.yDomain = function(_) {
+  model.yDomain = function(_) {
     if (!arguments.length) { return yDomain; }
     yDomain = _;
-    return chart;
+    return model;
   };
 
-  chart.forceY = function(_) {
+  model.forceY = function(_) {
     if (!arguments.length) { return forceY; }
     forceY = _;
-    return chart;
+    return model;
   };
 
-  chart.stacked = function(_) {
+  model.stacked = function(_) {
     if (!arguments.length) { return stacked; }
     stacked = _;
-    return chart;
+    return model;
   };
 
-  chart.barColor = function(_) {
+  model.barColor = function(_) {
     if (!arguments.length) { return barColor; }
     barColor = utility.getColor(_);
-    return chart;
+    return model;
   };
 
-  chart.disabled = function(_) {
+  model.disabled = function(_) {
     if (!arguments.length) { return disabled; }
     disabled = _;
-    return chart;
+    return model;
   };
 
-  chart.id = function(_) {
+  model.id = function(_) {
     if (!arguments.length) { return id; }
     id = _;
-    return chart;
+    return model;
   };
 
-  chart.delay = function(_) {
+  model.delay = function(_) {
     if (!arguments.length) { return delay; }
     delay = _;
-    return chart;
+    return model;
   };
 
-  chart.duration = function(_) {
+  model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    return chart;
+    return model;
   };
 
-  chart.clipEdge = function(_) {
+  model.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
-    return chart;
+    return model;
   };
 
-  chart.showValues = function(_) {
+  model.showValues = function(_) {
     if (!arguments.length) { return showValues; }
     showValues = isNaN(parseInt(_, 10)) ? _ : parseInt(_, 10) && true || false;
-    return chart;
+    return model;
   };
 
-  chart.valueFormat = function(_) {
+  model.valueFormat = function(_) {
     if (!arguments.length) { return valueFormat; }
     valueFormat = _;
-    return chart;
+    return model;
   };
 
-  chart.withLine = function(_) {
+  model.withLine = function(_) {
     if (!arguments.length) { return withLine; }
     withLine = _;
-    return chart;
+    return model;
   };
 
-  chart.vertical = function(_) {
+  model.vertical = function(_) {
     if (!arguments.length) { return vertical; }
     vertical = _;
-    return chart;
+    return model;
   };
 
-  chart.baseDimension = function(_) {
+  model.baseDimension = function(_) {
     if (!arguments.length) { return baseDimension; }
     baseDimension = _;
-    return chart;
+    return model;
   };
 
-  chart.direction = function(_) {
+  model.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
-    return chart;
+    return model;
   };
 
-  chart.nice = function(_) {
+  model.nice = function(_) {
     if (!arguments.length) { return nice; }
     nice = _;
-    return chart;
+    return model;
   };
 
-  chart.textureFill = function(_) {
+  model.textureFill = function(_) {
     if (!arguments.length) { return textureFill; }
     textureFill = _;
-    return chart;
+    return model;
   };
 
-  chart.locality = function(_) {
+  model.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    return chart;
+    return model;
   };
 
   //============================================================
 
-  return chart;
+  return model;
 }

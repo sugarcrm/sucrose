@@ -47,9 +47,9 @@ export default function gauge() {
   //colorScale = d3.scaleLinear().domain([0, .5, 1].map(d3.interpolate(min, max))).range(["green", "yellow", "red"]);
 
   //============================================================
-  // Update chart
+  // Update model
 
-  function chart(selection) {
+  function model(selection) {
 
     selection.each(function(data) {
 
@@ -83,7 +83,7 @@ export default function gauge() {
           prop = function(d) { return d * radius / 100; };
 
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class','sc-wrap sc-gauge');
@@ -309,11 +309,11 @@ export default function gauge() {
         return 'translate(' + radius + ',' + radius + ')';
       }
 
-      chart.setGaugePointer = setGaugePointer;
+      model.setGaugePointer = setGaugePointer;
 
     });
 
-    return chart;
+    return model;
   }
 
 
@@ -321,208 +321,208 @@ export default function gauge() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = dispatch;
+  model.dispatch = dispatch;
 
-  chart.id = function(_) {
+  model.id = function(_) {
     if (!arguments.length) { return id; }
     id = _;
-    return chart;
+    return model;
   };
 
-  chart.color = function(_) {
+  model.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    return chart;
+    return model;
   };
-  chart.fill = function(_) {
+  model.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    return chart;
+    return model;
   };
-  chart.classes = function(_) {
+  model.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    return chart;
+    return model;
   };
-  chart.gradient = function(_) {
+  model.gradient = function(_) {
     if (!arguments.length) { return gradient; }
     gradient = _;
-    return chart;
+    return model;
   };
 
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) { return margin; }
     margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
     margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
     margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
     margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
-    return chart;
+    return model;
   };
 
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
-    return chart;
+    return model;
   };
 
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
+    return model;
   };
 
-  chart.x = function(_) {
+  model.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    return chart;
+    return model;
   };
 
-  chart.y = function(_) {
+  model.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.getKey = function(_) {
+  model.getKey = function(_) {
     if (!arguments.length) { return getKey; }
     getKey = _;
-    return chart;
+    return model;
   };
 
-  chart.getValue = function(_) {
+  model.getValue = function(_) {
     if (!arguments.length) { return getValue; }
     getValue = _;
-    return chart;
+    return model;
   };
 
-  chart.getCount = function(_) {
+  model.getCount = function(_) {
     if (!arguments.length) { return getCount; }
     getCount = _;
-    return chart;
+    return model;
   };
 
-  chart.fmtKey = function(_) {
+  model.fmtKey = function(_) {
     if (!arguments.length) { return fmtKey; }
     fmtKey = _;
-    return chart;
+    return model;
   };
 
-  chart.fmtValue = function(_) {
+  model.fmtValue = function(_) {
     if (!arguments.length) { return fmtValue; }
     fmtValue = _;
-    return chart;
+    return model;
   };
 
-  chart.fmtCount = function(_) {
+  model.fmtCount = function(_) {
     if (!arguments.length) { return fmtCount; }
     fmtCount = _;
-    return chart;
+    return model;
   };
 
-  chart.direction = function(_) {
+  model.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
-    return chart;
+    return model;
   };
 
-  chart.delay = function(_) {
+  model.delay = function(_) {
     if (!arguments.length) { return delay; }
     delay = _;
-    return chart;
+    return model;
   };
 
-  chart.duration = function(_) {
+  model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    return chart;
+    return model;
   };
 
-  chart.locality = function(_) {
+  model.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    return chart;
+    return model;
   };
 
-  chart.values = function(_) {
+  model.values = function(_) {
     if (!arguments.length) { return getValues; }
     getValues = _;
-    return chart;
+    return model;
   };
 
   // GAUGE
 
-  chart.showLabels = function(_) {
+  model.showLabels = function(_) {
     if (!arguments.length) { return showLabels; }
     showLabels = _;
-    return chart;
+    return model;
   };
 
-  chart.labelThreshold = function(_) {
+  model.labelThreshold = function(_) {
     if (!arguments.length) { return labelThreshold; }
     labelThreshold = _;
-    return chart;
+    return model;
   };
 
-  chart.ringWidth = function(_) {
+  model.ringWidth = function(_) {
     if (!arguments.length) { return ringWidth; }
     ringWidth = _;
-    return chart;
+    return model;
   };
-  chart.pointerWidth = function(_) {
+  model.pointerWidth = function(_) {
     if (!arguments.length) { return pointerWidth; }
     pointerWidth = _;
-    return chart;
+    return model;
   };
-  chart.pointerTailLength = function(_) {
+  model.pointerTailLength = function(_) {
     if (!arguments.length) { return pointerTailLength; }
     pointerTailLength = _;
-    return chart;
+    return model;
   };
-  chart.pointerHeadLength = function(_) {
+  model.pointerHeadLength = function(_) {
     if (!arguments.length) { return pointerHeadLength; }
     pointerHeadLength = _;
-    return chart;
+    return model;
   };
-  chart.setPointer = function(_) {
-    if (!arguments.length) { return chart.setGaugePointer; }
-    chart.setGaugePointer(_);
-    return chart;
+  model.setPointer = function(_) {
+    if (!arguments.length) { return model.setGaugePointer; }
+    model.setGaugePointer(_);
+    return model;
   };
-  chart.showPointer = function(_) {
+  model.showPointer = function(_) {
     if (!arguments.length) { return showPointer; }
     showPointer = _;
-    return chart;
+    return model;
   };
-  chart.minValue = function(_) {
+  model.minValue = function(_) {
     if (!arguments.length) { return minValue; }
     minValue = _;
-    return chart;
+    return model;
   };
-  chart.maxValue = function(_) {
+  model.maxValue = function(_) {
     if (!arguments.length) { return maxValue; }
     maxValue = _;
-    return chart;
+    return model;
   };
-  chart.minAngle = function(_) {
+  model.minAngle = function(_) {
     if (!arguments.length) { return minAngle; }
     minAngle = _;
-    return chart;
+    return model;
   };
-  chart.maxAngle = function(_) {
+  model.maxAngle = function(_) {
     if (!arguments.length) { return maxAngle; }
     maxAngle = _;
-    return chart;
+    return model;
   };
-  chart.labelInset = function(_) {
+  model.labelInset = function(_) {
     if (!arguments.length) { return labelInset; }
     labelInset = _;
-    return chart;
+    return model;
   };
-  chart.isRendered = function(_) {
+  model.isRendered = function(_) {
     return (svg !== undefined);
   };
 
   //============================================================
 
-  return chart;
+  return model;
 }

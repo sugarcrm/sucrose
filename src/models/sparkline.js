@@ -23,7 +23,7 @@ export default function sparkline() {
   //============================================================
 
 
-  function chart(selection) {
+  function model(selection) {
     selection.each(function(data) {
       var availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
@@ -43,7 +43,7 @@ export default function sparkline() {
 
 
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-sparkline').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sucrose sc-wrap sc-sparkline');
@@ -98,7 +98,7 @@ export default function sparkline() {
           });
     });
 
-    return chart;
+    return model;
   }
 
 
@@ -106,77 +106,77 @@ export default function sparkline() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) return margin;
     margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
     margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
     margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
     margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
-    return chart;
+    return model;
   };
 
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) return width;
     width = _;
-    return chart;
+    return model;
   };
 
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) return height;
     height = _;
-    return chart;
+    return model;
   };
 
-  chart.x = function(_) {
+  model.x = function(_) {
     if (!arguments.length) return getX;
     getX = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.y = function(_) {
+  model.y = function(_) {
     if (!arguments.length) return getY;
     getY = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.xScale = function(_) {
+  model.xScale = function(_) {
     if (!arguments.length) return x;
     x = _;
-    return chart;
+    return model;
   };
 
-  chart.yScale = function(_) {
+  model.yScale = function(_) {
     if (!arguments.length) return y;
     y = _;
-    return chart;
+    return model;
   };
 
-  chart.xDomain = function(_) {
+  model.xDomain = function(_) {
     if (!arguments.length) return xDomain;
     xDomain = _;
-    return chart;
+    return model;
   };
 
-  chart.yDomain = function(_) {
+  model.yDomain = function(_) {
     if (!arguments.length) return yDomain;
     yDomain = _;
-    return chart;
+    return model;
   };
 
-  chart.animate = function(_) {
+  model.animate = function(_) {
     if (!arguments.length) return animate;
     animate = _;
-    return chart;
+    return model;
   };
 
-  chart.color = function(_) {
+  model.color = function(_) {
     if (!arguments.length) return color;
     color = utility.getColor(_);
-    return chart;
+    return model;
   };
 
   //============================================================
 
 
-  return chart;
+  return model;
 }
