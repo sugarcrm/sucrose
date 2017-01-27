@@ -550,11 +550,13 @@ var sucroseCharts = function () {
     },
     formatToString: function(type) {
       return configs[type]._format.toString()
-        .replace(/\n      /g, '\n');
+        .replace(/function\sformat\([a-z,]*\)/, 'function format(callback)')
+        .replace(/\n\s*/g, '\n');
     },
     configureToString: function() {
       return configureChart.toString()
-        .replace('function configureChart(type, chart, config)', 'function configure()');
+        .replace(/function\sconfigureChart\([a-z,]*\)/, 'function configure()')
+        .replace(/\n\s*/g, '\n');
     }
   };
 
@@ -1059,18 +1061,17 @@ function generatePackage(e) {
 
   var indexTemplate;
   var zip = new JSZip();
-  var type = this.chartType;
   var data = jsonString(Data);
   var settings = Manifest.getConfig();
-  var chart = sucroseCharts.getChart(type);
-  var model = sucroseCharts.getChartModel(type);
-  var format = sucroseCharts.formatToString(type);
+  var chart = sucroseCharts.getChart(chartType);
+  var model = sucroseCharts.getChartModel(chartType);
+  var format = sucroseCharts.formatToString(chartType);
   var configure = sucroseCharts.configureToString();
 
   settings.locality = Manifest.getLocaleData(settings.locale);
   settings.colorOptions = Manifest.getColorOptions();
 
-  var config = jsonString(sucroseCharts.getConfig(type, chart, settings));
+  var config = jsonString(sucroseCharts.getConfig(chartType, chart, settings));
 
   var includes = [
     $.get({url: 'tpl/index.html', dataType: 'text'}),
@@ -1080,7 +1081,7 @@ function generatePackage(e) {
     $.get({url: 'css/sucrose.min.css', dataType: 'text'})
   ];
 
-  if (type === 'globe') {
+  if (chartType === 'globe') {
     includes.push($.get({url: 'js/topojson.min.js', dataType: 'text'}));
     includes.push($.get({url: 'data/geo/world-countries-topo-110.json', dataType: 'text'}));
     includes.push($.get({url: 'data/geo/usa-states-topo-110.json', dataType: 'text'}));
@@ -1098,17 +1099,17 @@ function generatePackage(e) {
     .then(function (files) {
       // replace index compoents with file string
       indexTemplate = files[0]
-        .replace(/{{Type}}/g, type)
+        .replace(/{{Type}}/g, chartType)
         .replace('{{Data}}', data)
         .replace('{{Config}}', config)
         .replace('{{Model}}', model)
         .replace('{{Format}}', format)
         .replace('{{Configure}}', configure);
 
-      if (type === 'globe') {
+      if (chartType === 'globe') {
         indexTemplate = indexTemplate.replace(
           '<!-- {{TopoJSON}} -->',
-          (type === 'globe' ? '<script src="topojson.min.js"></script>' : '')
+          (chartType === 'globe' ? '<script src="topojson.min.js"></script>' : '')
         );
       }
 
@@ -1119,7 +1120,7 @@ function generatePackage(e) {
       zip.file('sucrose.min.js', files[3]);
       zip.file('sucrose.min.css', files[4]);
 
-      if (type === 'globe') {
+      if (chartType === 'globe') {
         zip.file('topojson.min.js', files[5]);
         zip.file('data/geo/world-countries-topo-110.json', files[6]);
         zip.file('data/geo/usa-states-topo-110.json', files[7]);
@@ -1129,7 +1130,7 @@ function generatePackage(e) {
       // initiate zip download
       zip.generateAsync({type:'blob'}).then(
         function (blob) {
-          saveAs(blob, 'sucrose-example-' + type + '.zip');
+          saveAs(blob, 'sucrose-example-' + chartType + '.zip');
         },
         function (err) {
           console.log(err);

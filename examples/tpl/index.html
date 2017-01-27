@@ -41,10 +41,10 @@ var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
 window.onload = function () {
     // apply configuration
-    configure(chart);
+    configure();
 
     // format then render chart
-    format(chart, function() {
+    format(function() {
         // Bind D3 chart to SVG element
         d3.select('#chart_ svg')
             .attr('class', 'sucrose sc-chart sc-chart-' + type)

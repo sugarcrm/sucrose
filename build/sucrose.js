@@ -2,9 +2,9 @@
  * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
  */
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
-    typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
-    (factory((global.sucrose = global.sucrose || {}),global.d3));
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
+	(factory((global.sucrose = global.sucrose || {}),global.d3));
 }(this, (function (exports,d3) { 'use strict';
 
 d3 = 'default' in d3 ? d3['default'] : d3;
@@ -1157,28 +1157,12 @@ function axis() {
       //------------------------------------------------------------
       // Private functions
 
-      function getStepInterval() {
-        return scaleCalc.range().length > 1 ? Math.abs(scaleCalc.range()[1] - scaleCalc.range()[0]) : 0;
-      }
-
-      function getPaddingRatio() {
-        return scaleCalc.range().length > 1 ? Math.max(0.25, 1 - d3.round(scaleCalc.bandwidth() / getStepInterval(), 2)) : 0;
-      }
-
       function getRangeExtent() {
         return typeof scaleCalc.rangeExtent === 'function' ? scaleCalc.rangeExtent() : scaleCalc.range();
       }
 
       function getBarWidth() {
         return hasRangeBand ? scaleCalc.bandwidth() : 0;
-      }
-
-      function getOuterPadding() {
-        return hasRangeBand ? scaleCalc.range()[0] : 0;
-      }
-
-      function getOuterPaddingRatio() {
-        return getOuterPadding() / getTickSpacing();
       }
 
       function getTickSpacing() {
@@ -4472,10 +4456,6 @@ function multibar$1() {
       function barThickness() {
         return x.bandwidth() / (stacked ? 1 : data.length);
       }
-      function sign(bool) {
-        return bool ? 1 : -1;
-      }
-
       if (stacked) {
         // var stack = d3.stack()
         //      .offset('zero')
@@ -5869,26 +5849,7 @@ function pie() {
         return midArc > 0 && midArc < Math.PI ? 1 : -1;
       }
 
-      function arcTween(d) {
-        if (!donut) {
-          d.innerRadius = 0;
-        }
-        var i = d3.interpolate(this._current, d);
-        this._current = i(0);
-
-        return function(t) {
-          var iData = i(t);
-          return pieArc(iData);
-        };
-      }
-
-      function tweenPie(b) {
-        b.innerRadius = 0;
-        var i = d3.interpolate({startAngle: 0, endAngle: 0}, b);
-        return function(t) {
-          return pieArc(i(t));
-        };
-      }
+      
 
     });
 

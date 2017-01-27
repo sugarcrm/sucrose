@@ -43,7 +43,7 @@ install-dev: npm-dev dependencies all
 npm-dev:
 	npm i
 
-all: sucrose.js sucrose.min.js sucrose.css sucrose.min.css
+all: sucrose.min.js sucrose.min.css
 
 clean: clean-js clean-css
 

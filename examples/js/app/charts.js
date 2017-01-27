@@ -508,11 +508,13 @@ var sucroseCharts = function () {
     },
     formatToString: function(type) {
       return configs[type]._format.toString()
-        .replace(/\n      /g, '\n');
+        .replace(/function\sformat\([a-z,]*\)/, 'function format(callback)')
+        .replace(/\n\s*/g, '\n');
     },
     configureToString: function() {
       return configureChart.toString()
-        .replace('function configureChart(type, chart, config)', 'function configure()');
+        .replace(/function\sconfigureChart\([a-z,]*\)/, 'function configure()')
+        .replace(/\n\s*/g, '\n');
     }
   };
 
