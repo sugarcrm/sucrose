@@ -1,6 +1,6 @@
-var fs = require('fs'),
-    rollup = require('rollup'),
-    dependencies = require('./package.json').dependencies;
+var fs = require('fs');
+var rollup = require('rollup');
+var dependencies = require('./package.json').dependencies;
 
 rollup
   .rollup({

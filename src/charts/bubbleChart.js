@@ -1,4 +1,5 @@
 import d3 from 'd3';
+import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';

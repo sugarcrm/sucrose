@@ -4,7 +4,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 var sucrose = require('./build/sucrose.js');
 
-var version = "0.5.0";
+var version = "0.5.1";
 
 //TODO: (from index.js) why doesn't from './build/sucrose.js' work?
 

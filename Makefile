@@ -13,7 +13,10 @@ CSS_COMPILER = \
 CSS_MINIFIER = \
 	node_modules/clean-css/bin/cleancss
 
-.PHONY: examples clean-js clean-css
+.PHONY: examples clean-js clean-css list
+
+list:
+	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | xargs
 
 #----------
 #PRODUCTION
@@ -48,7 +51,7 @@ all: sucrose.min.js sucrose.min.css
 clean: clean-js clean-css
 
 # Javascript
-js: clean-js sucrose.js sucrose.min.js
+js: sucrose.js sucrose.min.js
 sucrose.js:
 	rm -f ./build/$@
 	rollup -c
