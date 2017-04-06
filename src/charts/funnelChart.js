@@ -99,6 +99,19 @@ export default function funnelChart() {
       //------------------------------------------------------------
       // Process data
 
+      chart.clearActive = function() {
+        data.map(function(d) {
+          d.active = '';
+          d.values[0].active = '';
+          container.selectAll('.nv-series').classed('nv-inactive', false);
+          return d;
+        });
+      };
+
+      chart.seriesActivate = function(eo) {
+        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
+      };
+
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
 
@@ -118,10 +131,7 @@ export default function funnelChart() {
 
         // if there are no active data series, inactivate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-            d.active = '';
-            return d;
-          });
+          chart.clearActive();
         }
 
         container.call(chart);

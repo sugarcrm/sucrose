@@ -70,7 +70,7 @@ export default function multibarChart() {
         return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart) {
+  var seriesClick = function(data, e, chart, labels) {
         return;
       };
 
@@ -149,15 +149,36 @@ export default function multibarChart() {
       //------------------------------------------------------------
       // Process data
 
+      chart.clearActive = function() {
+        data.forEach(function(d) {
+          d.active = '';
+          d.values.map(function(d) {
+            d.active = '';
+          });
+        });
+        delete state.active;
+      };
+
+      chart.cellActivate = function(eo) {
+        data[eo.seriesIndex].values[eo.groupIndex].active = 'active';
+        chart.render();
+      };
+
+      chart.seriesActivate = function(eo) {
+        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
+      };
+
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
 
-        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+        // series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+        series.active = (typeof series.active === 'undefined' || series.active === 'inactive' || series.active === '') ? 'active' : 'inactive';
+
         series.values.map(function(d) {
           d.active = series.active;
         });
 
-        // if you have activated a data series, inactivate the rest
+        // if you have activated a data series, inactivate the other non-active series
         if (series.active === 'active') {
           data
             .filter(function(d) {
@@ -172,19 +193,15 @@ export default function multibarChart() {
             });
         }
 
-        // if there are no active data series, activate them all
+        // if there are no active data series, unset active state
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-              d.active = '';
-              d.values.map(function(d) {
-                d.active = '';
-              });
-              container.selectAll('.sc-series').classed('sc-inactive', false);
-              return d;
-            });
+          chart.clearActive();
+        } else {
+          state.active = data.map(function(d) { return typeof d.active === 'undefined' || d.active === 'active'; });
         }
 
-        container.call(chart);
+        // container.call(chart);
+        chart.render();
       };
 
       // add series index to each data point for reference
@@ -325,6 +342,7 @@ export default function multibarChart() {
 
       // set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
+      state.active = data.map(function(d) { return d.active === 'active'; });
       state.stacked = multibar.stacked();
 
       // set title display option
@@ -688,9 +706,22 @@ export default function multibarChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
-        d.active = false;
+      legend.dispatch.on('legendClick', function(series, i) {
+        series.disabled = !series.disabled;
+        series.active = 'inactive';
+        series.values.map(function(d) {
+          d.active = 'inactive';
+        });
+
+        if (hideEmptyGroups) {
+          data.map(function(m, j) {
+            m._values.map(function(v, k) {
+              v.disabled = (k === i ? series.disabled : v.disabled ? true : false);
+              return v;
+            });
+            return m;
+          });
+        }
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
@@ -700,18 +731,16 @@ export default function multibarChart() {
           });
         }
 
-        // if there are no active data series, activate them all
+        // if there are no active data series, unset active state
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-            d.active = '';
-            return d;
-          });
+          chart.clearActive();
         }
 
-        state.disabled = data.map(function(d) { return !!d.disabled; });
+        // state.disabled = data.map(function(d) { return !!d.disabled; });
+        chart.update();
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(duration).call(chart);
+        // container.transition().duration(duration).call(chart);
       });
 
       controls.dispatch.on('legendClick', function(d, i) {
@@ -738,9 +767,10 @@ export default function multibarChart() {
         }
 
         state.stacked = multibar.stacked();
+        chart.update();
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(duration).call(chart);
+        // container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -771,12 +801,27 @@ export default function multibarChart() {
           state.disabled = eo.disabled;
         }
 
+        if (typeof eo.active !== 'undefined') {
+          data.forEach(function(series, i) {
+            series.active = eo.active[i] ? 'active' : 'inactive';
+            series.values.map(function(d) {
+              d.active = series.active;
+            });
+          });
+          state.active = eo.active;
+          // if there are no active data series, unset active state
+          if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+            chart.clearActive();
+          }
+        }
+
         if (typeof eo.stacked !== 'undefined') {
           multibar.stacked(eo.stacked);
           state.stacked = eo.stacked;
         }
 
-        container.transition().duration(duration).call(chart);
+        // container.transition().duration(duration).call(chart);
+        chart.render();
       });
 
       dispatch.on('chartClick', function() {
@@ -791,7 +836,7 @@ export default function multibarChart() {
 
       model.dispatch.on('elementClick', function(eo) {
         dispatch.call('chartClick', this);
-        seriesClick(data, eo, chart);
+        seriesClick(data, eo, chart, groupLabels);
       });
 
     });
@@ -940,6 +985,7 @@ export default function multibarChart() {
   chart.state = function(_) {
     if (!arguments.length) { return state; }
     state = _;
+    dispatch.stateChange(state);
     return chart;
   };
 

@@ -99,6 +99,18 @@ export default function pieChart() {
       //------------------------------------------------------------
       // Process data
 
+      chart.clearActive = function() {
+        data.map(function(d) {
+          d.active = '';
+          container.selectAll('.nv-series').classed('nv-inactive', false);
+          return d;
+        });
+      };
+
+      chart.seriesActivate = function(eo) {
+        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
+      };
+
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
 
@@ -118,10 +130,7 @@ export default function pieChart() {
 
         // if there are no active data series, inactivate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-            d.active = '';
-            return d;
-          });
+          chart.clearActive();
         }
 
         container.call(chart);
