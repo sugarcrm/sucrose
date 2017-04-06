@@ -406,6 +406,7 @@ export default function multibar() {
             .attr(valX, 0)
             .attr(dimY, barLength)
             .attr(dimX, barThickness)
+            .classed('sc-active', function(d) { return d.active === 'active'; })
             .style('fill', function(d, i) {
               var backColor = fill(d),
                   foreColor = utility.getTextContrast(backColor, i);

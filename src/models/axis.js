@@ -430,7 +430,6 @@ export default function axis() {
         tickDimensions.forEach(function(d, i) {
           var isMin = dMin === null || d.left <= dMin,
               isMax = dMax === null || d.right >= dMax,
-              textWidth = 0,
               tickPosition = 0,
               availableSpace = 0,
               textWidth = 0;
@@ -759,14 +758,6 @@ export default function axis() {
     fc.rebind(chart, scale, 'domain', 'range');
     return chart;
   };
-  chart.valueFormat = function(_) {
-    if (!arguments.length) {
-      return valueFormat;
-    }
-    valueFormat = _;
-    axis.tickFormat(valueFormat);
-    return chart;
-  };
   chart.tickValues = function(_) {
     if (!arguments.length) {
       return tickValues;
@@ -793,9 +784,17 @@ export default function axis() {
   };
   chart.tickFormat = function(_) {
     if (!arguments.length) {
-      return tickFormat;
+      return tickFormat || axis.tickFormat();
     }
     tickFormat = _;
+    axis.tickFormat(_);
+    return chart;
+  };
+  chart.valueFormat = function(_) {
+    if (!arguments.length) {
+      return valueFormat || axis.tickFormat();
+    }
+    valueFormat = _;
     axis.tickFormat(_);
     return chart;
   };

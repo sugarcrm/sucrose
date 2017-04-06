@@ -35,6 +35,19 @@ export default function paretoChart() {
       locality = utility.buildLocality(),
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
+  var xValueFormat = function(d, i, label, isDate) {
+        return isDate ?
+          utility.dateFormat(label, '%x', chart.locality()) :
+          label;
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency) {
+        var precision = 2;
+        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+      };
+
+  var quotaValueFormat = yValueFormat;
+
   //============================================================
   // Private Variables
   //------------------------------------------------------------
@@ -131,22 +144,22 @@ export default function paretoChart() {
 
       var baseDimension = multibar.stacked() ? 72 : 32;
 
-      var xValueFormat = function(d, i, selection, noEllipsis) {
+      var xAxisValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
-            var value = groupLabels && Array.isArray(groupLabels) ?
-                          groupLabels[i] || d:
-                          d;
-            var label = xIsDatetime ?
-                          utility.dateFormat(value, '%x', chart.locality()) :
-                          value;
+            var label = groupLabels && Array.isArray(groupLabels) ?
+                  groupLabels[i] || d:
+                  d;
+            var value = xValueFormat(d, i, label, xIsDatetime);
             var width = Math.max(baseDimension * 2, 75);
+
             return !noEllipsis ?
-                      utility.stringEllipsify(label, container, width) :
-                      label;
+              utility.stringEllipsify(value, container, width) :
+              value;
           };
 
-      var yValueFormat = function(d) {
-            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+      var yAxisValueFormat = function(d, i, selection, noEllipsis) {
+            return yValueFormat(d, i, null, yIsCurrency);
+            return value;
           };
 
       chart.update = function() {
@@ -382,7 +395,7 @@ export default function paretoChart() {
       xAxis
         .orient('bottom')
         .scale(x)
-        .valueFormat(xValueFormat)
+        .valueFormat(xAxisValueFormat)
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
@@ -391,7 +404,7 @@ export default function paretoChart() {
       yAxis
         .orient('left')
         .scale(y)
-        .valueFormat(yValueFormat)
+        .valueFormat(yAxisValueFormat)
         .tickPadding(7)
         .showMaxMin(true);
 
@@ -632,14 +645,16 @@ export default function paretoChart() {
 
           // Target Quota line label
           yAxis_wrap.append('text')
-            .text(yAxis.valueFormat()(targetQuotaValue, true))
+            .text(quotaValueFormat(targetQuotaValue, 2, true))
             .attr('class', 'sc-target-quota-value')
             .attr('dy', '.36em')
             .attr('dx', '0')
             .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
             .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
 
-          quotaTextWidth = Math.round(wrap.select('text.sc-target-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding());
+          quotaTextWidth = Math.round(
+            wrap.select('text.sc-target-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding()
+          );
         }
 
         if (quotaValue > 0) {
@@ -663,14 +678,19 @@ export default function paretoChart() {
 
           // Quota line label
           yAxis_wrap.append('text')
-            .text(yAxis.valueFormat()(quotaValue, true))
+            .text(quotaValueFormat(quotaValue, 2, true))
             .attr('class', 'sc-quota-value')
             .attr('dy', '.36em')
             .attr('dx', '0')
             .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
             .attr('transform', 'translate(' + -yAxis.tickPadding() + ',' + y(quotaValue) + ')');
 
-          quotaTextWidth = Math.max(quotaTextWidth, Math.round(wrap.select('text.sc-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding()));
+          quotaTextWidth = Math.max(
+            quotaTextWidth,
+            Math.round(
+              wrap.select('text.sc-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding()
+            )
+          );
         }
 
         //------------------------------------------------------------
@@ -1177,6 +1197,30 @@ export default function paretoChart() {
 
   chart.colorFill = function(_) {
     return chart;
+  };
+
+  chart.xValueFormat = function(_) {
+    if (!arguments.length) {
+      return xValueFormat;
+    }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
+    return chart;
+  };
+
+  chart.quotaValueFormat = function(_) {
+      if (!arguments.length) {
+          return quotaValueFormat;
+      }
+      quotaValueFormat = _;
+      return chart;
   };
 
   chart.locality = function(_) {

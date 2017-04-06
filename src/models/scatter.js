@@ -237,7 +237,7 @@ export default function scatter() {
       series
         .transition(t)
           .style('stroke-opacity', 1)
-          .style('fill-opacity', 0.5);
+          .style('fill-opacity', 1);
       series_bind.exit()
         .transition(t)
           .style('stroke-opacity', 1e-6)

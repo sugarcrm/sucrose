@@ -35,6 +35,17 @@ export default function multibarChart() {
       hideEmptyGroups = true,
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
+  var xValueFormat = function(d, i, label, isDate) {
+        return isDate ?
+          utility.dateFormat(label, '%x', chart.locality()) :
+          label;
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency) {
+        var precision = 2;
+        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+      };
+
   //============================================================
   // Private Variables
   //------------------------------------------------------------
@@ -90,8 +101,11 @@ export default function multibarChart() {
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var availableWidth = width;
-      var availableHeight = height;
+      var availableWidth = width,
+          availableHeight = height;
+
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var seriesData = [],
           seriesCount = 0,
@@ -99,30 +113,28 @@ export default function multibarChart() {
           groupLabels = [],
           groupCount = 0,
           totalAmount = 0,
-          hasData = false,
-          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+          hasData = false;
 
       var baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32;
 
-      var xValueFormat = function(d, i, selection, noEllipsis) {
+      var xAxisValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
-            var value = groupLabels && Array.isArray(groupLabels) ?
-                          groupLabels[i] || d:
-                          d;
-            var label = xIsDatetime ?
-                          utility.dateFormat(value, '%x', chart.locality()) :
-                          value;
+            var label = groupLabels && Array.isArray(groupLabels) ?
+                  groupLabels[i] || d:
+                  d;
+            // format as date if isDate
+            var value = xValueFormat(d, i, label, xIsDatetime);
             var width = Math.max(vertical ?
-                          baseDimension * 2 :
-                          availableWidth * 0.2, 75);
+                  baseDimension * 2 :
+                  availableWidth * 0.2, 75);
+
             return !noEllipsis ?
-                      utility.stringEllipsify(label, container, width) :
-                      label;
+              utility.stringEllipsify(value, container, width) :
+              value;
           };
 
-      var yValueFormat = function(d) {
-            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+      var yAxisValueFormat = function(d, i, selection, noEllipsis) {
+            return yValueFormat(d, i, null, yIsCurrency);
           };
 
       chart.update = function() {
@@ -288,7 +300,7 @@ export default function multibarChart() {
           return hideEmptyGroups ? group._height !== 0 : true;
         })
         .map(function(group) {
-          return group.label || chart.strings().noLabel;
+          return group.l || group.label || chart.strings().noLabel;
         });
 
       groupCount = groupLabels.length;
@@ -362,7 +374,7 @@ export default function multibarChart() {
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
         .scale(x)
-        .valueFormat(xValueFormat)
+        .valueFormat(xAxisValueFormat)
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
@@ -371,7 +383,7 @@ export default function multibarChart() {
       yAxis
         .orient(vertical ? 'left' : 'bottom')
         .scale(y)
-        .valueFormat(yValueFormat)
+        .valueFormat(yAxisValueFormat)
         .tickPadding(4)
         .showMaxMin(true);
 
@@ -416,7 +428,6 @@ export default function multibarChart() {
 
         // Chart layout variables
         var renderWidth, renderHeight,
-            // availableWidth, availableHeight,
             innerMargin,
             innerWidth, innerHeight;
 
@@ -1051,6 +1062,22 @@ export default function multibarChart() {
   chart.hideEmptyGroups = function(_) {
     if (!arguments.length) { return hideEmptyGroups; }
     hideEmptyGroups = _;
+    return chart;
+  };
+
+  chart.xValueFormat = function(_) {
+    if (!arguments.length) {
+      return xValueFormat;
+    }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
     return chart;
   };
 

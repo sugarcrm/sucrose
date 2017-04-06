@@ -42,19 +42,20 @@ export default function bubbleChart() {
       },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
+  var xValueFormat = function(d, i, label, isDate) {
+        return isDate ?
+          utility.dateFormat(label, 'MMM', chart.locality()) :
+          label;
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency) {
+        var precision = 2;
+        return utility.numberFormatSI(label, precision, isCurrency, chart.locality());
+      };
+
   //============================================================
   // Private Variables
   //------------------------------------------------------------
-  var xValueFormat = function(d, labels, isDate) {
-          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
-            d : labels[parseInt(d, 10)] || d;
-          return isDate ? utility.dateFormat(val, 'MMM', chart.locality()) : val;
-      };
-  var yValueFormat = function(d, labels, isCurrency) {
-          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
-            d : labels[parseInt(d, 10)].key || d;
-          return utility.numberFormatSI(val, 2, isCurrency, chart.locality());
-      };
 
   var scatter = models.scatter()
         .padData(true)
@@ -98,20 +99,38 @@ export default function bubbleChart() {
           container = d3.select(this),
           modelClass = 'bubble';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || [] : [];
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+      var availableWidth = width,
+          availableHeight = height;
+
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData,
           timeExtent,
           xD,
           yD,
           yValues;
+
+      var xAxisValueFormat = function(d, i, selection, noEllipsis) {
+            return xValueFormat(d, i, d, xIsDatetime);
+          };
+
+      var yAxisValueFormat = function(d, i, selection, noEllipsis) {
+            var label = yValues && Array.isArray(yValues) ?
+                  yValues[i].key || d :
+                  d;
+            var width = Math.max(availableWidth * 0.2, 75);
+
+            return isNaN(label) ?
+              utility.stringEllipsify(label, container, width) :
+              yValueFormat(d, i, label, yIsCurrency);
+          };
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -223,7 +242,10 @@ export default function bubbleChart() {
                 return p;
               });
 
-            yValues.push({y: d3.min(s.values.map(function(p) { return p.y; })), key: s.key});
+            yValues.push({
+              key: s.key,
+              y: d3.min(s.values.map(function(p) { return p.y; }))
+            });
 
             return s;
           });
@@ -275,45 +297,45 @@ export default function bubbleChart() {
 
       xAxis
         .orient('bottom')
-        .valueFormat(xValueFormat)
+        .scale(x)
+        .valueFormat(xAxisValueFormat)
+        .ticks(d3.timeMonths, 1)
+        .tickValues(getTimeTicks(xD))
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
-        .showMaxMin(false)
-        .ticks(d3.timeMonths, 1)
-        .scale(x)
-        .tickValues(getTimeTicks(xD));
+        .showMaxMin(false);
       yAxis
         .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(7)
-        .highlightZero(false)
-        .showMaxMin(false)
         .scale(y)
+        .valueFormat(yAxisValueFormat)
         .ticks(yValues.length)
         .tickValues(yValues.map(function(d, i) {
           return yValues[i].y;
-        }));
+        }))
+        .tickPadding(7)
+        .highlightZero(false)
+        .showMaxMin(false);
 
       //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
 
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
-
         // Chart layout variables
         var renderWidth, renderHeight,
-            availableWidth, availableHeight,
             innerMargin,
             innerWidth, innerHeight;
 
-        // Chart layout variables
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         renderWidth = width || containerWidth || 960;
         renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
@@ -453,11 +475,7 @@ export default function bubbleChart() {
 
         // Y-Axis
         yAxis
-          .margin(innerMargin)
-          .tickFormat(function(d, i) {
-            var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
-            return utility.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
-          });
+          .margin(innerMargin);
         yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
@@ -468,10 +486,7 @@ export default function bubbleChart() {
         // X-Axis
         xAxis
           .tickSize(0)
-          .margin(innerMargin)
-          .tickFormat(function(d) {
-            return xAxis.valueFormat()(d, null, xIsDatetime);
-          });
+          .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);
 
@@ -611,7 +626,7 @@ export default function bubbleChart() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -800,6 +815,22 @@ export default function bubbleChart() {
       return filterBy;
     }
     filterBy = _;
+    return chart;
+  };
+
+  chart.xValueFormat = function(_) {
+    if (!arguments.length) {
+      return xValueFormat;
+    }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
     return chart;
   };
 

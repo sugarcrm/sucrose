@@ -90,15 +90,16 @@ export default function lineChart() {
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
+            var value = xTickLabels && Array.isArray(xTickLabels) && !isNaN(parseInt(d, 10)) ?
+                          xTickLabels[parseInt(d, 10)] || d :
+                          d;
             var label = xIsDatetime ?
-                          utility.dateFormat(d, '%x', chart.locality()) :
-                          isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
-                            d :
-                            xTickLabels[parseInt(d, 10)];
+                          utility.dateFormat(value, '%x', chart.locality()) :
+                          value;
             return label;
           };
 
-      var yValueFormat = function(d) {
+      var yValueFormat = function(d, i, selection, noEllipsis) {
             return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
@@ -259,16 +260,16 @@ export default function lineChart() {
 
         xAxis
           .orient('bottom')
-          .highlightZero(false)
           .showMaxMin(false)
           .ticks(xValues.length)
           .tickValues(xValues)
+          .highlightZero(false)
           .showMaxMin(false);
         yAxis
           .orient('left')
           .ticks(singlePoint ? 5 : null) //TODO: why 5?
-          .showMaxMin(false)
-          .highlightZero(false);
+          .highlightZero(false)
+          .showMaxMin(false);
 
       } else {
 
@@ -279,13 +280,13 @@ export default function lineChart() {
           .orient('bottom')
           .ticks(null)
           .tickValues(null)
-          .showMaxMin(xIsDatetime)
-          .highlightZero(false);
+          .highlightZero(false)
+          .showMaxMin(xIsDatetime);
         yAxis
           .orient('left')
           .ticks(null)
-          .showMaxMin(true)
-          .highlightZero(true);
+          .highlightZero(true)
+          .showMaxMin(true);
 
       }
 
@@ -294,12 +295,12 @@ export default function lineChart() {
 
       xAxis
         .scale(x)
-        .tickPadding(6)
-        .valueFormat(xValueFormat);
+        .valueFormat(xValueFormat)
+        .tickPadding(6);
       yAxis
         .scale(y)
-        .tickPadding(6)
-        .valueFormat(yValueFormat);
+        .valueFormat(yValueFormat)
+        .tickPadding(6);
 
       //------------------------------------------------------------
       // Main chart wrappers
