@@ -2,14 +2,15 @@
  * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
  */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
-	(factory((global.sucrose = global.sucrose || {}),global.d3));
-}(this, (function (exports,d3) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3'), require('d3fc-rebind')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'd3', 'd3fc-rebind'], factory) :
+	(factory((global.sucrose = global.sucrose || {}),global.d3,global.fc));
+}(this, (function (exports,d3,fc) { 'use strict';
 
 d3 = 'default' in d3 ? d3['default'] : d3;
+fc = 'default' in fc ? fc['default'] : fc;
 
-var version = "0.5.0";
+var version = "0.5.2";
 
 /*-------------------
       UTILITIES
@@ -1269,7 +1270,6 @@ function axis() {
         tickDimensions.forEach(function(d, i) {
           var isMin = dMin === null || d.left <= dMin,
               isMax = dMax === null || d.right >= dMax,
-              textWidth = 0,
               tickPosition = 0,
               availableSpace = 0,
               textWidth = 0;
@@ -1598,14 +1598,6 @@ function axis() {
     fc.rebind(chart, scale, 'domain', 'range');
     return chart;
   };
-  chart.valueFormat = function(_) {
-    if (!arguments.length) {
-      return valueFormat;
-    }
-    valueFormat = _;
-    axis.tickFormat(valueFormat);
-    return chart;
-  };
   chart.tickValues = function(_) {
     if (!arguments.length) {
       return tickValues;
@@ -1632,9 +1624,17 @@ function axis() {
   };
   chart.tickFormat = function(_) {
     if (!arguments.length) {
-      return tickFormat;
+      return tickFormat || axis.tickFormat();
     }
     tickFormat = _;
+    axis.tickFormat(_);
+    return chart;
+  };
+  chart.valueFormat = function(_) {
+    if (!arguments.length) {
+      return valueFormat || axis.tickFormat();
+    }
+    valueFormat = _;
     axis.tickFormat(_);
     return chart;
   };
@@ -4780,6 +4780,7 @@ function multibar$1() {
             .attr(valX, 0)
             .attr(dimY, barLength)
             .attr(dimX, barThickness)
+            .classed('sc-active', function(d) { return d.active === 'active'; })
             .style('fill', function(d, i) {
               var backColor = fill(d),
                   foreColor = utility.getTextContrast(backColor, i);
@@ -4841,7 +4842,7 @@ function multibar$1() {
               return valueFormat(val);
             })
             .each(function(d, i) {
-              var bbox = this.get_bindingClientRect();
+              var bbox = this.getBoundingClientRect();
               d.labelWidth = Math.floor(bbox.width) + 4;
               d.labelHeight = Math.floor(bbox.height);
               d.barLength = barLength(d, i);
@@ -6334,7 +6335,7 @@ function scatter() {
       series
         .transition(t)
           .style('stroke-opacity', 1)
-          .style('fill-opacity', 0.5);
+          .style('fill-opacity', 1);
       series_bind.exit()
         .transition(t)
           .style('stroke-opacity', 1e-6)
@@ -8594,19 +8595,20 @@ function bubbleChart() {
       },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
+  var xValueFormat = function(d, i, label, isDate) {
+        return isDate ?
+          utility.dateFormat(label, 'MMM', chart.locality()) :
+          label;
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency) {
+        var precision = 2;
+        return utility.numberFormatSI(label, precision, isCurrency, chart.locality());
+      };
+
   //============================================================
   // Private Variables
   //------------------------------------------------------------
-  var xValueFormat = function(d, labels, isDate) {
-          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
-            d : labels[parseInt(d, 10)] || d;
-          return isDate ? utility.dateFormat(val, 'MMM', chart.locality()) : val;
-      };
-  var yValueFormat = function(d, labels, isCurrency) {
-          var val = isNaN(parseInt(d, 10)) || !labels || !Array.isArray(labels) ?
-            d : labels[parseInt(d, 10)].key || d;
-          return utility.numberFormatSI(val, 2, isCurrency, chart.locality());
-      };
 
   var scatter = models.scatter()
         .padData(true)
@@ -8650,20 +8652,38 @@ function bubbleChart() {
           container = d3.select(this),
           modelClass = 'bubble';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || [] : [];
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+      var availableWidth = width,
+          availableHeight = height;
+
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData,
           timeExtent,
           xD,
           yD,
           yValues;
+
+      var xAxisValueFormat = function(d, i, selection, noEllipsis) {
+            return xValueFormat(d, i, d, xIsDatetime);
+          };
+
+      var yAxisValueFormat = function(d, i, selection, noEllipsis) {
+            var label = yValues && Array.isArray(yValues) ?
+                  yValues[i].key || d :
+                  d;
+            var width = Math.max(availableWidth * 0.2, 75);
+
+            return isNaN(label) ?
+              utility.stringEllipsify(label, container, width) :
+              yValueFormat(d, i, label, yIsCurrency);
+          };
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -8775,7 +8795,10 @@ function bubbleChart() {
                 return p;
               });
 
-            yValues.push({y: d3.min(s.values.map(function(p) { return p.y; })), key: s.key});
+            yValues.push({
+              key: s.key,
+              y: d3.min(s.values.map(function(p) { return p.y; }))
+            });
 
             return s;
           });
@@ -8827,45 +8850,45 @@ function bubbleChart() {
 
       xAxis
         .orient('bottom')
-        .valueFormat(xValueFormat)
+        .scale(x)
+        .valueFormat(xAxisValueFormat)
+        .ticks(d3.timeMonths, 1)
+        .tickValues(getTimeTicks(xD))
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
-        .showMaxMin(false)
-        .ticks(d3.timeMonths, 1)
-        .scale(x)
-        .tickValues(getTimeTicks(xD));
+        .showMaxMin(false);
       yAxis
         .orient('left')
-        .valueFormat(yValueFormat)
-        .tickPadding(7)
-        .highlightZero(false)
-        .showMaxMin(false)
         .scale(y)
+        .valueFormat(yAxisValueFormat)
         .ticks(yValues.length)
         .tickValues(yValues.map(function(d, i) {
           return yValues[i].y;
-        }));
+        }))
+        .tickPadding(7)
+        .highlightZero(false)
+        .showMaxMin(false);
 
       //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
 
-        containerWidth = parseInt(container.style('width'), 10);
-        containerHeight = parseInt(container.style('height'), 10);
-
         // Chart layout variables
         var renderWidth, renderHeight,
-            availableWidth, availableHeight,
             innerMargin,
             innerWidth, innerHeight;
 
-        // Chart layout variables
+        containerWidth = parseInt(container.style('width'), 10);
+        containerHeight = parseInt(container.style('height'), 10);
+
         renderWidth = width || containerWidth || 960;
         renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
+
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
@@ -9005,11 +9028,7 @@ function bubbleChart() {
 
         // Y-Axis
         yAxis
-          .margin(innerMargin)
-          .tickFormat(function(d, i) {
-            var label = yAxis.valueFormat()(i, yValues, yIsCurrency);
-            return utility.stringEllipsify(label, container, Math.max(availableWidth * 0.2, 75));
-          });
+          .margin(innerMargin);
         yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
@@ -9020,10 +9039,7 @@ function bubbleChart() {
         // X-Axis
         xAxis
           .tickSize(0)
-          .margin(innerMargin)
-          .tickFormat(function(d) {
-            return xAxis.valueFormat()(d, null, xIsDatetime);
-          });
+          .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);
 
@@ -9163,7 +9179,7 @@ function bubbleChart() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -9355,6 +9371,22 @@ function bubbleChart() {
     return chart;
   };
 
+  chart.xValueFormat = function(_) {
+    if (!arguments.length) {
+      return xValueFormat;
+    }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
+    return chart;
+  };
+
   //============================================================
 
   return chart;
@@ -9455,6 +9487,19 @@ function funnelChart() {
       //------------------------------------------------------------
       // Process data
 
+      chart.clearActive = function() {
+        data.map(function(d) {
+          d.active = '';
+          d.values[0].active = '';
+          container.selectAll('.nv-series').classed('nv-inactive', false);
+          return d;
+        });
+      };
+
+      chart.seriesActivate = function(eo) {
+        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
+      };
+
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
 
@@ -9474,10 +9519,7 @@ function funnelChart() {
 
         // if there are no active data series, inactivate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-            d.active = '';
-            return d;
-          });
+          chart.clearActive();
         }
 
         container.call(chart);
@@ -11242,15 +11284,16 @@ function lineChart() {
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
       var xValueFormat = function(d, i, selection, noEllipsis) {
+            var value = xTickLabels && Array.isArray(xTickLabels) && !isNaN(parseInt(d, 10)) ?
+                          xTickLabels[parseInt(d, 10)] || d :
+                          d;
             var label = xIsDatetime ?
-                          utility.dateFormat(d, '%x', chart.locality()) :
-                          isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
-                            d :
-                            xTickLabels[parseInt(d, 10)];
+                          utility.dateFormat(value, '%x', chart.locality()) :
+                          value;
             return label;
           };
 
-      var yValueFormat = function(d) {
+      var yValueFormat = function(d, i, selection, noEllipsis) {
             return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
           };
 
@@ -11411,16 +11454,16 @@ function lineChart() {
 
         xAxis
           .orient('bottom')
-          .highlightZero(false)
           .showMaxMin(false)
           .ticks(xValues.length)
           .tickValues(xValues)
+          .highlightZero(false)
           .showMaxMin(false);
         yAxis
           .orient('left')
           .ticks(singlePoint ? 5 : null) //TODO: why 5?
-          .showMaxMin(false)
-          .highlightZero(false);
+          .highlightZero(false)
+          .showMaxMin(false);
 
       } else {
 
@@ -11431,13 +11474,13 @@ function lineChart() {
           .orient('bottom')
           .ticks(null)
           .tickValues(null)
-          .showMaxMin(xIsDatetime)
-          .highlightZero(false);
+          .highlightZero(false)
+          .showMaxMin(xIsDatetime);
         yAxis
           .orient('left')
           .ticks(null)
-          .showMaxMin(true)
-          .highlightZero(true);
+          .highlightZero(true)
+          .showMaxMin(true);
 
       }
 
@@ -11446,12 +11489,12 @@ function lineChart() {
 
       xAxis
         .scale(x)
-        .tickPadding(6)
-        .valueFormat(xValueFormat);
+        .valueFormat(xValueFormat)
+        .tickPadding(6);
       yAxis
         .scale(y)
-        .tickPadding(6)
-        .valueFormat(yValueFormat);
+        .valueFormat(yValueFormat)
+        .tickPadding(6);
 
       //------------------------------------------------------------
       // Main chart wrappers
@@ -12053,6 +12096,17 @@ function multibarChart() {
       hideEmptyGroups = true,
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
+  var xValueFormat = function(d, i, label, isDate) {
+        return isDate ?
+          utility.dateFormat(label, '%x', chart.locality()) :
+          label;
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency) {
+        var precision = 2;
+        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+      };
+
   //============================================================
   // Private Variables
   //------------------------------------------------------------
@@ -12088,7 +12142,7 @@ function multibarChart() {
         return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart) {
+  var seriesClick = function(data, e, chart, labels) {
         return;
       };
 
@@ -12108,8 +12162,11 @@ function multibarChart() {
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var availableWidth = width;
-      var availableHeight = height;
+      var availableWidth = width,
+          availableHeight = height;
+
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var seriesData = [],
           seriesCount = 0,
@@ -12117,30 +12174,28 @@ function multibarChart() {
           groupLabels = [],
           groupCount = 0,
           totalAmount = 0,
-          hasData = false,
-          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+          hasData = false;
 
       var baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32;
 
-      var xValueFormat = function(d, i, selection, noEllipsis) {
+      var xAxisValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
-            var value = groupLabels && Array.isArray(groupLabels) ?
-                          groupLabels[i] || d:
-                          d;
-            var label = xIsDatetime ?
-                          utility.dateFormat(value, '%x', chart.locality()) :
-                          value;
+            var label = groupLabels && Array.isArray(groupLabels) ?
+                  groupLabels[i] || d:
+                  d;
+            // format as date if isDate
+            var value = xValueFormat(d, i, label, xIsDatetime);
             var width = Math.max(vertical ?
-                          baseDimension * 2 :
-                          availableWidth * 0.2, 75);
+                  baseDimension * 2 :
+                  availableWidth * 0.2, 75);
+
             return !noEllipsis ?
-                      utility.stringEllipsify(label, container, width) :
-                      label;
+              utility.stringEllipsify(value, container, width) :
+              value;
           };
 
-      var yValueFormat = function(d) {
-            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+      var yAxisValueFormat = function(d, i, selection, noEllipsis) {
+            return yValueFormat(d, i, null, yIsCurrency);
           };
 
       chart.update = function() {
@@ -12167,15 +12222,36 @@ function multibarChart() {
       //------------------------------------------------------------
       // Process data
 
+      chart.clearActive = function() {
+        data.forEach(function(d) {
+          d.active = '';
+          d.values.map(function(d) {
+            d.active = '';
+          });
+        });
+        delete state.active;
+      };
+
+      chart.cellActivate = function(eo) {
+        data[eo.seriesIndex].values[eo.groupIndex].active = 'active';
+        chart.render();
+      };
+
+      chart.seriesActivate = function(eo) {
+        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
+      };
+
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
 
-        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+        // series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
+        series.active = (typeof series.active === 'undefined' || series.active === 'inactive' || series.active === '') ? 'active' : 'inactive';
+
         series.values.map(function(d) {
           d.active = series.active;
         });
 
-        // if you have activated a data series, inactivate the rest
+        // if you have activated a data series, inactivate the other non-active series
         if (series.active === 'active') {
           data
             .filter(function(d) {
@@ -12190,19 +12266,15 @@ function multibarChart() {
             });
         }
 
-        // if there are no active data series, activate them all
+        // if there are no active data series, unset active state
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-              d.active = '';
-              d.values.map(function(d) {
-                d.active = '';
-              });
-              container.selectAll('.sc-series').classed('sc-inactive', false);
-              return d;
-            });
+          chart.clearActive();
+        } else {
+          state.active = data.map(function(d) { return typeof d.active === 'undefined' || d.active === 'active'; });
         }
 
-        container.call(chart);
+        // container.call(chart);
+        chart.render();
       };
 
       // add series index to each data point for reference
@@ -12289,7 +12361,7 @@ function multibarChart() {
           return hideEmptyGroups ? group._height !== 0 : true;
         })
         .map(function(group) {
-          return group.label || chart.strings().noLabel;
+          return group.l || group.label || chart.strings().noLabel;
         });
 
       groupCount = groupLabels.length;
@@ -12343,6 +12415,7 @@ function multibarChart() {
 
       // set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
+      state.active = data.map(function(d) { return d.active === 'active'; });
       state.stacked = multibar.stacked();
 
       // set title display option
@@ -12362,7 +12435,7 @@ function multibarChart() {
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
         .scale(x)
-        .valueFormat(xValueFormat)
+        .valueFormat(xAxisValueFormat)
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
@@ -12371,7 +12444,7 @@ function multibarChart() {
       yAxis
         .orient(vertical ? 'left' : 'bottom')
         .scale(y)
-        .valueFormat(yValueFormat)
+        .valueFormat(yAxisValueFormat)
         .tickPadding(4)
         .showMaxMin(true);
 
@@ -12416,7 +12489,6 @@ function multibarChart() {
 
         // Chart layout variables
         var renderWidth, renderHeight,
-            // availableWidth, availableHeight,
             innerMargin,
             innerWidth, innerHeight;
 
@@ -12706,9 +12778,22 @@ function multibarChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
-        d.active = false;
+      legend.dispatch.on('legendClick', function(series, i) {
+        series.disabled = !series.disabled;
+        series.active = 'inactive';
+        series.values.map(function(d) {
+          d.active = 'inactive';
+        });
+
+        if (hideEmptyGroups) {
+          data.map(function(m, j) {
+            m._values.map(function(v, k) {
+              v.disabled = (k === i ? series.disabled : v.disabled ? true : false);
+              return v;
+            });
+            return m;
+          });
+        }
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
@@ -12718,18 +12803,16 @@ function multibarChart() {
           });
         }
 
-        // if there are no active data series, activate them all
+        // if there are no active data series, unset active state
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-            d.active = '';
-            return d;
-          });
+          chart.clearActive();
         }
 
-        state.disabled = data.map(function(d) { return !!d.disabled; });
+        // state.disabled = data.map(function(d) { return !!d.disabled; });
+        chart.update();
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(duration).call(chart);
+        // container.transition().duration(duration).call(chart);
       });
 
       controls.dispatch.on('legendClick', function(d, i) {
@@ -12756,9 +12839,10 @@ function multibarChart() {
         }
 
         state.stacked = multibar.stacked();
+        chart.update();
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(duration).call(chart);
+        // container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -12789,12 +12873,27 @@ function multibarChart() {
           state.disabled = eo.disabled;
         }
 
+        if (typeof eo.active !== 'undefined') {
+          data.forEach(function(series, i) {
+            series.active = eo.active[i] ? 'active' : 'inactive';
+            series.values.map(function(d) {
+              d.active = series.active;
+            });
+          });
+          state.active = eo.active;
+          // if there are no active data series, unset active state
+          if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+            chart.clearActive();
+          }
+        }
+
         if (typeof eo.stacked !== 'undefined') {
           multibar.stacked(eo.stacked);
           state.stacked = eo.stacked;
         }
 
-        container.transition().duration(duration).call(chart);
+        // container.transition().duration(duration).call(chart);
+        chart.render();
       });
 
       dispatch.on('chartClick', function() {
@@ -12809,7 +12908,7 @@ function multibarChart() {
 
       model.dispatch.on('elementClick', function(eo) {
         dispatch.call('chartClick', this);
-        seriesClick(data, eo, chart);
+        seriesClick(data, eo, chart, groupLabels);
       });
 
     });
@@ -12958,6 +13057,7 @@ function multibarChart() {
   chart.state = function(_) {
     if (!arguments.length) { return state; }
     state = _;
+    dispatch.stateChange(state);
     return chart;
   };
 
@@ -13026,6 +13126,22 @@ function multibarChart() {
     return chart;
   };
 
+  chart.xValueFormat = function(_) {
+    if (!arguments.length) {
+      return xValueFormat;
+    }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
+    return chart;
+  };
+
   //============================================================
 
   return chart;
@@ -13061,6 +13177,19 @@ function paretoChart() {
       getY = function(d) { return d.y; },
       locality = utility.buildLocality(),
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  var xValueFormat = function(d, i, label, isDate) {
+        return isDate ?
+          utility.dateFormat(label, '%x', chart.locality()) :
+          label;
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency) {
+        var precision = 2;
+        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+      };
+
+  var quotaValueFormat = yValueFormat;
 
   //============================================================
   // Private Variables
@@ -13158,22 +13287,22 @@ function paretoChart() {
 
       var baseDimension = multibar.stacked() ? 72 : 32;
 
-      var xValueFormat = function(d, i, selection, noEllipsis) {
+      var xAxisValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
-            var value = groupLabels && Array.isArray(groupLabels) ?
-                          groupLabels[i] || d:
-                          d;
-            var label = xIsDatetime ?
-                          utility.dateFormat(value, '%x', chart.locality()) :
-                          value;
+            var label = groupLabels && Array.isArray(groupLabels) ?
+                  groupLabels[i] || d:
+                  d;
+            var value = xValueFormat(d, i, label, xIsDatetime);
             var width = Math.max(baseDimension * 2, 75);
+
             return !noEllipsis ?
-                      utility.stringEllipsify(label, container, width) :
-                      label;
+              utility.stringEllipsify(value, container, width) :
+              value;
           };
 
-      var yValueFormat = function(d) {
-            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+      var yAxisValueFormat = function(d, i, selection, noEllipsis) {
+            return yValueFormat(d, i, null, yIsCurrency);
+            return value;
           };
 
       chart.update = function() {
@@ -13409,7 +13538,7 @@ function paretoChart() {
       xAxis
         .orient('bottom')
         .scale(x)
-        .valueFormat(xValueFormat)
+        .valueFormat(xAxisValueFormat)
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
@@ -13418,7 +13547,7 @@ function paretoChart() {
       yAxis
         .orient('left')
         .scale(y)
-        .valueFormat(yValueFormat)
+        .valueFormat(yAxisValueFormat)
         .tickPadding(7)
         .showMaxMin(true);
 
@@ -13659,14 +13788,16 @@ function paretoChart() {
 
           // Target Quota line label
           yAxis_wrap.append('text')
-            .text(yAxis.valueFormat()(targetQuotaValue, true))
+            .text(quotaValueFormat(targetQuotaValue, 2, true))
             .attr('class', 'sc-target-quota-value')
             .attr('dy', '.36em')
             .attr('dx', '0')
             .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
             .attr('transform', 'translate(' + (0 - yAxis.tickPadding()) + ',' + y(targetQuotaValue) + ')');
 
-          quotaTextWidth = Math.round(wrap.select('text.sc-target-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding());
+          quotaTextWidth = Math.round(
+            wrap.select('text.sc-target-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding()
+          );
         }
 
         if (quotaValue > 0) {
@@ -13690,14 +13821,19 @@ function paretoChart() {
 
           // Quota line label
           yAxis_wrap.append('text')
-            .text(yAxis.valueFormat()(quotaValue, true))
+            .text(quotaValueFormat(quotaValue, 2, true))
             .attr('class', 'sc-quota-value')
             .attr('dy', '.36em')
             .attr('dx', '0')
             .attr('text-anchor', direction === 'rtl' ? 'start' : 'end')
             .attr('transform', 'translate(' + -yAxis.tickPadding() + ',' + y(quotaValue) + ')');
 
-          quotaTextWidth = Math.max(quotaTextWidth, Math.round(wrap.select('text.sc-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding()));
+          quotaTextWidth = Math.max(
+            quotaTextWidth,
+            Math.round(
+              wrap.select('text.sc-quota-value').node().getBoundingClientRect().width + yAxis.tickPadding()
+            )
+          );
         }
 
         //------------------------------------------------------------
@@ -14206,6 +14342,30 @@ function paretoChart() {
     return chart;
   };
 
+  chart.xValueFormat = function(_) {
+    if (!arguments.length) {
+      return xValueFormat;
+    }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
+    return chart;
+  };
+
+  chart.quotaValueFormat = function(_) {
+      if (!arguments.length) {
+          return quotaValueFormat;
+      }
+      quotaValueFormat = _;
+      return chart;
+  };
+
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
@@ -14313,6 +14473,18 @@ function pieChart() {
       //------------------------------------------------------------
       // Process data
 
+      chart.clearActive = function() {
+        data.map(function(d) {
+          d.active = '';
+          container.selectAll('.nv-series').classed('nv-inactive', false);
+          return d;
+        });
+      };
+
+      chart.seriesActivate = function(eo) {
+        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
+      };
+
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
 
@@ -14332,10 +14504,7 @@ function pieChart() {
 
         // if there are no active data series, inactivate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-            d.active = '';
-            return d;
-          });
+          chart.clearActive();
         }
 
         container.call(chart);
