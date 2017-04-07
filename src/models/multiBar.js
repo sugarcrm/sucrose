@@ -468,7 +468,7 @@ export default function multibar() {
               return valueFormat(val);
             })
             .each(function(d, i) {
-              var bbox = this.get_bindingClientRect();
+              var bbox = this.getBoundingClientRect();
               d.labelWidth = Math.floor(bbox.width) + 4;
               d.labelHeight = Math.floor(bbox.height);
               d.barLength = barLength(d, i);
