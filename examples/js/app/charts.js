@@ -276,27 +276,27 @@ var sucroseCharts = function () {
             return sucrose.utility.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
           .tooltipContent(function (eo, graph) {
-            var key = eo.group.label,
-                y = eo.point.y,
-                x = (typeof eo.group._height !== 'undefined') ?
-                      Math.abs(y * 100 / eo.group._height).toFixed(1) :
-                      xAxis.tickFormat()(eo.point.x);
-
-            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-                percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
-            return '<p>Key: <b>' + key + '</b></p>' +
-                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-                   '<p>Percentage: <b>' + percent + '%</b></p>';
-
+            var key = eo.group.label;
+            var y = eo.point.y;
+            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+            var content = '<p>Key: <b>' + key + '</b></p>' +
+                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>';
+            var percent, group;
+            if (typeof eo.group._height !== 'undefined') {
+              percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
+              percent = sucrose.utility.numberFormatRound(percent, 2, false, chart.locality());
+              content += '<p>Percentage: <b>' + percent + '%</b></p>';
+            } else {
+              group = chart.yAxis.tickFormat()(eo.point.x, eo.pointIndex, null, false);
+              content += '<p>Group: <b>' + group + '%</b></p>';
+            }
+            return content;
           });
           //TODO: fix multibar overfolow handler
           // .overflowHandler(function (d) {
           //   var b = $('body');
           //   b.scrollTop(b.scrollTop() + d);
           // });
-
-        chart.yAxis
-          .tickFormat(chart.multibar.valueFormat());
         callback(chart);
       }
     },
@@ -327,7 +327,7 @@ var sucroseCharts = function () {
               var d = eo.series,
                   selectedSeries = eo.seriesIndex;
 
-              chart.dispatch.tooltipHide();
+              chart.dispatch.call('tooltipHide', this);
 
               d.disabled = !d.disabled;
 
