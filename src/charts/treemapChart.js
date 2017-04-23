@@ -1,8 +1,9 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import models from '../models/models.js';
+import treemap from '../models/treemap.js';
+import menu from '../models/menu.js';
 
 export default function treemapChart() {
 
@@ -34,11 +35,10 @@ export default function treemapChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var treemap = models.treemap(),
-      model = treemap,
-      legend = models.legend();
+  var model = treemap(),
+      legend = menu();
 
-  var tooltip = null;
+  var tt = null;
 
   var tooltipContent = function(point) {
         var tt = '<h3>' + point.data.name + '</h3>' +
@@ -48,7 +48,7 @@ export default function treemapChart() {
 
   var showTooltip = function(eo, offsetElement) {
         var content = tooltipContent(eo.point);
-        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   //============================================================
@@ -195,14 +195,14 @@ export default function treemapChart() {
         //------------------------------------------------------------
         // Main Chart Component(s)
 
-        treemap
+        model
           .width(availableWidth)
           .height(availableHeight);
 
         wrap
           .datum(data.filter(function(d) { return !d.disabled; }))
           .transition()
-            .call(treemap);
+            .call(model);
 
       };
 
@@ -230,19 +230,19 @@ export default function treemapChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode);
+          tt = showTooltip(eo, that.parentNode);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e);
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -271,15 +271,15 @@ export default function treemapChart() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  treemap.dispatch.on('elementMouseover', function(eo) {
+  model.dispatch.on('elementMouseover', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  treemap.dispatch.on('elementMousemove', function(e) {
+  model.dispatch.on('elementMousemove', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  treemap.dispatch.on('elementMouseout', function() {
+  model.dispatch.on('elementMouseout', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -290,9 +290,9 @@ export default function treemapChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.legend = legend;
-  chart.treemap = treemap;
+  chart.treemap = model;
 
-  fc.rebind(chart, treemap, 'x', 'y', 'xDomain', 'yDomain', 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
+  fc.rebind(chart, model, 'x', 'y', 'xDomain', 'yDomain', 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }
@@ -327,7 +327,7 @@ export default function treemapChart() {
 
     var fill = (!params.gradient) ? color : function(d, i) {
       var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return treemap.gradient()(d, i, p);
+      return model.gradient()(d, i, p);
     };
 
     model.color(color);
@@ -345,14 +345,14 @@ export default function treemapChart() {
   chart.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    treemap.x(_);
+    model.x(_);
     return chart;
   };
 
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
-    treemap.y(_);
+    model.y(_);
     return chart;
   };
 

@@ -1,8 +1,9 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import models from '../models/models.js';
+import gauge from '../models/gauge.js';
+import menu from '../models/menu.js';
 
 export default function gaugeChart() {
 
@@ -33,11 +34,10 @@ export default function gaugeChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var gauge = models.gauge(),
-      model = gauge,
-      legend = models.legend().align('center');
+  var model = gauge(),
+      legend = menu().align('center');
 
-  var tooltip = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -49,7 +49,7 @@ export default function gaugeChart() {
             x = model.getCount()(eo.point.series),
             y = model.getValue()(eo.point.y1 - eo.point.y0),
             content = tooltipContent(key, x, y, eo.e, chart);
-        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   //============================================================
@@ -283,19 +283,19 @@ export default function gaugeChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, properties);
+          tt = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e);
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -344,7 +344,7 @@ export default function gaugeChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.gauge = gauge;
+  chart.gauge = model;
   chart.legend = legend;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');

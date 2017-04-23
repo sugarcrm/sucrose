@@ -1,4 +1,4 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 
@@ -307,7 +307,7 @@ export default function axis() {
       }
 
       function getPaddingRatio() {
-        return scaleCalc.range().length > 1 ? Math.max(0.25, 1 - d3.round(scaleCalc.bandwidth() / getStepInterval(), 2)) : 0;
+        return scaleCalc.range().length > 1 ? Math.max(0.25, 1 - utility.round(scaleCalc.bandwidth() / getStepInterval(), 2)) : 0;
       }
 
       function getRangeExtent() {

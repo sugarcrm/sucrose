@@ -1,4 +1,4 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';

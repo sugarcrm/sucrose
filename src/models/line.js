@@ -1,7 +1,7 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
-import models from './models.js';
+import scatter from './scatter.js';
 
 export default function line() {
 
@@ -9,7 +9,7 @@ export default function line() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var scatter = models.scatter();
+  var model = scatter();
 
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = 960,
@@ -50,7 +50,7 @@ export default function line() {
             interpolate === 'linear' ? d3.curveLinear :
             interpolate === 'cardinal' ? d3.curveCardinal :
             interpolate === 'monotone' ? d3.curveMonotoneX :
-            interpolate === 'basis' ? d3.curveBasis : d3.natural;
+            interpolate === 'basis' ? d3.curveBasis : d3.curveNatural;
 
       var area = d3.area()
             .curve(curve)
@@ -70,7 +70,7 @@ export default function line() {
             .duration(duration)
             .ease(d3.easeLinear);
 
-      var id = scatter.id();
+      var id = model.id();
 
       //set up the gradient constructor function
       gradient = function(d, i, p) {
@@ -80,8 +80,8 @@ export default function line() {
       //------------------------------------------------------------
       // Setup Scales
 
-      x = scatter.xScale();
-      y = scatter.yScale();
+      x = model.xScale();
+      y = model.yScale();
       // x0 = x.copy();
       // y0 = y.copy();
 
@@ -142,11 +142,11 @@ export default function line() {
       //------------------------------------------------------------
       // Points
 
-      scatter
+      model
         .clipEdge(clipEdge)
         .width(availableWidth)
         .height(availableHeight);
-      scatter_wrap.call(scatter);
+      scatter_wrap.call(model);
 
       //------------------------------------------------------------
       // Areas
@@ -265,27 +265,27 @@ export default function line() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = scatter.dispatch;
-  chart.scatter = scatter;
+  chart.dispatch = model.dispatch;
+  chart.scatter = model;
 
-  fc.rebind(chart, scatter, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
+  fc.rebind(chart, model, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
 
   chart.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    scatter.color(color);
+    model.color(color);
     return chart;
   };
   chart.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    scatter.fill(fill);
+    model.fill(fill);
     return chart;
   };
   chart.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    scatter.classes(classes);
+    model.classes(classes);
     return chart;
   };
   chart.gradient = function(_) {
@@ -317,13 +317,13 @@ export default function line() {
   chart.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    scatter.x(_);
+    model.x(_);
     return chart;
   };
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
-    scatter.y(_);
+    model.y(_);
     return chart;
   };
 
@@ -335,7 +335,7 @@ export default function line() {
   chart.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    scatter.duration(_);
+    model.duration(_);
     return chart;
   };
 

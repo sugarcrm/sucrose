@@ -1,4 +1,4 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import utility from '../utility.js';
 
 export default function scatter() {
@@ -17,7 +17,7 @@ export default function scatter() {
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       x = d3.scaleLinear(),
       y = d3.scaleLinear(),
-      z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
+      z = d3.scaleLinear(), //linear because d3.symbol.size is treated as area
       getX = function(d) { return d.x; }, // accessor to get the x value
       getY = function(d) { return d.y; }, // accessor to get the y value
       getZ = function(d) { return d.size || 1; }, // accessor to get the point size, set by public method .size()
@@ -286,7 +286,7 @@ export default function scatter() {
         var points_enter = points_bind.enter().append('path')
               .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
               .attr('d',
-                d3.svg.symbol()
+                d3.symbol()
                   .type(getShape)
                   .size(symbolSize)
               );
@@ -305,7 +305,7 @@ export default function scatter() {
               return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
             })
             .attr('d',
-              d3.svg.symbol()
+              d3.symbol()
                 .type(getShape)
                 .size(symbolSize)
             );
@@ -344,7 +344,7 @@ export default function scatter() {
                 .map(function(point, pointIndex) {
                   // *Adding noise to make duplicates very unlikely
                   // *Injecting series and point index for reference
-                  /* *Adding a 'jitter' to the points, because there's an issue in d3.geom.voronoi.
+                  /* *Adding a 'jitter' to the points, because there's an issue in d3.voronoi.
                    */
                   var pX = getX(point, pointIndex);
                   var pY = getY(point, pointIndex);

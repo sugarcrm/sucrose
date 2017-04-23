@@ -1,8 +1,11 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import models from '../models/models.js';
+import multibar from '../models/multibar.js';
+import line from '../models/line.js';
+import axis from '../models/axis.js';
+import menu from '../models/menu.js';
 
 export default function paretoChart() {
   //============================================================
@@ -52,30 +55,30 @@ export default function paretoChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var multibar = models.multibar()
+  var bars = multibar()
       .stacked(true)
       .clipEdge(false)
       .withLine(true)
       .nice(false),
-    linesBackground = models.line()
+    linesBackground = line()
       .color(function(d, i) { return '#FFF'; })
       .fill(function(d, i) { return '#FFF'; })
       .useVoronoi(false)
       .nice(false),
-    lines = models.line()
+    lines = line()
       .useVoronoi(false)
       .color('data')
       .nice(false),
-    xAxis = models.axis(),
-    yAxis = models.axis(),
-    barLegend = models.legend()
+    xAxis = axis(),
+    yAxis = axis(),
+    barLegend = menu()
       .align('left')
       .position('middle'),
-    lineLegend = models.legend()
+    lineLegend = menu()
       .align('right')
       .position('middle');
 
-  var tooltip = null;
+  var tt = null;
 
   var tooltipBar = function(key, x, y, e, graph) {
         return '<p><b>' + key + '</b></p>' +
@@ -95,12 +98,12 @@ export default function paretoChart() {
             amt = lines.y()(eo.point, eo.pointIndex),
             content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
 
-        return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+        return tooltip.show(eo.e, content, 's', null, offsetElement);
       };
 
   var showQuotaTooltip = function(eo, offsetElement) {
         var content = tooltipQuota(eo.key, 0, eo.val, eo, chart);
-        return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+        return tooltip.show(eo.e, content, 's', null, offsetElement);
       };
 
   var seriesClick = function(data, eo, chart, container) {
@@ -142,7 +145,7 @@ export default function paretoChart() {
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
-      var baseDimension = multibar.stacked() ? 72 : 32;
+      var baseDimension = bars.stacked() ? 72 : 32;
 
       var xAxisValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
@@ -251,8 +254,8 @@ export default function paretoChart() {
                       'group': v,
                       'seriesIndex': series.seriesIndex,
                       'color': typeof series.color !== 'undefined' ? series.color : '',
-                      'x': multibar.x()(value, v),
-                      'y': multibar.y()(value, v),
+                      'x': bars.x()(value, v),
+                      'y': bars.y()(value, v),
                       'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
                       'active': typeof series.active !== 'undefined' ? series.active : '' // do not eval d.active because it can be false
                     };
@@ -280,7 +283,7 @@ export default function paretoChart() {
             .map(function(series, s) {
               series.seriesIndex = s;
 
-              if (!multibar.stacked()) {
+              if (!bars.stacked()) {
 
                 series.values = series._values.map(function(value, v) {
                   return {
@@ -299,7 +302,7 @@ export default function paretoChart() {
 
                 barData.map(function(barSeries) {
                     barSeries.values.map(function(value, v) {
-                      series.values[v].y += multibar.y()(value, v);
+                      series.values[v].y += bars.y()(value, v);
                     });
                   });
 
@@ -389,8 +392,8 @@ export default function paretoChart() {
       //------------------------------------------------------------
       // Setup Scales
 
-      x = multibar.xScale();
-      y = multibar.yScale();
+      x = bars.xScale();
+      y = bars.yScale();
 
       xAxis
         .orient('bottom')
@@ -551,16 +554,16 @@ export default function paretoChart() {
         var forceY = [0, Math.ceil(limitY * 0.1) * 10];
 
         // Main Bar Chart
-        multibar
+        bars
           .width(innerWidth)
           .height(innerHeight)
           .forceY(forceY)
           .id(chart.id());
         bars_wrap
           .datum(barData)
-          .call(multibar);
+          .call(bars);
 
-        var outerPadding = x(1) + x.bandwidth() / (multibar.stacked() || lineData.length === 1 ? 2 : 4);
+        var outerPadding = x(1) + x.bandwidth() / (bars.stacked() || lineData.length === 1 ? 2 : 4);
 
         // Main Line Chart
         linesBackground
@@ -613,7 +616,7 @@ export default function paretoChart() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          multibar.resetDimensions(innerWidth, innerHeight);
+          bars.resetDimensions(innerWidth, innerHeight);
         }
 
         //------------------------------------------------------------
@@ -702,11 +705,11 @@ export default function paretoChart() {
         //------------------------------------------------------------
         // Recall Main Chart and Axis
 
-        multibar
+        bars
           .width(innerWidth)
           .height(innerHeight);
         bars_wrap
-          .call(multibar);
+          .call(bars);
 
         xAxis_wrap
           .call(xAxis);
@@ -715,7 +718,7 @@ export default function paretoChart() {
 
         //------------------------------------------------------------
         // Recalculate final dimensions based on new Axis size
-        outerPadding = x(1) + x.bandwidth() / (multibar.stacked() ? 2 : lineData.length * 2);
+        outerPadding = x(1) + x.bandwidth() / (bars.stacked() ? 2 : lineData.length * 2);
 
         xAxisMargin = xAxis.margin();
         yAxisMargin = yAxis.margin();
@@ -727,13 +730,13 @@ export default function paretoChart() {
 
         var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
 
-        multibar
+        bars
           .width(innerWidth)
           .height(innerHeight);
 
         bars_wrap
           .attr('transform', transform)
-          .call(multibar);
+          .call(bars);
 
 
         linesBackground
@@ -825,7 +828,7 @@ export default function paretoChart() {
                   key: d.key,
                   e: d3.event
               };
-              tooltip = showQuotaTooltip(eo, that.parentNode);
+              tt = showQuotaTooltip(eo, that.parentNode);
             }
           })
           .on('mousemove', function() {
@@ -875,19 +878,19 @@ export default function paretoChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, groupData);
+          tt = showTooltip(eo, that.parentNode, groupData);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e, 's');
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -901,7 +904,7 @@ export default function paretoChart() {
         }
 
         if (typeof eo.stacked !== 'undefined') {
-          multibar.stacked(eo.stacked);
+          bars.stacked(eo.stacked);
           state.stacked = eo.stacked;
         }
 
@@ -917,7 +920,7 @@ export default function paretoChart() {
         }
       });
 
-      multibar.dispatch.on('elementClick', function(eo) {
+      bars.dispatch.on('elementClick', function(eo) {
         dispatch.call('chartClick', this);
         seriesClick(data, eo, chart, container);
       });
@@ -943,15 +946,15 @@ export default function paretoChart() {
     dispatch.call('tooltipHide', this);
   });
 
-  multibar.dispatch.on('elementMouseover.tooltip', function(eo) {
+  bars.dispatch.on('elementMouseover.tooltip', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  multibar.dispatch.on('elementMousemove.tooltip', function(e) {
+  bars.dispatch.on('elementMousemove.tooltip', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  multibar.dispatch.on('elementMouseout.tooltip', function() {
+  bars.dispatch.on('elementMouseout.tooltip', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -963,14 +966,14 @@ export default function paretoChart() {
   chart.dispatch = dispatch;
   chart.linesBackground = linesBackground;
   chart.lines = lines;
-  chart.multibar = multibar;
+  chart.multibar = bars;
   chart.barLegend = barLegend;
   chart.lineLegend = lineLegend;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, multibar, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'color', 'fill', 'classes', 'gradient');
-  fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
+  fc.rebind(chart, bars, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'color', 'fill', 'classes', 'gradient');
+  fc.rebind(chart, bars, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -1030,12 +1033,12 @@ export default function paretoChart() {
 
     var barFill = (!params.gradient) ? barColor : function(d, i) {
       var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-      return multibar.gradient()(d, d.seriesIndex, p);
+      return bars.gradient()(d, d.seriesIndex, p);
     };
 
-    multibar.color(barColor);
-    multibar.fill(barFill);
-    multibar.classes(barClasses);
+    bars.color(barColor);
+    bars.fill(barFill);
+    bars.classes(barClasses);
 
     lines.color(lineColor);
     lines.fill(lineColor);
@@ -1054,7 +1057,7 @@ export default function paretoChart() {
     if (!arguments.length) { return getX; }
     getX = _;
     lines.x(_);
-    multibar.x(_);
+    bars.x(_);
     return chart;
   };
 
@@ -1062,7 +1065,7 @@ export default function paretoChart() {
     if (!arguments.length) { return getY; }
     getY = _;
     lines.y(_);
-    multibar.y(_);
+    bars.y(_);
     return chart;
   };
 
@@ -1138,7 +1141,7 @@ export default function paretoChart() {
   chart.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
-    multibar.clipEdge(_);
+    bars.clipEdge(_);
     linesBackground.clipEdge(_);
     lines.clipEdge(_);
     return chart;
@@ -1163,7 +1166,7 @@ export default function paretoChart() {
   chart.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
-    multibar.direction(_);
+    bars.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
     barLegend.direction(_);
@@ -1174,7 +1177,7 @@ export default function paretoChart() {
   chart.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    multibar.duration(_);
+    bars.duration(_);
     linesBackground.duration(_);
     lines.duration(_);
     return chart;
@@ -1183,7 +1186,7 @@ export default function paretoChart() {
   chart.delay = function(_) {
     if (!arguments.length) { return delay; }
     delay = _;
-    multibar.delay(_);
+    bars.delay(_);
     linesBackground.delay(_);
     lines.delay(_);
     return chart;
@@ -1226,7 +1229,7 @@ export default function paretoChart() {
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    multibar.locality(_);
+    bars.locality(_);
     linesBackground.locality(_);
     return chart;
   };
