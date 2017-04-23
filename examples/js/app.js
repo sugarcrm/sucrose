@@ -1,6 +1,4 @@
-/*
- * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
- */
+/* Copyright (c) 2017 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license. */
 'use strict';
 
 $(function() {
@@ -2140,6 +2138,11 @@ function touchstart(evt) {
     evt.preventDefault();
     evt.stopPropagation();
   }
+}
+
+// remap d3v4 to d3
+if (typeof d3v4 !== 'undefined' && typeof d3 === 'undefined') {
+  var d3 = d3v4;
 }
 
 // Bind tooltips to buttons

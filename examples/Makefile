@@ -1,3 +1,10 @@
+# --------------------------------------------------
+# Sucrose.io - Example application build scripts
+#
+# Copyright (c) 2017 SugarCRM Inc.
+# Licensed by SugarCRM under the Apache 2.0 license.
+# --------------------------------------------------
+
 LIB_FILES = \
 	js/lib/fastclick.js \
 	js/lib/jquery-ui.min.js \
@@ -19,6 +26,13 @@ LIB_FILES = \
 	node_modules/canvg/StackBlur.js \
 	node_modules/sugar/release/sugar-full.development.js \
 	node_modules/store2/dist/store2.min.js
+
+DEP_FILES = \
+	js/d3v4.min.js \
+	js/topojson.min.js \
+	js/d3fc-rebind.min.js \
+	js/jquery.min.js \
+	js/jquerymy.min.js
 
 APP_FILES = \
 	js/app/intro.js \
@@ -44,100 +58,157 @@ CSS_COMPILER = \
 CSS_MINIFIER = \
 	../node_modules/clean-css/bin/cleancss
 
+HELP_MAKER = \
+	./node_modules/make-help/bin/make-help
 
-#PRODUCTION
+HEADER = $(shell cat ../src/header)
 
-install-prod: npm-prod all index-prod
+.DEFAULT_GOAL := help
 
+.PHONY: list clean-sucrose clean-lib clean-dependencies clean-js clean-css help data
+
+
+#-----------
+# PRODUCTION
+
+# - install sucrose example application [main]
+install-prod: npm-prod
+
+# - copy sucrose and dependency files and generate index
+install-post: all index-prod
+
+# - install production npm packages
 npm-prod:
 	npm i --production
 
-all: sucrose lib
+# - copy sucrose and dependency files
+all: sucrose dependencies
 
+# - remove sucrose and dependency files
+clean: clean-sucrose clean-dependencies
+
+# - [*] copy sucrose js and css files
 sucrose: clean-sucrose
 	cp ../build/sucrose.js js/sucrose.js
 	cp ../build/sucrose.min.js js/sucrose.min.js
 	cp ../build/sucrose.css css/sucrose.css
 	cp ../build/sucrose.min.css css/sucrose.min.css
 
+# - remove sucrose js and css files
 clean-sucrose:
-	rm -rf js/sucrose.js js/sucrose.min.js \
+	rm -f js/sucrose.js js/sucrose.min.js \
 		css/sucrose.css css/sucrose.min.css
 
-lib: $(LIB_FILES) clean-lib
+# - copy dependency js files (D3, jQuery, jQueryMy)
+dependencies: clean-dependencies
 	# copy node module files
-	cp ../node_modules/d3/build/d3.min.js js/d3.min.js
-	cp ../node_modules/topojson/build/topojson.min.js js/topojson.min.js
-	cp ../node_modules/d3fc-rebind/build/d3fc-rebind.min.js js/d3fc-rebind.min.js
+	cp ../build/d3v4.min.js js/d3v4.min.js
+	cp ../build/topojson.min.js js/topojson.min.js
+	cp ../build/d3fc-rebind.min.js js/d3fc-rebind.min.js
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
 	cp node_modules/jquerymy/jquerymy.min.js js/jquerymy.min.js
-	# build lib js files
-	cat $(LIB_FILES) >> js/lib.js
-	cat $(LIB_FILES) | $(JS_MINIFIER) >> js/lib.min.js
 
-clean-lib:
-	rm -rf js/d3.min.js js/topojson.min.js js/d3fc-rebind.min.js
-	rm -rf js/jquery.min.js js/jquerymy.min.js
-	rm -rf js/lib.js js/lib.min.js
+# - remove dependency js files
+clean-dependencies:
+	rm -f $(DEP_FILES)
 
+# - generate production version of index page
 index-prod:
-	rm -rf index2.html
+	rm -f index2.html
 	sed 's/<!-- PROD::/<!-- PROD: -->/g' index.html \
 		| sed 's/::PROD -->/<!-- :PROD -->/g' \
 		| sed 's/<!-- DEV: -->/<!-- DEV::/g' \
 		| sed 's/<!-- :DEV -->/::DEV -->/g' \
 		>> index2.html
-	rm -rf index.html
+	rm -f index.html
 	mv index2.html index.html
 
-clean: clean-sucrose clean-libraries
 
+# -----------
+# DEVELOPMENT
 
-#DEVELOPMENT
+# - install development environment [main dev]
+install-dev: npm-dev examples index-dev
 
-install-dev: npm-dev sucrose lib lib-dev index-dev examples
-
+# - install development npm packages and copy files
 npm-dev:
 	npm i
+	cp ../node_modules/less/dist/less.min.js js/less.min.js
 
-examples: js css
+# - remove development environment
+clean-dev: index-prod
+	rm -f js/less.min.js
 
-clean-examples: clean-js clean-css
+# - build all js, css and library files
+examples: clean-examples js css lib
+	# cd .. && make scr css
+	make lib
 
+# - remove all built js, css and library files
+clean-examples: clean-js clean-css clean-lib
+
+# - concatenate, compress and copy all development library files
+lib: $(LIB_FILES) clean-lib
+	# build lib js files
+	cat $(LIB_FILES) >> js/lib.js
+	cat $(LIB_FILES) | $(JS_MINIFIER) >> js/lib.min.js
+
+# - remove all development library files
+clean-lib:
+	rm -f js/lib.js js/lib.min.js
+
+# - [*] build the examples app js file
 js: $(APP_FILES) clean-js
-	# build app js files
 	cat ../src/header $(APP_FILES) >> js/app.js
-	cat $(APP_FILES) | $(JS_MINIFIER) >> js/app.min.js
-	cat ../src/header js/app.min.js > temp
-	rm -f js/app.min.js
-	mv temp js/app.min.js
+	cat $(APP_FILES) | $(JS_MINIFIER) --preamble "$(HEADER)" >> js/app.min.js
 
+# - remove the examples app js file
 clean-js:
-	rm -rf js/app.js js/app.min.js
+	rm -f js/app.js js/app.min.js
 
+# - [*] compile and compress LESS source into css files
 css: less/examples.less clean-css
 	node $(CSS_COMPILER) less/examples.less css/examples.css
 	node $(CSS_MINIFIER) -o css/examples.min.css css/examples.css
 	# node node_modules/less/bin/lessc --clean-css less/examples.less css/examples.min.css
 
+# - remove the examples css file
 clean-css:
-	rm -rf css/examples.css css/examples.min.css
+	rm -f css/examples.css css/examples.min.css
 
-lib-dev: clean-lib-dev
-	# copy node module files
-	cp ../node_modules/less/dist/less.min.js js/less.min.js
-
-clean-lib-dev:
-	rm -rf js/less.min.js
-
+# - generate development version of index page
 index-dev:
-	rm -rf index2.html
+	rm -f index2.html
 	sed 's/<!-- DEV::/<!-- DEV: -->/g' index.html \
 		| sed 's/::DEV -->/<!-- :DEV -->/g' \
 		| sed 's/<!-- PROD: -->/<!-- PROD::/g' \
 		| sed 's/<!-- :PROD -->/::PROD -->/g' \
 		>> index2.html
-	rm -rf index.html
+	rm -f index.html
 	mv index2.html index.html
 
-clean-dev: clean-js clean-css
+
+#-----
+# HELP
+
+define prod_content
+
+--------------------------------------
+  Usage:
+    make <target>
+
+  Targets: for installing and developing the example application
+endef
+export prod_content
+
+# - show some help [default]
+help:
+	@echo "$$prod_content"
+	@$(HELP_MAKER) -p 4 "$(lastword $(MAKEFILE_LIST))"
+	@echo " "
+	@echo "--------------------------------------"
+	@echo " "
+
+# - just list the make targets
+list:
+	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^$@$$' | xargs
