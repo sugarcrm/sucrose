@@ -1,21 +1,18 @@
-/*
- * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
- */
+/* Copyright (c) 2017 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license. */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3'), require('d3fc-rebind')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'd3', 'd3fc-rebind'], factory) :
-	(factory((global.sucrose = global.sucrose || {}),global.d3,global.fc));
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3v4'), require('d3fc-rebind')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'd3v4', 'd3fc-rebind'], factory) :
+	(factory((global.sucrose = global.sucrose || {}),global.d3v4,global.fc));
 }(this, (function (exports,d3,fc) { 'use strict';
 
 d3 = 'default' in d3 ? d3['default'] : d3;
 fc = 'default' in fc ? fc['default'] : fc;
 
-var version = "0.5.2";
+var version = "0.5.3";
 
 /*-------------------
       UTILITIES
 -------------------*/
-
 const utility = {};
 
 utility.strip = function(s) {
@@ -162,7 +159,6 @@ utility.defaultColor = function () {
   };
 };
 
-
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
 utility.customTheme = function (dictionary, getKey, defaultColors) {
@@ -183,8 +179,6 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
     }
   };
 };
-
-
 
 // From the PJAX example on d3js.org, while this is not really directly needed
 // it's a very cool method for doing pjax, I may expand upon it a little bit,
@@ -241,9 +235,6 @@ utility.optionsFunc = function(args) {
   }
   return this;
 };
-
-
-//SUGAR ADDITIONS
 
 //gradient color
 utility.colorLinearGradient = function (d, i, p, c, defs) {
@@ -555,7 +546,6 @@ utility.createTexture = function(defs, id, x, y) {
   //     p = typeof p === 'undefined' ? 2 : p;
   //     c = typeof c === 'undefined' ? false : !!c;
   //     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  //     // d = d3.round(d, p);
   //     d = Math.round(d * 10 * p) / 10 * p;
   //     spec = c ? '$,' : ',';
   //     if (c && d < 1000 && d !== parseInt(d, 10)) {
@@ -588,6 +578,12 @@ utility.numberFormatSI = function(d, p, c, l) {
     return fmtr(spec)(d);
   }
   return fmtr(spec)(d);
+};
+
+utility.round = function(x, n) {
+  // Sigh...
+  var ten_n = Math.pow(10,n);
+  return Math.round(x * ten_n) / ten_n;
 };
 
 utility.numberFormatRound = function(d, p, c, l) {
@@ -3164,7 +3160,7 @@ function gauge() {
   return chart;
 }
 
-function legend() {
+function menu() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -4014,13 +4010,747 @@ function legend() {
   return legend;
 }
 
+function scatter() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
+      width = 960,
+      height = 500,
+      margin = {top: 0, right: 0, bottom: 0, left: 0},
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); }, // chooses color
+      gradient = null,
+      fill = color,
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
+      x = d3.scaleLinear(),
+      y = d3.scaleLinear(),
+      z = d3.scaleLinear(), //linear because d3.symbol.size is treated as area
+      getX = function(d) { return d.x; }, // accessor to get the x value
+      getY = function(d) { return d.y; }, // accessor to get the y value
+      getZ = function(d) { return d.size || 1; }, // accessor to get the point size, set by public method .size()
+      forceX = [], // List of numbers to Force into the X scale (ie. 0, or a max / min, etc.)
+      forceY = [], // List of numbers to Force into the Y scale
+      forceZ = [], // List of numbers to Force into the Size scale
+      xDomain = null, // Override x domain (skips the calculation from data)
+      yDomain = null, // Override y domain
+      zDomain = null, // Override point size domain
+      zRange = [1 * 1 * Math.PI, 5 * 5 * Math.PI],
+      circleRadius = function(d, i) {
+        // a = pi*r^2
+        // a / pi = r^2
+        // sqrt(a / pi) = r
+        // 1 = 1 * pi , 5 = 25 * pi
+        return Math.sqrt(z(getZ(d, i)) / Math.PI);
+      }, // function to get the radius for voronoi point clips
+      symbolSize = function(d, i) {
+        return z(getZ(d, i));
+      },
+      getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
+      locality = utility.buildLocality(),
+      onlyCircles = true, // Set to false to use shapes
+
+      interactive = true, // If true, plots a voronoi overlay for advanced point intersection
+      pointActive = function(d) { return !d.notActive; }, // any points that return false will be filtered out
+      padData = false, // If true, adds half a data points width to front and back, for lining up a line chart with a bar chart
+      padDataOuter = 0.1, //outerPadding to imitate ordinal scale outer padding
+      clipEdge = false, // if true, masks points within x and y scale
+      delay = 0,
+      duration = 300,
+      useVoronoi = true,
+      clipVoronoi = true, // if true, masks each point with a circle... can turn off to slightly increase performance
+      singlePoint = false,
+      dispatch = d3.dispatch('elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove'),
+      nice = false;
+
+  //============================================================
+
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  var x0, y0, z0, // used to store previous scales
+      timeoutID,
+      needsUpdate = false; // Flag for when the points are visually updating, but the interactive layer is behind, to disable tooltips
+
+  //============================================================
+
+
+  function chart(selection) {
+    selection.each(function(data) {
+
+      var availableWidth = width - margin.left - margin.right,
+          availableHeight = height - margin.top - margin.bottom,
+          container = d3.select(this);
+
+      var t = d3.transition('scatter')
+          .duration(duration)
+          .ease(d3.easeLinear);
+
+      needsUpdate = true;
+
+      //------------------------------------------------------------
+      // Setup Scales
+
+      // remap and flatten the data for use in calculating the scales' domains
+      var seriesData = (xDomain && yDomain && zDomain) ? [] : // if we know xDomain and yDomain and zDomain, no need to calculate.... if Size is constant remember to set zDomain to speed up performance
+            d3.merge(
+              data.map(function(d) {
+                return d.values.map(function(d, i) {
+                  return { x: getX(d, i), y: getY(d, i), size: getZ(d, i) };
+                });
+              })
+            );
+
+      chart.resetDimensions = function(w, h) {
+        width = w;
+        height = h;
+        availableWidth = w - margin.left - margin.right;
+        availableHeight = h - margin.top - margin.bottom;
+        resetScale();
+      };
+
+      function resetScale() {
+        x.domain(xDomain || d3.extent(seriesData.map(function(d) { return d.x; }).concat(forceX)));
+        y.domain(yDomain || d3.extent(seriesData.map(function(d) { return d.y; }).concat(forceY)));
+
+        if (padData && data[0]) {
+          if (padDataOuter === -1) {
+            // shift range so that largest bubble doesn't cover scales
+            var largestPossible = Math.sqrt(zRange[1] / Math.PI);
+            x.range([
+              0 + largestPossible,
+              availableWidth - largestPossible
+            ]);
+            y.range([
+              availableHeight - largestPossible,
+              0 + largestPossible
+            ]);
+          } else if (padDataOuter < 1) {
+            // adjust range to line up with value bars
+            x.range([
+              (availableWidth * padDataOuter + availableWidth) / (2 * data[0].values.length),
+              availableWidth - availableWidth * (1 + padDataOuter) / (2 * data[0].values.length)
+            ]);
+            y.range([availableHeight, 0]);
+          } else {
+            x.range([
+              padDataOuter,
+              availableWidth - padDataOuter
+            ]);
+            y.range([
+              availableHeight - padDataOuter,
+              padDataOuter
+            ]);
+          }
+          // From original sucrose
+          //x.range([
+          //   availableWidth * .5 / data[0].values.length,
+          //   availableWidth * (data[0].values.length - .5) / data[0].values.length
+          // ]);
+        } else {
+          x.range([0, availableWidth]);
+          y.range([availableHeight, 0]);
+        }
+
+        if (nice) {
+          y.nice();
+        }
+
+        // If scale's domain don't have a range, slightly adjust to make one... so a chart can show a single data point
+        singlePoint = (x.domain()[0] === x.domain()[1] || y.domain()[0] === y.domain()[1]);
+
+        if (x.domain()[0] === x.domain()[1]) {
+          x.domain()[0] ?
+              x.domain([x.domain()[0] - x.domain()[0] * 0.1, x.domain()[1] + x.domain()[1] * 0.1]) :
+              x.domain([-1, 1]);
+        }
+
+        if (y.domain()[0] === y.domain()[1]) {
+          y.domain()[0] ?
+              y.domain([y.domain()[0] - y.domain()[0] * 0.1, y.domain()[1] + y.domain()[1] * 0.1]) :
+              y.domain([-1, 1]);
+        }
+
+        z.domain(zDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceZ)))
+         .range(zRange);
+
+        if (z.domain().length < 2) {
+          z.domain([0, z.domain()]);
+        }
+
+        x0 = x0 || x;
+        y0 = y0 || y;
+        z0 = z0 || z;
+      }
+
+      resetScale();
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of chart
+
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-scatter');
+      var wrap = container.select('.sc-wrap.sc-scatter').merge(wrap_entr);
+
+      var defs_entr = wrap_entr.append('defs');
+
+      //set up the gradient constructor function
+      gradient = function(d, i) {
+        return utility.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
+      };
+
+      wrap_entr.append('g').attr('class', 'sc-group');
+      var group_wrap = wrap.select('.sc-group');
+
+      wrap_entr.append('g').attr('class', 'sc-point-paths');
+      var paths_wrap = wrap.select('.sc-point-paths');
+
+      wrap
+        .classed('sc-single-point', singlePoint)
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+      //------------------------------------------------------------
+
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-edge-clip-' + id)
+        .append('rect');
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-points-clip-' + id)
+        .attr('class', 'sc-point-clips');
+
+      wrap.select('#sc-edge-clip-' + id + ' rect')
+          .attr('width', availableWidth)
+          .attr('height', availableHeight);
+
+      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      //------------------------------------------------------------
+      // Series
+
+      var series_bind = group_wrap.selectAll('.sc-series')
+            .data(utility.identity, function(d) { return d.seriesIndex; });
+      var series_entr = series_bind.enter().append('g')
+            .attr('class', 'sc-series')
+            .style('stroke-opacity', 1e-6)
+            .style('fill-opacity', 1e-6);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
+
+      series
+        .attr('class', function(d, i) { return classes(d, d.seriesIndex); })
+        .attr('fill', function(d, i) { return fill(d, d.seriesIndex); })
+        .attr('stroke', function(d, i) { return fill(d, d.seriesIndex); })
+        .classed('hover', function(d) { return d.hover; });
+      series
+        .transition(t)
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 1);
+      series_bind.exit()
+        .transition(t)
+          .style('stroke-opacity', 1e-6)
+          .style('fill-opacity', 1e-6)
+          .remove();
+
+      //------------------------------------------------------------
+      // Interactive Layer
+
+      if (onlyCircles) {
+
+        var points_bind = series.selectAll('circle.sc-point')
+              .data(function(d) { return d.values; });
+        var points_entr = points_bind.enter().append('circle')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('r', circleRadius);
+        var points = series.selectAll('.sc-point').merge(points_entr);
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('cx', function(d, i) {
+            return x(getX(d, i));
+          })
+          .attr('cy', function(d, i) {
+            return y(0);
+          });
+        points
+          .transition(t)
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(getY(d, i)); })
+            .on('end', function(d) {
+              d3.select(this).classed('sc-enter', false);
+            });
+
+        series_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('cx', function(d, i) { return x(getX(d, i)); })
+            .attr('cy', function(d, i) { return y(0); })
+            .remove();
+
+      } else {
+
+        var points_bind = series.selectAll('path.sc-point').data(function(d) { return d.values; });
+        var points_enter = points_bind.enter().append('path')
+              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+              .attr('d',
+                d3.symbol()
+                  .type(getShape)
+                  .size(symbolSize)
+              );
+        var points = series.selectAll('.sc-point').merge(points_entr);
+
+        points
+          .filter(function(d) {
+            return d3.select(this).classed('sc-enter');
+          })
+          .attr('transform', function(d, i) {
+            return 'translate(' + x0(getX(d, i)) + ',' + y(0) + ')';
+          });
+        points
+          .transition(t)
+            .attr('transform', function(d, i) {
+              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
+            })
+            .attr('d',
+              d3.symbol()
+                .type(getShape)
+                .size(symbolSize)
+            );
+
+        series_bind.exit()
+          .transition(t).selectAll('.sc-point')
+            .attr('transform', function(d, i) {
+              return 'translate(' + x(getX(d, i)) + ',' + y(0) + ')';
+            })
+            .remove();
+
+      }
+
+      function buildEventObject(e, d, i, s) {
+        return {
+            series: s,
+            point: s.values[i],
+            pointIndex: i,
+            seriesIndex: s.seriesIndex,
+            id: id,
+            e: e
+          };
+      }
+
+      function updateInteractiveLayer() {
+
+        if (!interactive) {
+          return false;
+        }
+
+        //inject series and point index for reference into voronoi
+        if (useVoronoi === true) {
+
+          var vertices = d3.merge(data.map(function(group, groupIndex) {
+              return group.values
+                .map(function(point, pointIndex) {
+                  // *Adding noise to make duplicates very unlikely
+                  // *Injecting series and point index for reference
+                  /* *Adding a 'jitter' to the points, because there's an issue in d3.voronoi.
+                   */
+                  var pX = getX(point, pointIndex);
+                  var pY = getY(point, pointIndex);
+
+                  return [x(pX) + Math.random() * 1e-4,
+                          y(pY) + Math.random() * 1e-4,
+                      groupIndex,
+                      pointIndex, point]; //temp hack to add noise until I think of a better way so there are no duplicates
+                })
+                .filter(function(pointArray, pointIndex) {
+                  return pointActive(pointArray[4], pointIndex); // Issue #237.. move filter to after map, so pointIndex is correct!
+                });
+            })
+          );
+
+          if (clipVoronoi) {
+            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle').data(vertices);
+            var clips_entr = clips_bind.enter().append('circle');
+            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle').merge(clips_entr);
+
+            clips
+              .attr('cx', function(d) { return d[0] })
+              .attr('cy', function(d) { return d[1] })
+              .attr('r', function(d, i) {
+                return circleRadius(d[4], i);
+              });
+            clips_bind.exit().remove();
+
+            paths_wrap
+                .attr('clip-path', 'url(#sc-points-clip-' + id + ')');
+          }
+
+          if (vertices.length <= 3) {
+            // Issue #283 - Adding 2 dummy points to the voronoi b/c voronoi requires min 3 points to work
+            vertices.push([x.range()[0] - 20, y.range()[0] - 20, null, null]);
+            vertices.push([x.range()[1] + 20, y.range()[1] + 20, null, null]);
+            vertices.push([x.range()[0] - 20, y.range()[0] + 20, null, null]);
+            vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null]);
+          }
+
+          var voronoi = d3.voronoi()
+                .extent([[-10, -10], [width + 10, height + 10]])
+                .polygons(vertices)
+                .map(function(d, i) {
+                  return {
+                    'data': d,
+                    'seriesIndex': vertices[i][2],
+                    'pointIndex': vertices[i][3]
+                  };
+                })
+                .filter(function(d) { return d.seriesIndex !== null; });
+
+          var paths_bind = paths_wrap.selectAll('path').data(voronoi);
+          var paths_entr = paths_bind.enter().append('path').attr('class', function(d, i) { return 'sc-path-' + i; });
+          var paths = paths_wrap.selectAll('path').merge(paths_entr);
+
+          paths
+            .attr('d', function(d) { return d ? 'M' + d.data.join('L') + 'Z' : null; });
+          paths_bind.exit().remove();
+
+          paths
+            .on('mouseover', function(d) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
+            })
+            .on('click', function(d) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0;
+              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              dispatch.call('elementClick', this, eo);
+            });
+
+        } else {
+
+          // add event handlers to points instead voronoi paths
+          series.selectAll('.sc-point')
+            //.data(dataWithPoints)
+            .style('pointer-events', 'auto') // recaptivate events, disabled by css
+            .on('mouseover', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseover', this, eo);
+            })
+            .on('mousemove', function(d, i) {
+              var e = d3.event;
+              dispatch.call('elementMousemove', this, e);
+            })
+            .on('mouseout', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementMouseout', this, eo);
+            })
+            .on('click', function(d, i) {
+              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              dispatch.call('elementClick', this, eo);
+            });
+
+        }
+
+        needsUpdate = false;
+      }
+
+      // Delay updating the invisible interactive layer for smoother animation
+      clearTimeout(timeoutID); // stop repeat calls to updateInteractiveLayer
+      timeoutID = setTimeout(updateInteractiveLayer, 300);
+
+      //store old scales for use in transitions on update
+      x0 = x.copy();
+      y0 = y.copy();
+      z0 = z.copy();
+
+      //============================================================
+      // Event Handling/Dispatching (in chart's scope)
+      //------------------------------------------------------------
+
+      dispatch.on('elementMouseover.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', true);
+        }
+      });
+
+      dispatch.on('elementMouseout.point', function(eo) {
+        if (interactive) {
+          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
+            .classed('hover', false);
+        }
+      });
+
+    });
+
+    return chart;
+  }
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  chart.dispatch = dispatch;
+
+  chart.id = function(_) {
+    if (!arguments.length) { return id; }
+    id = _;
+    return chart;
+  };
+  chart.color = function(_) {
+    if (!arguments.length) { return color; }
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) { return fill; }
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) { return classes; }
+    classes = _;
+    return chart;
+  };
+  chart.gradient = function(_) {
+    if (!arguments.length) { return gradient; }
+    gradient = _;
+    return chart;
+  };
+
+  chart.x = function(_) {
+    if (!arguments.length) { return getX; }
+    getX = utility.functor(_);
+    return chart;
+  };
+
+  chart.y = function(_) {
+    if (!arguments.length) { return getY; }
+    getY = utility.functor(_);
+    return chart;
+  };
+
+  chart.z = function(_) {
+    if (!arguments.length) { return getZ; }
+    getZ = utility.functor(_);
+    return chart;
+  };
+
+  chart.xScale = function(_) {
+    if (!arguments.length) { return x; }
+    x = _;
+    return chart;
+  };
+
+  chart.yScale = function(_) {
+    if (!arguments.length) { return y; }
+    y = _;
+    return chart;
+  };
+
+  chart.zScale = function(_) {
+    if (!arguments.length) { return z; }
+    z = _;
+    return chart;
+  };
+
+  chart.xDomain = function(_) {
+    if (!arguments.length) { return xDomain; }
+    xDomain = _;
+    return chart;
+  };
+
+  chart.yDomain = function(_) {
+    if (!arguments.length) { return yDomain; }
+    yDomain = _;
+    return chart;
+  };
+
+  chart.zDomain = function(_) {
+    if (!arguments.length) { return zDomain; }
+    zDomain = _;
+    return chart;
+  };
+
+  chart.forceX = function(_) {
+    if (!arguments.length) { return forceX; }
+    forceX = _;
+    return chart;
+  };
+
+  chart.forceY = function(_) {
+    if (!arguments.length) { return forceY; }
+    forceY = _;
+    return chart;
+  };
+
+  chart.forceZ = function(_) {
+    if (!arguments.length) { return forceZ; }
+    forceZ = _;
+    return chart;
+  };
+
+  chart.size = function(_) {
+    if (!arguments.length) { return getZ; }
+    getZ = utility.functor(_);
+    return chart;
+  };
+
+  chart.sizeRange = function(_) {
+    if (!arguments.length) { return zRange; }
+    zRange = _;
+    return chart;
+  };
+  chart.sizeDomain = function(_) {
+    if (!arguments.length) { return sizeDomain; }
+    zDomain = _;
+    return chart;
+  };
+  chart.forceSize = function(_) {
+    if (!arguments.length) { return forceZ; }
+    forceZ = _;
+    return chart;
+  };
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return chart;
+  };
+
+  chart.interactive = function(_) {
+    if (!arguments.length) { return interactive; }
+    interactive = _;
+    return chart;
+  };
+
+  chart.pointActive = function(_) {
+    if (!arguments.length) { return pointActive; }
+    pointActive = _;
+    return chart;
+  };
+
+  chart.padData = function(_) {
+    if (!arguments.length) { return padData; }
+    padData = _;
+    return chart;
+  };
+
+  chart.padDataOuter = function(_) {
+    if (!arguments.length) { return padDataOuter; }
+    padDataOuter = _;
+    return chart;
+  };
+
+  chart.clipEdge = function(_) {
+    if (!arguments.length) { return clipEdge; }
+    clipEdge = _;
+    return chart;
+  };
+
+  chart.clipVoronoi = function(_) {
+    if (!arguments.length) { return clipVoronoi; }
+    clipVoronoi = _;
+    return chart;
+  };
+
+  chart.useVoronoi = function(_) {
+    if (!arguments.length) { return useVoronoi; }
+    useVoronoi = _;
+    if (useVoronoi === false) {
+        clipVoronoi = false;
+    }
+    return chart;
+  };
+
+  chart.circleRadius = function(_) {
+    if (!arguments.length) { return circleRadius; }
+    circleRadius = _;
+    return chart;
+  };
+
+  chart.clipRadius = function(_) {
+    if (!arguments.length) { return circleRadius; }
+    circleRadius = _;
+    return chart;
+  };
+
+  chart.shape = function(_) {
+    if (!arguments.length) { return getShape; }
+    getShape = _;
+    return chart;
+  };
+
+  chart.onlyCircles = function(_) {
+    if (!arguments.length) { return onlyCircles; }
+    onlyCircles = _;
+    return chart;
+  };
+
+  chart.singlePoint = function(_) {
+    if (!arguments.length) { return singlePoint; }
+    singlePoint = _;
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    return chart;
+  };
+
+  chart.nice = function(_) {
+    if (!arguments.length) { return nice; }
+    nice = _;
+    return chart;
+  };
+
+  chart.locality = function(_) {
+    if (!arguments.length) { return locality; }
+    locality = utility.buildLocality(_);
+    return chart;
+  };
+
+  //============================================================
+
+  return chart;
+}
+
 function line() {
 
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var scatter = models.scatter();
+  var model = scatter();
 
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = 960,
@@ -4061,7 +4791,7 @@ function line() {
             interpolate === 'linear' ? d3.curveLinear :
             interpolate === 'cardinal' ? d3.curveCardinal :
             interpolate === 'monotone' ? d3.curveMonotoneX :
-            interpolate === 'basis' ? d3.curveBasis : d3.natural;
+            interpolate === 'basis' ? d3.curveBasis : d3.curveNatural;
 
       var area = d3.area()
             .curve(curve)
@@ -4081,7 +4811,7 @@ function line() {
             .duration(duration)
             .ease(d3.easeLinear);
 
-      var id = scatter.id();
+      var id = model.id();
 
       //set up the gradient constructor function
       gradient = function(d, i, p) {
@@ -4091,8 +4821,8 @@ function line() {
       //------------------------------------------------------------
       // Setup Scales
 
-      x = scatter.xScale();
-      y = scatter.yScale();
+      x = model.xScale();
+      y = model.yScale();
       // x0 = x.copy();
       // y0 = y.copy();
 
@@ -4153,11 +4883,11 @@ function line() {
       //------------------------------------------------------------
       // Points
 
-      scatter
+      model
         .clipEdge(clipEdge)
         .width(availableWidth)
         .height(availableHeight);
-      scatter_wrap.call(scatter);
+      scatter_wrap.call(model);
 
       //------------------------------------------------------------
       // Areas
@@ -4276,27 +5006,27 @@ function line() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = scatter.dispatch;
-  chart.scatter = scatter;
+  chart.dispatch = model.dispatch;
+  chart.scatter = model;
 
-  fc.rebind(chart, scatter, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
+  fc.rebind(chart, model, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
 
   chart.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    scatter.color(color);
+    model.color(color);
     return chart;
   };
   chart.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    scatter.fill(fill);
+    model.fill(fill);
     return chart;
   };
   chart.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    scatter.classes(classes);
+    model.classes(classes);
     return chart;
   };
   chart.gradient = function(_) {
@@ -4328,13 +5058,13 @@ function line() {
   chart.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    scatter.x(_);
+    model.x(_);
     return chart;
   };
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
-    scatter.y(_);
+    model.y(_);
     return chart;
   };
 
@@ -4346,7 +5076,7 @@ function line() {
   chart.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    scatter.duration(_);
+    model.duration(_);
     return chart;
   };
 
@@ -4379,7 +5109,7 @@ function line() {
   return chart;
 }
 
-function multibar$1() {
+function multibar() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -6099,741 +6829,7 @@ function pie() {
   return chart;
 }
 
-function scatter() {
-
-  //============================================================
-  // Public Variables with Default Settings
-  //------------------------------------------------------------
-
-  var id = Math.floor(Math.random() * 100000), //Create semi-unique ID incase user doesn't select one
-      width = 960,
-      height = 500,
-      margin = {top: 0, right: 0, bottom: 0, left: 0},
-      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); }, // chooses color
-      gradient = null,
-      fill = color,
-      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
-      x = d3.scaleLinear(),
-      y = d3.scaleLinear(),
-      z = d3.scaleLinear(), //linear because d3.svg.shape.size is treated as area
-      getX = function(d) { return d.x; }, // accessor to get the x value
-      getY = function(d) { return d.y; }, // accessor to get the y value
-      getZ = function(d) { return d.size || 1; }, // accessor to get the point size, set by public method .size()
-      forceX = [], // List of numbers to Force into the X scale (ie. 0, or a max / min, etc.)
-      forceY = [], // List of numbers to Force into the Y scale
-      forceZ = [], // List of numbers to Force into the Size scale
-      xDomain = null, // Override x domain (skips the calculation from data)
-      yDomain = null, // Override y domain
-      zDomain = null, // Override point size domain
-      zRange = [1 * 1 * Math.PI, 5 * 5 * Math.PI],
-      circleRadius = function(d, i) {
-        // a = pi*r^2
-        // a / pi = r^2
-        // sqrt(a / pi) = r
-        // 1 = 1 * pi , 5 = 25 * pi
-        return Math.sqrt(z(getZ(d, i)) / Math.PI);
-      }, // function to get the radius for voronoi point clips
-      symbolSize = function(d, i) {
-        return z(getZ(d, i));
-      },
-      getShape = function(d) { return d.shape || 'circle'; }, // accessor to get point shape
-      locality = utility.buildLocality(),
-      onlyCircles = true, // Set to false to use shapes
-
-      interactive = true, // If true, plots a voronoi overlay for advanced point intersection
-      pointActive = function(d) { return !d.notActive; }, // any points that return false will be filtered out
-      padData = false, // If true, adds half a data points width to front and back, for lining up a line chart with a bar chart
-      padDataOuter = 0.1, //outerPadding to imitate ordinal scale outer padding
-      clipEdge = false, // if true, masks points within x and y scale
-      delay = 0,
-      duration = 300,
-      useVoronoi = true,
-      clipVoronoi = true, // if true, masks each point with a circle... can turn off to slightly increase performance
-      singlePoint = false,
-      dispatch = d3.dispatch('elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove'),
-      nice = false;
-
-  //============================================================
-
-
-  //============================================================
-  // Private Variables
-  //------------------------------------------------------------
-
-  var x0, y0, z0, // used to store previous scales
-      timeoutID,
-      needsUpdate = false; // Flag for when the points are visually updating, but the interactive layer is behind, to disable tooltips
-
-  //============================================================
-
-
-  function chart(selection) {
-    selection.each(function(data) {
-
-      var availableWidth = width - margin.left - margin.right,
-          availableHeight = height - margin.top - margin.bottom,
-          container = d3.select(this);
-
-      var t = d3.transition('scatter')
-          .duration(duration)
-          .ease(d3.easeLinear);
-
-      needsUpdate = true;
-
-      //------------------------------------------------------------
-      // Setup Scales
-
-      // remap and flatten the data for use in calculating the scales' domains
-      var seriesData = (xDomain && yDomain && zDomain) ? [] : // if we know xDomain and yDomain and zDomain, no need to calculate.... if Size is constant remember to set zDomain to speed up performance
-            d3.merge(
-              data.map(function(d) {
-                return d.values.map(function(d, i) {
-                  return { x: getX(d, i), y: getY(d, i), size: getZ(d, i) };
-                });
-              })
-            );
-
-      chart.resetDimensions = function(w, h) {
-        width = w;
-        height = h;
-        availableWidth = w - margin.left - margin.right;
-        availableHeight = h - margin.top - margin.bottom;
-        resetScale();
-      };
-
-      function resetScale() {
-        x.domain(xDomain || d3.extent(seriesData.map(function(d) { return d.x; }).concat(forceX)));
-        y.domain(yDomain || d3.extent(seriesData.map(function(d) { return d.y; }).concat(forceY)));
-
-        if (padData && data[0]) {
-          if (padDataOuter === -1) {
-            // shift range so that largest bubble doesn't cover scales
-            var largestPossible = Math.sqrt(zRange[1] / Math.PI);
-            x.range([
-              0 + largestPossible,
-              availableWidth - largestPossible
-            ]);
-            y.range([
-              availableHeight - largestPossible,
-              0 + largestPossible
-            ]);
-          } else if (padDataOuter < 1) {
-            // adjust range to line up with value bars
-            x.range([
-              (availableWidth * padDataOuter + availableWidth) / (2 * data[0].values.length),
-              availableWidth - availableWidth * (1 + padDataOuter) / (2 * data[0].values.length)
-            ]);
-            y.range([availableHeight, 0]);
-          } else {
-            x.range([
-              padDataOuter,
-              availableWidth - padDataOuter
-            ]);
-            y.range([
-              availableHeight - padDataOuter,
-              padDataOuter
-            ]);
-          }
-          // From original sucrose
-          //x.range([
-          //   availableWidth * .5 / data[0].values.length,
-          //   availableWidth * (data[0].values.length - .5) / data[0].values.length
-          // ]);
-        } else {
-          x.range([0, availableWidth]);
-          y.range([availableHeight, 0]);
-        }
-
-        if (nice) {
-          y.nice();
-        }
-
-        // If scale's domain don't have a range, slightly adjust to make one... so a chart can show a single data point
-        singlePoint = (x.domain()[0] === x.domain()[1] || y.domain()[0] === y.domain()[1]);
-
-        if (x.domain()[0] === x.domain()[1]) {
-          x.domain()[0] ?
-              x.domain([x.domain()[0] - x.domain()[0] * 0.1, x.domain()[1] + x.domain()[1] * 0.1]) :
-              x.domain([-1, 1]);
-        }
-
-        if (y.domain()[0] === y.domain()[1]) {
-          y.domain()[0] ?
-              y.domain([y.domain()[0] - y.domain()[0] * 0.1, y.domain()[1] + y.domain()[1] * 0.1]) :
-              y.domain([-1, 1]);
-        }
-
-        z.domain(zDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceZ)))
-         .range(zRange);
-
-        if (z.domain().length < 2) {
-          z.domain([0, z.domain()]);
-        }
-
-        x0 = x0 || x;
-        y0 = y0 || y;
-        z0 = z0 || z;
-      }
-
-      resetScale();
-
-      //------------------------------------------------------------
-      // Setup containers and skeleton of chart
-
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-scatter').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-scatter');
-      var wrap = container.select('.sc-wrap.sc-scatter').merge(wrap_entr);
-
-      var defs_entr = wrap_entr.append('defs');
-
-      //set up the gradient constructor function
-      gradient = function(d, i) {
-        return utility.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
-      };
-
-      wrap_entr.append('g').attr('class', 'sc-group');
-      var group_wrap = wrap.select('.sc-group');
-
-      wrap_entr.append('g').attr('class', 'sc-point-paths');
-      var paths_wrap = wrap.select('.sc-point-paths');
-
-      wrap
-        .classed('sc-single-point', singlePoint)
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-      //------------------------------------------------------------
-
-      defs_entr.append('clipPath')
-        .attr('id', 'sc-edge-clip-' + id)
-        .append('rect');
-      defs_entr.append('clipPath')
-        .attr('id', 'sc-points-clip-' + id)
-        .attr('class', 'sc-point-clips');
-
-      wrap.select('#sc-edge-clip-' + id + ' rect')
-          .attr('width', availableWidth)
-          .attr('height', availableHeight);
-
-      wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
-
-      //------------------------------------------------------------
-      // Series
-
-      var series_bind = group_wrap.selectAll('.sc-series')
-            .data(utility.identity, function(d) { return d.seriesIndex; });
-      var series_entr = series_bind.enter().append('g')
-            .attr('class', 'sc-series')
-            .style('stroke-opacity', 1e-6)
-            .style('fill-opacity', 1e-6);
-      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
-
-      series
-        .attr('class', function(d, i) { return classes(d, d.seriesIndex); })
-        .attr('fill', function(d, i) { return fill(d, d.seriesIndex); })
-        .attr('stroke', function(d, i) { return fill(d, d.seriesIndex); })
-        .classed('hover', function(d) { return d.hover; });
-      series
-        .transition(t)
-          .style('stroke-opacity', 1)
-          .style('fill-opacity', 1);
-      series_bind.exit()
-        .transition(t)
-          .style('stroke-opacity', 1e-6)
-          .style('fill-opacity', 1e-6)
-          .remove();
-
-      //------------------------------------------------------------
-      // Interactive Layer
-
-      if (onlyCircles) {
-
-        var points_bind = series.selectAll('circle.sc-point')
-              .data(function(d) { return d.values; });
-        var points_entr = points_bind.enter().append('circle')
-              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
-              .attr('r', circleRadius);
-        var points = series.selectAll('.sc-point').merge(points_entr);
-
-        points
-          .filter(function(d) {
-            return d3.select(this).classed('sc-enter');
-          })
-          .attr('cx', function(d, i) {
-            return x(getX(d, i));
-          })
-          .attr('cy', function(d, i) {
-            return y(0);
-          });
-        points
-          .transition(t)
-            .attr('cx', function(d, i) { return x(getX(d, i)); })
-            .attr('cy', function(d, i) { return y(getY(d, i)); })
-            .on('end', function(d) {
-              d3.select(this).classed('sc-enter', false);
-            });
-
-        series_bind.exit()
-          .transition(t).selectAll('.sc-point')
-            .attr('cx', function(d, i) { return x(getX(d, i)); })
-            .attr('cy', function(d, i) { return y(0); })
-            .remove();
-
-      } else {
-
-        var points_bind = series.selectAll('path.sc-point').data(function(d) { return d.values; });
-        var points_enter = points_bind.enter().append('path')
-              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
-              .attr('d',
-                d3.svg.symbol()
-                  .type(getShape)
-                  .size(symbolSize)
-              );
-        var points = series.selectAll('.sc-point').merge(points_entr);
-
-        points
-          .filter(function(d) {
-            return d3.select(this).classed('sc-enter');
-          })
-          .attr('transform', function(d, i) {
-            return 'translate(' + x0(getX(d, i)) + ',' + y(0) + ')';
-          });
-        points
-          .transition(t)
-            .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(getY(d, i)) + ')';
-            })
-            .attr('d',
-              d3.svg.symbol()
-                .type(getShape)
-                .size(symbolSize)
-            );
-
-        series_bind.exit()
-          .transition(t).selectAll('.sc-point')
-            .attr('transform', function(d, i) {
-              return 'translate(' + x(getX(d, i)) + ',' + y(0) + ')';
-            })
-            .remove();
-
-      }
-
-      function buildEventObject(e, d, i, s) {
-        return {
-            series: s,
-            point: s.values[i],
-            pointIndex: i,
-            seriesIndex: s.seriesIndex,
-            id: id,
-            e: e
-          };
-      }
-
-      function updateInteractiveLayer() {
-
-        if (!interactive) {
-          return false;
-        }
-
-        //inject series and point index for reference into voronoi
-        if (useVoronoi === true) {
-
-          var vertices = d3.merge(data.map(function(group, groupIndex) {
-              return group.values
-                .map(function(point, pointIndex) {
-                  // *Adding noise to make duplicates very unlikely
-                  // *Injecting series and point index for reference
-                  /* *Adding a 'jitter' to the points, because there's an issue in d3.geom.voronoi.
-                   */
-                  var pX = getX(point, pointIndex);
-                  var pY = getY(point, pointIndex);
-
-                  return [x(pX) + Math.random() * 1e-4,
-                          y(pY) + Math.random() * 1e-4,
-                      groupIndex,
-                      pointIndex, point]; //temp hack to add noise until I think of a better way so there are no duplicates
-                })
-                .filter(function(pointArray, pointIndex) {
-                  return pointActive(pointArray[4], pointIndex); // Issue #237.. move filter to after map, so pointIndex is correct!
-                });
-            })
-          );
-
-          if (clipVoronoi) {
-            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle').data(vertices);
-            var clips_entr = clips_bind.enter().append('circle');
-            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle').merge(clips_entr);
-
-            clips
-              .attr('cx', function(d) { return d[0] })
-              .attr('cy', function(d) { return d[1] })
-              .attr('r', function(d, i) {
-                return circleRadius(d[4], i);
-              });
-            clips_bind.exit().remove();
-
-            paths_wrap
-                .attr('clip-path', 'url(#sc-points-clip-' + id + ')');
-          }
-
-          if (vertices.length <= 3) {
-            // Issue #283 - Adding 2 dummy points to the voronoi b/c voronoi requires min 3 points to work
-            vertices.push([x.range()[0] - 20, y.range()[0] - 20, null, null]);
-            vertices.push([x.range()[1] + 20, y.range()[1] + 20, null, null]);
-            vertices.push([x.range()[0] - 20, y.range()[0] + 20, null, null]);
-            vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null]);
-          }
-
-          var voronoi = d3.voronoi()
-                .extent([[-10, -10], [width + 10, height + 10]])
-                .polygons(vertices)
-                .map(function(d, i) {
-                  return {
-                    'data': d,
-                    'seriesIndex': vertices[i][2],
-                    'pointIndex': vertices[i][3]
-                  };
-                })
-                .filter(function(d) { return d.seriesIndex !== null; });
-
-          var paths_bind = paths_wrap.selectAll('path').data(voronoi);
-          var paths_entr = paths_bind.enter().append('path').attr('class', function(d, i) { return 'sc-path-' + i; });
-          var paths = paths_wrap.selectAll('path').merge(paths_entr);
-
-          paths
-            .attr('d', function(d) { return d ? 'M' + d.data.join('L') + 'Z' : null; });
-          paths_bind.exit().remove();
-
-          paths
-            .on('mouseover', function(d) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0;
-              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
-              dispatch.call('elementMouseover', this, eo);
-            })
-            .on('mousemove', function(d, i) {
-              var e = d3.event;
-              dispatch.call('elementMousemove', this, e);
-            })
-            .on('mouseout', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0;
-              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
-              dispatch.call('elementMouseout', this, eo);
-            })
-            .on('click', function(d) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0;
-              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
-              dispatch.call('elementClick', this, eo);
-            });
-
-        } else {
-
-          // add event handlers to points instead voronoi paths
-          series.selectAll('.sc-point')
-            //.data(dataWithPoints)
-            .style('pointer-events', 'auto') // recaptivate events, disabled by css
-            .on('mouseover', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
-              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
-              dispatch.call('elementMouseover', this, eo);
-            })
-            .on('mousemove', function(d, i) {
-              var e = d3.event;
-              dispatch.call('elementMousemove', this, e);
-            })
-            .on('mouseout', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
-              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
-              dispatch.call('elementMouseout', this, eo);
-            })
-            .on('click', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
-              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
-              dispatch.call('elementClick', this, eo);
-            });
-
-        }
-
-        needsUpdate = false;
-      }
-
-      // Delay updating the invisible interactive layer for smoother animation
-      clearTimeout(timeoutID); // stop repeat calls to updateInteractiveLayer
-      timeoutID = setTimeout(updateInteractiveLayer, 300);
-
-      //store old scales for use in transitions on update
-      x0 = x.copy();
-      y0 = y.copy();
-      z0 = z.copy();
-
-      //============================================================
-      // Event Handling/Dispatching (in chart's scope)
-      //------------------------------------------------------------
-
-      dispatch.on('elementMouseover.point', function(eo) {
-        if (interactive) {
-          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
-            .classed('hover', true);
-        }
-      });
-
-      dispatch.on('elementMouseout.point', function(eo) {
-        if (interactive) {
-          container.select('.sc-series-' + eo.seriesIndex + ' .sc-point-' + eo.pointIndex)
-            .classed('hover', false);
-        }
-      });
-
-    });
-
-    return chart;
-  }
-
-  //============================================================
-  // Expose Public Variables
-  //------------------------------------------------------------
-
-  chart.dispatch = dispatch;
-
-  chart.id = function(_) {
-    if (!arguments.length) { return id; }
-    id = _;
-    return chart;
-  };
-  chart.color = function(_) {
-    if (!arguments.length) { return color; }
-    color = _;
-    return chart;
-  };
-  chart.fill = function(_) {
-    if (!arguments.length) { return fill; }
-    fill = _;
-    return chart;
-  };
-  chart.classes = function(_) {
-    if (!arguments.length) { return classes; }
-    classes = _;
-    return chart;
-  };
-  chart.gradient = function(_) {
-    if (!arguments.length) { return gradient; }
-    gradient = _;
-    return chart;
-  };
-
-  chart.x = function(_) {
-    if (!arguments.length) { return getX; }
-    getX = utility.functor(_);
-    return chart;
-  };
-
-  chart.y = function(_) {
-    if (!arguments.length) { return getY; }
-    getY = utility.functor(_);
-    return chart;
-  };
-
-  chart.z = function(_) {
-    if (!arguments.length) { return getZ; }
-    getZ = utility.functor(_);
-    return chart;
-  };
-
-  chart.xScale = function(_) {
-    if (!arguments.length) { return x; }
-    x = _;
-    return chart;
-  };
-
-  chart.yScale = function(_) {
-    if (!arguments.length) { return y; }
-    y = _;
-    return chart;
-  };
-
-  chart.zScale = function(_) {
-    if (!arguments.length) { return z; }
-    z = _;
-    return chart;
-  };
-
-  chart.xDomain = function(_) {
-    if (!arguments.length) { return xDomain; }
-    xDomain = _;
-    return chart;
-  };
-
-  chart.yDomain = function(_) {
-    if (!arguments.length) { return yDomain; }
-    yDomain = _;
-    return chart;
-  };
-
-  chart.zDomain = function(_) {
-    if (!arguments.length) { return zDomain; }
-    zDomain = _;
-    return chart;
-  };
-
-  chart.forceX = function(_) {
-    if (!arguments.length) { return forceX; }
-    forceX = _;
-    return chart;
-  };
-
-  chart.forceY = function(_) {
-    if (!arguments.length) { return forceY; }
-    forceY = _;
-    return chart;
-  };
-
-  chart.forceZ = function(_) {
-    if (!arguments.length) { return forceZ; }
-    forceZ = _;
-    return chart;
-  };
-
-  chart.size = function(_) {
-    if (!arguments.length) { return getZ; }
-    getZ = utility.functor(_);
-    return chart;
-  };
-
-  chart.sizeRange = function(_) {
-    if (!arguments.length) { return zRange; }
-    zRange = _;
-    return chart;
-  };
-  chart.sizeDomain = function(_) {
-    if (!arguments.length) { return sizeDomain; }
-    zDomain = _;
-    return chart;
-  };
-  chart.forceSize = function(_) {
-    if (!arguments.length) { return forceZ; }
-    forceZ = _;
-    return chart;
-  };
-
-  chart.margin = function(_) {
-    if (!arguments.length) { return margin; }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        margin[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.width = function(_) {
-    if (!arguments.length) { return width; }
-    width = _;
-    return chart;
-  };
-
-  chart.height = function(_) {
-    if (!arguments.length) { return height; }
-    height = _;
-    return chart;
-  };
-
-  chart.interactive = function(_) {
-    if (!arguments.length) { return interactive; }
-    interactive = _;
-    return chart;
-  };
-
-  chart.pointActive = function(_) {
-    if (!arguments.length) { return pointActive; }
-    pointActive = _;
-    return chart;
-  };
-
-  chart.padData = function(_) {
-    if (!arguments.length) { return padData; }
-    padData = _;
-    return chart;
-  };
-
-  chart.padDataOuter = function(_) {
-    if (!arguments.length) { return padDataOuter; }
-    padDataOuter = _;
-    return chart;
-  };
-
-  chart.clipEdge = function(_) {
-    if (!arguments.length) { return clipEdge; }
-    clipEdge = _;
-    return chart;
-  };
-
-  chart.clipVoronoi = function(_) {
-    if (!arguments.length) { return clipVoronoi; }
-    clipVoronoi = _;
-    return chart;
-  };
-
-  chart.useVoronoi = function(_) {
-    if (!arguments.length) { return useVoronoi; }
-    useVoronoi = _;
-    if (useVoronoi === false) {
-        clipVoronoi = false;
-    }
-    return chart;
-  };
-
-  chart.circleRadius = function(_) {
-    if (!arguments.length) { return circleRadius; }
-    circleRadius = _;
-    return chart;
-  };
-
-  chart.clipRadius = function(_) {
-    if (!arguments.length) { return circleRadius; }
-    circleRadius = _;
-    return chart;
-  };
-
-  chart.shape = function(_) {
-    if (!arguments.length) { return getShape; }
-    getShape = _;
-    return chart;
-  };
-
-  chart.onlyCircles = function(_) {
-    if (!arguments.length) { return onlyCircles; }
-    onlyCircles = _;
-    return chart;
-  };
-
-  chart.singlePoint = function(_) {
-    if (!arguments.length) { return singlePoint; }
-    singlePoint = _;
-    return chart;
-  };
-
-  chart.duration = function(_) {
-    if (!arguments.length) { return duration; }
-    duration = _;
-    return chart;
-  };
-
-  chart.nice = function(_) {
-    if (!arguments.length) { return nice; }
-    nice = _;
-    return chart;
-  };
-
-  chart.locality = function(_) {
-    if (!arguments.length) { return locality; }
-    locality = utility.buildLocality(_);
-    return chart;
-  };
-
-  //============================================================
-
-  return chart;
-}
-
-function scroll() {
+function scroller() {
 
   //============================================================
   // Public Variables
@@ -7332,7 +7328,7 @@ function stackearea() {
             interpolate === 'linear' ? d3.curveLinear :
             interpolate === 'cardinal' ? d3.curveCardinal :
             interpolate === 'monotone' ? d3.curveMonotoneX :
-            interpolate === 'basis' ? d3.curveBasis : d3.natural;
+            interpolate === 'basis' ? d3.curveBasis : d3.curveNatural;
 
       var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette]
                         [['zero', 'wiggle', 'expand', 'silhouette'].indexOf(offset)];
@@ -8546,12 +8542,12 @@ const models = {
     axis: axis,
     funnel: funnel,
     gauge: gauge,
-    legend: legend,
+    legend: menu,
     line: line,
-    multibar: multibar$1,
+    multibar: multibar,
     pie: pie,
     scatter: scatter,
-    scroll: scroll,
+    scroll: scroller,
     stackedarea: stackearea,
     table: table,
     treemap: treemap,
@@ -8610,20 +8606,20 @@ function bubbleChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var scatter = models.scatter()
+
+  var model = scatter()
         .padData(true)
         .padDataOuter(-1)
         .size(function(d) { return d.y; })
         .sizeRange([256, 1024])
         .singlePoint(true),
-      model = scatter,
-      xAxis = models.axis(),
-      yAxis = models.axis(),
-      legend = models.legend()
+      xAxis = axis(),
+      yAxis = axis(),
+      legend = menu()
         .align('center')
         .key(function(d) { return d.key + '%'; });
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -8637,7 +8633,7 @@ function bubbleChart() {
         content = tooltipContent(key, x, y, eo, chart),
         gravity = eo.value < 0 ? 'n' : 's';
 
-    return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+    return tooltip.show(eo.e, content, gravity, null, offsetElement);
   };
 
   var seriesClick = function(data, e, chart) { return; };
@@ -8845,8 +8841,8 @@ function bubbleChart() {
       //------------------------------------------------------------
       // Setup Scales and Axes
 
-      x = scatter.xScale();
-      y = scatter.yScale();
+      x = model.xScale();
+      y = model.yScale();
 
       xAxis
         .orient('bottom')
@@ -8894,7 +8890,7 @@ function bubbleChart() {
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
         // Header variables
-        var maxBubbleSize = Math.sqrt(scatter.sizeRange()[1] / Math.PI),
+        var maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI),
             headerHeight = 0,
             titleBBox = {width: 0, height: 0},
             legendHeight = 0,
@@ -9023,7 +9019,7 @@ function bubbleChart() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          scatter.resetDimensions(innerWidth, innerHeight);
+          model.resetDimensions(innerWidth, innerHeight);
         }
 
         // Y-Axis
@@ -9060,7 +9056,7 @@ function bubbleChart() {
         // final call to lines based on new dimensions
         model_wrap
           .transition().duration(chart.delay())
-            .call(scatter);
+            .call(model);
 
         //------------------------------------------------------------
         // Final repositioning
@@ -9107,19 +9103,19 @@ function bubbleChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip$$1 = showTooltip(eo, that.parentNode);
+          tt = showTooltip(eo, that.parentNode);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip$$1) {
-          sucrose.tooltip.position(that.parentNode, tooltip$$1, e, 's');
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e, 's');
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -9174,13 +9170,13 @@ function bubbleChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.scatter = scatter;
+  chart.scatter = model;
   chart.legend = legend;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, model, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -9421,12 +9417,11 @@ function funnelChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var funnel = models.funnel(),
-      model = funnel,
-      controls = models.legend().align('center'),
-      legend = models.legend().align('center');
+  var model = funnel(),
+      controls = menu().align('center'),
+      legend = menu().align('center');
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -9439,7 +9434,7 @@ function funnelChart() {
             x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
 
-        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart) { return; };
@@ -9743,19 +9738,19 @@ function funnelChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
+          tt = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip$$1) {
-          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -9813,13 +9808,13 @@ function funnelChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.funnel = funnel;
+  chart.funnel = model;
   chart.legend = legend;
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, funnel, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
+  fc.rebind(chart, model, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -10009,11 +10004,10 @@ function gaugeChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var gauge = models.gauge(),
-      model = gauge,
-      legend = models.legend().align('center');
+  var model = gauge(),
+      legend = menu().align('center');
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -10025,7 +10019,7 @@ function gaugeChart() {
             x = model.getCount()(eo.point.series),
             y = model.getValue()(eo.point.y1 - eo.point.y0),
             content = tooltipContent(key, x, y, eo.e, chart);
-        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   //============================================================
@@ -10259,19 +10253,19 @@ function gaugeChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
+          tt = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip$$1) {
-          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -10320,7 +10314,7 @@ function gaugeChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.gauge = gauge;
+  chart.gauge = model;
   chart.legend = legend;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
@@ -10530,7 +10524,7 @@ function globeChart() {
   var graticule = d3.geoGraticule();
   var colorLimit = 0;
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   function tooltipContent(d) {
     return '<p><b>' + d.name + '</b></p>' +
@@ -10539,7 +10533,7 @@ function globeChart() {
 
   function showTooltip(eo, offsetElement) {
     var content = tooltipContent(eo);
-    tooltip$$1 = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+    tt = tooltip.show(eo.e, content, null, null, offsetElement);
   }
 
 
@@ -10661,7 +10655,7 @@ function globeChart() {
         o0 = projection.rotate();
 
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
           tooltips = false;
         }
 
@@ -10838,7 +10832,7 @@ function globeChart() {
         }
 
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
 
         var centroid = d3.geoCentroid(d);
@@ -10944,30 +10938,20 @@ function globeChart() {
         });
 
       dispatch.on('tooltipMove', function(e) {
-          if (tooltip$$1) {
-            sucrose.tooltip.position(that.parentNode, tooltip$$1, e, 's');
+          if (tt) {
+            tooltip.position(that.parentNode, tt, e, 's');
           }
         });
 
       dispatch.on('tooltipHide', function() {
           if (tooltips) {
-            sucrose.tooltip.cleanup();
+            tooltip.cleanup();
           }
         });
 
       // Update chart from a state object passed to event handler
       dispatch.on('changeState', function(eo) {
-          if (typeof eo.disabled !== 'undefined') {
-            data.forEach(function(series, i) {
-              series.disabled = eo.disabled[i];
-            });
-            state.disabled = eo.disabled;
-          }
-
-          if (typeof eo.stacked !== 'undefined') {
-            multibar.stacked(eo.stacked);
-            state.stacked = eo.stacked;
-          }
+          //TODO: handle active country
 
           container.transition().call(chart);
         });
@@ -11017,7 +11001,7 @@ function globeChart() {
         };
         classes = function(d, i) {
           var iClass = (i * (params.step || 1)) % 14;
-          iClass = (iClass > 9 ? '' : '0') + iClass; //TODO: use d3.formatNumber
+          iClass = (iClass > 9 ? '' : '0') + iClass; //TODO: use d3.format
           return 'sc-country-' + i + ' sc-fill' + iClass;
         };
         break;
@@ -11230,18 +11214,17 @@ function lineChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var lines = models.line()
+  var model = line()
         .clipEdge(true),
-      model = lines,
-      xAxis = models.axis(),
-      yAxis = models.axis(),
-      legend = models.legend()
+      xAxis = axis(),
+      yAxis = axis(),
+      legend = menu()
         .align('right'),
-      controls = models.legend()
+      controls = menu()
         .align('left')
         .color(['#444']);
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -11250,11 +11233,11 @@ function lineChart() {
 
   var showTooltip = function(eo, offsetElement) {
         var key = eo.series.key,
-            x = lines.x()(eo.point, eo.pointIndex),
-            y = lines.y()(eo.point, eo.pointIndex),
+            x = model.x()(eo.point, eo.pointIndex),
+            y = model.y()(eo.point, eo.pointIndex),
             content = tooltipContent(key, x, y, eo, chart);
 
-        tooltip$$1 = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        tt = tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   //============================================================
@@ -11383,16 +11366,16 @@ function lineChart() {
 
       // set state.disabled
       state.disabled = modelData.map(function(d) { return !!d.disabled; });
-      state.interpolate = lines.interpolate();
-      state.isArea = lines.isArea()();
+      state.interpolate = model.interpolate();
+      state.isArea = model.isArea()();
 
       var controlsData = [
-        { key: 'Linear', disabled: lines.interpolate() !== 'linear' },
-        { key: 'Basis', disabled: lines.interpolate() !== 'basis' },
-        { key: 'Monotone', disabled: lines.interpolate() !== 'monotone' },
-        { key: 'Cardinal', disabled: lines.interpolate() !== 'cardinal' },
-        { key: 'Line', disabled: lines.isArea()() === true },
-        { key: 'Area', disabled: lines.isArea()() === false }
+        { key: 'Linear', disabled: model.interpolate() !== 'linear' },
+        { key: 'Basis', disabled: model.interpolate() !== 'basis' },
+        { key: 'Monotone', disabled: model.interpolate() !== 'monotone' },
+        { key: 'Cardinal', disabled: model.interpolate() !== 'cardinal' },
+        { key: 'Line', disabled: model.isArea()() === true },
+        { key: 'Area', disabled: model.isArea()() === false }
       ];
 
       //------------------------------------------------------------
@@ -11405,7 +11388,7 @@ function lineChart() {
 
       var pointSize = Math.pow(pointRadius, 2) * Math.PI * (singlePoint ? 3 : 1);
 
-      lines
+      model
         .id(chart.id())
         //TODO: we need to reconsider use of padData
         // .padData(singlePoint ? false : true)
@@ -11421,7 +11404,7 @@ function lineChart() {
 
         var xValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
-                  return lines.x()(d, i);
+                  return model.x()(d, i);
                 });
               }))
               .reduce(function(p, c) {
@@ -11436,13 +11419,13 @@ function lineChart() {
 
         var yValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
-                  return lines.y()(d, i);
+                  return model.y()(d, i);
                 });
               })),
             yExtents = d3.extent(yValues),
             yOffset = modelData.length === 1 ? 2 : Math.min((yExtents[1] - yExtents[0]) / modelData.length, yExtents[0]);
 
-        lines
+        model
           .xDomain([
             xExtents[0] - xOffset,
             xExtents[1] + xOffset
@@ -11467,7 +11450,7 @@ function lineChart() {
 
       } else {
 
-        lines
+        model
           .xDomain(null)  //?why null?
           .yDomain(null);
         xAxis
@@ -11484,8 +11467,8 @@ function lineChart() {
 
       }
 
-      x = lines.xScale();
-      y = lines.yScale();
+      x = model.xScale();
+      y = model.yScale();
 
       xAxis
         .scale(x)
@@ -11682,7 +11665,7 @@ function lineChart() {
           model.width(innerWidth).height(innerHeight);
           // This resets the scales for the whole chart
           // unfortunately we can't call this without until line instance is called
-          lines.scatter.resetDimensions(innerWidth, innerHeight);
+          model.scatter.resetDimensions(innerWidth, innerHeight);
         }
 
         // Y-Axis
@@ -11701,7 +11684,7 @@ function lineChart() {
         // X-Axis
         // resize ticks based on new dimensions
         xAxis
-          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
+          .tickSize(-innerHeight + (model.padData() ? pointRadius : 0), 0)
           .margin(innerMargin)
           .tickFormat(function(d, i, noEllipsis) {
             return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
@@ -11712,17 +11695,17 @@ function lineChart() {
         setInnerMargins();
         setInnerDimensions();
         // xAxis
-        //  .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
+        //  .resizeTickLines(-innerHeight + (model.padData() ? pointRadius : 0));
 
         // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
-          .tickSize(-innerWidth + (lines.padData() ? pointRadius : 0), 0)
+          .tickSize(-innerWidth + (model.padData() ? pointRadius : 0), 0)
           .margin(innerMargin);
         yAxis_wrap
           .call(yAxis);
 
         xAxis
-          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
+          .tickSize(-innerHeight + (model.padData() ? pointRadius : 0), 0)
           .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);
@@ -11801,27 +11784,27 @@ function lineChart() {
 
         switch (d.key) {
           case 'Basis':
-            lines.interpolate('basis');
+            model.interpolate('basis');
             break;
           case 'Linear':
-            lines.interpolate('linear');
+            model.interpolate('linear');
             break;
           case 'Monotone':
-            lines.interpolate('monotone');
+            model.interpolate('monotone');
             break;
           case 'Cardinal':
-            lines.interpolate('cardinal');
+            model.interpolate('cardinal');
             break;
           case 'Line':
-            lines.isArea(false);
+            model.isArea(false);
             break;
           case 'Area':
-            lines.isArea(true);
+            model.isArea(true);
             break;
         }
 
-        state.interpolate = lines.interpolate();
-        state.isArea = lines.isArea();
+        state.interpolate = model.interpolate();
+        state.isArea = model.isArea();
         dispatch.call('stateChange', this, state);
 
         container.transition().duration(duration).call(chart);
@@ -11829,19 +11812,19 @@ function lineChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
+          tt = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip$$1) {
-          sucrose.tooltip.position(that.parentNode, tooltip$$1, e, 's');
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e, 's');
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -11855,12 +11838,12 @@ function lineChart() {
         }
 
         if (typeof eo.interpolate !== 'undefined') {
-          lines.interpolate(eo.interpolate);
+          model.interpolate(eo.interpolate);
           state.interpolate = eo.interpolate;
         }
 
         if (typeof eo.isArea !== 'undefined') {
-          lines.isArea(eo.isArea);
+          model.isArea(eo.isArea);
           state.isArea = eo.isArea;
         }
 
@@ -11905,14 +11888,14 @@ function lineChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.lines = lines;
+  chart.lines = model;
   chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, lines, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
+  fc.rebind(chart, model, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -12115,15 +12098,14 @@ function multibarChart() {
   var useScroll = false,
       scrollOffset = 0;
 
-  var multibar = models.multibar().stacked(false).clipEdge(false);
-  var model = multibar;
-  var xAxis = models.axis(); //.orient('bottom'),
-  var yAxis = models.axis(); //.orient('left'),
-  var controls = models.legend().color(['#444']);
-  var legend = models.legend();
-  var scroll = models.scroll();
+  var model = multibar().stacked(false).clipEdge(false);
+  var xAxis = axis(); //.orient('bottom'),
+  var yAxis = axis(); //.orient('left'),
+  var controls = menu().color(['#444']);
+  var legend = menu();
+  var scroll = scroller();
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   var tooltipContent = function(eo, graph) {
         var key = eo.group.label,
@@ -12139,7 +12121,7 @@ function multibarChart() {
               vertical ? 'n' : 'e' :
               vertical ? 's' : 'w';
 
-        return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+        return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart, labels) {
@@ -12176,7 +12158,7 @@ function multibarChart() {
           totalAmount = 0,
           hasData = false;
 
-      var baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32;
+      var baseDimension = model.stacked() ? vertical ? 72 : 32 : 32;
 
       var xAxisValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
@@ -12297,8 +12279,8 @@ function multibarChart() {
                   'seriesIndex': series.seriesIndex,
                   'group': v,
                   'color': typeof series.color !== 'undefined' ? series.color : '',
-                  'x': multibar.x()(value, v),
-                  'y': multibar.y()(value, v),
+                  'x': model.x()(value, v),
+                  'y': model.y()(value, v),
                   'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
                   'active': typeof series.active !== 'undefined' ? series.active : ''
                 };
@@ -12395,8 +12377,8 @@ function multibarChart() {
             //       'seriesIndex': series.seriesIndex,
             //       'group': v,
             //       'color': typeof series.color !== 'undefined' ? series.color : '',
-            //       'x': multibar.x()(value, v),
-            //       'y': multibar.y()(value, v),
+            //       'x': model.x()(value, v),
+            //       'y': model.y()(value, v),
             //       'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
             //       'active': typeof series.active !== 'undefined' ? series.active : ''
             //     };
@@ -12416,7 +12398,7 @@ function multibarChart() {
       // set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
       state.active = data.map(function(d) { return d.active === 'active'; });
-      state.stacked = multibar.stacked();
+      state.stacked = model.stacked();
 
       // set title display option
       showTitle = showTitle && properties.title;
@@ -12429,8 +12411,8 @@ function multibarChart() {
       //------------------------------------------------------------
       // Setup Scales and Axes
 
-      x = multibar.xScale();
-      y = multibar.yScale();
+      x = model.xScale();
+      y = model.yScale();
 
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
@@ -12558,7 +12540,7 @@ function multibarChart() {
           maxControlsWidth = controls.calcMaxWidth();
         }
         if (showLegend) {
-          if (multibar.barColor()) {
+          if (model.barColor()) {
             data.forEach(function(series, i) {
               series.color = d3.rgb('#ccc').darker(i * 1.5).toString();
             });
@@ -12635,7 +12617,7 @@ function multibarChart() {
           }
         }
 
-        multibar
+        model
           .vertical(vertical)
           .baseDimension(baseDimension)
           .disabled(data.map(function(series) { return series.disabled; }))
@@ -12643,7 +12625,7 @@ function multibarChart() {
           .height(getDimension('height'));
         model_wrap
           .data([seriesData])
-          .call(multibar);
+          .call(model);
 
         //------------------------------------------------------------
         // Axes
@@ -12663,7 +12645,7 @@ function multibarChart() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          multibar.resetDimensions(getDimension('width'), getDimension('height'));
+          model.resetDimensions(getDimension('width'), getDimension('height'));
         }
 
         // Y-Axis
@@ -12714,7 +12696,7 @@ function multibarChart() {
         // final call to lines based on new dimensions
         model_wrap
           .transition()
-            .call(multibar);
+            .call(model);
 
         //------------------------------------------------------------
         // Final repositioning
@@ -12831,14 +12813,14 @@ function multibarChart() {
 
         switch (d.key) {
           case 'Grouped':
-            multibar.stacked(false);
+            model.stacked(false);
             break;
           case 'Stacked':
-            multibar.stacked(true);
+            model.stacked(true);
             break;
         }
 
-        state.stacked = multibar.stacked();
+        state.stacked = model.stacked();
         chart.update();
         dispatch.call('stateChange', this, state);
 
@@ -12848,19 +12830,19 @@ function multibarChart() {
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
           eo.group = groupData[eo.groupIndex];
-          tooltip$$1 = showTooltip(eo, that.parentNode, groupData);
+          tt = showTooltip(eo, that.parentNode, groupData);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip$$1) {
-          sucrose.tooltip.position(that.parentNode, tooltip$$1, e, vertical ? 's' : 'w');
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e, vertical ? 's' : 'w');
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -12888,7 +12870,7 @@ function multibarChart() {
         }
 
         if (typeof eo.stacked !== 'undefined') {
-          multibar.stacked(eo.stacked);
+          model.stacked(eo.stacked);
           state.stacked = eo.stacked;
         }
 
@@ -12938,14 +12920,14 @@ function multibarChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.multibar = multibar;
+  chart.multibar = model;
   chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
+  fc.rebind(chart, model, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -13195,30 +13177,30 @@ function paretoChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var multibar = models.multibar()
+  var bars = multibar()
       .stacked(true)
       .clipEdge(false)
       .withLine(true)
       .nice(false),
-    linesBackground = models.line()
+    linesBackground = line()
       .color(function(d, i) { return '#FFF'; })
       .fill(function(d, i) { return '#FFF'; })
       .useVoronoi(false)
       .nice(false),
-    lines = models.line()
+    lines = line()
       .useVoronoi(false)
       .color('data')
       .nice(false),
-    xAxis = models.axis(),
-    yAxis = models.axis(),
-    barLegend = models.legend()
+    xAxis = axis(),
+    yAxis = axis(),
+    barLegend = menu()
       .align('left')
       .position('middle'),
-    lineLegend = models.legend()
+    lineLegend = menu()
       .align('right')
       .position('middle');
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   var tooltipBar = function(key, x, y, e, graph) {
         return '<p><b>' + key + '</b></p>' +
@@ -13238,12 +13220,12 @@ function paretoChart() {
             amt = lines.y()(eo.point, eo.pointIndex),
             content = eo.series.type === 'bar' ? tooltipBar(key, per, amt, eo, chart) : tooltipLine(key, per, amt, eo, chart);
 
-        return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+        return tooltip.show(eo.e, content, 's', null, offsetElement);
       };
 
   var showQuotaTooltip = function(eo, offsetElement) {
         var content = tooltipQuota(eo.key, 0, eo.val, eo, chart);
-        return sucrose.tooltip.show(eo.e, content, 's', null, offsetElement);
+        return tooltip.show(eo.e, content, 's', null, offsetElement);
       };
 
   var seriesClick = function(data, eo, chart, container) {
@@ -13285,7 +13267,7 @@ function paretoChart() {
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
-      var baseDimension = multibar.stacked() ? 72 : 32;
+      var baseDimension = bars.stacked() ? 72 : 32;
 
       var xAxisValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
@@ -13394,8 +13376,8 @@ function paretoChart() {
                       'group': v,
                       'seriesIndex': series.seriesIndex,
                       'color': typeof series.color !== 'undefined' ? series.color : '',
-                      'x': multibar.x()(value, v),
-                      'y': multibar.y()(value, v),
+                      'x': bars.x()(value, v),
+                      'y': bars.y()(value, v),
                       'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
                       'active': typeof series.active !== 'undefined' ? series.active : '' // do not eval d.active because it can be false
                     };
@@ -13423,7 +13405,7 @@ function paretoChart() {
             .map(function(series, s) {
               series.seriesIndex = s;
 
-              if (!multibar.stacked()) {
+              if (!bars.stacked()) {
 
                 series.values = series._values.map(function(value, v) {
                   return {
@@ -13442,7 +13424,7 @@ function paretoChart() {
 
                 barData.map(function(barSeries) {
                     barSeries.values.map(function(value, v) {
-                      series.values[v].y += multibar.y()(value, v);
+                      series.values[v].y += bars.y()(value, v);
                     });
                   });
 
@@ -13532,8 +13514,8 @@ function paretoChart() {
       //------------------------------------------------------------
       // Setup Scales
 
-      x = multibar.xScale();
-      y = multibar.yScale();
+      x = bars.xScale();
+      y = bars.yScale();
 
       xAxis
         .orient('bottom')
@@ -13694,16 +13676,16 @@ function paretoChart() {
         var forceY = [0, Math.ceil(limitY * 0.1) * 10];
 
         // Main Bar Chart
-        multibar
+        bars
           .width(innerWidth)
           .height(innerHeight)
           .forceY(forceY)
           .id(chart.id());
         bars_wrap
           .datum(barData)
-          .call(multibar);
+          .call(bars);
 
-        var outerPadding = x(1) + x.bandwidth() / (multibar.stacked() || lineData.length === 1 ? 2 : 4);
+        var outerPadding = x(1) + x.bandwidth() / (bars.stacked() || lineData.length === 1 ? 2 : 4);
 
         // Main Line Chart
         linesBackground
@@ -13756,7 +13738,7 @@ function paretoChart() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          multibar.resetDimensions(innerWidth, innerHeight);
+          bars.resetDimensions(innerWidth, innerHeight);
         }
 
         //------------------------------------------------------------
@@ -13845,11 +13827,11 @@ function paretoChart() {
         //------------------------------------------------------------
         // Recall Main Chart and Axis
 
-        multibar
+        bars
           .width(innerWidth)
           .height(innerHeight);
         bars_wrap
-          .call(multibar);
+          .call(bars);
 
         xAxis_wrap
           .call(xAxis);
@@ -13858,7 +13840,7 @@ function paretoChart() {
 
         //------------------------------------------------------------
         // Recalculate final dimensions based on new Axis size
-        outerPadding = x(1) + x.bandwidth() / (multibar.stacked() ? 2 : lineData.length * 2);
+        outerPadding = x(1) + x.bandwidth() / (bars.stacked() ? 2 : lineData.length * 2);
 
         xAxisMargin = xAxis.margin();
         yAxisMargin = yAxis.margin();
@@ -13870,13 +13852,13 @@ function paretoChart() {
 
         var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
 
-        multibar
+        bars
           .width(innerWidth)
           .height(innerHeight);
 
         bars_wrap
           .attr('transform', transform)
-          .call(multibar);
+          .call(bars);
 
 
         linesBackground
@@ -13968,7 +13950,7 @@ function paretoChart() {
                   key: d.key,
                   e: d3.event
               };
-              tooltip$$1 = showQuotaTooltip(eo, that.parentNode);
+              tt = showQuotaTooltip(eo, that.parentNode);
             }
           })
           .on('mousemove', function() {
@@ -14018,19 +14000,19 @@ function paretoChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip$$1 = showTooltip(eo, that.parentNode, groupData);
+          tt = showTooltip(eo, that.parentNode, groupData);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip$$1) {
-          sucrose.tooltip.position(that.parentNode, tooltip$$1, e, 's');
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e, 's');
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -14044,7 +14026,7 @@ function paretoChart() {
         }
 
         if (typeof eo.stacked !== 'undefined') {
-          multibar.stacked(eo.stacked);
+          bars.stacked(eo.stacked);
           state.stacked = eo.stacked;
         }
 
@@ -14060,7 +14042,7 @@ function paretoChart() {
         }
       });
 
-      multibar.dispatch.on('elementClick', function(eo) {
+      bars.dispatch.on('elementClick', function(eo) {
         dispatch.call('chartClick', this);
         seriesClick(data, eo, chart, container);
       });
@@ -14086,15 +14068,15 @@ function paretoChart() {
     dispatch.call('tooltipHide', this);
   });
 
-  multibar.dispatch.on('elementMouseover.tooltip', function(eo) {
+  bars.dispatch.on('elementMouseover.tooltip', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  multibar.dispatch.on('elementMousemove.tooltip', function(e) {
+  bars.dispatch.on('elementMousemove.tooltip', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  multibar.dispatch.on('elementMouseout.tooltip', function() {
+  bars.dispatch.on('elementMouseout.tooltip', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -14106,14 +14088,14 @@ function paretoChart() {
   chart.dispatch = dispatch;
   chart.linesBackground = linesBackground;
   chart.lines = lines;
-  chart.multibar = multibar;
+  chart.multibar = bars;
   chart.barLegend = barLegend;
   chart.lineLegend = lineLegend;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, multibar, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'color', 'fill', 'classes', 'gradient');
-  fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
+  fc.rebind(chart, bars, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'color', 'fill', 'classes', 'gradient');
+  fc.rebind(chart, bars, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -14173,12 +14155,12 @@ function paretoChart() {
 
     var barFill = (!params.gradient) ? barColor : function(d, i) {
       var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-      return multibar.gradient()(d, d.seriesIndex, p);
+      return bars.gradient()(d, d.seriesIndex, p);
     };
 
-    multibar.color(barColor);
-    multibar.fill(barFill);
-    multibar.classes(barClasses);
+    bars.color(barColor);
+    bars.fill(barFill);
+    bars.classes(barClasses);
 
     lines.color(lineColor);
     lines.fill(lineColor);
@@ -14197,7 +14179,7 @@ function paretoChart() {
     if (!arguments.length) { return getX; }
     getX = _;
     lines.x(_);
-    multibar.x(_);
+    bars.x(_);
     return chart;
   };
 
@@ -14205,7 +14187,7 @@ function paretoChart() {
     if (!arguments.length) { return getY; }
     getY = _;
     lines.y(_);
-    multibar.y(_);
+    bars.y(_);
     return chart;
   };
 
@@ -14281,7 +14263,7 @@ function paretoChart() {
   chart.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
-    multibar.clipEdge(_);
+    bars.clipEdge(_);
     linesBackground.clipEdge(_);
     lines.clipEdge(_);
     return chart;
@@ -14306,7 +14288,7 @@ function paretoChart() {
   chart.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
-    multibar.direction(_);
+    bars.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
     barLegend.direction(_);
@@ -14317,7 +14299,7 @@ function paretoChart() {
   chart.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    multibar.duration(_);
+    bars.duration(_);
     linesBackground.duration(_);
     lines.duration(_);
     return chart;
@@ -14326,7 +14308,7 @@ function paretoChart() {
   chart.delay = function(_) {
     if (!arguments.length) { return delay; }
     delay = _;
-    multibar.delay(_);
+    bars.delay(_);
     linesBackground.delay(_);
     lines.delay(_);
     return chart;
@@ -14369,7 +14351,7 @@ function paretoChart() {
   chart.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    multibar.locality(_);
+    bars.locality(_);
     linesBackground.locality(_);
     return chart;
   };
@@ -14407,12 +14389,11 @@ function pieChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var pie = models.pie(),
-      model = pie,
-      controls = models.legend().align('center'),
-      legend = models.legend().align('center');
+  var model = pie(),
+      controls = menu().align('center'),
+      legend = menu().align('center');
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -14425,7 +14406,7 @@ function pieChart() {
             x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
 
-        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart) { return; };
@@ -14728,19 +14709,19 @@ function pieChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip$$1 = showTooltip(eo, that.parentNode, properties);
+          tt = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip$$1) {
-          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -14798,14 +14779,14 @@ function pieChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.pie = pie;
+  chart.pie = model;
   chart.legend = legend;
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, pie, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
-  fc.rebind(chart, pie, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
+  fc.rebind(chart, model, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
+  fc.rebind(chart, model, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -14998,19 +14979,18 @@ function stackeareaChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var stacked = models.stackedarea()
+  var model = stackearea()
         .clipEdge(true),
-      model = stacked,
-      xAxis = models.axis(),
-      yAxis = models.axis(),
-      legend = models.legend()
+      xAxis = axis(),
+      yAxis = axis(),
+      legend = menu()
         .align('right'),
-      controls = models.legend()
+      controls = menu()
         .align('left')
         .color(['#444']),
-      guide = models.line().duration(0);
+      guide = line().duration(0);
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<p>' + key + ': ' + y + '</p>';
@@ -15141,25 +15121,25 @@ function stackeareaChart() {
 
       // set state.disabled
       state.disabled = modelData.map(function(d) { return !!d.disabled; });
-      state.style = stacked.style();
+      state.style = model.style();
 
       var controlsData = [
-        { key: 'Stacked', disabled: stacked.offset() !== 'zero' },
-        { key: 'Stream', disabled: stacked.offset() !== 'wiggle' },
-        { key: 'Expanded', disabled: stacked.offset() !== 'expand' }
+        { key: 'Stacked', disabled: model.offset() !== 'zero' },
+        { key: 'Stream', disabled: model.offset() !== 'wiggle' },
+        { key: 'Expanded', disabled: model.offset() !== 'expand' }
       ];
 
       //------------------------------------------------------------
       // Setup Scales and Axes
 
-      stacked
+      model
         .id(chart.id())
         .xDomain(null)  //?why null?
         .yDomain(null)
         .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear());
 
-      x = stacked.xScale();
-      y = stacked.yScale();
+      x = model.xScale();
+      y = model.yScale();
 
       xAxis
         .orient('bottom')
@@ -15375,7 +15355,7 @@ function stackeareaChart() {
           model.width(innerWidth).height(innerHeight);
           // This resets the scales for the whole chart
           // unfortunately we can't call this without until line instance is called
-          // stacked.scatter.resetDimensions(innerWidth, innerHeight);
+          // model.scatter.resetDimensions(innerWidth, innerHeight);
           x.range([0, innerWidth]);
           y.range([innerHeight, 0]);
         }
@@ -15411,7 +15391,7 @@ function stackeareaChart() {
 
         // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
-          .ticks(stacked.offset() === 'wiggle' ? 0 : null)
+          .ticks(model.offset() === 'wiggle' ? 0 : null)
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
         yAxis_wrap
@@ -15457,10 +15437,10 @@ function stackeareaChart() {
 
         chart.showTooltip = function(eo, offsetElement) {
           var key = eo.seriesKey,
-              x = xValueFormat(stacked.x()(eo)),
-              y = yValueFormat(stacked.y()(eo)),
+              x = xValueFormat(model.x()(eo)),
+              y = yValueFormat(model.y()(eo)),
               content = tooltipContent(key, x, y, eo, chart);
-          return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+          return tooltip.show(eo.e, content, null, null, offsetElement);
         };
 
 
@@ -15498,12 +15478,12 @@ function stackeareaChart() {
           // Line
           eo.data.forEach(function(d, i) {
             var key = d.seriesKey,
-                xval = xValueFormat(stacked.x()(d)),
-                yval = yValueFormat(stacked.y()(d)),
+                xval = xValueFormat(model.x()(d)),
+                yval = yValueFormat(model.y()(d)),
                 content = tooltipContent(key, xval, yval, d, chart);
             guidePos.clientY = eo.origin.top + y(d[1]);
             d3.select(guidetips[i]).select('.tooltip-inner').html(content);
-            sucrose.tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');
+            tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');
           });
 
           // Top date
@@ -15511,7 +15491,7 @@ function stackeareaChart() {
             var xval = xValueFormat(xpos);
             guidePos.clientY = eo.origin.top;
             d3.select(guidetips['x']).select('.tooltip-inner').html(xval);
-            sucrose.tooltip.position(that.parentNode, guidetips['x'], guidePos, 's');
+            tooltip.position(that.parentNode, guidetips['x'], guidePos, 's');
           });
 
         };
@@ -15539,21 +15519,21 @@ function stackeareaChart() {
 
         dispatch.on('tooltipShow', function(eo) {
           if (tooltips) {
-            tooltip$$1 = true;
+            tt = true;
             guide_wrap.classed('hover', true);
           }
         });
 
         dispatch.on('tooltipMove', function(eo) {
-          if (tooltip$$1) {
+          if (tt) {
             chart.moveGuide(that.parentNode, container, eo);
           }
         });
 
         dispatch.on('tooltipHide', function() {
           if (tooltips) {
-            tooltip$$1 = false;
-            sucrose.tooltip.cleanup();
+            tt = false;
+            tooltip.cleanup();
             guidetips = null;
             guide_wrap.classed('hover', false);
           }
@@ -15569,7 +15549,7 @@ function stackeareaChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      stacked.dispatch.on('elementClick.toggle', function(e) {
+      model.dispatch.on('elementClick.toggle', function(e) {
         if (data.filter(function(d) { return !d.disabled; }).length === 1) {
           data = data.map(function(d) {
             d.disabled = false;
@@ -15622,17 +15602,17 @@ function stackeareaChart() {
 
         switch (d.key) {
           case 'Stacked':
-            stacked.style('stack');
+            model.style('stack');
             break;
           case 'Stream':
-            stacked.style('stream');
+            model.style('stream');
             break;
           case 'Expanded':
-            stacked.style('expand');
+            model.style('expand');
             break;
         }
 
-        state.style = stacked.style();
+        state.style = model.style();
         dispatch.call('stateChange', this, state);
 
         container.transition().duration(duration).call(chart);
@@ -15648,7 +15628,7 @@ function stackeareaChart() {
         }
 
         if (typeof eo.style !== 'undefined') {
-          stacked.style(eo.style);
+          model.style(eo.style);
           state.style = eo.style;
         }
 
@@ -15691,14 +15671,14 @@ function stackeareaChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.stacked = stacked;
+  chart.stacked = model;
   chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, stacked, 'offset', 'order', 'style');
+  fc.rebind(chart, model, 'offset', 'order', 'style');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -15882,7 +15862,7 @@ function treeChart() {
       horizontal = false;
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-      color = function (d, i) { return sucrose.utility.defaultColor()(d, i); },
+      color = function (d, i) { return utility.defaultColor()(d, i); },
       fill = function(d, i) { return color(d,i); },
       gradient = function(d, i) { return color(d,i); },
 
@@ -15899,7 +15879,7 @@ function treeChart() {
       getId = function(d) { return d.id || d.data.id; },
 
       fillGradient = function(d, i) {
-          return sucrose.utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+          return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
       },
       useClass = false,
       clipEdge = true,
@@ -15955,7 +15935,7 @@ function treeChart() {
 
       var defs_entr = wrap_entr.append('defs');
       var defs = wrap.select('defs').merge(defs_entr);
-      var node_shadow = sucrose.utility.dropShadow('node_back_' + id, defs, {blur: 2});
+      var node_shadow = utility.dropShadow('node_back_' + id, defs, {blur: 2});
 
       defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
       var clipPath = defs.select('#sc-edge-clip-' + id + ' rect');
@@ -16431,7 +16411,7 @@ function treeChart() {
 
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
-    getY = sucrose.utility.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 
@@ -16556,11 +16536,10 @@ function treemapChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var treemap = models.treemap(),
-      model = treemap,
-      legend = models.legend();
+  var model = treemap(),
+      legend = menu();
 
-  var tooltip$$1 = null;
+  var tt = null;
 
   var tooltipContent = function(point) {
         var tt = '<h3>' + point.data.name + '</h3>' +
@@ -16570,7 +16549,7 @@ function treemapChart() {
 
   var showTooltip = function(eo, offsetElement) {
         var content = tooltipContent(eo.point);
-        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   //============================================================
@@ -16717,14 +16696,14 @@ function treemapChart() {
         //------------------------------------------------------------
         // Main Chart Component(s)
 
-        treemap
+        model
           .width(availableWidth)
           .height(availableHeight);
 
         wrap
           .datum(data.filter(function(d) { return !d.disabled; }))
           .transition()
-            .call(treemap);
+            .call(model);
 
       };
 
@@ -16752,19 +16731,19 @@ function treemapChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip$$1 = showTooltip(eo, that.parentNode);
+          tt = showTooltip(eo, that.parentNode);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip$$1) {
-          sucrose.tooltip.position(that.parentNode, tooltip$$1, e);
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -16793,15 +16772,15 @@ function treemapChart() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  treemap.dispatch.on('elementMouseover', function(eo) {
+  model.dispatch.on('elementMouseover', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  treemap.dispatch.on('elementMousemove', function(e) {
+  model.dispatch.on('elementMousemove', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  treemap.dispatch.on('elementMouseout', function() {
+  model.dispatch.on('elementMouseout', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -16812,9 +16791,9 @@ function treemapChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.legend = legend;
-  chart.treemap = treemap;
+  chart.treemap = model;
 
-  fc.rebind(chart, treemap, 'x', 'y', 'xDomain', 'yDomain', 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
+  fc.rebind(chart, model, 'x', 'y', 'xDomain', 'yDomain', 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }
@@ -16849,7 +16828,7 @@ function treemapChart() {
 
     var fill = (!params.gradient) ? color : function(d, i) {
       var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return treemap.gradient()(d, i, p);
+      return model.gradient()(d, i, p);
     };
 
     model.color(color);
@@ -16867,14 +16846,14 @@ function treemapChart() {
   chart.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    treemap.x(_);
+    model.x(_);
     return chart;
   };
 
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
-    treemap.y(_);
+    model.y(_);
     return chart;
   };
 
@@ -16958,11 +16937,15 @@ const charts = {
     treemapChart: treemapChart,
 };
 
-const dev = false; //set false when in production
+// false & scr are substitution variables for rollup
+const dev = false; // set false when in production
+const build = 'scr'; // set sc for sucrose and sgr for Sugar
 
 exports.development = dev;
+exports.build = build;
 exports.version = version;
 exports.utility = utility;
+exports.utils = utility;
 exports.tooltip = tooltip;
 exports.models = models;
 exports.charts = charts;
