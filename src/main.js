@@ -1,6 +1,6 @@
 // ENV_DEV & ENV_BUILD are substitution variables for rollup
 const dev = ENV_DEV; // set false when in production
-const build = 'ENV_BUILD'; // set sc for sucrose and sgr for Sugar
+const build = 'ENV_BUILD'; // set scr for sucrose and sgr for Sugar
 
 export {dev as development};
 export {build as build};

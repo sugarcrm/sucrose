@@ -49,6 +49,7 @@ export default function globeChart() {
       showLabels = true,
       autoSpin = false,
       showGraticule = true,
+      gradient = null,
       world_map = [],
       country_map = {},
       country_labels = {},
@@ -125,9 +126,9 @@ export default function globeChart() {
 
       chart.container = this;
 
-      var fillGradient = function(d, i) {
-            return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
-          };
+      gradient = function(d, i) {
+        return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), defs);
+      };
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -556,8 +557,8 @@ export default function globeChart() {
         break;
     }
     var fill = (!params.gradient) ? color : function(d, i) {
-        return chart.gradient(d, i);
-      };
+          return chart.gradient()(d, i);
+        };
 
     chart.color(color);
     chart.classes(classes);

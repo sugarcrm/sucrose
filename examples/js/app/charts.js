@@ -32,22 +32,23 @@ var sucroseCharts = function () {
 
   function applyConfigurationSettings(config, settings) {
     var KEYMETHODMAP = {
-          'show_labels': 'showLabels',
-          'show_values': 'showValues',
           'allow_scroll': 'allowScroll',
-          'tick_display': 'tickDisplay',
+          'auto_spin': 'autoSping',
           'color_data': 'colorData',
           'color_options': 'colorOptions',
-          'hole_label': 'holeLabel',
           'donut_ratio': 'donutRatio',
-          'wrap_labels': 'wrapLabels',
+          'hole_label': 'holeLabel',
           'mirror_axis': 'mirrorAxis',
-          'texture_fill': 'textureFill',
-          'show_title': 'showTitle',
-          'show_legend': 'showLegend',
-          'show_controls': 'showControls',
           'series_click': 'seriesClick',
-          'tooltips': 'tooltips'
+          'show_controls': 'showControls',
+          'show_labels': 'showLabels',
+          'show_legend': 'showLegend',
+          'show_title': 'showTitle',
+          'show_values': 'showValues',
+          'texture_fill': 'textureFill',
+          'tick_display': 'tickDisplay',
+          'tooltips': 'tooltips',
+          'wrap_labels': 'wrapLabels'
         };
     var k, m;
 
@@ -110,7 +111,9 @@ var sucroseCharts = function () {
               continue;
           }
           v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
-          chart[k](v);
+          if (chart[k]) {
+            chart[k](v);
+          }
       }
     }
   }
@@ -508,12 +511,12 @@ var sucroseCharts = function () {
     },
     formatToString: function(type) {
       return configs[type]._format.toString()
-        .replace(/function\sformat\([a-z,]*\)/, 'function format(callback)')
+        .replace(/format\([a-z,\s]*\)/, 'format(callback)')
         .replace(/\n\s*/g, '\n');
     },
     configureToString: function() {
       return configureChart.toString()
-        .replace(/function\sconfigureChart\([a-z,]*\)/, 'function configure()')
+        .replace(/configureChart\([a-z,\s]*\)/, 'configure()')
         .replace(/\n\s*/g, '\n');
     }
   };
