@@ -1,8 +1,10 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import models from '../models/models.js';
+import line from '../models/line.js';
+import axis from '../models/axis.js';
+import menu from '../models/menu.js';
 
 export default function lineChart() {
 
@@ -36,18 +38,17 @@ export default function lineChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var lines = models.line()
+  var model = line()
         .clipEdge(true),
-      model = lines,
-      xAxis = models.axis(),
-      yAxis = models.axis(),
-      legend = models.legend()
+      xAxis = axis(),
+      yAxis = axis(),
+      legend = menu()
         .align('right'),
-      controls = models.legend()
+      controls = menu()
         .align('left')
         .color(['#444']);
 
-  var tooltip = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -56,11 +57,11 @@ export default function lineChart() {
 
   var showTooltip = function(eo, offsetElement) {
         var key = eo.series.key,
-            x = lines.x()(eo.point, eo.pointIndex),
-            y = lines.y()(eo.point, eo.pointIndex),
+            x = model.x()(eo.point, eo.pointIndex),
+            y = model.y()(eo.point, eo.pointIndex),
             content = tooltipContent(key, x, y, eo, chart);
 
-        tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        tt = tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   //============================================================
@@ -189,16 +190,16 @@ export default function lineChart() {
 
       // set state.disabled
       state.disabled = modelData.map(function(d) { return !!d.disabled; });
-      state.interpolate = lines.interpolate();
-      state.isArea = lines.isArea()();
+      state.interpolate = model.interpolate();
+      state.isArea = model.isArea()();
 
       var controlsData = [
-        { key: 'Linear', disabled: lines.interpolate() !== 'linear' },
-        { key: 'Basis', disabled: lines.interpolate() !== 'basis' },
-        { key: 'Monotone', disabled: lines.interpolate() !== 'monotone' },
-        { key: 'Cardinal', disabled: lines.interpolate() !== 'cardinal' },
-        { key: 'Line', disabled: lines.isArea()() === true },
-        { key: 'Area', disabled: lines.isArea()() === false }
+        { key: 'Linear', disabled: model.interpolate() !== 'linear' },
+        { key: 'Basis', disabled: model.interpolate() !== 'basis' },
+        { key: 'Monotone', disabled: model.interpolate() !== 'monotone' },
+        { key: 'Cardinal', disabled: model.interpolate() !== 'cardinal' },
+        { key: 'Line', disabled: model.isArea()() === true },
+        { key: 'Area', disabled: model.isArea()() === false }
       ];
 
       //------------------------------------------------------------
@@ -211,7 +212,7 @@ export default function lineChart() {
 
       var pointSize = Math.pow(pointRadius, 2) * Math.PI * (singlePoint ? 3 : 1);
 
-      lines
+      model
         .id(chart.id())
         //TODO: we need to reconsider use of padData
         // .padData(singlePoint ? false : true)
@@ -227,7 +228,7 @@ export default function lineChart() {
 
         var xValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
-                  return lines.x()(d, i);
+                  return model.x()(d, i);
                 });
               }))
               .reduce(function(p, c) {
@@ -242,13 +243,13 @@ export default function lineChart() {
 
         var yValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
-                  return lines.y()(d, i);
+                  return model.y()(d, i);
                 });
               })),
             yExtents = d3.extent(yValues),
             yOffset = modelData.length === 1 ? 2 : Math.min((yExtents[1] - yExtents[0]) / modelData.length, yExtents[0]);
 
-        lines
+        model
           .xDomain([
             xExtents[0] - xOffset,
             xExtents[1] + xOffset
@@ -273,7 +274,7 @@ export default function lineChart() {
 
       } else {
 
-        lines
+        model
           .xDomain(null)  //?why null?
           .yDomain(null);
         xAxis
@@ -290,8 +291,8 @@ export default function lineChart() {
 
       }
 
-      x = lines.xScale();
-      y = lines.yScale();
+      x = model.xScale();
+      y = model.yScale();
 
       xAxis
         .scale(x)
@@ -488,7 +489,7 @@ export default function lineChart() {
           model.width(innerWidth).height(innerHeight);
           // This resets the scales for the whole chart
           // unfortunately we can't call this without until line instance is called
-          lines.scatter.resetDimensions(innerWidth, innerHeight);
+          model.scatter.resetDimensions(innerWidth, innerHeight);
         }
 
         // Y-Axis
@@ -507,7 +508,7 @@ export default function lineChart() {
         // X-Axis
         // resize ticks based on new dimensions
         xAxis
-          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
+          .tickSize(-innerHeight + (model.padData() ? pointRadius : 0), 0)
           .margin(innerMargin)
           .tickFormat(function(d, i, noEllipsis) {
             return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
@@ -518,17 +519,17 @@ export default function lineChart() {
         setInnerMargins();
         setInnerDimensions();
         // xAxis
-        //  .resizeTickLines(-innerHeight + (lines.padData() ? pointRadius : 0));
+        //  .resizeTickLines(-innerHeight + (model.padData() ? pointRadius : 0));
 
         // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
-          .tickSize(-innerWidth + (lines.padData() ? pointRadius : 0), 0)
+          .tickSize(-innerWidth + (model.padData() ? pointRadius : 0), 0)
           .margin(innerMargin);
         yAxis_wrap
           .call(yAxis);
 
         xAxis
-          .tickSize(-innerHeight + (lines.padData() ? pointRadius : 0), 0)
+          .tickSize(-innerHeight + (model.padData() ? pointRadius : 0), 0)
           .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);
@@ -607,27 +608,27 @@ export default function lineChart() {
 
         switch (d.key) {
           case 'Basis':
-            lines.interpolate('basis');
+            model.interpolate('basis');
             break;
           case 'Linear':
-            lines.interpolate('linear');
+            model.interpolate('linear');
             break;
           case 'Monotone':
-            lines.interpolate('monotone');
+            model.interpolate('monotone');
             break;
           case 'Cardinal':
-            lines.interpolate('cardinal');
+            model.interpolate('cardinal');
             break;
           case 'Line':
-            lines.isArea(false);
+            model.isArea(false);
             break;
           case 'Area':
-            lines.isArea(true);
+            model.isArea(true);
             break;
         }
 
-        state.interpolate = lines.interpolate();
-        state.isArea = lines.isArea();
+        state.interpolate = model.interpolate();
+        state.isArea = model.isArea();
         dispatch.call('stateChange', this, state);
 
         container.transition().duration(duration).call(chart);
@@ -635,19 +636,19 @@ export default function lineChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, properties);
+          tt = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e, 's');
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -661,12 +662,12 @@ export default function lineChart() {
         }
 
         if (typeof eo.interpolate !== 'undefined') {
-          lines.interpolate(eo.interpolate);
+          model.interpolate(eo.interpolate);
           state.interpolate = eo.interpolate;
         }
 
         if (typeof eo.isArea !== 'undefined') {
-          lines.isArea(eo.isArea);
+          model.isArea(eo.isArea);
           state.isArea = eo.isArea;
         }
 
@@ -711,14 +712,14 @@ export default function lineChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.lines = lines;
+  chart.lines = model;
   chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, lines, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
+  fc.rebind(chart, model, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {

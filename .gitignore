@@ -2,8 +2,9 @@
 .DS_Store
 devdocs
 node_modules
-build/d3.js
-build/d3.min.js
+#TODO: remove this?
+#build/d3v4.js
+#build/d3v4.min.js
 build/topojson.js
 build/topojson.min.js
 build/d3fc-rebind.js
@@ -11,7 +12,7 @@ build/d3fc-rebind.min.js
 examples/css/sucrose.css
 examples/css/sucrose.min.css
 examples/data/geo/natural_earth
-examples/js/d3.min.js
+examples/js/d3v4.min.js
 examples/js/d3fc-rebind.min.js
 examples/js/less.min.js
 examples/js/jquery.min.js

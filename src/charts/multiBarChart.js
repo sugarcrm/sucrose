@@ -1,8 +1,11 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import models from '../models/models.js';
+import multibar from '../models/multibar.js';
+import axis from '../models/axis.js';
+import menu from '../models/menu.js';
+import scroller from '../models/scroller.js';
 
 export default function multibarChart() {
 
@@ -54,15 +57,14 @@ export default function multibarChart() {
   var useScroll = false,
       scrollOffset = 0;
 
-  var multibar = models.multibar().stacked(false).clipEdge(false);
-  var model = multibar;
-  var xAxis = models.axis(); //.orient('bottom'),
-  var yAxis = models.axis(); //.orient('left'),
-  var controls = models.legend().color(['#444']);
-  var legend = models.legend();
-  var scroll = models.scroll();
+  var model = multibar().stacked(false).clipEdge(false);
+  var xAxis = axis(); //.orient('bottom'),
+  var yAxis = axis(); //.orient('left'),
+  var controls = menu().color(['#444']);
+  var legend = menu();
+  var scroll = scroller();
 
-  var tooltip = null;
+  var tt = null;
 
   var tooltipContent = function(eo, graph) {
         var key = eo.group.label,
@@ -78,7 +80,7 @@ export default function multibarChart() {
               vertical ? 'n' : 'e' :
               vertical ? 's' : 'w';
 
-        return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+        return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart, labels) {
@@ -115,7 +117,7 @@ export default function multibarChart() {
           totalAmount = 0,
           hasData = false;
 
-      var baseDimension = multibar.stacked() ? vertical ? 72 : 32 : 32;
+      var baseDimension = model.stacked() ? vertical ? 72 : 32 : 32;
 
       var xAxisValueFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
@@ -236,8 +238,8 @@ export default function multibarChart() {
                   'seriesIndex': series.seriesIndex,
                   'group': v,
                   'color': typeof series.color !== 'undefined' ? series.color : '',
-                  'x': multibar.x()(value, v),
-                  'y': multibar.y()(value, v),
+                  'x': model.x()(value, v),
+                  'y': model.y()(value, v),
                   'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
                   'active': typeof series.active !== 'undefined' ? series.active : ''
                 };
@@ -334,8 +336,8 @@ export default function multibarChart() {
             //       'seriesIndex': series.seriesIndex,
             //       'group': v,
             //       'color': typeof series.color !== 'undefined' ? series.color : '',
-            //       'x': multibar.x()(value, v),
-            //       'y': multibar.y()(value, v),
+            //       'x': model.x()(value, v),
+            //       'y': model.y()(value, v),
             //       'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
             //       'active': typeof series.active !== 'undefined' ? series.active : ''
             //     };
@@ -355,7 +357,7 @@ export default function multibarChart() {
       // set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
       state.active = data.map(function(d) { return d.active === 'active'; });
-      state.stacked = multibar.stacked();
+      state.stacked = model.stacked();
 
       // set title display option
       showTitle = showTitle && properties.title;
@@ -368,8 +370,8 @@ export default function multibarChart() {
       //------------------------------------------------------------
       // Setup Scales and Axes
 
-      x = multibar.xScale();
-      y = multibar.yScale();
+      x = model.xScale();
+      y = model.yScale();
 
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
@@ -497,7 +499,7 @@ export default function multibarChart() {
           maxControlsWidth = controls.calcMaxWidth();
         }
         if (showLegend) {
-          if (multibar.barColor()) {
+          if (model.barColor()) {
             data.forEach(function(series, i) {
               series.color = d3.rgb('#ccc').darker(i * 1.5).toString();
             });
@@ -574,7 +576,7 @@ export default function multibarChart() {
           }
         }
 
-        multibar
+        model
           .vertical(vertical)
           .baseDimension(baseDimension)
           .disabled(data.map(function(series) { return series.disabled; }))
@@ -582,7 +584,7 @@ export default function multibarChart() {
           .height(getDimension('height'));
         model_wrap
           .data([seriesData])
-          .call(multibar);
+          .call(model);
 
         //------------------------------------------------------------
         // Axes
@@ -602,7 +604,7 @@ export default function multibarChart() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          multibar.resetDimensions(getDimension('width'), getDimension('height'));
+          model.resetDimensions(getDimension('width'), getDimension('height'));
         }
 
         // Y-Axis
@@ -653,7 +655,7 @@ export default function multibarChart() {
         // final call to lines based on new dimensions
         model_wrap
           .transition()
-            .call(multibar);
+            .call(model);
 
         //------------------------------------------------------------
         // Final repositioning
@@ -770,14 +772,14 @@ export default function multibarChart() {
 
         switch (d.key) {
           case 'Grouped':
-            multibar.stacked(false);
+            model.stacked(false);
             break;
           case 'Stacked':
-            multibar.stacked(true);
+            model.stacked(true);
             break;
         }
 
-        state.stacked = multibar.stacked();
+        state.stacked = model.stacked();
         chart.update();
         dispatch.call('stateChange', this, state);
 
@@ -787,19 +789,19 @@ export default function multibarChart() {
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
           eo.group = groupData[eo.groupIndex];
-          tooltip = showTooltip(eo, that.parentNode, groupData);
+          tt = showTooltip(eo, that.parentNode, groupData);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, vertical ? 's' : 'w');
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e, vertical ? 's' : 'w');
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -827,7 +829,7 @@ export default function multibarChart() {
         }
 
         if (typeof eo.stacked !== 'undefined') {
-          multibar.stacked(eo.stacked);
+          model.stacked(eo.stacked);
           state.stacked = eo.stacked;
         }
 
@@ -877,14 +879,14 @@ export default function multibarChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.multibar = multibar;
+  chart.multibar = model;
   chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, multibar, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
+  fc.rebind(chart, model, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {

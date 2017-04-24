@@ -1,8 +1,7 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import models from '../models/models.js';
 
 export default function globeChart() {
 
@@ -68,7 +67,7 @@ export default function globeChart() {
   var graticule = d3.geoGraticule();
   var colorLimit = 0;
 
-  var tooltip = null;
+  var tt = null;
 
   function tooltipContent(d) {
     return '<p><b>' + d.name + '</b></p>' +
@@ -77,7 +76,7 @@ export default function globeChart() {
 
   function showTooltip(eo, offsetElement) {
     var content = tooltipContent(eo);
-    tooltip = sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+    tt = tooltip.show(eo.e, content, null, null, offsetElement);
   };
 
 
@@ -199,7 +198,7 @@ export default function globeChart() {
         o0 = projection.rotate();
 
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
           tooltips = false;
         }
 
@@ -376,7 +375,7 @@ export default function globeChart() {
         }
 
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
 
         var centroid = d3.geoCentroid(d);
@@ -482,30 +481,20 @@ export default function globeChart() {
         });
 
       dispatch.on('tooltipMove', function(e) {
-          if (tooltip) {
-            sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+          if (tt) {
+            tooltip.position(that.parentNode, tt, e, 's');
           }
         });
 
       dispatch.on('tooltipHide', function() {
           if (tooltips) {
-            sucrose.tooltip.cleanup();
+            tooltip.cleanup();
           }
         });
 
       // Update chart from a state object passed to event handler
       dispatch.on('changeState', function(eo) {
-          if (typeof eo.disabled !== 'undefined') {
-            data.forEach(function(series, i) {
-              series.disabled = eo.disabled[i];
-            });
-            state.disabled = eo.disabled;
-          }
-
-          if (typeof eo.stacked !== 'undefined') {
-            multibar.stacked(eo.stacked);
-            state.stacked = eo.stacked;
-          }
+          //TODO: handle active country
 
           container.transition().call(chart);
         });
@@ -555,7 +544,7 @@ export default function globeChart() {
         };
         classes = function(d, i) {
           var iClass = (i * (params.step || 1)) % 14;
-          iClass = (iClass > 9 ? '' : '0') + iClass; //TODO: use d3.formatNumber
+          iClass = (iClass > 9 ? '' : '0') + iClass; //TODO: use d3.format
           return 'sc-country-' + i + ' sc-fill' + iClass;
         };
         break;

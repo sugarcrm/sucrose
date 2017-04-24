@@ -1,6 +1,6 @@
 {
   "name": "sucrose",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Interactive Charts for Business Applications",
   "keywords": [
     "charts",
@@ -32,10 +32,11 @@
   },
   "scripts": {
     "package": "json2module package.json > build/package.js",
-    "test": "tape 'test/**/*-test.js'"
+    "test": "tape 'test/**/*-test.js'",
+    "postinstall": "make install-post"
   },
   "dependencies": {
-    "d3": "^4.2.1",
+    "d3": "^4.8.0",
     "d3fc-rebind": "^4.0.1",
     "topojson": "^1.6.26"
   },
@@ -45,9 +46,14 @@
     "json2module": "0.0.3",
     "less": "^2.6.0",
     "less-plugin-clean-css": "^1.5.1",
+    "make-help": "^1.0.1",
+    "package-preamble": "0.0.2",
     "rollup": "^0.36.3",
+    "rollup-plugin-ascii": "0.0.3",
+    "rollup-plugin-cleanup": "^1.0.0",
     "rollup-plugin-eslint": "^3.0.0",
     "rollup-plugin-node-resolve": "^2.0.0",
+    "rollup-plugin-replace": "^1.1.1",
     "tape": "^4.6.2",
     "uglify-js": "2.6.1"
   }

@@ -1,5 +1,5 @@
-import d3 from 'd3';
 import fc from 'd3fc-rebind';
+import d3 from 'd3v4';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
@@ -17,7 +17,7 @@ export default function lineWithFocusChart() {
     , x2Axis = utility.axis()
     , y2Axis = utility.axis()
     , legend = utility.legend()
-    , brush = d3.svg.brush()
+    , brush = d3.brush()
     ;
 
   var margin = {top: 30, right: 30, bottom: 30, left: 60}
@@ -33,7 +33,8 @@ export default function lineWithFocusChart() {
     , showLegend = true
     , brushExtent = null
     , tooltips = true
-    , tooltip = function(key, x, y, e, graph) {
+    , tooltip = null
+    , tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
                '<p>' +  y + ' at ' + x + '</p>'
       }
@@ -72,9 +73,9 @@ export default function lineWithFocusChart() {
     var key = eo.series.key,
         x = xAxis.tickFormat()(lines.x()(eo.point, eo.pointIndex)),
         y = yAxis.tickFormat()(lines.y()(eo.point, eo.pointIndex)),
-        content = tooltip(key, x, y, eo, chart);
+        content = tooltipContent(key, x, y, eo, chart);
 
-    sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+    tooltip.show(eo.e, content, null, null, offsetElement);
   };
 
   //============================================================
@@ -441,7 +442,7 @@ export default function lineWithFocusChart() {
   });
 
   dispatch.on('tooltipHide', function() {
-    if (tooltips) sucrose.tooltip.cleanup();
+    if (tooltips) tooltip.cleanup();
   });
 
   //============================================================
@@ -530,8 +531,8 @@ export default function lineWithFocusChart() {
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) return tooltip;
-    tooltip = _;
+    if (!arguments.length) return tooltipContent;
+    tooltipContent = _;
     return chart;
   };
 

@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# Version 0.5.2
+# Version 0.5.3
 
 CACHE:
 
@@ -112,7 +112,7 @@ img/favicons/mstile-144x144.png
 
 #js
 js/app.min.js
-js/d3.min.js
+js/d3v4.min.js
 js/d3fc-rebind.min.js
 js/jquery.min.js
 js/jquerymy.min.js

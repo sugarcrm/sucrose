@@ -1,6 +1,6 @@
 {
   "name": "sucrose-examples",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "Example Sucrose charts",
   "keywords": [
     "charts",
@@ -26,6 +26,9 @@
     "type": "git",
     "url": "https://github.com/sugarcrm/sucrose.git"
   },
+  "scripts": {
+    "postinstall": "make install-post"
+  },
   "dependencies": {
     "cldr-data": "^29.0.1",
     "jquery": "^2.1.4",
@@ -38,6 +41,7 @@
     "cldrjs": "^0.4.4",
     "codemirror": "^5.11.0",
     "jsonlint": "^1.6.2",
+    "make-help": "^1.0.1",
     "store2": "^2.3.2",
     "sugar": "^1.4.1"
   },

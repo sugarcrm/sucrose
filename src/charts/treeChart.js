@@ -1,4 +1,4 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 
@@ -32,7 +32,7 @@ export default function treeChart() {
       horizontal = false;
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-      color = function (d, i) { return sucrose.utility.defaultColor()(d, i); },
+      color = function (d, i) { return utility.defaultColor()(d, i); },
       fill = function(d, i) { return color(d,i); },
       gradient = function(d, i) { return color(d,i); },
 
@@ -49,7 +49,7 @@ export default function treeChart() {
       getId = function(d) { return d.id || d.data.id; },
 
       fillGradient = function(d, i) {
-          return sucrose.utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
+          return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
       },
       useClass = false,
       clipEdge = true,
@@ -105,7 +105,7 @@ export default function treeChart() {
 
       var defs_entr = wrap_entr.append('defs');
       var defs = wrap.select('defs').merge(defs_entr);
-      var node_shadow = sucrose.utility.dropShadow('node_back_' + id, defs, {blur: 2});
+      var node_shadow = utility.dropShadow('node_back_' + id, defs, {blur: 2});
 
       defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
       var clipPath = defs.select('#sc-edge-clip-' + id + ' rect');
@@ -581,7 +581,7 @@ export default function treeChart() {
 
   chart.y = function(_) {
     if (!arguments.length) { return getY; }
-    getY = sucrose.utility.functor(_);
+    getY = utility.functor(_);
     return chart;
   };
 

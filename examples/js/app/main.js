@@ -44,6 +44,11 @@ function touchstart(evt) {
   }
 }
 
+// remap d3v4 to d3
+if (typeof d3v4 !== 'undefined' && typeof d3 === 'undefined') {
+  var d3 = d3v4;
+}
+
 // Bind tooltips to buttons
 d3.selectAll('[rel=tooltip]')
   .on('mouseover', $.proxy(function () {

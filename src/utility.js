@@ -1,9 +1,8 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 
 /*-------------------
       UTILITIES
 -------------------*/
-
 const utility = {};
 
 utility.strip = function(s) {
@@ -150,7 +149,6 @@ utility.defaultColor = function () {
   };
 };
 
-
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
 utility.customTheme = function (dictionary, getKey, defaultColors) {
@@ -171,8 +169,6 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
     }
   };
 };
-
-
 
 // From the PJAX example on d3js.org, while this is not really directly needed
 // it's a very cool method for doing pjax, I may expand upon it a little bit,
@@ -229,9 +225,6 @@ utility.optionsFunc = function(args) {
   }
   return this;
 };
-
-
-//SUGAR ADDITIONS
 
 //gradient color
 utility.colorLinearGradient = function (d, i, p, c, defs) {
@@ -543,7 +536,6 @@ utility.createTexture = function(defs, id, x, y) {
   //     p = typeof p === 'undefined' ? 2 : p;
   //     c = typeof c === 'undefined' ? false : !!c;
   //     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  //     // d = d3.round(d, p);
   //     d = Math.round(d * 10 * p) / 10 * p;
   //     spec = c ? '$,' : ',';
   //     if (c && d < 1000 && d !== parseInt(d, 10)) {
@@ -576,6 +568,12 @@ utility.numberFormatSI = function(d, p, c, l) {
     return fmtr(spec)(d);
   }
   return fmtr(spec)(d);
+};
+
+utility.round = function(x, n) {
+  // Sigh...
+  var ten_n = Math.pow(10,n);
+  return Math.round(x * ten_n) / ten_n;
 };
 
 utility.numberFormatRound = function(d, p, c, l) {

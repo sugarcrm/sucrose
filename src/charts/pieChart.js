@@ -1,8 +1,9 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import models from '../models/models.js';
+import pie from '../models/pie.js';
+import menu from '../models/menu.js';
 
 export default function pieChart() {
 
@@ -33,12 +34,11 @@ export default function pieChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var pie = models.pie(),
-      model = pie,
-      controls = models.legend().align('center'),
-      legend = models.legend().align('center');
+  var model = pie(),
+      controls = menu().align('center'),
+      legend = menu().align('center');
 
-  var tooltip = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -51,7 +51,7 @@ export default function pieChart() {
             x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
             content = tooltipContent(key, x, y, eo, chart);
 
-        return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+        return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart) { return; };
@@ -354,19 +354,19 @@ export default function pieChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode, properties);
+          tt = showTooltip(eo, that.parentNode, properties);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e);
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e);
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -424,14 +424,14 @@ export default function pieChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.pie = pie;
+  chart.pie = model;
   chart.legend = legend;
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, pie, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
-  fc.rebind(chart, pie, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
+  fc.rebind(chart, model, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
+  fc.rebind(chart, model, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 
   chart.colorData = function(_) {
     var type = arguments[0],

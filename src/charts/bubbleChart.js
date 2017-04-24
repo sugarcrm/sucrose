@@ -1,8 +1,10 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import models from '../models/models.js';
+import scatter from '../models/scatter.js';
+import axis from '../models/axis.js';
+import menu from '../models/menu.js';
 
 export default function bubbleChart() {
 
@@ -57,20 +59,20 @@ export default function bubbleChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var scatter = models.scatter()
+
+  var model = scatter()
         .padData(true)
         .padDataOuter(-1)
         .size(function(d) { return d.y; })
         .sizeRange([256, 1024])
         .singlePoint(true),
-      model = scatter,
-      xAxis = models.axis(),
-      yAxis = models.axis(),
-      legend = models.legend()
+      xAxis = axis(),
+      yAxis = axis(),
+      legend = menu()
         .align('center')
         .key(function(d) { return d.key + '%'; });
 
-  var tooltip = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<h3>' + key + '</h3>' +
@@ -84,7 +86,7 @@ export default function bubbleChart() {
         content = tooltipContent(key, x, y, eo, chart),
         gravity = eo.value < 0 ? 'n' : 's';
 
-    return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+    return tooltip.show(eo.e, content, gravity, null, offsetElement);
   };
 
   var seriesClick = function(data, e, chart) { return; };
@@ -292,8 +294,8 @@ export default function bubbleChart() {
       //------------------------------------------------------------
       // Setup Scales and Axes
 
-      x = scatter.xScale();
-      y = scatter.yScale();
+      x = model.xScale();
+      y = model.yScale();
 
       xAxis
         .orient('bottom')
@@ -341,7 +343,7 @@ export default function bubbleChart() {
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
         // Header variables
-        var maxBubbleSize = Math.sqrt(scatter.sizeRange()[1] / Math.PI),
+        var maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI),
             headerHeight = 0,
             titleBBox = {width: 0, height: 0},
             legendHeight = 0,
@@ -470,7 +472,7 @@ export default function bubbleChart() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          scatter.resetDimensions(innerWidth, innerHeight);
+          model.resetDimensions(innerWidth, innerHeight);
         }
 
         // Y-Axis
@@ -507,7 +509,7 @@ export default function bubbleChart() {
         // final call to lines based on new dimensions
         model_wrap
           .transition().duration(chart.delay())
-            .call(scatter);
+            .call(model);
 
         //------------------------------------------------------------
         // Final repositioning
@@ -554,19 +556,19 @@ export default function bubbleChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tooltip = showTooltip(eo, that.parentNode);
+          tt = showTooltip(eo, that.parentNode);
         }
       });
 
       dispatch.on('tooltipMove', function(e) {
-        if (tooltip) {
-          sucrose.tooltip.position(that.parentNode, tooltip, e, 's');
+        if (tt) {
+          tooltip.position(that.parentNode, tt, e, 's');
         }
       });
 
       dispatch.on('tooltipHide', function() {
         if (tooltips) {
-          sucrose.tooltip.cleanup();
+          tooltip.cleanup();
         }
       });
 
@@ -621,13 +623,13 @@ export default function bubbleChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.scatter = scatter;
+  chart.scatter = model;
   chart.legend = legend;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, scatter, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, scatter, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, model, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {

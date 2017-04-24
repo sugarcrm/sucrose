@@ -1,8 +1,11 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import models from '../models/models.js';
+import stackedarea from '../models/stackedarea.js';
+import line from '../models/line.js';
+import axis from '../models/axis.js';
+import menu from '../models/menu.js';
 
 export default function stackeareaChart() {
 
@@ -37,19 +40,18 @@ export default function stackeareaChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var stacked = models.stackedarea()
+  var model = stackedarea()
         .clipEdge(true),
-      model = stacked,
-      xAxis = models.axis(),
-      yAxis = models.axis(),
-      legend = models.legend()
+      xAxis = axis(),
+      yAxis = axis(),
+      legend = menu()
         .align('right'),
-      controls = models.legend()
+      controls = menu()
         .align('left')
         .color(['#444']),
-      guide = models.line().duration(0);
+      guide = line().duration(0);
 
-  var tooltip = null;
+  var tt = null;
 
   var tooltipContent = function(key, x, y, e, graph) {
         return '<p>' + key + ': ' + y + '</p>';
@@ -180,25 +182,25 @@ export default function stackeareaChart() {
 
       // set state.disabled
       state.disabled = modelData.map(function(d) { return !!d.disabled; });
-      state.style = stacked.style();
+      state.style = model.style();
 
       var controlsData = [
-        { key: 'Stacked', disabled: stacked.offset() !== 'zero' },
-        { key: 'Stream', disabled: stacked.offset() !== 'wiggle' },
-        { key: 'Expanded', disabled: stacked.offset() !== 'expand' }
+        { key: 'Stacked', disabled: model.offset() !== 'zero' },
+        { key: 'Stream', disabled: model.offset() !== 'wiggle' },
+        { key: 'Expanded', disabled: model.offset() !== 'expand' }
       ];
 
       //------------------------------------------------------------
       // Setup Scales and Axes
 
-      stacked
+      model
         .id(chart.id())
         .xDomain(null)  //?why null?
         .yDomain(null)
         .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear());
 
-      x = stacked.xScale();
-      y = stacked.yScale();
+      x = model.xScale();
+      y = model.yScale();
 
       xAxis
         .orient('bottom')
@@ -414,7 +416,7 @@ export default function stackeareaChart() {
           model.width(innerWidth).height(innerHeight);
           // This resets the scales for the whole chart
           // unfortunately we can't call this without until line instance is called
-          // stacked.scatter.resetDimensions(innerWidth, innerHeight);
+          // model.scatter.resetDimensions(innerWidth, innerHeight);
           x.range([0, innerWidth]);
           y.range([innerHeight, 0]);
         }
@@ -450,7 +452,7 @@ export default function stackeareaChart() {
 
         // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
-          .ticks(stacked.offset() === 'wiggle' ? 0 : null)
+          .ticks(model.offset() === 'wiggle' ? 0 : null)
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
         yAxis_wrap
@@ -496,10 +498,10 @@ export default function stackeareaChart() {
 
         chart.showTooltip = function(eo, offsetElement) {
           var key = eo.seriesKey,
-              x = xValueFormat(stacked.x()(eo)),
-              y = yValueFormat(stacked.y()(eo)),
+              x = xValueFormat(model.x()(eo)),
+              y = yValueFormat(model.y()(eo)),
               content = tooltipContent(key, x, y, eo, chart);
-          return sucrose.tooltip.show(eo.e, content, null, null, offsetElement);
+          return tooltip.show(eo.e, content, null, null, offsetElement);
         };
 
 
@@ -537,12 +539,12 @@ export default function stackeareaChart() {
           // Line
           eo.data.forEach(function(d, i) {
             var key = d.seriesKey,
-                xval = xValueFormat(stacked.x()(d)),
-                yval = yValueFormat(stacked.y()(d)),
+                xval = xValueFormat(model.x()(d)),
+                yval = yValueFormat(model.y()(d)),
                 content = tooltipContent(key, xval, yval, d, chart);
             guidePos.clientY = eo.origin.top + y(d[1]);
             d3.select(guidetips[i]).select('.tooltip-inner').html(content);
-            sucrose.tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');
+            tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');
           });
 
           // Top date
@@ -550,7 +552,7 @@ export default function stackeareaChart() {
             var xval = xValueFormat(xpos);
             guidePos.clientY = eo.origin.top;
             d3.select(guidetips['x']).select('.tooltip-inner').html(xval);
-            sucrose.tooltip.position(that.parentNode, guidetips['x'], guidePos, 's');
+            tooltip.position(that.parentNode, guidetips['x'], guidePos, 's');
           });
 
         }
@@ -578,21 +580,21 @@ export default function stackeareaChart() {
 
         dispatch.on('tooltipShow', function(eo) {
           if (tooltips) {
-            tooltip = true;
+            tt = true;
             guide_wrap.classed('hover', true);
           }
         });
 
         dispatch.on('tooltipMove', function(eo) {
-          if (tooltip) {
+          if (tt) {
             chart.moveGuide(that.parentNode, container, eo);
           }
         });
 
         dispatch.on('tooltipHide', function() {
           if (tooltips) {
-            tooltip = false;
-            sucrose.tooltip.cleanup();
+            tt = false;
+            tooltip.cleanup();
             guidetips = null;
             guide_wrap.classed('hover', false);
           }
@@ -608,7 +610,7 @@ export default function stackeareaChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      stacked.dispatch.on('elementClick.toggle', function(e) {
+      model.dispatch.on('elementClick.toggle', function(e) {
         if (data.filter(function(d) { return !d.disabled; }).length === 1) {
           data = data.map(function(d) {
             d.disabled = false;
@@ -661,17 +663,17 @@ export default function stackeareaChart() {
 
         switch (d.key) {
           case 'Stacked':
-            stacked.style('stack');
+            model.style('stack');
             break;
           case 'Stream':
-            stacked.style('stream');
+            model.style('stream');
             break;
           case 'Expanded':
-            stacked.style('expand');
+            model.style('expand');
             break;
         }
 
-        state.style = stacked.style();
+        state.style = model.style();
         dispatch.call('stateChange', this, state);
 
         container.transition().duration(duration).call(chart);
@@ -687,7 +689,7 @@ export default function stackeareaChart() {
         }
 
         if (typeof eo.style !== 'undefined') {
-          stacked.style(eo.style);
+          model.style(eo.style);
           state.style = eo.style;
         }
 
@@ -730,14 +732,14 @@ export default function stackeareaChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.stacked = stacked;
+  chart.stacked = model;
   chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
-  fc.rebind(chart, stacked, 'offset', 'order', 'style');
+  fc.rebind(chart, model, 'offset', 'order', 'style');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {

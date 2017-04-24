@@ -1,7 +1,7 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
 import utility from '../utility.js';
 
-export default function scroll() {
+export default function scroller() {
 
   //============================================================
   // Public Variables

@@ -1,4 +1,5 @@
-import d3 from 'd3';
+import d3 from 'd3v4';
+import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 
 export default function stackearea() {
@@ -61,7 +62,7 @@ export default function stackearea() {
             interpolate === 'linear' ? d3.curveLinear :
             interpolate === 'cardinal' ? d3.curveCardinal :
             interpolate === 'monotone' ? d3.curveMonotoneX :
-            interpolate === 'basis' ? d3.curveBasis : d3.natural;
+            interpolate === 'basis' ? d3.curveBasis : d3.curveNatural;
 
       var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette]
                         [['zero', 'wiggle', 'expand', 'silhouette'].indexOf(offset)];
