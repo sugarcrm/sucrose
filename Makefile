@@ -20,7 +20,10 @@ HEADER = $(shell cat src/header)
 
 .DEFAULT_GOAL := help
 
-.PHONY: examples clean-dependencies clean-js clean-css list d3 scr sgr
+.PHONY: install-prod install-post npm-prod dependencies clean-dependencies \
+	install-dev npm-dev all clean scr sgr clean-js clean-css css \
+	examples-prod examples-dev examples-sucrose \
+	pack nodes grade help list
 
 
 #-----------
@@ -71,9 +74,11 @@ clean: clean-js clean-css
 scr: TAR = scr
 # - build selected sucrose modules and D3 custom bundle for Sugar
 sgr: TAR = sgr
-scr sgr: sucrose.min.js d3
+scr sgr: sucrose.min.js d3v4.min.js
 
-# - [*] build the main sucrose library js file
+# JAVASCRIPT
+
+# - [*] build the main sucrose library js file with components for target
 sucrose.js:
 	rm -f ./build/$@
 	rollup -c rollup.config.js --environment BUILD:$(TAR),DEV:false --banner "$(HEADER)"
@@ -83,10 +88,15 @@ sucrose.min.js: sucrose.js
 	rm -f ./build/$@
 	cat ./build/$^ | $(JS_MINIFIER) --preamble "$(HEADER)" >> ./build/$@
 
-# - create a custom D3 bundle with just required components
-d3:
+# - create a custom D3 bundle with just required components for target
+d3v4.js:
 	rollup -c ./node_modules/d3/rollup.config.js --banner ";$(shell cd ./node_modules/d3 && preamble)" -f umd -n d3v4 \
-		-o ./build/d3v4.js -i ./src/d3-rebundle/index_$(TAR).js
+		-o ./build/$@ -i ./src/d3-rebundle/index_$(TAR).js
+
+# - minify the custom D3 bundle
+d3v4.min.js: d3v4.js
+	rm -f ./build/$@
+	cat ./build/$^ | $(JS_MINIFIER) --preamble ";$(shell cd ./node_modules/d3 && preamble)" >> ./build/$@
 
 # - remove the main library js files
 clean-js:
@@ -170,6 +180,10 @@ help:
 	@echo " "
 	@echo "--------------------------------------"
 	@echo " "
+
+# - generate a MAKE.md from help
+MAKE.md:
+	make help > $@
 
 # - just list the make targets
 list:

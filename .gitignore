@@ -2,9 +2,6 @@
 .DS_Store
 devdocs
 node_modules
-#TODO: remove this?
-#build/d3v4.js
-#build/d3v4.min.js
 build/topojson.js
 build/topojson.min.js
 build/d3fc-rebind.js
