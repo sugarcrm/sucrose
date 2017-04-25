@@ -1,7 +1,7 @@
 export {version} from "../../node_modules/d3/build/package";
 export {extent, max, merge, min, range, sum} from "d3-array";
 export {axisBottom, axisLeft, axisRight, axisTop} from "d3-axis";
-export {map, keys, values} from "d3-collection";
+export {map, keys, nest, values} from "d3-collection";
 export {lab, rgb} from "d3-color";
 export {dispatch} from "d3-dispatch";
 export {drag} from "d3-drag";

@@ -71,6 +71,7 @@ clean: clean-js clean-css
 # BUILD TARGETS
 
 # - build full sucrose library and D3 custom bundle
+TAR = scr
 scr: TAR = scr
 # - build selected sucrose modules and D3 custom bundle for Sugar
 sgr: TAR = sgr

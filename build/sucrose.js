@@ -6849,344 +6849,352 @@ function scroller() {
 
   function scroll(g, g_entr, scrollWrap, xAxis) {
 
-      var defs = g.select('defs'),
-          defs_entr = g_entr.select('defs'),
-          scrollMask,
-          scrollTarget,
-          xAxisWrap = scrollWrap.select('.sc-axis-wrap.sc-axis-x'),
-          barsWrap = scrollWrap.select('.sc-bars-wrap'),
-          backShadows,
-          foreShadows;
+    var defs = g.select('defs'),
+        defs_entr = g_entr.select('defs'),
+        scrollMask,
+        scrollTarget,
+        xAxisWrap = scrollWrap.select('.sc-axis-wrap.sc-axis-x'),
+        barsWrap = scrollWrap.select('.sc-bars-wrap'),
+        backShadows,
+        foreShadows;
 
-      var scrollOffset = 0;
+    var scrollOffset = 0;
 
-      scroll.init = function(offset, overflow) {
+    gradients_create();
+    scrollMask_create();
+    scrollTarget_create();
+    backShadows_create();
+    foreShadows_create();
 
-        scrollOffset = offset;
-        overflowHandler = overflow;
+    scroll.render = function() {
+      assignEvents();
+      gradients_render();
+      scrollMask_apply();
+      backShadows_render();
+      foreShadows_render();
+    };
 
-        this.gradients(enable);
-        this.mask(enable);
-        this.scrollTarget(enable);
-        this.backShadows(enable);
-        this.foreShadows(enable);
+    scroll.resize = function(offset, overflow) {
+      var labelOffset;
+      var x, y;
+      var scrollWidth, scrollHeight;
+      var length, val;
 
-        this.assignEvents(enable);
+      scrollOffset = offset;
+      overflowHandler = overflow;
 
-        this.resize(enable);
-      };
+      // toggle enable dependent
+      scroll.render();
 
-      scroll.pan = function(diff) {
-        var distance = 0,
-            overflowDistance = 0,
-            translate = '',
-            x = 0,
-            y = 0;
+      if (!enable) {
+        return;
+      }
 
-        // don't fire on events other than zoom and drag
-        // we need click for handling legend toggle
-        if (d3.event) {
-          if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
-            x = d3.event.sourceEvent.deltaX || 0;
-            y = d3.event.sourceEvent.deltaY || 0;
-            distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
-          } else if (d3.event.type === 'drag') {
-            x = d3.event.dx || 0;
-            y = d3.event.dy || 0;
-            distance = vertical ? x : y;
-          } else if (d3.event.type !== 'click') {
-            return 0;
-          }
-          overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
+      labelOffset = xAxis.labelThickness() + xAxis.tickPadding() / 2;
+      x = vertical ? margin.left : labelOffset;
+      y = margin.top;
+      scrollWidth = width + (vertical ? 0 : margin[xAxis.orient()] - labelOffset);
+      scrollHeight = height + (vertical ? margin[xAxis.orient()] - labelOffset : 0);
+      length = vertical ? 'height' : 'width';
+      val = vertical ? scrollHeight : scrollWidth;
+
+      scrollMask_resize(width, height);
+      scrollTarget_resize(x, y, scrollWidth, scrollHeight);
+      backShadows_resize(x, y, width, height, length, val);
+      foreShadows_resize(x, y, length, val);
+    };
+
+    // typically called by panHandler
+    // returns scrollOffset
+    scroll.pan = function(diff) {
+      var distance = 0,
+          overflowDistance = 0,
+          translate = '',
+          x = 0,
+          y = 0;
+
+      // don't fire on events other than zoom and drag
+      // we need click for handling legend toggle
+      if (d3.event) {
+        if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
+          x = d3.event.sourceEvent.deltaX || 0;
+          y = d3.event.sourceEvent.deltaY || 0;
+          distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
+        } else if (d3.event.type === 'drag') {
+          x = d3.event.dx || 0;
+          y = d3.event.dy || 0;
+          distance = vertical ? x : y;
+        } else if (d3.event.type !== 'click') {
+          return 0;
         }
+        overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
+      }
 
-        // reset value defined in panMultibar();
-        scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), -1);
-        translate = 'translate(' + (vertical ? scrollOffset + ',0' : '0,' + scrollOffset) + ')';
+      // reset value defined in panMultibar();
+      scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), -1);
+      translate = 'translate(' + (vertical ? scrollOffset + ',0' : '0,' + scrollOffset) + ')';
 
-        if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
-          overflowHandler(overflowDistance);
-        }
+      if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
+        overflowHandler(overflowDistance);
+      }
 
-        foreShadows
-          .attr('transform', translate);
-        barsWrap
-          .attr('transform', translate);
-        xAxisWrap.select('.sc-wrap.sc-axis')
-          .attr('transform', translate);
+      foreShadows
+        .attr('transform', translate);
+      barsWrap
+        .attr('transform', translate);
+      xAxisWrap.select('.sc-wrap.sc-axis')
+        .attr('transform', translate);
 
-        return scrollOffset;
-      };
+      return scrollOffset;
+    };
 
-      scroll.assignEvents = function(enable) {
-        if (enable) {
+    function assignEvents() {
+      if (enable) {
 
-          var zoom = d3.zoom()
-                .on('zoom', panHandler);
-          var drag = d3.drag()
-                .subject(function(d) { return d; })
-                .on('drag', panHandler);
+        var zoom = d3.zoom()
+              .on('zoom', panHandler);
+        var drag = d3.drag()
+              .subject(function(d) { return d; })
+              .on('drag', panHandler);
 
-          scrollWrap
-            .call(zoom);
-          scrollTarget
-            .call(zoom);
-
-          scrollWrap
-            .call(drag);
-          scrollTarget
-            .call(drag);
-
-        } else {
-
-          scrollWrap
-              .on('mousedown.zoom', null)
-              .on('mousewheel.zoom', null)
-              .on('mousemove.zoom', null)
-              .on('DOMMouseScroll.zoom', null)
-              .on('dblclick.zoom', null)
-              .on('touchstart.zoom', null)
-              .on('touchmove.zoom', null)
-              .on('touchend.zoom', null)
-              .on('wheel.zoom', null);
-          scrollTarget
-              .on('mousedown.zoom', null)
-              .on('mousewheel.zoom', null)
-              .on('mousemove.zoom', null)
-              .on('DOMMouseScroll.zoom', null)
-              .on('dblclick.zoom', null)
-              .on('touchstart.zoom', null)
-              .on('touchmove.zoom', null)
-              .on('touchend.zoom', null)
-              .on('wheel.zoom', null);
-
-          scrollWrap
-              .on('mousedown.drag', null)
-              .on('mousewheel.drag', null)
-              .on('mousemove.drag', null)
-              .on('DOMMouseScroll.drag', null)
-              .on('dblclick.drag', null)
-              .on('touchstart.drag', null)
-              .on('touchmove.drag', null)
-              .on('touchend.drag', null)
-              .on('wheel.drag', null);
-          scrollTarget
-              .on('mousedown.drag', null)
-              .on('mousewheel.drag', null)
-              .on('mousemove.drag', null)
-              .on('DOMMouseScroll.drag', null)
-              .on('dblclick.drag', null)
-              .on('touchstart.drag', null)
-              .on('touchmove.drag', null)
-              .on('touchend.drag', null)
-              .on('wheel.drag', null);
-        }
-      };
-
-      scroll.resize = function(enable) {
-
-        if (!enable) {
-          return;
-        }
-        var labelOffset = xAxis.labelThickness() + xAxis.tickPadding() / 2,
-            v = vertical,
-            x = v ? margin.left : labelOffset,
-            y = margin.top,
-            scrollWidth = width + (v ? 0 : margin[xAxis.orient()] - labelOffset),
-            scrollHeight = height + (v ? margin[xAxis.orient()] - labelOffset : 0),
-            dim = v ? 'height' : 'width',
-            val = v ? scrollHeight : scrollWidth;
-
-        scrollMask
-          .attr('x', v ? 2 : -margin.left)
-          .attr('y', v ? 0 : 2)
-          .attr('width', width + (v ? -2 : margin.left))
-          .attr('height', height + (v ? margin.bottom : -2));
-
+        scrollWrap
+          .call(zoom);
         scrollTarget
-          .attr('x', x)
-          .attr('y', y)
-          .attr('width', scrollWidth)
-          .attr('height', scrollHeight);
+          .call(zoom);
 
-        backShadows.select('.sc-back-shadow-prev')
-          .attr('x', x)
-          .attr('y', y)
-          .attr(dim, val);
+        scrollWrap
+          .call(drag);
+        scrollTarget
+          .call(drag);
 
-        backShadows.select('.sc-back-shadow-more')
-          .attr('x', x + (v ? width - 5 : 1))
-          .attr('y', y + (v ? 0 : height - 6))
-          .attr(dim, val);
+      } else {
 
-        foreShadows.select('.sc-fore-shadow-prev')
-          .attr('x', x + (v ? 1 : 0))
-          .attr('y', y + (v ? 0 : 1))
-          .attr(dim, val);
+        scrollWrap
+            .on('mousedown.zoom', null)
+            .on('mousewheel.zoom', null)
+            .on('mousemove.zoom', null)
+            .on('DOMMouseScroll.zoom', null)
+            .on('dblclick.zoom', null)
+            .on('touchstart.zoom', null)
+            .on('touchmove.zoom', null)
+            .on('touchend.zoom', null)
+            .on('wheel.zoom', null);
+        scrollTarget
+            .on('mousedown.zoom', null)
+            .on('mousewheel.zoom', null)
+            .on('mousemove.zoom', null)
+            .on('DOMMouseScroll.zoom', null)
+            .on('dblclick.zoom', null)
+            .on('touchstart.zoom', null)
+            .on('touchmove.zoom', null)
+            .on('touchend.zoom', null)
+            .on('wheel.zoom', null);
 
-        foreShadows.select('.sc-fore-shadow-more')
-          .attr('x', x + (v ? minDimension - 17 : 0))
-          .attr('y', y + (v ? 0 : minDimension - 19))
-          .attr(dim, val);
-      };
+        scrollWrap
+            .on('mousedown.drag', null)
+            .on('mousewheel.drag', null)
+            .on('mousemove.drag', null)
+            .on('DOMMouseScroll.drag', null)
+            .on('dblclick.drag', null)
+            .on('touchstart.drag', null)
+            .on('touchmove.drag', null)
+            .on('touchend.drag', null)
+            .on('wheel.drag', null);
+        scrollTarget
+            .on('mousedown.drag', null)
+            .on('mousewheel.drag', null)
+            .on('mousemove.drag', null)
+            .on('DOMMouseScroll.drag', null)
+            .on('dblclick.drag', null)
+            .on('touchstart.drag', null)
+            .on('touchmove.drag', null)
+            .on('touchend.drag', null)
+            .on('wheel.drag', null);
+      }
+    }
 
-      /* Background gradients */
-      scroll.gradients = function(enable) {
-        defs_entr
-          .append('linearGradient')
-          .attr('class', 'sc-scroll-gradient')
-          .attr('id', 'sc-back-gradient-prev-' + id);
-        var bgpEnter = defs_entr.select('#sc-back-gradient-prev-' + id);
+    /* Background gradients */
+    function gradients_create() {
+      defs_entr
+        .append('linearGradient')
+        .attr('class', 'sc-scroll-gradient')
+        .attr('id', 'sc-back-gradient-prev-' + id);
+      var bgpEnter = defs_entr.select('#sc-back-gradient-prev-' + id);
 
-        defs_entr
-          .append('linearGradient')
-          .attr('class', 'sc-scroll-gradient')
-          .attr('id', 'sc-back-gradient-more-' + id);
-        var bgmEnter = defs_entr.select('#sc-back-gradient-more-' + id);
+      defs_entr
+        .append('linearGradient')
+        .attr('class', 'sc-scroll-gradient')
+        .attr('id', 'sc-back-gradient-more-' + id);
+      var bgmEnter = defs_entr.select('#sc-back-gradient-more-' + id);
 
-        /* Foreground gradients */
-        defs_entr
-          .append('linearGradient')
-          .attr('class', 'sc-scroll-gradient')
-          .attr('id', 'sc-fore-gradient-prev-' + id);
-        var fgpEnter = defs_entr.select('#sc-fore-gradient-prev-' + id);
+      bgpEnter
+        .append('stop')
+        .attr('stop-color', '#000')
+        .attr('stop-opacity', '0.3')
+        .attr('offset', 0);
+      bgpEnter
+        .append('stop')
+        .attr('stop-color', '#FFF')
+        .attr('stop-opacity', '0')
+        .attr('offset', 1);
+      bgmEnter
+        .append('stop')
+        .attr('stop-color', '#FFF')
+        .attr('stop-opacity', '0')
+        .attr('offset', 0);
+      bgmEnter
+        .append('stop')
+        .attr('stop-color', '#000')
+        .attr('stop-opacity', '0.3')
+        .attr('offset', 1);
 
-        defs_entr
-          .append('linearGradient')
-          .attr('class', 'sc-scroll-gradient')
-          .attr('id', 'sc-fore-gradient-more-' + id);
-        var fgmEnter = defs_entr.select('#sc-fore-gradient-more-' + id);
+      /* Foreground gradients */
+      defs_entr
+        .append('linearGradient')
+        .attr('class', 'sc-scroll-gradient')
+        .attr('id', 'sc-fore-gradient-prev-' + id);
+      var fgpEnter = defs_entr.select('#sc-fore-gradient-prev-' + id);
 
-        defs.selectAll('.sc-scroll-gradient')
-          .attr('gradientUnits', 'objectBoundingBox')
-          .attr('x1', 0)
-          .attr('y1', 0)
-          .attr('x2', vertical ? 1 : 0)
-          .attr('y2', vertical ? 0 : 1);
+      defs_entr
+        .append('linearGradient')
+        .attr('class', 'sc-scroll-gradient')
+        .attr('gradientUnits', 'objectBoundingBox')
+        .attr('x1', 0)
+        .attr('y1', 0)
+        .attr('id', 'sc-fore-gradient-more-' + id);
+      var fgmEnter = defs_entr.select('#sc-fore-gradient-more-' + id);
 
-        bgpEnter
-          .append('stop')
-          .attr('stop-color', '#000')
-          .attr('stop-opacity', '0.3')
-          .attr('offset', 0);
-        bgpEnter
-          .append('stop')
-          .attr('stop-color', '#FFF')
-          .attr('stop-opacity', '0')
-          .attr('offset', 1);
-        bgmEnter
-          .append('stop')
-          .attr('stop-color', '#FFF')
-          .attr('stop-opacity', '0')
-          .attr('offset', 0);
-        bgmEnter
-          .append('stop')
-          .attr('stop-color', '#000')
-          .attr('stop-opacity', '0.3')
-          .attr('offset', 1);
+      fgpEnter
+        .append('stop')
+        .attr('stop-color', '#FFF')
+        .attr('stop-opacity', '1')
+        .attr('offset', 0);
+      fgpEnter
+        .append('stop')
+        .attr('stop-color', '#FFF')
+        .attr('stop-opacity', '0')
+        .attr('offset', 1);
+      fgmEnter
+        .append('stop')
+        .attr('stop-color', '#FFF')
+        .attr('stop-opacity', '0')
+        .attr('offset', 0);
+      fgmEnter
+        .append('stop')
+        .attr('stop-color', '#FFF')
+        .attr('stop-opacity', '1')
+        .attr('offset', 1);
 
-        fgpEnter
-          .append('stop')
-          .attr('stop-color', '#FFF')
-          .attr('stop-opacity', '1')
-          .attr('offset', 0);
-        fgpEnter
-          .append('stop')
-          .attr('stop-color', '#FFF')
-          .attr('stop-opacity', '0')
-          .attr('offset', 1);
-        fgmEnter
-          .append('stop')
-          .attr('stop-color', '#FFF')
-          .attr('stop-opacity', '0')
-          .attr('offset', 0);
-        fgmEnter
-          .append('stop')
-          .attr('stop-color', '#FFF')
-          .attr('stop-opacity', '1')
-          .attr('offset', 1);
-      };
+      defs.selectAll('.sc-scroll-gradient')
+        .attr('gradientUnits', 'objectBoundingBox')
+        .attr('x1', 0)
+        .attr('y1', 0);
+    }
+    function gradients_render() {
+      defs.selectAll('.sc-scroll-gradient')
+        .attr('x2', vertical ? 1 : 0)
+        .attr('y2', vertical ? 0 : 1);
+    }
 
-      scroll.mask = function(enable) {
-        defs_entr.append('clipPath')
-          .attr('class', 'sc-scroll-mask')
-          .attr('id', 'sc-edge-clip-' + id)
-          .append('rect');
+    function scrollMask_create() {
+      defs_entr.append('clipPath')
+        .attr('class', 'sc-scroll-mask')
+        .attr('id', 'sc-edge-clip-' + id)
+        .append('rect');
+      scrollMask = defs.select('.sc-scroll-mask rect');
+    }
+    function scrollMask_apply() {
+      scrollWrap.attr('clip-path', enable ? 'url(#sc-edge-clip-' + id + ')' : '');
+    }
+    function scrollMask_resize(width, height) {
+      scrollMask
+        .attr('x', vertical ? 2 : -margin.left)
+        .attr('y', vertical ? 0 : 2)
+        .attr('width', width + (vertical ? -2 : margin.left))
+        .attr('height', height + (vertical ? margin.bottom : -2));
+    }
 
-        scrollMask = defs.select('.sc-scroll-mask rect');
+    function scrollTarget_create() {
+      g_entr.select('.sc-scroll-background')
+        .append('rect')
+        .attr('class', 'sc-scroll-target')
+        //.attr('fill', '#FFF');
+        .attr('fill', 'transparent');
+      scrollTarget = g.select('.sc-scroll-target');
+    }
+    function scrollTarget_resize(x, y, scrollWidth, scrollHeight) {
+      scrollTarget
+        .attr('x', x)
+        .attr('y', y)
+        .attr('width', scrollWidth)
+        .attr('height', scrollHeight);
+    }
 
-        scrollWrap.attr('clip-path', enable ? 'url(#sc-edge-clip-' + id + ')' : '');
-      };
+    /* Background shadow rectangles */
+    function backShadows_create() {
+      var backShadows_entr = g_entr.select('.sc-scroll-background')
+            .append('g')
+            .attr('class', 'sc-back-shadow-wrap');
+      backShadows_entr
+        .append('rect')
+        .attr('class', 'sc-back-shadow-prev');
+      backShadows_entr
+        .append('rect')
+        .attr('class', 'sc-back-shadow-more');
+      backShadows = g.select('.sc-back-shadow-wrap');
+    }
+    function backShadows_render() {
+      var thickness = vertical ? 'width' : 'height';
+      backShadows.select('rect.sc-back-shadow-prev')
+        .attr('fill', enable ? 'url(#sc-back-gradient-prev-' + id + ')' : 'transparent')
+        .attr(thickness, 7);
+      backShadows.select('rect.sc-back-shadow-more')
+        .attr('fill', enable ? 'url(#sc-back-gradient-more-' + id + ')' : 'transparent')
+        .attr(thickness, 7);
+    }
+    function backShadows_resize(x, y, width, height, length, val) {
+      backShadows.select('.sc-back-shadow-prev')
+        .attr('x', x)
+        .attr('y', y)
+        .attr(length, val);
+      backShadows.select('.sc-back-shadow-more')
+        .attr('x', x + (vertical ? width - 5 : 1))
+        .attr('y', y + (vertical ? 0 : height - 6))
+        .attr(length, val);
+    }
 
-      scroll.scrollTarget = function(enable) {
-        g_entr.select('.sc-scroll-background')
-          .append('rect')
-          .attr('class', 'sc-scroll-target')
-          //.attr('fill', '#FFF');
-          .attr('fill', 'transparent');
-
-        scrollTarget = g.select('.sc-scroll-target');
-      };
-
-      /* Background shadow rectangles */
-      scroll.backShadows = function(enable) {
-        var shadowWrap = g_entr.select('.sc-scroll-background')
-              .append('g')
-              .attr('class', 'sc-back-shadow-wrap');
-
-        shadowWrap
-          .append('rect')
-          .attr('class', 'sc-back-shadow-prev');
-        shadowWrap
-          .append('rect')
-          .attr('class', 'sc-back-shadow-more');
-
-        backShadows = g.select('.sc-back-shadow-wrap');
-
-        if (enable) {
-          var dimension = vertical ? 'width' : 'height';
-
-          backShadows.select('rect.sc-back-shadow-prev')
-            .attr('fill', 'url(#sc-back-gradient-prev-' + id + ')')
-            .attr(dimension, 7);
-
-          backShadows.select('rect.sc-back-shadow-more')
-            .attr('fill', 'url(#sc-back-gradient-more-' + id + ')')
-            .attr(dimension, 7);
-        } else {
-          backShadows.selectAll('rect').attr('fill', 'transparent');
-        }
-      };
-
-      /* Foreground shadow rectangles */
-      scroll.foreShadows = function(enable) {
-        var shadowWrap = g_entr.select('.sc-scroll-background')
-              .insert('g')
-              .attr('class', 'sc-fore-shadow-wrap');
-
-        shadowWrap
-          .append('rect')
-          .attr('class', 'sc-fore-shadow-prev');
-        shadowWrap
-          .append('rect')
-          .attr('class', 'sc-fore-shadow-more');
-
-        foreShadows = g.select('.sc-fore-shadow-wrap');
-
-        if (enable) {
-          var dimension = vertical ? 'width' : 'height';
-
-          foreShadows.select('rect.sc-fore-shadow-prev')
-            .attr('fill', 'url(#sc-fore-gradient-prev-' + id + ')')
-            .attr(dimension, 20);
-
-          foreShadows.select('rect.sc-fore-shadow-more')
-            .attr('fill', 'url(#sc-fore-gradient-more-' + id + ')')
-            .attr(dimension, 20);
-        } else {
-          foreShadows.selectAll('rect').attr('fill', 'transparent');
-        }
-      };
+    /* Foreground shadow rectangles */
+    function foreShadows_create() {
+      var foreShadows_entr = g_entr.select('.sc-scroll-background')
+            .insert('g')
+            .attr('class', 'sc-fore-shadow-wrap');
+      foreShadows_entr
+        .append('rect')
+        .attr('class', 'sc-fore-shadow-prev');
+      foreShadows_entr
+        .append('rect')
+        .attr('class', 'sc-fore-shadow-more');
+      foreShadows = g.select('.sc-fore-shadow-wrap');
+    }
+    function foreShadows_render() {
+      var thickness = vertical ? 'width' : 'height';
+      foreShadows.select('.sc-fore-shadow-prev')
+        .attr('fill', enable ? 'url(#sc-fore-gradient-prev-' + id + ')' : 'transparent')
+        .attr(thickness, 20);
+      foreShadows.select('.sc-fore-shadow-more')
+        .attr('fill', enable ? 'url(#sc-fore-gradient-more-' + id + ')' : 'transparent')
+        .attr(thickness, 20);
+    }
+    function foreShadows_resize(x, y, length, val) {
+      foreShadows.select('.sc-fore-shadow-prev')
+        .attr('x', x + (vertical ? 1 : 0))
+        .attr('y', y + (vertical ? 0 : 1))
+        .attr(length, val);
+      foreShadows.select('.sc-fore-shadow-more')
+        .attr('x', x + (vertical ? minDimension - 17 : 0))
+        .attr('y', y + (vertical ? 0 : minDimension - 19))
+        .attr(length, val);
+    }
 
     return scroll;
   }
@@ -10506,6 +10514,7 @@ function globeChart() {
       showLabels = true,
       autoSpin = false,
       showGraticule = true,
+      gradient = null,
       world_map = [],
       country_map = {},
       country_labels = {},
@@ -10582,9 +10591,9 @@ function globeChart() {
 
       chart.container = this;
 
-      var fillGradient = function(d, i) {
-            return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
-          };
+      gradient = function(d, i) {
+        return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), defs);
+      };
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -11013,8 +11022,8 @@ function globeChart() {
         break;
     }
     var fill = (!params.gradient) ? color : function(d, i) {
-        return chart.gradient(d, i);
-      };
+          return chart.gradient()(d, i);
+        };
 
     chart.color(color);
     chart.classes(classes);
@@ -12103,7 +12112,6 @@ function multibarChart() {
   var yAxis = axis(); //.orient('left'),
   var controls = menu().color(['#444']);
   var legend = menu();
-  var scroll = scroller();
 
   var tt = null;
 
@@ -12464,6 +12472,13 @@ function multibarChart() {
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
       var legend_wrap = wrap.select('.sc-legend-wrap');
 
+      if (scrollEnabled) {
+        var scroll = scroller()
+          .id(chart.id())
+          .vertical(vertical);
+        scroll(wrap, wrap_entr, scroll_wrap, xAxis);
+      }
+
       //------------------------------------------------------------
       // Main chart draw
 
@@ -12725,8 +12740,8 @@ function multibarChart() {
           xAxis_wrap.select('.sc-axislabel')
             .attr('x', (vertical ? innerWidth : -innerHeight) / 2);
 
-          var diff = (vertical ? innerWidth : innerHeight) - minDimension,
-              panMultibar = function() {
+          var diff = (vertical ? innerWidth : innerHeight) - minDimension;
+          var panMultibar = function() {
                 dispatch.call('tooltipHide', this);
                 scrollOffset = scroll.pan(diff);
                 xAxis_wrap.select('.sc-axislabel')
@@ -12734,18 +12749,13 @@ function multibarChart() {
               };
 
           scroll
-            .id(chart.id())
             .enable(useScroll)
-            .vertical(vertical)
             .width(innerWidth)
             .height(innerHeight)
             .margin(innerMargin)
             .minDimension(minDimension)
-            .panHandler(panMultibar);
-
-          scroll(wrap, wrap_entr, scroll_wrap, xAxis);
-
-          scroll.init(scrollOffset, overflowHandler);
+            .panHandler(panMultibar)
+            .resize(scrollOffset, overflowHandler);
 
           // initial call to zoom in case of scrolled bars on window resize
           scroll.panHandler()();
@@ -16939,7 +16949,7 @@ const charts = {
 
 // false & scr are substitution variables for rollup
 const dev = false; // set false when in production
-const build = 'scr'; // set sc for sucrose and sgr for Sugar
+const build = 'scr'; // set scr for sucrose and sgr for Sugar
 
 exports.development = dev;
 exports.build = build;

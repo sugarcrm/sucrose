@@ -62,7 +62,6 @@ export default function multibarChart() {
   var yAxis = axis(); //.orient('left'),
   var controls = menu().color(['#444']);
   var legend = menu();
-  var scroll = scroller();
 
   var tt = null;
 
@@ -423,6 +422,13 @@ export default function multibarChart() {
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
       var legend_wrap = wrap.select('.sc-legend-wrap');
 
+      if (scrollEnabled) {
+        var scroll = scroller()
+          .id(chart.id())
+          .vertical(vertical);
+        scroll(wrap, wrap_entr, scroll_wrap, xAxis);
+      }
+
       //------------------------------------------------------------
       // Main chart draw
 
@@ -684,8 +690,8 @@ export default function multibarChart() {
           xAxis_wrap.select('.sc-axislabel')
             .attr('x', (vertical ? innerWidth : -innerHeight) / 2);
 
-          var diff = (vertical ? innerWidth : innerHeight) - minDimension,
-              panMultibar = function() {
+          var diff = (vertical ? innerWidth : innerHeight) - minDimension;
+          var panMultibar = function() {
                 dispatch.call('tooltipHide', this);
                 scrollOffset = scroll.pan(diff);
                 xAxis_wrap.select('.sc-axislabel')
@@ -693,18 +699,13 @@ export default function multibarChart() {
               };
 
           scroll
-            .id(chart.id())
             .enable(useScroll)
-            .vertical(vertical)
             .width(innerWidth)
             .height(innerHeight)
             .margin(innerMargin)
             .minDimension(minDimension)
-            .panHandler(panMultibar);
-
-          scroll(wrap, wrap_entr, scroll_wrap, xAxis);
-
-          scroll.init(scrollOffset, overflowHandler);
+            .panHandler(panMultibar)
+            .resize(scrollOffset, overflowHandler);
 
           // initial call to zoom in case of scrolled bars on window resize
           scroll.panHandler()();
