@@ -870,4 +870,4 @@ export default function lineChart() {
   //============================================================
 
   return chart;
-};
+}

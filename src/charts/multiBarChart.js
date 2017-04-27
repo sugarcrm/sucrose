@@ -1087,4 +1087,4 @@ export default function multibarChart() {
   //============================================================
 
   return chart;
-};
+}

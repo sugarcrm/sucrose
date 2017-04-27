@@ -183,7 +183,7 @@ help:
 	@echo " "
 
 # - generate a MAKE.md from help
-MAKE.md:
+make-md:
 	make help > $@
 
 # - just list the make targets
