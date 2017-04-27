@@ -473,19 +473,7 @@ var sucroseCharts = function () {
 
   return {
     getChartModel: function(type) {
-      var model = '';
-      switch (type) {
-        case 'multibar':
-          model = 'multibarChart';
-          break;
-        case 'area':
-          model = 'stackedareaChart';
-          break;
-        default:
-          model = type + 'Chart';
-      }
-
-      return model;
+      return type + 'Chart';
     },
     getChart: function(type) {
       return sucrose.charts[this.getChartModel(type)]();

@@ -2,7 +2,7 @@ import d3 from 'd3v4';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
-import stackedarea from '../models/stackedarea.js';
+import area from '../models/area.js';
 import line from '../models/line.js';
 import axis from '../models/axis.js';
 import menu from '../models/menu.js';
@@ -40,7 +40,7 @@ export default function stackeareaChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var model = stackedarea()
+  var model = area()
         .clipEdge(true),
       xAxis = axis(),
       yAxis = axis(),
@@ -65,7 +65,7 @@ export default function stackeareaChart() {
 
       var that = this,
           container = d3.select(this),
-          modelClass = 'stackedarea';
+          modelClass = 'area';
 
       var properties = chartData ? chartData.properties : {},
           data = chartData ? chartData.data : null,
@@ -891,4 +891,4 @@ export default function stackeareaChart() {
   //============================================================
 
   return chart;
-};
+}

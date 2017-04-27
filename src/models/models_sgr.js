@@ -16,12 +16,12 @@ const models = {
     axis: axis,
     funnel: funnel,
     gauge: gauge,
-    legend: menu,
+    menu: menu,
     line: line,
     multibar: multibar,
     pie: pie,
     scatter: scatter,
-    scroll: scroller,
+    scroller: scroller,
 };
 
 export default models;
