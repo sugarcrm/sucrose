@@ -19,14 +19,15 @@ export default function scroller() {
 
   //============================================================
 
-  function scroll(g, g_entr, scrollWrap, xAxis) {
+  function scroll(g, g_entr, scroll_wrap, axis) {
 
-    var defs = g.select('defs'),
-        defs_entr = g_entr.select('defs'),
-        scrollMask,
+    var defs = g.select('defs');
+    var defs_entr = g_entr.select('defs');
+    var axis_wrap = scroll_wrap.select('.sc-axis-wrap.sc-axis-x');
+    var bars_wrap = scroll_wrap.select('.sc-bars-wrap');
+
+    var scrollMask,
         scrollTarget,
-        xAxisWrap = scrollWrap.select('.sc-axis-wrap.sc-axis-x'),
-        barsWrap = scrollWrap.select('.sc-bars-wrap'),
         backShadows,
         foreShadows;
 
@@ -38,6 +39,10 @@ export default function scroller() {
     backShadows_create();
     foreShadows_create();
 
+    //------------------------------------------------------------
+    // Privileged Methods
+
+    // typically called by chart model
     scroll.render = function() {
       assignEvents();
       gradients_render();
@@ -46,6 +51,7 @@ export default function scroller() {
       foreShadows_render();
     };
 
+    // typically called by container resize
     scroll.resize = function(offset, overflow) {
       var labelOffset;
       var x, y;
@@ -62,11 +68,11 @@ export default function scroller() {
         return;
       }
 
-      labelOffset = xAxis.labelThickness() + xAxis.tickPadding() / 2;
+      labelOffset = axis.labelThickness() + axis.tickPadding() / 2;
       x = vertical ? margin.left : labelOffset;
       y = margin.top;
-      scrollWidth = width + (vertical ? 0 : margin[xAxis.orient()] - labelOffset);
-      scrollHeight = height + (vertical ? margin[xAxis.orient()] - labelOffset : 0);
+      scrollWidth = width + (vertical ? 0 : margin[axis.orient()] - labelOffset);
+      scrollHeight = height + (vertical ? margin[axis.orient()] - labelOffset : 0);
       length = vertical ? 'height' : 'width';
       val = vertical ? scrollHeight : scrollWidth;
 
@@ -112,13 +118,16 @@ export default function scroller() {
 
       foreShadows
         .attr('transform', translate);
-      barsWrap
+      bars_wrap
         .attr('transform', translate);
-      xAxisWrap.select('.sc-wrap.sc-axis')
+      axis_wrap.select('.sc-wrap.sc-axis')
         .attr('transform', translate);
 
       return scrollOffset;
     };
+
+    //------------------------------------------------------------
+    // Private Methods
 
     function assignEvents() {
       if (enable) {
@@ -129,59 +138,65 @@ export default function scroller() {
               .subject(function(d) { return d; })
               .on('drag', panHandler);
 
-        scrollWrap
+        scroll_wrap
           .call(zoom);
         scrollTarget
           .call(zoom);
 
-        scrollWrap
+        scroll_wrap
           .call(drag);
         scrollTarget
           .call(drag);
 
       } else {
 
-        scrollWrap
-            .on('mousedown.zoom', null)
-            .on('mousewheel.zoom', null)
-            .on('mousemove.zoom', null)
-            .on('DOMMouseScroll.zoom', null)
-            .on('dblclick.zoom', null)
-            .on('touchstart.zoom', null)
-            .on('touchmove.zoom', null)
-            .on('touchend.zoom', null)
-            .on('wheel.zoom', null);
-        scrollTarget
-            .on('mousedown.zoom', null)
-            .on('mousewheel.zoom', null)
-            .on('mousemove.zoom', null)
-            .on('DOMMouseScroll.zoom', null)
-            .on('dblclick.zoom', null)
-            .on('touchstart.zoom', null)
-            .on('touchmove.zoom', null)
-            .on('touchend.zoom', null)
-            .on('wheel.zoom', null);
+        scroll_wrap.on('.zoom', null);
+        scrollTarget.on('.zoom', null);
 
-        scrollWrap
-            .on('mousedown.drag', null)
-            .on('mousewheel.drag', null)
-            .on('mousemove.drag', null)
-            .on('DOMMouseScroll.drag', null)
-            .on('dblclick.drag', null)
-            .on('touchstart.drag', null)
-            .on('touchmove.drag', null)
-            .on('touchend.drag', null)
-            .on('wheel.drag', null);
-        scrollTarget
-            .on('mousedown.drag', null)
-            .on('mousewheel.drag', null)
-            .on('mousemove.drag', null)
-            .on('DOMMouseScroll.drag', null)
-            .on('dblclick.drag', null)
-            .on('touchstart.drag', null)
-            .on('touchmove.drag', null)
-            .on('touchend.drag', null)
-            .on('wheel.drag', null);
+        scroll_wrap.on('.drag', null);
+        scrollTarget.on('.drag', null);
+
+        // scroll_wrap
+        //     .on('mousedown.zoom', null)
+        //     .on('mousewheel.zoom', null)
+        //     .on('mousemove.zoom', null)
+        //     .on('DOMMouseScroll.zoom', null)
+        //     .on('dblclick.zoom', null)
+        //     .on('touchstart.zoom', null)
+        //     .on('touchmove.zoom', null)
+        //     .on('touchend.zoom', null)
+        //     .on('wheel.zoom', null);
+        // scrollTarget
+        //     .on('mousedown.zoom', null)
+        //     .on('mousewheel.zoom', null)
+        //     .on('mousemove.zoom', null)
+        //     .on('DOMMouseScroll.zoom', null)
+        //     .on('dblclick.zoom', null)
+        //     .on('touchstart.zoom', null)
+        //     .on('touchmove.zoom', null)
+        //     .on('touchend.zoom', null)
+        //     .on('wheel.zoom', null);
+
+        // scroll_wrap
+        //     .on('mousedown.drag', null)
+        //     .on('mousewheel.drag', null)
+        //     .on('mousemove.drag', null)
+        //     .on('DOMMouseScroll.drag', null)
+        //     .on('dblclick.drag', null)
+        //     .on('touchstart.drag', null)
+        //     .on('touchmove.drag', null)
+        //     .on('touchend.drag', null)
+        //     .on('wheel.drag', null);
+        // scrollTarget
+        //     .on('mousedown.drag', null)
+        //     .on('mousewheel.drag', null)
+        //     .on('mousemove.drag', null)
+        //     .on('DOMMouseScroll.drag', null)
+        //     .on('dblclick.drag', null)
+        //     .on('touchstart.drag', null)
+        //     .on('touchmove.drag', null)
+        //     .on('touchend.drag', null)
+        //     .on('wheel.drag', null);
       }
     }
 
@@ -268,6 +283,7 @@ export default function scroller() {
         .attr('y2', vertical ? 0 : 1);
     }
 
+    /* Clipping mask for scroll window */
     function scrollMask_create() {
       defs_entr.append('clipPath')
         .attr('class', 'sc-scroll-mask')
@@ -276,7 +292,7 @@ export default function scroller() {
       scrollMask = defs.select('.sc-scroll-mask rect');
     }
     function scrollMask_apply() {
-      scrollWrap.attr('clip-path', enable ? 'url(#sc-edge-clip-' + id + ')' : '');
+      scroll_wrap.attr('clip-path', enable ? 'url(#sc-edge-clip-' + id + ')' : '');
     }
     function scrollMask_resize(width, height) {
       scrollMask
@@ -286,6 +302,7 @@ export default function scroller() {
         .attr('height', height + (vertical ? margin.bottom : -2));
     }
 
+    /* Background rectangle for mouse events */
     function scrollTarget_create() {
       g_entr.select('.sc-scroll-background')
         .append('rect')
@@ -368,6 +385,7 @@ export default function scroller() {
         .attr(length, val);
     }
 
+    // return instance for method chaining
     return scroll;
   }
 
