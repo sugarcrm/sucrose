@@ -6,7 +6,7 @@ export {lab, rgb} from "d3-color";
 export {dispatch} from "d3-dispatch";
 export {drag} from "d3-drag";
 export {easeElastic, easeLinear} from "d3-ease";
-export {format, formatLocale} from "d3-format";
+export {format, formatLocale, formatPrefix} from "d3-format";
 export {hierarchy, tree} from "d3-hierarchy";
 export {interpolate, interpolateHsl} from "d3-interpolate";
 export {queue} from "d3-queue";

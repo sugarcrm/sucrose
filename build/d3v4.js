@@ -2817,7 +2817,7 @@ var formatLocale = function(locale) {
 
 var locale$1;
 
-var formatPrefix;
+
 
 defaultLocale({
   decimal: ".",
@@ -2829,7 +2829,7 @@ defaultLocale({
 function defaultLocale(definition) {
   locale$1 = formatLocale(definition);
   exports.format = locale$1.format;
-  formatPrefix = locale$1.formatPrefix;
+  exports.formatPrefix = locale$1.formatPrefix;
   return locale$1;
 }
 
@@ -4288,7 +4288,7 @@ var tickFormat = function(domain, count, specifier) {
     case "s": {
       var value = Math.max(Math.abs(start), Math.abs(stop));
       if (specifier.precision == null && !isNaN(precision = precisionPrefix(step, value))) specifier.precision = precision;
-      return formatPrefix(specifier, value);
+      return exports.formatPrefix(specifier, value);
     }
     case "":
     case "e":
