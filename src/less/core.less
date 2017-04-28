@@ -12,9 +12,12 @@
   stroke-width: 0.5px;
   stroke: @grayLight;
 }
-// .sc-chart-texture {
-//   background: url(@textureTertiary);
-// }
+.sc-chart {
+  min-width: 100px;
+  min-height: 100px;
+  overflow: hidden;
+  position: relative;
+}
 .sc-print {
   visibility: hidden;
   position: absolute !important;
@@ -22,39 +25,12 @@
   width: 720px;
   height: 480px;
 }
-// .sc-chart-print {
-//   text {
-//     font-size: 15px;
-//     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-//   }
-//   .sc-y.sc-axis text,
-//   .sc-x.sc-axis text {
-//     font-size: @fontSizeMedium;
-//   }
-//   text.sc-title  {
-//     font-size: @fontSizeLarge;
-//   }
-//   .sc-legend text {
-//     font-size: @fontSizeMedium;
-//   }
-// }
-// .sc-chart {
-//   height: 400px;
-  /*
-    Minimum height and width is a good idea to prevent negative SVG dimensions...
-    For example width should be =< margin.left + margin.right + 1,
-    of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
-  */
-//   min-width: 300px;
-//   min-height: 100px;
-//   overflow: hidden;
-//   position: relative;
-// }
 
 /**********
  *  SVG
  */
-svg.sc-chart {
+svg.sc-chart,
+.sc-chart svg {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
