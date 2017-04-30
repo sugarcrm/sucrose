@@ -22,7 +22,7 @@
       "url": "https://github.com/tshubbard"
     }
   ],
-  "main": "sucrose.node.js",
+  "main": "build/sucrose.node.js",
   "browser": "build/sucrose.js",
   "module": "index",
   "jsnext:main": "index",

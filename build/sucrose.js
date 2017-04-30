@@ -1,6 +1,6 @@
 /* Copyright (c) 2017 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license. */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3v4'), require('d3fc-rebind')) :
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('./d3v4.js'), require('d3fc-rebind')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'd3v4', 'd3fc-rebind'], factory) :
 	(factory((global.sucrose = global.sucrose || {}),global.d3v4,global.fc));
 }(this, (function (exports,d3,fc) { 'use strict';
@@ -8,7 +8,7 @@
 d3 = 'default' in d3 ? d3['default'] : d3;
 fc = 'default' in fc ? fc['default'] : fc;
 
-var version = "0.5.3";
+var version = "0.5.5";
 
 /*-------------------
       UTILITIES
