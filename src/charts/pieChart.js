@@ -40,17 +40,16 @@ export default function pieChart() {
 
   var tt = null;
 
-  var tooltipContent = function(key, x, y, e, graph) {
+  var tooltipContent = function(eo, properties) {
+        var key = model.getKey()(eo);
+        var y = model.getValue()(eo);
+        var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
         return '<h3>' + key + '</h3>' +
                '<p>' + y + ' on ' + x + '</p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
-        var key = model.getKey()(eo),
-            y = model.getValue()(eo),
-            x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
-            content = tooltipContent(key, x, y, eo, chart);
-
+        var content = tooltipContent(eo, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 

@@ -597,22 +597,92 @@ utility.isValidDate = function(d) {
   return testDate instanceof Date && !isNaN(testDate.valueOf());
 };
 
+utility.getDateFormat = function(values) {
+  var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
+  var formatIndex = 0;
+
+  formatIndex = values.length ? d3.min(values, function(d) {
+      var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
+      var format;
+      if (d3.timeSecond(date) < d) {
+        format = 1;
+      } else if (d3.timeMinute(date) < d) {
+        format = 2;
+      } else if (d3.timeHour(date) < d) {
+        format = 3;
+      } else if (d3.timeDay(date) < d) {
+        format = 4;
+      } else if (d3.timeMonth(date) < d) {
+        format = 5;
+        // format = (d3.timeWeek(date) < date ? 4 : 5);
+      } else if (d3.timeYear(date) < d) {
+        format = 6;
+      } else {
+        format = 8;
+      }
+      return format;
+    }) : 0;
+  return dateFormats[formatIndex];
+};
+
 utility.dateFormat = function(d, p, l) {
-  var date, locale, spec, fmtr;
-  date = new Date(d);
+  var dateString, date, locale, spec, fmtr;
+
+  var formatMillisecond = ".%L",
+      formatSecond = ":%S",
+      formatMinute = "%I:%M",
+      formatHour = "%I %p",
+      formatDay = "%x",
+      formatWeek = "%b %d",
+      formatMonth = "%B",
+      formatYear = "%Y";
+
+  function multiFormat(d) {
+    var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
+    var format;
+    if (d3.timeSecond(date) < d) {
+      format = formatMillisecond;
+    } else if (d3.timeMinute(date) < d) {
+      format = formatSecond;
+    } else if (d3.timeHour(date) < d) {
+      format = formatMinute;
+    } else if (d3.timeDay(date) < d) {
+      format = formatHour;
+    } else if (d3.timeMonth(date) < d) {
+      format = formatDay;
+      // format = (d3.timeWeek(date) < date ? formatDay : formatWeek);
+    } else if (d3.timeYear(date) < d) {
+      format = formatMonth;
+    } else {
+      format = formatYear;
+    }
+    return format;
+  }
+
+  dateString = d.toString();
+
+  // if the date value provided is a year
+  if (dateString.length === 4) {
+    // append day and month parts to get correct UTC offset
+    // dateString = dateString + '-1-1';
+    // dateString = '1/1/' + dateString;
+  }
+  date = new Date(dateString);
+
   if (!(date instanceof Date) || isNaN(date.valueOf())) {
     return d;
   }
+
   if (l && l.hasOwnProperty('timeFormat')) {
     // Use rebuilt locale
-    spec = p.indexOf('%') !== -1 ? p : '%x';
     fmtr = l.timeFormat;
+    spec = p && p.indexOf('%') !== -1 ? p : multiFormat(date);
   } else {
     // Ensure locality object has all needed properties
     // TODO: this is expensive so consider removing
-    locale = utility.buildLocality(l);
+    locale = l || utility.buildLocality(l);
     fmtr = d3.timeFormatLocale(locale).format;
-    spec = p.indexOf('%') !== -1 ? p : locale[p] || '%x';
+    spec = p && p.indexOf('%') !== -1 ? p : locale[p] || multiFormat(date);
     // TODO: if not explicit pattern provided, we should use .multi()
   }
   return fmtr(spec)(date);

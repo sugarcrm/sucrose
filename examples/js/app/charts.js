@@ -186,12 +186,13 @@ var sucroseCharts = function () {
           .filterBy(function (d) {
             return d.probability;
           })
-          .tooltipContent(function (key, x, y, e, graph) {
-            return '<p>Assigned: <b>' + e.point.assigned_user_name + '</b></p>' +
-                   '<p>Amount: <b>$' + d3.format(',.2d')(e.point.opportunity) + '</b></p>' +
-                   '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(e.point.x)) + '</b></p>' +
-                   '<p>Probability: <b>' + e.point.probability + '%</b></p>' +
-                   '<p>Account: <b>' + e.point.account_name + '</b></p>';
+          .tooltipContent(function (eo, properties) {
+            var point = eo.point;
+            return '<p>Assigned: <b>' + point.assigned_user_name + '</b></p>' +
+                   '<p>Amount: <b>$' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
+                   '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(point.x)) + '</b></p>' +
+                   '<p>Probability: <b>' + point.probability + '%</b></p>' +
+                   '<p>Account: <b>' + point.account_name + '</b></p>';
           });
         callback(chart);
       }
@@ -211,9 +212,12 @@ var sucroseCharts = function () {
           .fmtCount(function (d) {
               return d.count ? ' (' + sucrose.utility.numberFormatSI(d.count, 0, false, chart.locality()) + ')' : '';
           })
-          .tooltipContent(function (key, x, y, e, graph) {
-            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-                percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
+          .tooltipContent(function (eo, properties) {
+            var key = chart.fmtKey()(eo);
+            var y = chart.getValue()(eo);
+            var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
+            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+            var percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
             return '<p>Stage: <b>' + key + '</b></p>' +
                    '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                    '<p>Percent: <b>' + percent + '%</b></p>';
@@ -243,12 +247,10 @@ var sucroseCharts = function () {
             if (error) {
               return;
             }
-
             chart
               .worldMap(topojson.feature(world, world.objects.countries).features)
               .countryMap({'USA': topojson.feature(country, country.objects.states).features})
               .countryLabels(labels);
-
             callback(chart);
           });
       }
@@ -278,7 +280,7 @@ var sucroseCharts = function () {
           .valueFormat(function (d) {
             return sucrose.utility.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
-          .tooltipContent(function (eo, graph) {
+          .tooltipContent(function (eo, properties) {
             var key = eo.group.label;
             var y = eo.point.y;
             var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
@@ -374,9 +376,13 @@ var sucroseCharts = function () {
       // }
       _format: function format(chart, callback) {
         chart
-          .tooltipContent(function (key, x, y, e, graph) {
-            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-                percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
+          .tooltipContent(function (eo, properties) {
+            console.log(eo)
+            var key = chart.fmtKey()(eo);
+            var y = chart.getValue()(eo);
+            var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
+            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+            var percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
             return '<p>Stage: <b>' + key + '</b></p>' +
                    '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                    '<p>Percent: <b>' + percent + '%</b></p>';

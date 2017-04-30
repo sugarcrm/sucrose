@@ -291,6 +291,16 @@ var sum = function(values, valueof) {
   return sum;
 };
 
+var transpose = function(matrix) {
+  if (!(n = matrix.length)) return [];
+  for (var i = -1, m = min(matrix, length), transpose = new Array(m); ++i < m;) {
+    for (var j = -1, n, row = transpose[i] = new Array(n); ++j < n;) {
+      row[j] = matrix[j][i];
+    }
+  }
+  return transpose;
+};
+
 function length(d) {
   return d.length;
 }
@@ -12090,6 +12100,7 @@ exports.merge = merge;
 exports.min = min;
 exports.range = range;
 exports.sum = sum;
+exports.transpose = transpose;
 exports.axisBottom = axisBottom;
 exports.axisLeft = axisLeft;
 exports.axisRight = axisRight;

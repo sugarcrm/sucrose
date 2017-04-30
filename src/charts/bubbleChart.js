@@ -74,20 +74,19 @@ export default function bubbleChart() {
 
   var tt = null;
 
-  var tooltipContent = function(key, x, y, e, graph) {
+  var tooltipContent = function(eo, properties) {
+        var key = eo.series.key;
+        var x = eo.point.x;
+        var y = eo.point.y;
         return '<h3>' + key + '</h3>' +
                '<p>' + y + ' on ' + x + '</p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
-    var key = eo.series.key,
-        x = eo.point.x,
-        y = eo.point.y,
-        content = tooltipContent(key, x, y, eo, chart),
-        gravity = eo.value < 0 ? 'n' : 's';
-
-    return tooltip.show(eo.e, content, gravity, null, offsetElement);
-  };
+        var content = tooltipContent(eo, properties);
+        var gravity = eo.value < 0 ? 'n' : 's';
+        return tooltip.show(eo.e, content, gravity, null, offsetElement);
+      };
 
   var seriesClick = function(data, e, chart) { return; };
 
@@ -556,7 +555,7 @@ export default function bubbleChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tt = showTooltip(eo, that.parentNode);
+          tt = showTooltip(eo, that.parentNode, properties);
         }
       });
 

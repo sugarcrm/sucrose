@@ -22,46 +22,58 @@ export default function lineChart() {
       delay = 0,
       duration = 0,
       tooltips = true,
+      state = {},
       x,
       y,
-      state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      pointRadius = 3,
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  var pointRadius = 2;
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var model = line()
-        .clipEdge(true),
-      xAxis = axis(),
-      yAxis = axis(),
-      legend = menu()
-        .align('right'),
-      controls = menu()
-        .align('left')
-        .color(['#444']);
+  var model = line().clipEdge(true);
+  var xAxis = axis();
+  var yAxis = axis();
+  var controls = menu().color(['#444']);
+  var legend = menu();
+
+  var controlsData = [
+    { key: 'Linear', disabled: model.interpolate() !== 'linear' },
+    { key: 'Basis', disabled: model.interpolate() !== 'basis' },
+    { key: 'Monotone', disabled: model.interpolate() !== 'monotone' },
+    { key: 'Cardinal', disabled: model.interpolate() !== 'cardinal' },
+    { key: 'Line', disabled: model.isArea()() === true },
+    { key: 'Area', disabled: model.isArea()() === false }
+  ];
 
   var tt = null;
 
-  var tooltipContent = function(key, x, y, e, graph) {
+  var tooltipContent = function(eo, properties) {
+        var key = eo.series.key;
+        // var x = model.x()(eo.point, eo.pointIndex);
+        // var y = model.y()(eo.point, eo.pointIndex);
+        var x = eo.point.x;
+        var y = eo.point.y;
         return '<h3>' + key + '</h3>' +
                '<p>' + y + ' on ' + x + '</p>';
       };
 
-  var showTooltip = function(eo, offsetElement) {
-        var key = eo.series.key,
-            x = model.x()(eo.point, eo.pointIndex),
-            y = model.y()(eo.point, eo.pointIndex),
-            content = tooltipContent(key, x, y, eo, chart);
+  var showTooltip = function(eo, offsetElement, properties) {
+        var content = tooltipContent(eo, properties);
+        var gravity = eo.value < 0 ? 'n' : 's';
+        return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+      };
 
-        tt = tooltip.show(eo.e, content, null, null, offsetElement);
+  var seriesClick = function(data, e, chart) {
+        return;
       };
 
   //============================================================
@@ -75,34 +87,35 @@ export default function lineChart() {
           modelClass = 'line';
 
       var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null,
-          labels = properties.labels ? properties.labels.map(function(d) { return d.l || d; }) : [];
+          data = chartData ? chartData.data : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
+      var availableWidth = width;
+      var availableHeight = height;
+
+      var hasGroupData = properties.groups && Array.isArray(properties.groups) && properties.groups.length;
+      var groupLabels = hasGroupData ?
+            properties.groups.map(function(d) {
+              return d.label || d.l || (typeof d === 'string' ? d : chart.strings().noLabel);
+            }) : [];
+
+      var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupData || false,
+          xIsDatetime = properties.xDataType === 'datetime' || false,
+          xIsNumeric = properties.xDataType === 'numeric' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
+
       var modelData = [],
-          xTickLabels = [],
+          xTickCount = 0,
+          xTickValues = [],
+          //TODO: allow formatter to be set by data
+          xTickMaxWidth = 0,
+          xDateFormat = null,
+          xValueFormat = null,
+          yValueFormat = null,
           totalAmount = 0,
-          singlePoint = false,
-          showMaxMin = false,
-          isArrayData = true,
-          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
-
-      var xValueFormat = function(d, i, selection, noEllipsis) {
-            var value = xTickLabels && Array.isArray(xTickLabels) && !isNaN(parseInt(d, 10)) ?
-                          xTickLabels[parseInt(d, 10)] || d :
-                          d;
-            var label = xIsDatetime ?
-                          utility.dateFormat(value, '%x', chart.locality()) :
-                          value;
-            return label;
-          };
-
-      var yValueFormat = function(d, i, selection, noEllipsis) {
-            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
-          };
+          singlePoint = false;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -128,79 +141,79 @@ export default function lineChart() {
       //------------------------------------------------------------
       // Process data
 
-      isArrayData = Array.isArray(data[0].values[0]);
-      if (isArrayData) {
-        model.x(function(d) { return d ? d[0] : 0; });
-        model.y(function(d) { return d ? d[1] : 0; });
-      } else {
-        model.x(function(d) { return d.x; });
-        model.y(function(d) { return d.y; });
-      }
-
       // set title display option
       showTitle = showTitle && properties.title;
 
-      // add series index to each data point for reference
-      // and disable data series if total is zero
-      data.map(function(d, i) {
-        d.seriesIndex = i;
-        d.total = d3.sum(d.values, function(d, i) {
-          return model.y()(d, i);
-        });
-        if (!d.total) {
-          d.disabled = true;
-        }
-      });
-
-      xTickLabels = properties.labels ?
-          properties.labels.map(function(d) { return [].concat(d.l)[0] || chart.strings().noLabel; }) :
-          [];
-
-      // TODO: what if the dimension is a numerical range?
-      // xValuesAreDates = xTickLabels.length ?
-      //       utility.isValidDate(xTickLabels[0]) :
-      //       utility.isValidDate(model.x()(data[0].values[0]));
-      // xValuesAreDates = isArrayData && utility.isValidDate(data[0].values[0][0]);
-
-      // SAVE FOR LATER
-      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
-      //   return d3.min(d.values, function(d, i) {
-      //     return model.x()(d, i);
-      //   });
-      // }) > 0;
-
-      modelData = data.filter(function(d) {
-          return !d.disabled;
-        });
+      modelData = data.filter(function(d) { return !d.disabled; });
 
       // safety array
-      modelData = modelData.length ? modelData : [{series: 0, total: 0, disabled: true, values: []}];
+      if (!modelData.length) {
+        modelData = [{seriesIndex: 0, key: 'Empty', total: 0, disabled: true, values: []}];
+      }
 
-      totalAmount = d3.sum(modelData, function(d) {
-          return d.total;
-        });
+      totalAmount = d3.sum(modelData, function(d) { return d.total; });
 
-      //------------------------------------------------------------
-      // Display No Data message if there's nothing to show.
-
+      // display No Data message if there's nothing to show.
       if (!totalAmount) {
         displayNoData();
         return chart;
       }
 
-      // set state.disabled
+      if (xIsOrdinal) {
+
+        xTickCount = groupLabels.length;
+
+        xValueFormat = function(d, i, selection) {
+          return groupLabels[i];
+        };
+
+      } else {
+
+        xTickValues = d3
+              .merge(
+                data.map(function(d) {
+                  return d.values;
+                })
+              )
+              .reduce(function(a, b) {
+                if (a.indexOf(b.x) === -1) {
+                  a.push(b.x);
+                }
+                return a;
+              }, []);
+
+        xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
+
+        if (xIsDatetime) {
+          xDateFormat = utility.getDateFormat(xTickValues);
+
+          xValueFormat = function(d, i, selection) {
+            return utility.dateFormat(d, xDateFormat, chart.locality());
+          };
+
+        } else if (xIsNumeric) {
+
+          xValueFormat = function(d, i, selection) {
+            return d;
+          };
+
+        }
+
+      }
+
+      yValueFormat = function(d, i, selection) {
+        return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+      };
+
+
+
+      //------------------------------------------------------------
+      // State persistence model
+
       state.disabled = modelData.map(function(d) { return !!d.disabled; });
       state.interpolate = model.interpolate();
       state.isArea = model.isArea()();
 
-      var controlsData = [
-        { key: 'Linear', disabled: model.interpolate() !== 'linear' },
-        { key: 'Basis', disabled: model.interpolate() !== 'basis' },
-        { key: 'Monotone', disabled: model.interpolate() !== 'monotone' },
-        { key: 'Cardinal', disabled: model.interpolate() !== 'cardinal' },
-        { key: 'Line', disabled: model.isArea()() === true },
-        { key: 'Area', disabled: model.isArea()() === false }
-      ];
 
       //------------------------------------------------------------
       // Setup Scales and Axes
@@ -218,7 +231,8 @@ export default function lineChart() {
         // .padData(singlePoint ? false : true)
         // .padDataOuter(-1)
         // set x-scale as time instead of linear
-        .xScale(xIsDatetime && !xTickLabels.length ? d3.scaleTime() : d3.scaleLinear())
+        // .xScale(xIsDatetime && !groupLabels.length ? d3.scaleTime() : d3.scaleLinear()) //TODO: why && !groupLabels.length?
+        .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear())
         .singlePoint(singlePoint)
         .size(pointSize) // default size set to 3
         .sizeRange([pointSize, pointSize])
@@ -237,17 +251,18 @@ export default function lineChart() {
               }, [])
               .sort(function(a, b) {
                 return a - b;
-              }),
-            xExtents = d3.extent(xValues),
-            xOffset = 1 * (xIsDatetime && !xTickLabels.length ? 86400000 : 1);
+              });
+        var xExtents = d3.extent(xValues);
+        var xOffset = 1 * (xIsDatetime && !groupLabels.length ? 86400000 : 1);
 
         var yValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
                   return model.y()(d, i);
                 });
-              })),
-            yExtents = d3.extent(yValues),
-            yOffset = modelData.length === 1 ? 2 : Math.min((yExtents[1] - yExtents[0]) / modelData.length, yExtents[0]);
+              }));
+        var yExtents = d3.extent(yValues);
+        var yOffset = modelData.length === 1 ? 2 : Math.min((yExtents[1] - yExtents[0]) / modelData.length, yExtents[0]);
+
 
         model
           .xDomain([
@@ -279,10 +294,9 @@ export default function lineChart() {
           .yDomain(null);
         xAxis
           .orient('bottom')
-          .ticks(null)
-          .tickValues(null)
-          .highlightZero(false)
-          .showMaxMin(xIsDatetime);
+          .tickValues(xIsOrdinal ? d3.range(1, groupLabels.length + 1) : null)
+          .showMaxMin(xIsDatetime)
+          .highlightZero(false);
         yAxis
           .orient('left')
           .ticks(null)
@@ -296,12 +310,12 @@ export default function lineChart() {
 
       xAxis
         .scale(x)
-        .valueFormat(xValueFormat)
-        .tickPadding(6);
+        .tickPadding(6)
+        .tickFormat(xValueFormat);
       yAxis
         .scale(y)
-        .valueFormat(yValueFormat)
-        .tickPadding(6);
+        .tickPadding(6)
+        .tickFormat(yValueFormat);
 
       //------------------------------------------------------------
       // Main chart wrappers
@@ -338,7 +352,7 @@ export default function lineChart() {
 
         // Chart layout variables
         var renderWidth, renderHeight,
-            availableWidth, availableHeight,
+            // availableWidth, availableHeight,
             innerMargin,
             innerWidth, innerHeight;
 
@@ -494,10 +508,7 @@ export default function lineChart() {
 
         // Y-Axis
         yAxis
-          .margin(innerMargin)
-          .tickFormat(function(d, i) {
-            return yAxis.valueFormat()(d, yIsCurrency);
-          });
+          .margin(innerMargin);
         yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
@@ -508,13 +519,16 @@ export default function lineChart() {
         // X-Axis
         // resize ticks based on new dimensions
         xAxis
+          .ticks(xTickCount)
           .tickSize(-innerHeight + (model.padData() ? pointRadius : 0), 0)
-          .margin(innerMargin)
           .tickFormat(function(d, i, noEllipsis) {
             return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
-          });
+          })
+          .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);
+
+        // reset inner dimensions
         xAxisMargin = xAxis.margin();
         setInnerMargins();
         setInnerDimensions();
@@ -846,6 +860,7 @@ export default function lineChart() {
   chart.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
+    model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
     legend.direction(_);

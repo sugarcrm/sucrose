@@ -440,7 +440,8 @@ export default function multibar() {
           dispatch.call('elementMousemove', this, e);
         })
         .on('mouseout', function(d, i) {
-          dispatch.call('elementMouseout', this);
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementMouseout', this, eo);
         })
         .on('click', function(d, i) {
           d3.event.stopPropagation();

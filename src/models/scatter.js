@@ -46,6 +46,7 @@ export default function scatter() {
       pointActive = function(d) { return !d.notActive; }, // any points that return false will be filtered out
       padData = false, // If true, adds half a data points width to front and back, for lining up a line chart with a bar chart
       padDataOuter = 0.1, //outerPadding to imitate ordinal scale outer padding
+      direction = 'ltr',
       clipEdge = false, // if true, masks points within x and y scale
       delay = 0,
       duration = 300,
@@ -104,8 +105,11 @@ export default function scatter() {
       };
 
       function resetScale() {
-        x.domain(xDomain || d3.extent(seriesData.map(function(d) { return d.x; }).concat(forceX)));
-        y.domain(yDomain || d3.extent(seriesData.map(function(d) { return d.y; }).concat(forceY)));
+        // WHEN GETX RETURN 1970, THIS FAILS, BECAUSE X IS A DATETIME SCALE
+        // RESOLVE BY MAKING SURE GETX RETURN A DATE OBJECT WHEN X SCALE IS DATETIME
+
+        x.domain(xDomain || d3.extent(seriesData.map(getX).concat(forceX)));
+        y.domain(yDomain || d3.extent(seriesData.map(getY).concat(forceY)));
 
         if (padData && data[0]) {
           if (padDataOuter === -1) {
@@ -715,6 +719,12 @@ export default function scatter() {
   model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
+    return model;
+  };
+
+  model.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
     return model;
   };
 

@@ -39,16 +39,16 @@ export default function gaugeChart() {
 
   var tt = null;
 
-  var tooltipContent = function(key, x, y, e, graph) {
+  var tooltipContent = function(eo, properties) {
+        var key = model.fmtKey()(eo.point.series);
+        var x = model.getCount()(eo.point.series);
+        var y = model.getValue()(eo.point.y1 - eo.point.y0);
         return '<h3>' + key + '</h3>' +
                '<p>' + y + ' on ' + x + '</p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
-        var key = model.fmtKey()(eo.point.series),
-            x = model.getCount()(eo.point.series),
-            y = model.getValue()(eo.point.y1 - eo.point.y0),
-            content = tooltipContent(key, x, y, eo.e, chart);
+        var content = tooltipContent(eo, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 

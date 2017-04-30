@@ -40,14 +40,14 @@ export default function treemapChart() {
 
   var tt = null;
 
-  var tooltipContent = function(point) {
+  var tooltipContent = function(point, properties) {
         var tt = '<h3>' + point.data.name + '</h3>' +
                  '<p>' + utility.numberFormatSI(point.value) + '</p>';
         return tt;
       };
 
-  var showTooltip = function(eo, offsetElement) {
-        var content = tooltipContent(eo.point);
+  var showTooltip = function(eo, offsetElement, properties) {
+        var content = tooltipContent(eo.point, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
@@ -230,7 +230,7 @@ export default function treemapChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tt = showTooltip(eo, that.parentNode);
+          tt = showTooltip(eo, that.parentNode, properties);
         }
       });
 

@@ -497,13 +497,21 @@ export default function axis() {
         var tickSpacing = getTickSpacing();
 
         tickText.each(function(d, i) {
-          var textContent = axis.tickFormat()(d, i, selection, true),
-              textNode = d3.select(this),
-              isDate = utility.isValidDate(textContent),
-              textArray = (textContent && textContent !== '' ? isDate ? textContent : textContent.replace('/', '/ ') : []).split(' '),
-              i = 0,
-              l = textArray.length,
-              dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
+          var textContent = axis.tickFormat()(d, i, selection, true);
+          var textNode = d3.select(this);
+          var isDate = utility.isValidDate(textContent);
+          var dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
+          var textArray = (
+                textContent && textContent !== '' ?
+                  (
+                    isDate ?
+                      textContent :
+                      textContent.replace('/', '/ ')
+                  ) :
+                  []
+              ).split(' ');
+          var l = textArray.length;
+          var i = 0;
 
           // reset the tick text conent
           this.textContent = '';
@@ -766,6 +774,14 @@ export default function axis() {
     axis.tickFormat(_);
     return model;
   };
+  model.tickFormat = function(_) {
+    if (!arguments.length) {
+      return tickFormat || axis.tickFormat();
+    }
+    tickFormat = _;
+    axis.tickFormat(_);
+    return model;
+  };
   model.tickValues = function(_) {
     if (!arguments.length) {
       return tickValues;
@@ -788,14 +804,6 @@ export default function axis() {
     }
     tickPadding = _;
     axis.tickPadding(_);
-    return model;
-  };
-  model.tickFormat = function(_) {
-    if (!arguments.length) {
-      return tickFormat || axis.tickFormat();
-    }
-    tickFormat = _;
-    axis.tickFormat(_);
     return model;
   };
   model.tickSizeInner = function(_) {

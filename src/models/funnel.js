@@ -16,9 +16,10 @@ export default function funnel() {
       getH = function(d) { return d.height; },
       getKey = function(d) { return d.key; },
       getValue = function(d, i) { return d.value; },
+      getCount = function(d, i) { return d.count; },
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
-      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
+      fmtCount = function(d) { return (' (' + getCount(d.series || d) + ')').replace(' ()', ''); },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -501,9 +502,9 @@ export default function funnel() {
       function buildEventObject(e, d, i) {
         return {
           id: id,
-          key: fmtKey(d),
-          value: fmtValue(d),
-          count: fmtCount(d),
+          key: getKey(d),
+          value: getValue(d),
+          count: getCount(d),
           data: d,
           series: d.series,
           e: e
@@ -887,6 +888,12 @@ export default function funnel() {
   model.getValue = function(_) {
     if (!arguments.length) { return getValue; }
     getValue = _;
+    return model;
+  };
+
+  model.getCount = function(_) {
+    if (!arguments.length) { return getCount; }
+    getCount = _;
     return model;
   };
 

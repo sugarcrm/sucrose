@@ -70,14 +70,14 @@ export default function globeChart() {
 
   var tt = null;
 
-  function tooltipContent(d) {
-    return '<p><b>' + d.name + '</b></p>' +
-           '<p><b>Amount:</b> $' + d3.format(',.0f')(d.amount) + '</p>';
+  function tooltipContent(eo, properties) {
+    return '<p><b>' + eo.name + '</b></p>' +
+           '<p><b>Amount:</b> $' + d3.format(',.0f')(eo.amount) + '</p>';
   }
 
-  function showTooltip(eo, offsetElement) {
-    var content = tooltipContent(eo);
-    tt = tooltip.show(eo.e, content, null, null, offsetElement);
+  function showTooltip(eo, offsetElement, properties) {
+    var content = tooltipContent(eo, properties);
+    return tooltip.show(eo.e, content, null, null, offsetElement);
   };
 
 
@@ -477,7 +477,7 @@ export default function globeChart() {
 
       dispatch.on('tooltipShow', function(eo) {
           if (tooltips) {
-            showTooltip(eo, that.parentNode);
+            tt = showTooltip(eo, that.parentNode, properties);
           }
         });
 

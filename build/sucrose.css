@@ -378,7 +378,7 @@ text.sc-pie-hole-label {
 */
 .sc-group path.sc-line {
   fill: none;
-  stroke-width: 2px;
+  stroke-width: 1px;
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
 }
