@@ -1567,6 +1567,9 @@ section.full-screen .tab.active {
   width: 98%;
   max-width: 98%;
 }
+.example.full-width + .options {
+  display: none;
+}
 .options {
   width: 38%;
   max-width: 350px;

@@ -8,8 +8,8 @@
       "labels": "value",
       "print": "on",
       "thousands": "",
-      "yDataType": "numerical",
-      "xDataType": "string"
+      "yDataType": "numeric",
+      "xDataType": "ordinal"
     }
   ],
   "label": [

@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "xDataType": "numeric",
+    "yDataType": "numeric",
+    "range": [0, 9]
+  },
+  "data": [
+    {
+      "key": "Series 0",
+      "values": [
+        {"x": 2, "y": 3},
+        {"x": 6, "y": 7},
+        {"x": 7, "y": 5}
+      ]
+    },
+    {
+      "key": "Series 1",
+      "values": [
+        {"x": 2, "y": 4},
+        {"x": 6, "y": 8},
+        {"x": 7, "y": 6}
+      ]
+    }
+  ]
+}

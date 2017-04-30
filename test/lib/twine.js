@@ -15,6 +15,9 @@ const test = addAssertions(tape, {
 
     methods(type, exclusions) {
         let instance;
+        let native = Object.getOwnPropertyNames(new Function());
+        let common = ["dispatch"];
+        let excluded = native.concat(common, exclusions);
         switch(type) {
             case "area":
                 instance = sucrose.charts.areaChart();
@@ -52,10 +55,15 @@ const test = addAssertions(tape, {
             case "tooltip":
                 instance = sucrose.tooltip();
                 break;
-            default:
+            case "utility":
                 instance = sucrose.utility;
+                break;
+            case "transform":
+                instance = sucrose.transform;
+                break;
+            default:
+                instance = new Function();
         }
-        let excluded = ["name", "length", "prototype", "dispatch"].concat(exclusions);
         let methods = Object.getOwnPropertyNames(instance).filter(function(name) {
             return excluded.indexOf(name) === -1;
         });
@@ -81,7 +89,7 @@ const test = addAssertions(tape, {
                 console.log("===================\nPublic methods left: " + _left);
                 console.log(tape._missing);
             } else {
-                console.log("All public methods are covered!")
+                console.log("All public methods are covered!");
             }
         }
     },

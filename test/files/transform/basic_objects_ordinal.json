@@ -1,0 +1,21 @@
+{
+  "properties": {
+    "xDataType": "ordinal",
+    "yDataType": "numeric",
+    "groups": [
+      {"label": "Group One"},
+      {"label": "Group Two"},
+      {"label": "Group Three"}
+    ]
+  },
+  "data": [
+    {
+      "key": "Series 0",
+      "values": [
+        {"x": 1, "y": 7},
+        {"x": 2, "y": 15},
+        {"x": 3, "y": 11}
+      ]
+    }
+  ]
+}

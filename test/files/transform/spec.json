@@ -1,0 +1,377 @@
+{
+  "grouped": {
+    "datetime": {
+      "properties": {
+        "xDataType": "datetime",
+        "yDataType": "numeric",
+        "colorLength": 2
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": "Sat, 01 Jan 1972 00:00:00 GMT", "y": 3},
+            {"x": "Mon, 01 Jan 1973 00:00:00 GMT", "y": 7},
+            {"x": "Tue, 01 Jan 1974 00:00:00 GMT", "y": 5}
+          ]
+        },
+        {
+          "key": "Series 1",
+          "values": [
+            {"x": "Sat, 01 Jan 1972 00:00:00 GMT", "y": 4},
+            {"x": "Mon, 01 Jan 1973 00:00:00 GMT", "y": 8},
+            {"x": "Tue, 01 Jan 1974 00:00:00 GMT", "y": 6}
+          ]
+        }
+      ]
+    },
+    "datetime_string": {
+      "properties": {
+        "xDataType": "datetime",
+        "yDataType": "numeric",
+        "colorLength": 2
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": "Wed, 12 Jan 1972 00:00:00 GMT", "y": 3},
+            {"x": "Fri, 12 Jan 1973 00:00:00 GMT", "y": 7},
+            {"x": "Sat, 12 Jan 1974 00:00:00 GMT", "y": 5}
+          ]
+        },
+        {
+          "key": "Series 1",
+          "values": [
+            {"x": "Wed, 12 Jan 1972 00:00:00 GMT", "y": 4},
+            {"x": "Fri, 12 Jan 1973 00:00:00 GMT", "y": 8},
+            {"x": "Sat, 12 Jan 1974 00:00:00 GMT", "y": 6}
+          ]
+        }
+      ]
+    },
+    "numeric": {
+      "properties": {
+        "xDataType": "numeric",
+        "yDataType": "numeric",
+        "range": [0, 9],
+        "colorLength": 2
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": 2, "y": 3},
+            {"x": 6, "y": 7},
+            {"x": 7, "y": 5}
+          ]
+        },
+        {
+          "key": "Series 1",
+          "values": [
+            {"x": 2, "y": 4},
+            {"x": 6, "y": 8},
+            {"x": 7, "y": 6}
+          ]
+        }
+      ]
+    },
+    "ordinal": {
+      "properties": {
+        "xDataType": "ordinal",
+        "yDataType": "numeric",
+        "groups": [
+          {"group": 1, "label": "Group One"},
+          {"group": 2, "label": "Group Two"},
+          {"group": 3, "label": "Group Three"}
+        ],
+        "colorLength": 2
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": 1, "y": 3},
+            {"x": 2, "y": 7},
+            {"x": 3, "y": 5}
+          ]
+        },
+        {
+          "key": "Series 1",
+          "values": [
+            {"x": 1, "y": 4},
+            {"x": 2, "y": 8},
+            {"x": 3, "y": 6}
+          ]
+        }
+      ]
+    },
+    "sugar": {
+      "properties": {
+        "xDataType": "ordinal",
+        "yDataType": "numeric",
+        "groups": [
+          {"group": 1, "label": "Group One"},
+          {"group": 2, "label": "Group Two"},
+          {"group": 3, "label": "Group Three"}
+        ],
+        "colorLength": 2
+      },
+      "data": [
+        {
+          "label": "Series 0",
+          "values": [
+            {"x": 1, "y": 3},
+            {"x": 2, "y": 7},
+            {"x": 3, "y": 5}
+          ],
+          "key": "Series 0"
+        },
+        {
+          "label": "Series 1",
+          "values": [
+            {"x": 1, "y": 4},
+            {"x": 2, "y": 8},
+            {"x": 3, "y": 6}
+          ],
+          "key": "Series 1"
+        }
+      ]
+    }
+  },
+  "discrete": {
+    "datetime": {
+      "properties": {
+        "xDataType": "datetime",
+        "yDataType": "numeric",
+        "colorLength": 3
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": "Sat, 01 Jan 1972 00:00:00 GMT", "y": 7},
+            {"x": "Mon, 01 Jan 1973 00:00:00 GMT", "y": 0},
+            {"x": "Tue, 01 Jan 1974 00:00:00 GMT", "y": 0}
+          ]
+        },
+        {
+          "key": "Series 1",
+          "values": [
+            {"x": "Sat, 01 Jan 1972 00:00:00 GMT", "y": 0},
+            {"x": "Mon, 01 Jan 1973 00:00:00 GMT", "y": 15},
+            {"x": "Tue, 01 Jan 1974 00:00:00 GMT", "y": 0}
+          ]
+        },
+        {
+          "key": "Series 2",
+          "values": [
+            {"x": "Sat, 01 Jan 1972 00:00:00 GMT", "y": 0},
+            {"x": "Mon, 01 Jan 1973 00:00:00 GMT", "y": 0},
+            {"x": "Tue, 01 Jan 1974 00:00:00 GMT", "y": 11}
+          ]
+        }
+      ]
+    },
+    "datetime_string": {
+      "properties": {
+        "xDataType": "datetime",
+        "yDataType": "numeric",
+        "colorLength": 3
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": "Wed, 12 Jan 1972 00:00:00 GMT", "y": 7},
+            {"x": "Fri, 12 Jan 1973 00:00:00 GMT", "y": 0},
+            {"x": "Sat, 12 Jan 1974 00:00:00 GMT", "y": 0}
+          ]
+        },
+        {
+          "key": "Series 1",
+          "values": [
+            {"x": "Wed, 12 Jan 1972 00:00:00 GMT", "y": 0},
+            {"x": "Fri, 12 Jan 1973 00:00:00 GMT", "y": 15},
+            {"x": "Sat, 12 Jan 1974 00:00:00 GMT", "y": 0}
+          ]
+        },
+        {
+          "key": "Series 2",
+          "values": [
+            {"x": "Wed, 12 Jan 1972 00:00:00 GMT", "y": 0},
+            {"x": "Fri, 12 Jan 1973 00:00:00 GMT", "y": 0},
+            {"x": "Sat, 12 Jan 1974 00:00:00 GMT", "y": 11}
+          ]
+        }
+      ]
+    },
+    "numeric": {
+      "properties": {
+        "xDataType": "numeric",
+        "yDataType": "numeric",
+        "range": [0, 9],
+        "colorLength": 3
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": 2, "y": 7},
+            {"x": 6, "y": 0},
+            {"x": 7, "y": 0}
+          ]
+        },
+        {
+          "key": "Series 1",
+          "values": [
+            {"x": 2, "y": 0},
+            {"x": 6, "y": 15},
+            {"x": 7, "y": 0}
+          ]
+        },
+        {
+          "key": "Series 2",
+          "values": [
+            {"x": 2, "y": 0},
+            {"x": 6, "y": 0},
+            {"x": 7, "y": 11}
+          ]
+        }
+      ]
+    },
+    "ordinal": {
+      "properties": {
+        "xDataType": "ordinal",
+        "yDataType": "numeric",
+        "groups": [
+          {"group": 1, "label": "Series 0"},
+          {"group": 2, "label": "Series 1"},
+          {"group": 3, "label": "Series 2"}
+        ],
+        "colorLength": 3
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": 1, "y": 7},
+            {"x": 2, "y": 0},
+            {"x": 3, "y": 0}
+          ]
+        },
+        {
+          "key": "Series 1",
+          "values": [
+            {"x": 1, "y": 0},
+            {"x": 2, "y": 15},
+            {"x": 3, "y": 0}
+          ]
+        },
+        {
+          "key": "Series 2",
+          "values": [
+            {"x": 1, "y": 0},
+            {"x": 2, "y": 0},
+            {"x": 3, "y": 11}
+          ]
+        }
+      ]
+    }
+  },
+  "basic": {
+    "datetime": {
+      "properties": {
+        "xDataType": "datetime",
+        "yDataType": "numeric",
+        "colorLength": 3
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": "Sat, 01 Jan 1972 00:00:00 GMT", "y": 7},
+            {"x": "Mon, 01 Jan 1973 00:00:00 GMT", "y": 15},
+            {"x": "Tue, 01 Jan 1974 00:00:00 GMT", "y": 11}
+          ]
+        }
+      ]
+    },
+    "datetime_string": {
+      "properties": {
+        "xDataType": "datetime",
+        "yDataType": "numeric",
+        "colorLength": 3
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": "Wed, 12 Jan 1972 00:00:00 GMT", "y": 7},
+            {"x": "Fri, 12 Jan 1973 00:00:00 GMT", "y": 15},
+            {"x": "Sat, 12 Jan 1974 00:00:00 GMT", "y": 11}
+          ]
+        }
+      ]
+    },
+    "numeric": {
+      "properties": {
+        "xDataType": "numeric",
+        "yDataType": "numeric",
+        "range": [0, 9],
+        "colorLength": 3
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": 2, "y": 7},
+            {"x": 6, "y": 15},
+            {"x": 7, "y": 11}
+          ]
+        }
+      ]
+    },
+    "ordinal": {
+      "properties": {
+        "xDataType": "ordinal",
+        "yDataType": "numeric",
+        "groups": [
+          {"group": 1, "label": "Group One"},
+          {"group": 2, "label": "Group Two"},
+          {"group": 3, "label": "Group Three"}
+        ],
+        "colorLength": 3
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "values": [
+            {"x": 1, "y": 7},
+            {"x": 2, "y": 15},
+            {"x": 3, "y": 11}
+          ]
+        }
+      ]
+    }
+  },
+  "pie": {
+    "ordinal": {
+      "properties": {
+        "xDataType": "ordinal",
+        "yDataType": "numeric",
+        "colorLength": 2
+      },
+      "data": [
+        {
+          "key": "Series 0",
+          "value": 15
+        },
+        {
+          "key": "Series 1",
+          "value": 18
+        }
+      ]
+    }
+  }
+}

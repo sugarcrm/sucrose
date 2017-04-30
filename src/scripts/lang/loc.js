@@ -8,8 +8,8 @@
 
 'use strict';
 
-var cldrData = require('cldr-data');
-var Cldr = require('cldrjs');
+const cldrData = require('cldr-data');
+const Cldr = require('cldrjs');
 
 // On-demand load.
 function onDemandLoad(languageId) {
@@ -26,7 +26,7 @@ Cldr.load(cldrData('supplemental/likelySubtags'));
 
 // D3 Locale generator
 function Loc(locale, currency) {
-  var defaultNumberingSystem;
+  let defaultNumberingSystem;
 
   onDemandLoad(locale);
   this.cldr = new Cldr(locale);
@@ -59,7 +59,7 @@ function Loc(locale, currency) {
 }
 
 Loc.prototype.language = function(lang) {
-  var data = this.languages;
+  let data = this.languages;
   return data[lang];
 };
 
@@ -72,7 +72,7 @@ Loc.prototype.thousands = function() {
 };
 
 Loc.prototype.grouping = function() {
-  var pattern = this.numbers.standard.split('.')[0].split(',').slice(1);
+  let pattern = this.numbers.standard.split('.')[0].split(',').slice(1);
   //[#,##,##0] [#,##0]
   return pattern.map(function(p) {
       return p.length;
@@ -80,9 +80,9 @@ Loc.prototype.grouping = function() {
 };
 
 Loc.prototype.currency = function() {
-  var currency = ['', ''],
-      symbol = this.currencies.symbol,
-      symbolAlt = this.currencies['symbol-alt-narrow'];
+  let currency = ['', ''];
+  let symbol = this.currencies.symbol;
+  let symbolAlt = this.currencies['symbol-alt-narrow'];
   if (this.currencySystem.standard.indexOf('¤ ') === 0) {
     currency[0] = symbolAlt || symbol + ' ';
   } else if (this.currencySystem.standard.indexOf('¤') === 0) {
@@ -94,9 +94,9 @@ Loc.prototype.currency = function() {
 };
 
 Loc.prototype.dateTime = function(format) {
-  var data = this.dates.dateTimeFormats[format],
-      dateFormat = this._dateFormat(this.dates.dateFormats[format]),
-      timeFormat = this._timeFormat(this.dates.timeFormats[format]);
+  let data = this.dates.dateTimeFormats[format];
+  let dateFormat = this._dateFormat(this.dates.dateFormats[format]);
+  let timeFormat = this._timeFormat(this.dates.timeFormats[format]);
   return data
     .replace(/\'/g, '')
     .replace('\{1\}', dateFormat)
@@ -104,27 +104,27 @@ Loc.prototype.dateTime = function(format) {
 };
 
 Loc.prototype.date = function() {
-  var data = this.dates.dateTimeFormats.availableFormats.yMd,
-      dateFormat = this._dateFormat(data);
+  let data = this.dates.dateTimeFormats.availableFormats.yMd;
+  let dateFormat = this._dateFormat(data);
   return dateFormat;
 };
 
 Loc.prototype.time = function() {
-  var data = this.dates.timeFormats.short,
-      timeFormat = this._timeFormat(data);
+  let data = this.dates.timeFormats.short;
+  let timeFormat = this._timeFormat(data);
   return timeFormat;
 };
 
 Loc.prototype.periods = function() {
-  var data = this.dates.dayPeriods.format.abbreviated,
-      periods = [data.am, data.pm];
+  let data = this.dates.dayPeriods.format.abbreviated;
+  let periods = [data.am, data.pm];
   return periods;
 };
 
 Loc.prototype.days = function() {
-  var data = this.dates.days.format.wide,
-      keys = Object.keys(data),
-      days = [];
+  let data = this.dates.days.format.wide;
+  let keys = Object.keys(data);
+  let days = [];
   keys.forEach(function(key) {
     days.push(data[key]);
   });
@@ -132,9 +132,9 @@ Loc.prototype.days = function() {
 };
 
 Loc.prototype.shortDays = function() {
-  var data = this.dates.days.format.abbreviated,
-      keys = Object.keys(data),
-      days = [];
+  let data = this.dates.days.format.abbreviated;
+  let keys = Object.keys(data);
+  let days = [];
   keys.forEach(function(key) {
     days.push(data[key]);
   });
@@ -142,9 +142,9 @@ Loc.prototype.shortDays = function() {
 };
 
 Loc.prototype.months = function() {
-  var data = this.dates.months.format.wide,
-      keys = Object.keys(data),
-      months = [];
+  let data = this.dates.months.format.wide;
+  let keys = Object.keys(data);
+  let months = [];
   keys.forEach(function(key) {
     months.push(data[key]);
   });
@@ -152,9 +152,9 @@ Loc.prototype.months = function() {
 };
 
 Loc.prototype.shortMonths = function() {
-  var data = this.dates.months.format.abbreviated,
-      keys = Object.keys(data),
-      months = [];
+  let data = this.dates.months.format.abbreviated;
+  let keys = Object.keys(data);
+  let months = [];
   keys.forEach(function(key) {
     months.push(data[key]);
   });
@@ -162,7 +162,7 @@ Loc.prototype.shortMonths = function() {
 };
 
 Loc.prototype.customDateFormats = function() {
-  var formats = this.dates.dateTimeFormats.availableFormats;
+  let formats = this.dates.dateTimeFormats.availableFormats;
   return {
     'full':   this.dateTime('full'),   //"EEEE, MMMM d, y at h:mm:ss a zzzz" => '%A, %c'
     'long':   this.dateTime('long'),   //"MMMM d, y at h:mm:ss a z" => '%c'

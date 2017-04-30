@@ -24,10 +24,10 @@ const Coverage = function() {
       })
       .end()
       .then(function(covData) {
-        let covFile = covData.name + '-' + nightmare.proc.pid + '-coverage.json';
-        let covPath = path.join(process.cwd(), '.coverage');
-        fs.mkdir(covPath, function(err) {
-          fs.writeFile(path.join(covPath, covFile), JSON.stringify(covData.cov), 'utf8', function (err) {
+        let covFile = covData.name + "-" + nightmare.proc.pid + "-coverage.json";
+        let covPath = path.join(process.cwd(), ".coverage");
+        fs.mkdir(covPath, function() {
+          fs.writeFile(path.join(covPath, covFile), JSON.stringify(covData.cov), "utf8", function (err) {
             if (err) {
               return console.log(err);
             }
@@ -47,7 +47,7 @@ const Coverage = function() {
   this.report = function(name) {
     this.reporter.add("text");
     this.reporter.write(this.collector, sync, function() {
-      // console.log(name, "report generated.\n");
+      console.log(name, "report generated.\n");
     });
     counter -= 1;
     if (counter === 0) {
@@ -63,6 +63,6 @@ const Coverage = function() {
       // console.log("Cummulative report generated.");
     });
   };
-}
+};
 
 module.exports = Coverage;

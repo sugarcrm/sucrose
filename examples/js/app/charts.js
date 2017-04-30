@@ -308,6 +308,17 @@ var sucroseCharts = function() {
       //   return Math.max(r, 75);
       // }
       _format: function format(chart, callback) {
+        // chart
+        //   .tooltipContent(function (eo, properties) {
+        //     var key = chart.getKey()(eo);
+        //     var y = chart.getValue()(eo);
+        //     var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
+        //     var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+        //     var percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
+        //     return '<p>Stage: <b>' + key + '</b></p>' +
+        //            '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+        //            '<p>Percent: <b>' + percent + '%</b></p>';
+        //   });
         callback(chart);
       }
     },

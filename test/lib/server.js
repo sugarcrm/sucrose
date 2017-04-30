@@ -8,7 +8,7 @@ const fs = require("fs");
 
 const requestHandler = function(request, response) {
   const uri = url.parse(request.url).pathname;
-  const filename = path.join(process.cwd(), uri);
+  let filename = path.join(process.cwd(), uri);
   const contentTypesByExtension = {
           ".html": "text/html",
           ".css":  "text/css",

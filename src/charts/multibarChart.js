@@ -124,6 +124,11 @@ export default function multibarChart() {
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
+  header
+    .showTitle(true)
+    .showControls(true)
+    .showLegend(true);
+
 
   //============================================================
 
@@ -279,6 +284,8 @@ export default function multibarChart() {
         // and set immutable series values
         // x & y are the only attributes allowed in values (TODO: array?)
         if (!series._values) {
+          //TODO: this should be set as d.metadata or d.data
+          //      then we set d.x&y to d.data.x&y
           series._values = series.values.map(function(value, v) {
             var d = {
               x: value.x,
@@ -530,9 +537,6 @@ export default function multibarChart() {
       // Set component attributes
 
       header
-        .showTitle(true)
-        .showControls(true)
-        .showLegend(true)
         .chart(chart)
         .title(properties.title)
         .controlsData(controlsData)

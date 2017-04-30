@@ -1,3 +1,5 @@
+/* global reset, model, config, render */
+
 "use strict";
 
 const Nightmare = require("nightmare");

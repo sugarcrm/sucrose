@@ -35,6 +35,7 @@ tests("DOM: pieChart -", function (t) {
         target = null;
         chart = sucrose.charts.pieChart().colorData("default");
         data = JSON.parse(json);
+        // eslint-disable-next-line quotes
         dom = new JSDOM('<!DOCTYPE html><div id="c_"><svg class="sucrose sc-chart"></svg></div>');
 
         global.window = dom.window;

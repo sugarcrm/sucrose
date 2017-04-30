@@ -11,7 +11,6 @@ let type = "tree";
 
 tests("UNIT: treeChart -", function(t) {
     let _chart = null;
-    let _model = null;
 
     tape.onFinish(function() {
         t.report(type);
@@ -21,7 +20,6 @@ tests("UNIT: treeChart -", function(t) {
 
     t.beforeEach(function (assert) {
         _chart = sucrose.charts.treeChart();
-        _model = _chart.tree;
         assert.end();
     });
 
@@ -181,7 +179,7 @@ tests("UNIT: treeChart -", function(t) {
         assert.plan(3);
         let def = _chart.zoomCallback();
         assert.equal(typeof def, "function", "returns default function");
-        let val = function(d){return true;};
+        let val = function(){return true;};
         _chart.zoomCallback(val);
         assert.equal(_chart.zoomCallback(), val, "returns set function");
         assert.equal(_chart.zoomCallback()(), true, "returns set function value");
@@ -192,7 +190,7 @@ tests("UNIT: treeChart -", function(t) {
         assert.plan(3);
         let def = _chart.nodeCallback();
         assert.equal(typeof def, "function", "returns default function");
-        let val = function(d){return true;};
+        let val = function(){return true;};
         _chart.nodeCallback(val);
         assert.equal(_chart.nodeCallback(), val, "returns set function");
         assert.equal(_chart.nodeCallback()(), true, "returns set function value");
@@ -213,7 +211,7 @@ tests("UNIT: treeChart -", function(t) {
         assert.plan(3);
         let def = _chart.nodeClick();
         assert.equal(typeof def, "function", "returns default function");
-        let val = function(d){return true;};
+        let val = function(){return true;};
         _chart.nodeClick(val);
         assert.equal(_chart.nodeClick(), val, "returns set function");
         assert.equal(_chart.nodeClick()(), true, "returns set function value");
@@ -232,7 +230,7 @@ tests("UNIT: treeChart -", function(t) {
         assert.plan(3);
         let def = _chart.getId();
         assert.equal(typeof def, "function", "returns default function");
-        let val = function(d){return 123;};
+        let val = function(){return 123;};
         _chart.getId(val);
         assert.equal(_chart.getId(), val, "returns set function");
         assert.equal(_chart.getId()(), 123, "returns set function value");
@@ -241,7 +239,7 @@ tests("UNIT: treeChart -", function(t) {
     t.test("getCardId: ", function(assert) {
         let def = _chart.getCardId();
         assert.equal(typeof def, "function", "returns default function");
-        let val = function(d){return 123;};
+        let val = function(){return 123;};
         //reset id function
         _chart.getId(val);
         assert.equal(_chart.getCardId()(), "card-123", "returns set function value");
@@ -252,8 +250,9 @@ tests("UNIT: treeChart -", function(t) {
         assert.plan(4);
         let def = _chart.nodeRenderer();
         assert.equal(typeof def, "function", "returns default function");
+        // eslint-disable-next-line quotes
         assert.equal(def(), '<div class="sc-tree-node"></div>', "returns default html template");
-        let val = function(d){return "<span></span>";};
+        let val = function(){return "<span></span>";};
         _chart.nodeRenderer(val);
         assert.equal(_chart.nodeRenderer(), val, "returns set function");
         assert.equal(_chart.nodeRenderer()(), "<span></span>", "returns set function value");

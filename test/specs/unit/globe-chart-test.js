@@ -36,7 +36,7 @@ tests("UNIT: globeChart -", function(t) {
             id: function(){return "asdf";},
             showTitle: false,
             strings: {
-                noLabel: 'there is no label'
+                noLabel: "there is no label"
             }
         };
         _chart.options(opts);
@@ -150,10 +150,10 @@ tests("UNIT: globeChart -", function(t) {
     t.test("strings: ", function(assert) {
         assert.plan(2);
         let def = {
-            legend: {close: 'Hide legend', open: 'Show legend'},
-            controls: {close: 'Hide controls', open: 'Show controls'},
-            noData: 'No Data Available.',
-            noLabel: 'undefined'
+            legend: {close: "Hide legend", open: "Show legend"},
+            controls: {close: "Hide controls", open: "Show controls"},
+            noData: "No Data Available.",
+            noLabel: "undefined"
         };
         assert.deepEqual(_chart.strings(), def, "returns default value");
         let val = {

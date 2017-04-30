@@ -1,0 +1,138 @@
+{
+  "multi-variant": {
+    "properties": {
+      "title": "Fruit by color by type",
+      "groups": [
+        {"label": "Red"},
+        {"label": "Yellow"},
+        {"label": "Green"}
+      ]
+    },
+    "data": [
+      {
+        "key": "Apples",
+        "values": [
+          {"x": 1, "y": 1234},
+          {"x": 2, "y": 567},
+          {"x": 3, "y": 89}
+        ]
+      },
+      {
+        "key": "Oranges",
+        "values": [
+          {"x": 1, "y": 89},
+          {"x": 2, "y": 567},
+          {"x": 3, "y": 1234}
+        ]
+      }
+    ]
+  },
+  "single-series": {
+    "properties": {
+      "title": "Fruit by color",
+      "groups": [
+        {"label": "Red"},
+        {"label": "Yellow"},
+        {"label": "Green"}
+      ]
+    },
+    "data": [
+      {
+        "key": "Fruit",
+        "values": [
+          {"x": 1, "y": 1234},
+          {"x": 2, "y": 567},
+          {"x": 3, "y": 89}
+        ]
+      }
+    ]
+  },
+  "single-value": {
+    "properties": {
+      "title": "Fruit by type",
+      "groups": [
+        {"label": "Fruit"}
+      ]
+    },
+    "data":
+    [
+      {
+        "key": "Apples",
+        "values": [
+          {"x": 1, "y": 1234}
+        ]
+      },
+      {
+        "key": "Oranges",
+        "values": [
+          {"x": 1, "y": 89}
+        ]
+      }
+    ]
+  },
+  "discrete-values": {
+    "properties": {
+      "title": "Fruit by color",
+      "groups": [
+        {"label": "Red"},
+        {"label": "Yellow"},
+        {"label": "Green"}
+      ]
+    },
+    "data":
+    [
+      {
+        "key": "Red",
+        "values": [
+          {"x": 1, "y": 1234}
+        ]
+      },
+      {
+        "key": "Yellow",
+        "values": [
+          {"x": 2, "y": 567}
+        ]
+      },
+      {
+        "key": "Green",
+        "values": [
+          {"x": 3, "y": 89}
+        ]
+      }
+    ]
+  },
+  "data-defined-colors": {
+    "properties": {
+      "title": "Fruit by color",
+      "groups": [
+        {"label": "Red"},
+        {"label": "Yellow"},
+        {"label": "Green"}
+      ]
+    },
+    "data":
+    [
+      {
+        "key": "Red",
+        "color": "red",
+        "values": [
+          {"x": 1, "y": 1234}
+        ]
+      },
+      {
+        "key": "Yellow",
+        "color": "yellow",
+        "values": [
+          {"x": 2, "y": 567}
+        ]
+      },
+      {
+        "key": "Green",
+        "color": "green",
+        "values": [
+          {"x": 3, "y": 89}
+        ]
+      }
+    ]
+  }
+}

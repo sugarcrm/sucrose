@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "xDataType": "ordinal",
+    "yDataType": "numeric"
+  },
+  "values": [
+    ["Category", "Series 0"],
+    ["Group One", 7],
+    ["Group Two", 15],
+    ["Group Three", 11]
+  ]
+}

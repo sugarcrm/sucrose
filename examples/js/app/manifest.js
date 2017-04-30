@@ -27,7 +27,7 @@ var Manifest =
   selectedOptions: {},
 
   // Chart method variables available to chart on render
-  colorLength: 0,
+  seriesLength: 0,
   gradientStart: '#e8e2ca',
   gradientStop: '#3e6c0a',
 
@@ -535,7 +535,7 @@ var Manifest =
     gradient = this.getData(self.data, 'gradient');
     startColor = this.gradientStart;
     stopColor = this.gradientStop;
-    lengthColor = self.colorLength;
+    lengthColor = this.colorLength;
 
     if (this.type === 'globe') {
       if (color === 'graduated') {
@@ -674,15 +674,13 @@ var Manifest =
    * LOAD DATA functions ---- */
 
   parseRawData: function (json) {
-    Data = json;
     if (this.type === 'treemap' || this.type === 'tree' || this.type === 'globe') {
+      Data = json;
       this.colorLength = 0;
     } else {
       // raw data from Report API
-      if (!json.data) {
-        Data = transformDataToD3(json, this.type);
-      }
-      this.colorLength = Data.properties.colorLength || Data.data.length;
+      Data = sucrose.transform(json, this.type);
+      this.colorLength = Data.properties ? Data.properties.colorLength : Data.data ? Data.data.length : 0;
       postProcessData(Data, this.type, this.Chart);
     }
   },

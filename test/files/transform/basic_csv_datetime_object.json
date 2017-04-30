@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "xDataType": "datetime",
+    "yDataType": "numeric"
+  },
+  "values": [
+    ["Date", "Series 0"],
+    ["Sat, 01 Jan 1972 00:00:00 GMT", 7],
+    ["Mon, 01 Jan 1973 00:00:00 GMT", 15],
+    ["Tue, 01 Jan 1974 00:00:00 GMT", 11]
+  ]
+}

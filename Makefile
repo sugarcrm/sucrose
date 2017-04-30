@@ -69,7 +69,7 @@ sucrose: sucrose.min.js
 # rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false --banner "[dollarsign](HEADER)"
 sucrose.js:
 	rm -f ./build/$@
-	$(JS_BUNDLER) -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:$(DEV) | cat ./src/header - > ./build/$@
+	$(JS_BUNDLER) -c scripts/rollup.$(TAR).js --environment BUILD:$(TAR),DEV:$(DEV) | cat ./src/header - > ./build/$@
 
 # - build then minify the sucrose Js library
 # uglifyjs --preamble "$(HEADER)" build/$^ -c negate_iife=false -m -o build/$@
@@ -181,9 +181,9 @@ examples-dev: dev
 
 # - compile a Node compliant entry file and create a js version of json package for sucrose
 pack:
-	node pack.$(TAR).js
+	node scripts/pack.$(TAR).js
 	npm run-script package
-	node rollup.node
+	node scripts/rollup.node
 
 # - publish the custom sugar build of sucrose
 npm-sugar:

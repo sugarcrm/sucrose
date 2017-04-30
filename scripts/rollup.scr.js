@@ -1,7 +1,7 @@
 import replace from 'rollup-plugin-replace';
 import eslint from 'rollup-plugin-eslint';
 import resolve from 'rollup-plugin-node-resolve';
-const version = require('./package.json').version;
+const version = require('../package.json').version;
 
 export default {
   moduleName: 'sucrose',
@@ -10,11 +10,11 @@ export default {
   format: 'umd',
   // node
   external: [
-    '@sugarcrm/d3-sugar',
+    'd3',
   ],
   // browser
   globals: {
-    '@sugarcrm/d3-sugar': 'd3sugar',
+    'd3': 'd3',
   },
   // sourceMap: 'inline',
   treeshake: false,
@@ -22,10 +22,9 @@ export default {
     replace({
       exclude: 'node_modules/**',
       values: {
-        ENV_VERSION: version,
-        ENV_BUILD: 'sgr',
         ENV_DEV: (process.env.DEV || false),
-        '\'d3\'': '\'@sugarcrm\/d3-sugar\'',
+        ENV_BUILD: 'scr',
+        ENV_VERSION: version,
       },
     }),
     eslint({

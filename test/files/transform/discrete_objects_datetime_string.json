@@ -1,0 +1,26 @@
+{
+  "properties": {
+    "xDataType": "datetime",
+    "yDataType": "numeric"
+  },
+  "data": [
+    {
+      "key": "Series 0",
+      "values": [
+        {"x": "1/12/1972", "y": 7}
+      ]
+    },
+    {
+      "key": "Series 1",
+      "values": [
+        {"x": "1/12/1973", "y": 15}
+      ]
+    },
+    {
+      "key": "Series 2",
+      "values": [
+        {"x": "1/12/1974", "y": 11}
+      ]
+    }
+  ]
+}

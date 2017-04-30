@@ -19,24 +19,26 @@
 
 'use strict';
 
-var fs = require('fs');
-var Loc = require('./loc.js');
+let fs = require('fs');
+let Loc = require('./loc.js');
 
 // ICU Code, Language, Currency, CLDR, Label
-var locales = require('../../data/cldr-locales.json');
+let locales = require('../../data/cldr-locales.json');
 //http://www.localeplanet.com/icu/currency.html
 
-var localeSettings = {};
-var localeJson;
+let localeSettings = {};
+let localeJson;
 
 locales.forEach(function(l) {
-    var icuc = l[0];
-    var lang = l[1];
-    var curr = l[2];
-    var file = l[3];
-    var name = l[4];
-    var locale = new Loc(file, curr);
-    var settings = {
+    // eslint-disable-next-line no-unused-vars
+    let icuc = l[0];
+    let lang = l[1];
+    let curr = l[2];
+    let file = l[3];
+    // eslint-disable-next-line no-unused-vars
+    let name = l[4];
+    let locale = new Loc(file, curr);
+    let settings = {
         label: locale.language(lang),
         decimal: locale.decimal(), // "."
         thousands: locale.thousands(), // ","
@@ -51,8 +53,8 @@ locales.forEach(function(l) {
         months: locale.months(), // ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
         shortMonths: locale.shortMonths() // ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     };
-    var customDateFormats = locale.customDateFormats();
-    for (var f in customDateFormats) {
+    let customDateFormats = locale.customDateFormats();
+    for (let f in customDateFormats) {
         if (customDateFormats.hasOwnProperty(f)) {
             settings[f] = customDateFormats[f];
         }
@@ -63,7 +65,9 @@ locales.forEach(function(l) {
 localeJson = JSON.stringify(localeSettings, null, '  ');
 
 fs.writeFile('../../data/locales.json', localeJson, function (err) {
-  if (err) return console.log(err);
+  if (err) {
+    return console.log(err);
+  }
   console.log('Wrote localeSettings to file.');
 });
 

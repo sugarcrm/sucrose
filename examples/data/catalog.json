@@ -1,5 +1,9 @@
 {
     "area": [
+        {"value": "../../test/files/transform/grouped_csv_datetime", "label": "Test CSV - datetime"},
+        {"value": "../../test/files/transform/grouped_arrays_datetime", "label": "Test Transposed - datetime"},
+        {"value": "../../test/files/transform/grouped_objects_datetime", "label": "Test Objects - datetime"},
+        {"value": "../../test/files/transform/grouped_csv_ordinal", "label": "Test CSV - ordinal"},
         {"value": "line_data", "label": "Test Line Chart Data #1"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
@@ -13,6 +17,11 @@
         {"value": "data_null", "label": "Test Null Data"}
     ],
     "funnel": [
+        {"value": "../../test/files/transform/grouped_csv_datetime", "label": "Test CSV - datetime"},
+        {"value": "../../test/files/transform/grouped_csv_datetime_string", "label": "Test CSV - datetime string"},
+        {"value": "../../test/files/transform/grouped_arrays_datetime", "label": "Test Transposed - datetime"},
+        {"value": "../../test/files/transform/grouped_objects_datetime", "label": "Test Objects - datetime"},
+        {"value": "../../test/files/transform/grouped_csv_ordinal", "label": "Test CSV - ordinal"},
         {"value": "funnel_data", "label": "Opportunity Total by Sales Stage"},
         {"value": "funnel_data_color", "label": "Funnel Data with Color"},
         {"value": "funnel_data_opps", "label": "Opportunity Data"},
@@ -30,16 +39,16 @@
     "globe": [
         {"value": "globe_data", "label": "Globe Data"}
     ],
-    "line": [
-        {"value": "line_data", "label": "Test Line Chart Data #1"},
-        {"value": "line_raw_data", "label": "Test Line Chart Data (raw) #2"},
-        {"value": "line_data_bar", "label": "Test Bar Data"},
-        {"value": "line_single_data", "label": "Test Single Data Point (time)"},
-        {"value": "line_single_bar", "label": "Test Single Data Point (bar data)"},
-        {"value": "line_two_single", "label": "Test Two Single Data Points"},
-        {"value": "data_null", "label": "Test Null Data"}
-    ],
     "multibar": [
+        {"value": "../../test/files/transform/basic_sugar_ordinal", "label": "Basic Sugar Ordinal"},
+        {"value": "../../test/files/transform/grouped_csv_datetime", "label": "Test CSV - datetime"},
+        {"value": "../../test/files/transform/grouped_arrays_datetime", "label": "Test Transposed - datetime"},
+        {"value": "../../test/files/transform/grouped_objects_datetime_object", "label": "Test Objects - datetime object"},
+        {"value": "../../test/files/transform/grouped_objects_datetime_string", "label": "Test Objects - datetime string"},
+        {"value": "../../test/files/transform/grouped_objects_datetime_year", "label": "Test Objects - datetime year"},
+        {"value": "../../test/files/transform/grouped_objects_datetime", "label": "Test Objects - datetime number"},
+        {"value": "../../test/files/transform/grouped_objects_numeric", "label": "Test Objects - numeric"},
+        {"value": "../../test/files/transform/grouped_objects_ordinal", "label": "Test Objects - ordinal"},
         {"value": "multibar_data", "label": "Forecasting for Q1"},
         {"value": "multibar_data_color", "label": "Forecasting for Q2 (color data)"},
         {"value": "multibar_data_negative", "label": "Forecasting for Q1 (negative)"},
@@ -54,6 +63,21 @@
         {"value": "multibar_data_label_dates_gmt", "label": "Label Dates (GMT)"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
+    "line": [
+        {"value": "../../test/files/transform/grouped_csv_datetime", "label": "Test CSV - datetime"},
+        {"value": "../../test/files/transform/grouped_csv_datetime_string", "label": "Test CSV - datetime string"},
+        {"value": "../../test/files/transform/grouped_arrays_datetime", "label": "Test Transposed - datetime"},
+        {"value": "../../test/files/transform/grouped_objects_datetime", "label": "Test Objects - datetime"},
+        {"value": "../../test/files/transform/grouped_csv_ordinal", "label": "Test CSV - ordinal"},
+        {"value": "sugar_consumption", "label": "High Fructose Calories per Year"},
+        {"value": "line_data", "label": "Test Line Chart Data #1"},
+        {"value": "line_data_raw", "label": "Test Line Chart Data (raw) #2"},
+        {"value": "line_data_bar", "label": "Test Bar Data"},
+        {"value": "line_data_single", "label": "Test Single Data Point (time)"},
+        {"value": "line_single_bar", "label": "Test Single Data Point (bar data)"},
+        {"value": "line_two_single", "label": "Test Two Single Data Points"},
+        {"value": "data_null", "label": "Test Null Data"}
+    ],
     "pareto": [
         {"value": "pareto_data_salesrep_probability", "label": "Sales Rep Worksheet by Probability"},
         {"value": "pareto_data_salesrep_stage", "label": "Sales Rep Worksheet by Sales Stage"},
@@ -63,14 +87,16 @@
         {"value": "pareto_data_all_zeros", "label": "Test All Zeros Data"}
     ],
     "pie": [
+        {"value": "../../test/files/transform/grouped_csv_datetime", "label": "Test CSV - datetime"},
+        {"value": "../../test/files/transform/grouped_csv_datetime_string", "label": "Test CSV - datetime string"},
+        {"value": "../../test/files/transform/grouped_arrays_datetime", "label": "Test Transposed - datetime"},
+        {"value": "../../test/files/transform/grouped_objects_datetime", "label": "Test Objects - datetime"},
+        {"value": "../../test/files/transform/grouped_csv_ordinal", "label": "Test CSV - ordinal"},
         {"value": "pie_data", "label": "All Opportunities by Lead Source"},
-        {"value": "pie_data_color", "label": "Pie Data with Color"},
         {"value": "pie_data_quarters", "label": "Test Quarter Labels"},
         {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
         {"value": "pie_data_single", "label": "Test Single Slice Data"},
-        {"value": "data_null", "label": "Test Null Data"},
-        {"value": "pie_data_rpt-395", "label": "Test Single Active Series"},
-        {"value": "pie_data_colors", "label": "Color Wheel"}
+        {"value": "data_null", "label": "Test Null Data"}
     ],
     "tree": [
         {"value": "tree_data", "label": "Organization"}

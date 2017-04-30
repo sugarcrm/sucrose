@@ -38,6 +38,7 @@
     "cover-unit": "nyc tape ./test/specs/unit/*-test.js",
     "cover-dom": "nyc tape ./test/specs/dom/*-test.js",
     "cover-int": "nyc tape ./test/specs/int/*-test.js --cover",
+    "cover-data": "nyc tape ./test/specs/data/*-test.js",
     "cover-rpt": "nyc report",
     "report-coverage": "nyc report --reporter=lcov > coverage.lcov && codecov",
     "test": "npm run instrument && npm run cover-all",
@@ -45,6 +46,7 @@
     "test-unit": "tape test/specs/unit/*-test.js",
     "test-dom": "tape test/specs/dom/*-test.js",
     "test-int": "tape test/specs/int/*-test.js",
+    "test-data": "tape test/specs/data/*-test.js",
     "lint": "eslint ./src/**/*.js",
     "lintcss": "stylelint \"src/less/**/*.less\" --syntax less",
     "package": "json2module package.json > build/package.js"

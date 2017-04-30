@@ -38,7 +38,7 @@ tests("UNIT: pieChart -", function(t) {
             id: function(){return "asdf";},
             showTitle: false,
             strings: {
-                noLabel: 'there is no label'
+                noLabel: "there is no label"
             }
         };
         _chart.options(opts);
@@ -151,10 +151,10 @@ tests("UNIT: pieChart -", function(t) {
     t.test("strings: ", function(assert) {
         assert.plan(4);
         let def = {
-            legend: {close: 'Hide legend', open: 'Show legend'},
-            controls: {close: 'Hide controls', open: 'Show controls'},
-            noData: 'No Data Available.',
-            noLabel: 'undefined'
+            legend: {close: "Hide legend", open: "Show legend"},
+            controls: {close: "Hide controls", open: "Show controls"},
+            noData: "No Data Available.",
+            noLabel: "undefined"
         };
         assert.deepEqual(_chart.strings(), def, "returns default 'hashmap' value");
         let val = {
@@ -523,71 +523,71 @@ tests("UNIT: pieChart -", function(t) {
         assert.plan(2);
         let def = _chart.locality();
         let expected = {
-            'decimal': '.',
-            'thousands': ',',
-            'grouping': [3],
-            'currency': ['$', ''],
-            'periods': ['AM', 'PM'],
-            'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-            'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-            'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-            'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            'date': '%b %-d, %Y', //defines %x
-            'time': '%-I:%M:%S %p', //defines %X
-            'dateTime': '%B %-d, %Y at %X GMT%Z', //defines %c
+            "decimal": ".",
+            "thousands": ",",
+            "grouping": [3],
+            "currency": ["$", ""],
+            "periods": ["AM", "PM"],
+            "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+            "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+            "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+            "date": "%b %-d, %Y", //defines %x
+            "time": "%-I:%M:%S %p", //defines %X
+            "dateTime": "%B %-d, %Y at %X GMT%Z", //defines %c
             // Custom patterns
-            'full': '%A, %c',
-            'long': '%c',
-            'medium': '%x, %X',
-            'short': '%-m/%-d/%y, %-I:%M %p',
-            'yMMMEd': '%a, %x',
-            'yMEd': '%a, %-m/%-d/%Y',
-            'yMMMMd': '%B %-d, %Y',
-            'yMMMd': '%x',
-            'yMd': '%-m/%-d/%Y',
-            'yMMMM': '%B %Y',
-            'yMMM': '%b %Y',
-            'MMMd': '%b %-d',
-            'MMMM': '%B',
-            'MMM': '%b',
-            'y': '%Y'
+            "full": "%A, %c",
+            "long": "%c",
+            "medium": "%x, %X",
+            "short": "%-m/%-d/%y, %-I:%M %p",
+            "yMMMEd": "%a, %x",
+            "yMEd": "%a, %-m/%-d/%Y",
+            "yMMMMd": "%B %-d, %Y",
+            "yMMMd": "%x",
+            "yMd": "%-m/%-d/%Y",
+            "yMMMM": "%B %Y",
+            "yMMM": "%b %Y",
+            "MMMd": "%b %-d",
+            "MMMM": "%B",
+            "MMM": "%b",
+            "y": "%Y"
         };
         assert.deepEqual(def, expected, "returns locality settings hashmap by default");
         let val = {
-            'decimal': ',',
-            'thousands': ' ',
+            "decimal": ",",
+            "thousands": " ",
         };
         _chart.locality(val);
         let mod = _chart.locality();
         expected = {
-            'decimal': ',',
-            'thousands': ' ',
-            'grouping': [3],
-            'currency': ['$', ''],
-            'periods': ['AM', 'PM'],
-            'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-            'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-            'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-            'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            'date': '%b %-d, %Y', //defines %x
-            'time': '%-I:%M:%S %p', //defines %X
-            'dateTime': '%B %-d, %Y at %X GMT%Z', //defines %c
+            "decimal": ",",
+            "thousands": " ",
+            "grouping": [3],
+            "currency": ["$", ""],
+            "periods": ["AM", "PM"],
+            "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+            "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+            "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+            "date": "%b %-d, %Y", //defines %x
+            "time": "%-I:%M:%S %p", //defines %X
+            "dateTime": "%B %-d, %Y at %X GMT%Z", //defines %c
             // Custom patterns
-            'full': '%A, %c',
-            'long': '%c',
-            'medium': '%x, %X',
-            'short': '%-m/%-d/%y, %-I:%M %p',
-            'yMMMEd': '%a, %x',
-            'yMEd': '%a, %-m/%-d/%Y',
-            'yMMMMd': '%B %-d, %Y',
-            'yMMMd': '%x',
-            'yMd': '%-m/%-d/%Y',
-            'yMMMM': '%B %Y',
-            'yMMM': '%b %Y',
-            'MMMd': '%b %-d',
-            'MMMM': '%B',
-            'MMM': '%b',
-            'y': '%Y'
+            "full": "%A, %c",
+            "long": "%c",
+            "medium": "%x, %X",
+            "short": "%-m/%-d/%y, %-I:%M %p",
+            "yMMMEd": "%a, %x",
+            "yMEd": "%a, %-m/%-d/%Y",
+            "yMMMMd": "%B %-d, %Y",
+            "yMMMd": "%x",
+            "yMd": "%-m/%-d/%Y",
+            "yMMMM": "%B %Y",
+            "yMMM": "%b %Y",
+            "MMMd": "%b %-d",
+            "MMMM": "%B",
+            "MMM": "%b",
+            "y": "%Y"
         };
         assert.deepEqual(mod, expected, "returns set function");
         t.register(assert, type);

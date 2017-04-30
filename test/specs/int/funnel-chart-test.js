@@ -1,3 +1,4 @@
+/* global getInnerHtml, getElement, chart, render */
 "use strict";
 
 const Dreams = require("../../lib/dreams.js");
@@ -394,7 +395,7 @@ dreams.tests("INT: funnelChart -", function(t) {
       .evaluate(function() {
         var pointData = getElement(".sc-series.sc-series-0 .sc-base").__data__;
         var seriesData = getElement(".sc-series.sc-series-0").__data__;
-        chart.tooltipContent(function(eo, properties) {
+        chart.tooltipContent(function() {
           return "expected";
         });
         chart.funnel.dispatch.call("elementMouseover", this, {

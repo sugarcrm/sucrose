@@ -1,0 +1,234 @@
+{
+  "properties": {
+    "title": "Total is 200",
+    "groups": [
+      {
+        "group": 1,
+        "label": "Undefined",
+        "total": 5
+      },
+      {
+        "group": 2,
+        "label": "Cold Call",
+        "total": 17
+      },
+      {
+        "group": 3,
+        "label": "Existing Customer",
+        "total": 16
+      },
+      {
+        "group": 4,
+        "label": "Self Generated",
+        "total": 15
+      },
+      {
+        "group": 5,
+        "label": "Employee",
+        "total": 13
+      },
+      {
+        "group": 6,
+        "label": "Partner",
+        "total": 8
+      },
+      {
+        "group": 7,
+        "label": "Public Relations",
+        "total": 12
+      },
+      {
+        "group": 8,
+        "label": "Direct Mail",
+        "total": 18
+      },
+      {
+        "group": 9,
+        "label": "Conference",
+        "total": 12
+      },
+
+      {
+        "group": 10,
+        "label": "Trade Show",
+        "total": 18
+      },
+      {
+        "group": 11,
+        "label": "Web Site",
+        "total": 10
+      },
+      {
+        "group": 12,
+        "label": "Word of mouth",
+        "total": 8
+      },
+      {
+        "group": 13,
+        "label": "Email",
+        "total": 12
+      },
+      {
+        "group": 14,
+        "label": "Campaign",
+        "total": 11
+      },
+      {
+        "group": 15,
+        "label": "Support Portal User Registration",
+        "total": 6
+      },
+      {
+        "group": 16,
+        "label": "Other",
+        "total": 19
+      }
+    ]
+  },
+  "data": [
+    {
+      "key": "Undefined",
+      "values": [
+        [
+          0,
+          5
+        ]
+      ]
+    },
+    {
+      "key": "Cold Call",
+      "values": [
+        [
+          1,
+          17
+        ]
+      ]
+    },
+    {
+      "key": "Existing Customer",
+      "values": [
+        [
+          2,
+          16
+        ]
+      ]
+    },
+    {
+      "key": "Self Generated",
+      "values": [
+        [
+          3,
+          15
+        ]
+      ]
+    },
+    {
+      "key": "Employee",
+      "values": [
+        [
+          4,
+          13
+        ]
+      ]
+    },
+    {
+      "key": "Partner",
+      "values": [
+        [
+          5,
+          8
+        ]
+      ]
+    },
+    {
+      "key": "Public Relations",
+      "values": [
+        [
+          6,
+          12
+        ]
+      ]
+    },
+    {
+      "key": "Direct Mail",
+      "values": [
+        [
+          7,
+          18
+        ]
+      ]
+    },
+    {
+      "key": "Conference",
+      "values": [
+        [
+          8,
+          12
+        ]
+      ]
+    },
+    {
+      "key": "Trade Show",
+      "values": [
+        [
+          9,
+          18
+        ]
+      ]
+    },
+    {
+      "key": "Web Site",
+      "values": [
+        [
+          10,
+          10
+        ]
+      ]
+    },
+    {
+      "key": "Word of mouth",
+      "values": [
+        [
+          11,
+          8
+        ]
+      ]
+    },
+    {
+      "key": "Email",
+      "values": [
+        [
+          12,
+          12
+        ]
+      ]
+    },
+    {
+      "key": "Campaign",
+      "values": [
+        [
+          13,
+          11
+        ]
+      ]
+    },
+    {
+      "key": "Support Portal User Registration",
+      "values": [
+        [
+          14,
+          6
+        ]
+      ]
+    },
+    {
+      "key": "Other",
+      "values": [
+        [
+          15,
+          19
+        ]
+      ]
+    }
+  ]
+}

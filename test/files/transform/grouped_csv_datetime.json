@@ -1,0 +1,12 @@
+{
+  "properties": {
+    "xDataType": "datetime",
+    "yDataType": "numeric"
+  },
+  "values": [
+    ["Year", "Series 0", "Series 1"],
+    [63072000000, 3, 4],
+    [94694400000, 7, 8],
+    [126230400000, 5, 6]
+  ]
+}

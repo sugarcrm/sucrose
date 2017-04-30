@@ -1,3 +1,4 @@
+/* global d3, sucrose, c_, getElement */
 "use strict";
 
 const Dreams = require("../../lib/dreams.js");
@@ -9,7 +10,7 @@ const options = {
   uri: "/test/fixtures/chart.html",
   type: "charts",
   name: "pieChart",
-}
+};
 
 const dreams = new Dreams(options);
 
@@ -33,7 +34,7 @@ dreams.tests("INT: utility -", function(t) {
       })
       .then(function(result) {
         assert.plan(2);
-        assert.equal(result.height, 578)
+        assert.equal(result.height, 578);
         assert.equal(result.width, 800);
       })
       .catch(function(msg) { dreams.error(msg, assert, nightmare); });

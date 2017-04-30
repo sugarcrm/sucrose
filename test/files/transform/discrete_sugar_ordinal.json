@@ -1,0 +1,48 @@
+{
+  "properties": [
+    {
+      "xDataType": "ordinal",
+      "yDataType": "numeric"
+    }
+  ],
+  "label": [
+      "Series 0",
+      "Series 1",
+      "Series 2"
+  ],
+  "values": [
+    {
+      "label": [
+        "Series 0"
+      ],
+      "values": [
+        7
+      ],
+      "valuelabels": [
+        "7"
+      ]
+    },
+    {
+      "label": [
+        "Series 1"
+      ],
+      "values": [
+        15
+      ],
+      "valuelabels": [
+        "15"
+      ]
+    },
+    {
+      "label": [
+        "Series 2"
+      ],
+      "values": [
+        11
+      ],
+      "valuelabels": [
+        "11"
+      ]
+    }
+  ]
+}

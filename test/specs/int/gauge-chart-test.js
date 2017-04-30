@@ -1,3 +1,4 @@
+/* global getInnerHtml, getElement, chart, render */
 "use strict";
 
 const Dreams = require("../../lib/dreams.js");
@@ -382,7 +383,7 @@ dreams.tests("INT: gaugeChart -", function(t) {
       .render(json)
       .evaluate(function() {
         var pointData = getElement(".sc-series.sc-series-0 .sc-base").__data__;
-        chart.tooltipContent(function(eo, properties) {
+        chart.tooltipContent(function() {
           return "expected";
         });
         chart.gauge.dispatch.call("elementMouseover", this, {

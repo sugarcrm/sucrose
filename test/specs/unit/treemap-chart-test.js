@@ -37,7 +37,7 @@ tests("UNIT: treemapChart -", function(t) {
             id: function(){return "asdf";},
             showTitle: false,
             strings: {
-                noLabel: 'there is no label'
+                noLabel: "there is no label"
             }
         };
         _chart.options(opts);
@@ -142,10 +142,10 @@ tests("UNIT: treemapChart -", function(t) {
     t.test("strings: ", function(assert) {
         assert.plan(3);
         let def = {
-            legend: {close: 'Hide legend', open: 'Show legend'},
-            controls: {close: 'Hide controls', open: 'Show controls'},
-            noData: 'No Data Available.',
-            noLabel: 'undefined'
+            legend: {close: "Hide legend", open: "Show legend"},
+            controls: {close: "Hide controls", open: "Show controls"},
+            noData: "No Data Available.",
+            noLabel: "undefined"
         };
         assert.deepEqual(_chart.strings(), def, "returns default 'hashmap' value");
         let val = {
@@ -239,7 +239,7 @@ tests("UNIT: treemapChart -", function(t) {
         let def = _chart.color();
         assert.equal(typeof def, "function", "returns default function");
         assert.deepEqual(_chart.color()({seriesIndex: 0}, 0), { b: 180, g: 119, opacity: 0.6, r: 31 }, "returns indexed color");
-        _chart.colorData('data');
+        _chart.colorData("data");
         assert.equal(_chart.color()({color: "#369"}, 0), "#369", "returns data defined color");
         let val = function(){return "#000";};
         _chart.color(val);
@@ -272,7 +272,7 @@ tests("UNIT: treemapChart -", function(t) {
         assert.plan(2);
         let def = _chart.leafClick();
         assert.equal(typeof def, "function", "returns default function");
-        let val = function(d) {return true;};
+        let val = function() {return true;};
         _chart.leafClick(val);
         assert.equal(_chart.leafClick(), val, "returns set value");
         t.register(assert, type);

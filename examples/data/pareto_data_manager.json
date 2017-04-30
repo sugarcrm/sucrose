@@ -4,7 +4,7 @@
     "quota": 1023353,
     "quotaLabel": "Quota (Adjusted)",
     "yDataType": "currency",
-    "xDataType": "string",
+    "xDataType": "ordinal",
     "stacked": false,
     "groupData": [
       {

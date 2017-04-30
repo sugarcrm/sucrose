@@ -473,7 +473,7 @@ tests("UNIT: utility -", function(t) {
         const fmtr = sucrose.utility.parseDatetime;
         let expected = new Date("Fri Dec 31 1993 19:00:00 GMT-0500 (EST)").valueOf();
         assert.equal(fmtr(1994).valueOf(), expected);
-        assert.equal(fmtr('1994').valueOf(), expected);
+        assert.equal(fmtr("1994").valueOf(), expected);
         expected = new Date(1330837567000).valueOf();
         assert.equal(fmtr(1330837567000).valueOf(), expected);
         assert.equal(fmtr("1330837567000").valueOf(), expected);

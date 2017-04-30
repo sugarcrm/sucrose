@@ -22,8 +22,6 @@ export default function axis() {
       textAnchor = null,
       ticks = null,
       tickPadding = 4,
-      maxLabelWidth = 0,
-      maxLabelHeight = 0,
       valueFormat = function(d) { return d; },
       axisLabelDistance = 8; //The larger this number is, the closer the axis label is to the axis.
 
@@ -56,6 +54,8 @@ export default function axis() {
 
       var vertical = orient === 'left' || orient === 'right' ? true : false,
           reflect = orient === 'left' || orient === 'top' ? -1 : 1,
+          maxLabelWidth = 0,
+          maxLabelHeight = 0,
           tickGap = 6,
           labelThickness = 0;
 
@@ -725,14 +725,6 @@ export default function axis() {
       return axisLabelDistance;
     }
     axisLabelDistance = _;
-    return model;
-  };
-
-  model.maxLabelWidth = function(_) {
-    if (!arguments.length) {
-      return maxLabelWidth;
-    }
-    maxLabelWidth = _;
     return model;
   };
 
