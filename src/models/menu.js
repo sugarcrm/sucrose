@@ -101,7 +101,7 @@ export default function menu() {
 
       wrap_entr.append('rect').attr('class', 'sc-menu-background');
       var back = wrap.select('.sc-menu-background');
-      var backFilter = utility.dropShadow('legend_back_' + id, defs, {blur: 2});
+      var backFilter = utility.dropShadow('menu_back_' + id, defs, {blur: 2});
 
       wrap_entr.append('text').attr('class', 'sc-menu-link');
       var link = wrap.select('.sc-menu-link');
@@ -567,48 +567,11 @@ export default function menu() {
               g.call(drag);
 
             } else {
+              back.on('.zoom', null);
+              g.on('.zoom', null);
 
-              back
-                  .on("mousedown.zoom", null)
-                  .on("mousewheel.zoom", null)
-                  .on("mousemove.zoom", null)
-                  .on("DOMMouseScroll.zoom", null)
-                  .on("dblclick.zoom", null)
-                  .on("touchstart.zoom", null)
-                  .on("touchmove.zoom", null)
-                  .on("touchend.zoom", null)
-                  .on("wheel.zoom", null);
-              g
-                  .on("mousedown.zoom", null)
-                  .on("mousewheel.zoom", null)
-                  .on("mousemove.zoom", null)
-                  .on("DOMMouseScroll.zoom", null)
-                  .on("dblclick.zoom", null)
-                  .on("touchstart.zoom", null)
-                  .on("touchmove.zoom", null)
-                  .on("touchend.zoom", null)
-                  .on("wheel.zoom", null);
-
-              back
-                  .on("mousedown.drag", null)
-                  .on("mousewheel.drag", null)
-                  .on("mousemove.drag", null)
-                  .on("DOMMouseScroll.drag", null)
-                  .on("dblclick.drag", null)
-                  .on("touchstart.drag", null)
-                  .on("touchmove.drag", null)
-                  .on("touchend.drag", null)
-                  .on("wheel.drag", null);
-              g
-                  .on("mousedown.drag", null)
-                  .on("mousewheel.drag", null)
-                  .on("mousemove.drag", null)
-                  .on("DOMMouseScroll.drag", null)
-                  .on("dblclick.drag", null)
-                  .on("touchstart.drag", null)
-                  .on("touchmove.drag", null)
-                  .on("touchend.drag", null)
-                  .on("wheel.drag", null);
+              back.on('.drag', null);
+              g.on('.drag', null);
             }
           };
 
