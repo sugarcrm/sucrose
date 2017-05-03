@@ -23,7 +23,7 @@ HEADER = $(shell cat src/header)
 .PHONY: install-prod install-post npm-prod dependencies clean-dependencies \
 	install-dev npm-dev all clean scr sgr clean-js clean-css css \
 	examples-prod examples-dev examples-sucrose \
-	pack nodes grade help list
+	pack nodes grade help list md
 
 
 #-----------
@@ -142,8 +142,9 @@ examples-dev: npm-dev
 
 # - copy the sucrose library files to the example application
 examples-sucrose: scr css
+	cd examples && make sucrose && make dependencies
+es: sucrose.min.js
 	cd examples && make sucrose
-
 
 #----
 # RUN
@@ -183,8 +184,8 @@ help:
 	@echo " "
 
 # - generate a MAKE.md from help
-make-md:
-	make help > $@
+md:
+	make help > MAKE.md
 
 # - just list the make targets
 list:

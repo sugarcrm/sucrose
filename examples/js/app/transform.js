@@ -324,9 +324,19 @@ function postProcessData(chartData, chartType, Chart) {
 
       if (chartData.data.length) {
         if (chartData.data[0].values.length && Array.isArray(chartData.data[0].values[0])) {
-          Chart
-            .x(function (d) { return d[0]; })
-            .y(function (d) { return d[1]; });
+          // Convert array data to objects
+          chartData.data.forEach(function(d, i) {
+            d.values = d.values.map(function(g, j) {
+              var value = {x: g[0], y: g[1]};
+              if (g[2]) {
+                value.z = g[2];
+              }
+              return value;
+            });
+          });
+          // Chart
+          //   .x(function (d) { return d[0]; })
+          //   .y(function (d) { return d[1]; });
 
           // if (sucrose.isValidDate(chartData.data[0].values[0][0])) {
           //   Chart.xAxis
@@ -339,10 +349,10 @@ function postProcessData(chartData, chartType, Chart) {
           //       return xTickLabels[d] || ' ';
           //     });
           // }
-        } else {
-          Chart
-            .x(function (d) { return d.x; })
-            .y(function (d) { return d.y; });
+        // } else {
+        //   Chart
+        //     .x(function (d) { return d.x; })
+        //     .y(function (d) { return d.y; });
 
           // if (xTickLabels.length > 0) {
           //   Chart.xAxis

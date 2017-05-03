@@ -8469,6 +8469,12 @@ Transform.prototype = {
 
 var identity$6 = new Transform(1, 0, 0);
 
+transform.prototype = Transform.prototype;
+
+function transform(node) {
+  return node.__zoom || identity$6;
+}
+
 function nopropagation$1() {
   exports.event.stopImmediatePropagation();
 }
@@ -12149,8 +12155,6 @@ exports.timeMonths = months;
 exports.timeFormatLocale = formatLocale$1;
 exports.transition = transition;
 exports.voronoi = voronoi;
-exports.zoom = zoom;
-exports.zoomIdentity = identity$6;
 exports.treemap = index$1;
 exports.easeCubicIn = cubicIn;
 exports.creator = creator;
@@ -12168,6 +12172,9 @@ exports.touch = touch;
 exports.touches = touches;
 exports.window = window;
 exports.customEvent = customEvent;
+exports.zoom = zoom;
+exports.zoomTransform = transform;
+exports.zoomIdentity = identity$6;
 exports.request = request;
 exports.html = html;
 exports.json = json;

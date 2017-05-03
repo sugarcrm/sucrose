@@ -17,7 +17,7 @@ export {timeDay, timeMonth, timeMonths} from "d3-time";
 export {timeFormat, timeFormatLocale, timeParse} from "d3-time-format";
 export {transition} from "d3-transition";
 export {voronoi} from "d3-voronoi";
-export {zoom, zoomIdentity} from "d3-zoom";
+export * from "d3-zoom";
 
 export {treemap} from "d3-hierarchy";
 export {easeCubicIn} from "d3-ease";

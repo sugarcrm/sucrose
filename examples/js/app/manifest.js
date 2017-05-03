@@ -476,7 +476,7 @@ var Manifest =
 
     // this.toggleTab(true);
     $chart.append('<svg/>');
-    $chart.find('svg').attr('class', 'sucrose sc-chart-' + this.type); // + ($chart.hasClass('hide') ? ' hide' : '')
+    $chart.find('svg').attr('class', 'sucrose sc-chart'); // + ($chart.hasClass('hide') ? ' hide' : '')
 
     // Bind D3 chart to SVG element
     d3.select('#chart_ svg').datum(chartData).call(this.Chart);
