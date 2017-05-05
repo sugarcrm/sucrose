@@ -22,7 +22,7 @@ HEADER = $(shell cat src/header)
 
 .PHONY: install-prod install-post npm-prod dependencies clean-dependencies \
 	install-dev npm-dev all clean scr sgr clean-js clean-css css \
-	examples-prod examples-dev examples-sucrose \
+	examples-prod examples-dev examples-sucrose es \
 	pack nodes grade help list md
 
 
@@ -112,17 +112,12 @@ css: clean-css sucrose.css sucrose.min.css
 # - compile LESS files with lessc
 sucrose.css: $(CSS_FILES)
 	rm -f ./build/$@
-	@node $(CSS_COMPILER) $(CSS_FILES) > ./build/$@
-	cat src/header ./build/$@ > temp
-	mv temp ./build/$@
+	@node $(CSS_COMPILER) $(CSS_FILES) --autoprefix | cat ./src/header - > ./build/$@
 
 # - minify CSS file with clean-css
 sucrose.min.css: sucrose.css
-	rm -f ./$@
-	node $(CSS_MINIFIER) -o ./$@ ./build/$^
 	rm -f ./build/$@
-	cat src/header ./$@ > ./build/$@
-	rm -f ./$@
+	node $(CSS_MINIFIER) ./build/$^ | cat ./src/header - > ./build/$@
 
 # - remove the library CSS files
 clean-css:
@@ -140,11 +135,13 @@ examples-prod: npm-prod
 examples-dev: npm-dev
 	cd examples && make install-dev
 
-# - copy the sucrose library files to the example application
+# - build and copy the sucrose library to the example application
+es examples-scr: sucrose.min.js
+	cd examples && make sucrose
+
+# - build and copy the sucrose js and css files to the example application
 examples-sucrose: scr css
 	cd examples && make sucrose && make dependencies
-es: sucrose.min.js
-	cd examples && make sucrose
 
 #----
 # RUN

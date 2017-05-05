@@ -11,14 +11,17 @@
   shape-rendering: crispEdges;
   pointer-events: none;
 }
+
 .sc-axis line,
 .sc-axis polyline {
-  stroke-opacity: .3;
+  stroke-opacity: 0.3;
 }
+
 .sc-axis path,
 .sc-axis line.zero {
-  stroke-opacity: .75;
+  stroke-opacity: 0.75;
 }
+
 .sc-axis path.domain {
   stroke-width: 2px;
   stroke: #bbb;
@@ -30,7 +33,7 @@
 // .sc-axis .sc-axisMaxMin line {
 //   stroke-opacity: .75;
 // }
-.sc-x.sc-axis text {
+.sc-axis-x .sc-axis text {
   font-size: @chartTextSize;
 }
 

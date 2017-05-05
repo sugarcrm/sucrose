@@ -3,19 +3,23 @@
 */
 
 .sc-card {
-  fill: #E9EFEF;
-  stroke: #AAA;
-  stroke-width: .5px;
+  fill: #e9efef;
+  stroke: #aaa;
+  stroke-width: 0.5px;
+
   .sc-circ-front {
     stroke-width: 0;
   }
+
   line {
     stroke-width: 2;
   }
+
   .sc-expcoll {
     cursor: pointer;
   }
 }
+
 .sc-tree {
   path.link {
     fill: none;
@@ -24,7 +28,6 @@
   }
 }
 
-
 // for org chart demo renderer
 .sc-chart-org {
   .sc-chart-background {
@@ -32,22 +35,20 @@
     stroke-width: 2px;
   }
 }
+
 .sc-org-node {
   text {
-    font-style: normal;
-    font-variant: normal;
-    font-weight: 300;
-    font-stretch: normal;
-    font-size: 10px;
-    line-height: normal;
-    font-family: "Helvetica Neue", Arial, sans-serif;
+    font: normal normal 300 10px/normal "Helvetica Neue", Arial, sans-serif;
+
     &.sc-org-name {
       font-size: 10px;
       fill: @linkColor;
+
       &.hover {
         text-decoration: underline;
       }
     }
+
     &.sc-org-title {
       font-size: 8px;
     }
