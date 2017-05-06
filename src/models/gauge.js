@@ -25,15 +25,16 @@ export default function gauge() {
       clipEdge = true,
       delay = 0,
       duration = 720,
-      color = function (d, i) { return utility.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
       fill = color,
-      classes = function (d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
+      classes = function(d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   var ringWidth = 50,
       showLabels = true,
       showPointer = true,
+      labelThreshold = 0.01, //if slice percentage is under this, don't show label
       pointerWidth = 5,
       pointerTailLength = 5,
       pointerHeadLength = 90,
@@ -86,13 +87,13 @@ export default function gauge() {
       // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class','sc-wrap sc-gauge');
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-gauge');
       var wrap = container.select('.sc-wrap.sc-gauge').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
-      var gauge_wrap = wrap.select('.sc-group');
+      var group_wrap = wrap.select('.sc-group');
 
       wrap_entr.append('g').attr('class', 'sc-labels');
       var labels_wrap = wrap.select('.sc-labels');
@@ -108,12 +109,12 @@ export default function gauge() {
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      gauge_wrap.attr('transform', centerTx);
+      group_wrap.attr('transform', centerTx);
 
-      var series_bind = gauge_wrap.selectAll('.sc-series').data(arcData);
+      var series_bind = group_wrap.selectAll('.sc-series').data(arcData);
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
       series_bind.exit().remove();
-      var series = gauge_wrap.selectAll('.sc-series').merge(series_entr);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
 
       series_entr
         .style('stroke', '#FFF')
@@ -138,12 +139,8 @@ export default function gauge() {
       var pieArc = d3.arc()
             .innerRadius(prop(ringWidth))
             .outerRadius(radius)
-            .startAngle(function(d, i) {
-              return deg2rad(newAngle(d.y0));
-            })
-            .endAngle(function(d, i) {
-              return deg2rad(newAngle(d.y1));
-            });
+            .startAngle(startAngle)
+            .endAngle(endAngle);
 
       var slice_bind = series.selectAll('g.sc-slice').data(
             function(s, i) {
@@ -216,6 +213,7 @@ export default function gauge() {
           return 'rotate(' + newAngle(d) + ') translate(0,' + (prop(-1.5) - radius) + ')';
         })
         .text(utility.identity)
+        .style('fill-opacity', labelOpacity)
         .style('text-anchor', 'middle')
         .style('font-size', prop(0.6) + 'em');
 
@@ -296,17 +294,30 @@ export default function gauge() {
         wrap.attr('transform', 'translate(' + radius + ',' + (margin.top + prop(70) + bbox.height) + ')');
       }
 
-      function deg2rad(deg) {
-        return deg * Math.PI / 180;
-      }
 
       function newAngle(d) {
         return minAngle + (scale(d) * range);
       }
 
+      function startAngle(d) {
+        // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
+        // Pie: return d.startAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
+        return utility.angleToRadians(newAngle(d.y0));
+      }
+
+      function endAngle(d) {
+        // Pie: return d.endAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
+        return utility.angleToRadians(newAngle(d.y1));
+      }
+
       // Center translation
       function centerTx() {
         return 'translate(' + radius + ',' + radius + ')';
+      }
+
+      function labelOpacity(d) {
+        var percent = (endAngle(d) - startAngle(d)) / (2 * Math.PI);
+        return percent > labelThreshold ? 1 : 0;
       }
 
       model.setGaugePointer = setGaugePointer;
@@ -517,9 +528,6 @@ export default function gauge() {
     if (!arguments.length) { return labelInset; }
     labelInset = _;
     return model;
-  };
-  model.isRendered = function(_) {
-    return (svg !== undefined);
   };
 
   //============================================================

@@ -131,7 +131,7 @@ export default function menu() {
       series
           .attr('class', classes)
           .attr('fill', color)
-          .attr('stroke', color)
+          .attr('stroke', color);
       series_entr
         .append('rect')
           .attr('x', (diameter + textGap) / -2)

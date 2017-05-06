@@ -116,9 +116,6 @@ export default function multibarChart() {
       var availableWidth = width,
           availableHeight = height;
 
-      var xIsDatetime = properties.xDataType === 'datetime' || false,
-          yIsCurrency = properties.yDataType === 'currency' || false;
-
       var hasGroupData = properties.groups && Array.isArray(properties.groups) && properties.groups.length;
       var groupLabels = hasGroupData ?
             properties.groups.map(function(d) {
@@ -155,9 +152,9 @@ export default function multibarChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -637,9 +634,10 @@ export default function multibarChart() {
           maxControlsWidth = availableWidth - legend.width();
         }
 
+        var xpos, ypos;
         if (showControls) {
-          var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
-              ypos = showTitle ? titleBBox.height : - controls.margin().top;
+          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
+          ypos = showTitle ? titleBBox.height : - controls.margin().top;
           controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
@@ -647,9 +645,9 @@ export default function multibarChart() {
         if (showLegend) {
           var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
+              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
+          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
+          ypos = titleBBox.height;
           if (legendTop) {
             ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {

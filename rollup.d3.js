@@ -27,33 +27,7 @@ export default {
         ENV_BUILD: (process.env.BUILD || 'sc'),
       },
     }),
-    eslint({
-      'env': {
-        'browser': true,
-        'es6': true
-      },
-      'extends': 'eslint:recommended',
-      'parserOptions': {
-        'sourceType': 'module'
-      },
-      'rules': {
-        'indent': [
-          'off',
-        ],
-        'linebreak-style': [
-          'error',
-          'unix'
-        ],
-        'quotes': [
-          'error',
-          'single'
-        ],
-        'semi': [
-          'error',
-          'always'
-        ]
-      }
-    }),
+    eslint(),
     resolve({
       jsnext: true,
       main: true,

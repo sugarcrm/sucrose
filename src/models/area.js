@@ -26,6 +26,8 @@ export default function stackearea() {
       interpolate = 'linear',  // controls the line interpolation
       xDomain = null, // Override x domain (skips the calculation from data)
       yDomain = null, // Override y domain
+      forceX = [],
+      forceY = [],
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
       fill = color,
@@ -63,12 +65,10 @@ export default function stackearea() {
             interpolate === 'cardinal' ? d3.curveCardinal :
             interpolate === 'monotone' ? d3.curveMonotoneX :
             interpolate === 'basis' ? d3.curveBasis : d3.curveNatural;
-
-      var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette]
-                        [['zero', 'wiggle', 'expand', 'silhouette'].indexOf(offset)];
-
-      var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut]
-                       [['default', 'inside-out'].indexOf(order)];
+      var stackOffsetIndex = [['zero', 'wiggle', 'expand', 'silhouette'].indexOf(offset)];
+      var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette][stackOffsetIndex];
+      var stackOrderIndex = [['default', 'inside-out'].indexOf(order)];
+      var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut][stackOrderIndex];
 
       // gradient constructor function
       gradient = function(d, i, p) {

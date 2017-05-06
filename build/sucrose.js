@@ -24,7 +24,7 @@ utility.identity = function(d) {
 };
 
 utility.functor = function functor(v) {
-  return typeof v === "function" ? v : function() {
+  return typeof v === 'function' ? v : function() {
     return v;
   };
 };
@@ -104,12 +104,12 @@ utility.resizeOnPrint = function (fn) {
           }
       });
   } else if (window.attachEvent) {
-    window.attachEvent("onbeforeprint", fn);
+    window.attachEvent('onbeforeprint', fn);
   } else {
     window.onbeforeprint = fn;
   }
   //TODO: allow for a second call back to undo using
-  //window.attachEvent("onafterprint", fn);
+  //window.attachEvent('onafterprint', fn);
 };
 
 utility.unResizeOnPrint = function (fn) {
@@ -121,7 +121,7 @@ utility.unResizeOnPrint = function (fn) {
           }
       });
   } else if (window.detachEvent) {
-    window.detachEvent("onbeforeprint", fn);
+    window.detachEvent('onbeforeprint', fn);
   } else {
     window.onbeforeprint = null;
   }
@@ -141,9 +141,9 @@ utility.getColor = function (color) {
       return d.color || color[i % color.length];
     };
   } else if (Object.prototype.toString.call(color) === '[object String]') {
-    return function(s) {
+    return function(d) {
       return d.color || '#' + color.replace('#', '');
-    }
+    };
   } else {
     return color;
       // can't really help it if someone passes rubbish as color
@@ -172,8 +172,8 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
 
     if (!defIndex) defIndex = defaultColors.length; //used all the default colors, start over
 
-    if (typeof dictionary[key] !== "undefined") {
-      return (typeof dictionary[key] === "function") ? dictionary[key]() : dictionary[key];
+    if (typeof dictionary[key] !== 'undefined') {
+      return (typeof dictionary[key] === 'function') ? dictionary[key]() : dictionary[key];
     } else {
       return defaultColors[--defIndex]; // no match in dictionary, use default color
     }
@@ -184,7 +184,7 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
 // it's a very cool method for doing pjax, I may expand upon it a little bit,
 // open to suggestions on anything that may be useful
 utility.pjax = function (links, content) {
-  d3.selectAll(links).on("click", function () {
+  d3.selectAll(links).on('click', function () {
     history.pushState(this.href, this.textContent, this.href);
     load(this.href);
     d3.event.preventDefault();
@@ -198,7 +198,7 @@ utility.pjax = function (links, content) {
     });
   }
 
-  d3.select(window).on("popstate", function () {
+  d3.select(window).on('popstate', function () {
     if (d3.event.state) { load(d3.event.state); }
   });
 };
@@ -228,7 +228,7 @@ chart.options = utility.optionsFunc.bind(chart);
 utility.optionsFunc = function(args) {
   if (args) {
     d3.map(args).forEach((function(key,value) {
-      if (typeof this[key] === "function") {
+      if (typeof this[key] === 'function') {
          this[key](value);
       }
     }).bind(this));
@@ -341,16 +341,16 @@ utility.getAbsoluteXY = function (element) {
 
 // Creates a rectangle with rounded corners
 utility.roundedRectangle = function (x, y, width, height, radius) {
-  return "M" + x + "," + y +
-       "h" + (width - radius * 2) +
-       "a" + radius + "," + radius + " 0 0 1 " + radius + "," + radius +
-       "v" + (height - 2 - radius * 2) +
-       "a" + radius + "," + radius + " 0 0 1 " + -radius + "," + radius +
-       "h" + (radius * 2 - width) +
-       "a" + -radius + "," + radius + " 0 0 1 " + -radius + "," + -radius +
-       "v" + ( -height + radius * 2 + 2 ) +
-       "a" + radius + "," + radius + " 0 0 1 " + radius + "," + -radius +
-       "z";
+  return 'M' + x + ',' + y +
+       'h' + (width - radius * 2) +
+       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + radius +
+       'v' + (height - 2 - radius * 2) +
+       'a' + radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + radius +
+       'h' + (radius * 2 - width) +
+       'a' + -radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + -radius +
+       'v' + ( -height + radius * 2 + 2 ) +
+       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + -radius +
+       'z';
 };
 
 utility.dropShadow = function (id, defs, options) {
@@ -638,14 +638,14 @@ utility.getDateFormat = function(values) {
 utility.dateFormat = function(d, p, l) {
   var dateString, date, locale, spec, fmtr;
 
-  var formatMillisecond = ".%L",
-      formatSecond = ":%S",
-      formatMinute = "%I:%M",
-      formatHour = "%I %p",
-      formatDay = "%x",
-      formatWeek = "%b %d",
-      formatMonth = "%B",
-      formatYear = "%Y";
+  var formatMillisecond = '.%L',
+      formatSecond = ':%S',
+      formatMinute = '%I:%M',
+      formatHour = '%I %p',
+      formatDay = '%x',
+      formatWeek = '%b %d',
+      formatMonth = '%B',
+      formatYear = '%Y';
 
   function multiFormat(d) {
     var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
@@ -736,12 +736,12 @@ utility.buildLocality = function(l, d) {
         'MMM': '%b',
         'y': '%Y'
       };
+  var def;
 
   for (var key in locale) {
-    var d;
     if (l.hasOwnProperty(key)) {
-      d = locale[key];
-      definition[key] = !deep || !Array.isArray(d) ? d : unfer(d);
+      def = locale[key];
+      definition[key] = !deep || !Array.isArray(def) ? def : unfer(def);
     }
   }
 
@@ -948,6 +948,8 @@ function stackearea() {
       interpolate = 'linear',  // controls the line interpolation
       xDomain = null, // Override x domain (skips the calculation from data)
       yDomain = null, // Override y domain
+      forceX = [],
+      forceY = [],
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
       fill = color,
@@ -985,12 +987,10 @@ function stackearea() {
             interpolate === 'cardinal' ? d3.curveCardinal :
             interpolate === 'monotone' ? d3.curveMonotoneX :
             interpolate === 'basis' ? d3.curveBasis : d3.curveNatural;
-
-      var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette]
-                        [['zero', 'wiggle', 'expand', 'silhouette'].indexOf(offset)];
-
-      var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut]
-                       [['default', 'inside-out'].indexOf(order)];
+      var stackOffsetIndex = [['zero', 'wiggle', 'expand', 'silhouette'].indexOf(offset)];
+      var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette][stackOffsetIndex];
+      var stackOrderIndex = [['default', 'inside-out'].indexOf(order)];
+      var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut][stackOrderIndex];
 
       // gradient constructor function
       gradient = function(d, i, p) {
@@ -1406,10 +1406,12 @@ function axis() {
       textAnchor = null,
       ticks = null,
       tickPadding = 4,
+      maxLabelWidth = 0,
+      maxLabelHeight = 0,
       valueFormat = function(d) { return d; },
       axisLabelDistance = 8; //The larger this number is, the closer the axis label is to the axis.
 
-  var tickValues, tickSubdivide, tickSize, tickPadding, tickFormat, tickSizeInner, tickSizeOuter;
+  var tickFormat, tickValues, tickSize, tickSizeInner, tickSizeOuter;
 
   // Public Read-only Variables
   //------------------------------------------------------------
@@ -1438,8 +1440,6 @@ function axis() {
 
       var vertical = orient === 'left' || orient === 'right' ? true : false,
           reflect = orient === 'left' || orient === 'top' ? -1 : 1,
-          maxLabelWidth = 0,
-          maxLabelHeight = 0,
           tickGap = 6,
           tickSpacing = 0,
           labelThickness = 0;
@@ -1868,6 +1868,7 @@ function axis() {
           var textNode = d3.select(this);
           var isDate = utility.isValidDate(textContent);
           var dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
+          var di = 0;
           var textArray = (
                 textContent && textContent !== '' ?
                   (
@@ -1878,35 +1879,34 @@ function axis() {
                   []
               ).split(' ');
           var l = textArray.length;
-          var i = 0;
 
           // reset the tick text conent
           this.textContent = '';
 
           var textString,
               textSpan = textNode.append('tspan')
-                .text(textArray[i] + ' ')
+                .text(textArray[di] + ' ')
                 .attr('dy', dy + 'em')
                 .attr('x', 0);
 
           // reset vars
-          i += 1;
+          di += 1;
           dy = 1; // TODO: wrong. fails on reflect with 3 lines of wrap
 
-          while (i < l) {
+          while (di < l) {
             textSpan = textNode.append('tspan')
-              .text(textArray[i] + ' ')
+              .text(textArray[di] + ' ')
               .attr('dy', dy + 'em')
               .attr('x', 0);
 
-            i += 1;
+            di += 1;
 
-            while (i < l) {
+            while (di < l) {
               textString = textSpan.text();
-              textSpan.text(textString + ' ' + textArray[i]);
+              textSpan.text(textString + ' ' + textArray[di]);
               //TODO: this is different than collision test
               if (this.getBoundingClientRect().width <= tickSpacing) {
-                i += 1;
+                di += 1;
               } else {
                 textSpan.text(textString);
                 break;
@@ -2531,6 +2531,10 @@ function funnel() {
       // Update side labels
 
       function renderSideLabels() {
+        var d0 = 0;
+        var d1 = 0;
+        var g, i, j, l;
+
         // Remove all responsive elements
         sideLabels = labels.filter('.sc-label-side');
         sideLabels.selectAll('.sc-label').remove();
@@ -2563,21 +2567,20 @@ function funnel() {
           .call(calcSideLabelDimensions);
 
         // Reflow side label vertical position to prevent overlap
-        var d0 = 0;
 
         // Top to bottom
-        for (var groups = sideLabels.nodes(), j = groups.length - 1; j >= 0; --j) {
-          var d = d3.select(groups[j]).data()[0];
-          if (d) {
+        for (g = sideLabels.nodes(), j = g.length - 1; j >= 0; j -= 1) {
+          d1 = d3.select(g[j]).data()[0];
+          if (d1) {
             if (!d0) {
-              d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
-              d0 = d.labelBottom;
+              d1.labelBottom = d1.labelTop + d1.labelHeight + labelSpace;
+              d0 = d1.labelBottom;
               continue;
             }
 
-            d.labelTop = Math.max(d0, d.labelTop);
-            d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
-            d0 = d.labelBottom;
+            d1.labelTop = Math.max(d0, d1.labelTop);
+            d1.labelBottom = d1.labelTop + d1.labelHeight + labelSpace;
+            d0 = d1.labelBottom;
           }
         }
 
@@ -2587,29 +2590,29 @@ function funnel() {
           d0 = 0;
 
           // Bottom to top
-          for (var groups = sideLabels.nodes(), j = 0, m = groups.length; j < m; ++j) {
-            var d = d3.select(groups[j]).data()[0];
-            if (d) {
+          for (g = sideLabels.nodes(), i = 0, l = g.length; i < l; i += 1) {
+            d1 = d3.select(g[i]).data()[0];
+            if (d1) {
               if (!d0) {
-                d.labelBottom = calculatedHeight - 1;
-                d.labelTop = d.labelBottom - d.labelHeight;
-                d0 = d.labelTop;
+                d1.labelBottom = calculatedHeight - 1;
+                d1.labelTop = d1.labelBottom - d1.labelHeight;
+                d0 = d1.labelTop;
                 continue;
               }
 
-              d.labelBottom = Math.min(d0, d.labelBottom);
-              d.labelTop = d.labelBottom - d.labelHeight - labelSpace;
-              d0 = d.labelTop;
+              d1.labelBottom = Math.min(d0, d1.labelBottom);
+              d1.labelTop = d1.labelBottom - d1.labelHeight - labelSpace;
+              d0 = d1.labelTop;
             }
           }
 
           // ok, FINALLY, so if we are above the top of the funnel,
           // we need to lower them all back down
           if (d0 < 0) {
-            sideLabels.each(function(d, i) {
-                d.labelTop -= d0;
-                d.labelBottom -= d0;
-              });
+            sideLabels.each(function(d) {
+              d.labelTop -= d0;
+              d.labelBottom -= d0;
+            });
           }
         }
 
@@ -2717,7 +2720,7 @@ function funnel() {
 
         lbl.text(null);
 
-        while (word = words.pop()) {
+        while ((word = words.pop())) {
           line.push(word);
           lbl.text(line.join(' '));
 
@@ -3139,12 +3142,6 @@ function funnel() {
     return model;
   };
 
-  model.xScale = function(_) {
-    if (!arguments.length) { return x; }
-    x = _;
-    return model;
-  };
-
   model.yScale = function(_) {
     if (!arguments.length) { return y; }
     y = _;
@@ -3204,15 +3201,16 @@ function gauge() {
       clipEdge = true,
       delay = 0,
       duration = 720,
-      color = function (d, i) { return utility.defaultColor()(d, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
       fill = color,
-      classes = function (d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
+      classes = function(d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   var ringWidth = 50,
       showLabels = true,
       showPointer = true,
+      labelThreshold = 0.01, //if slice percentage is under this, don't show label
       pointerWidth = 5,
       pointerTailLength = 5,
       pointerHeadLength = 90,
@@ -3265,13 +3263,13 @@ function gauge() {
       // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class','sc-wrap sc-gauge');
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-gauge');
       var wrap = container.select('.sc-wrap.sc-gauge').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
-      var gauge_wrap = wrap.select('.sc-group');
+      var group_wrap = wrap.select('.sc-group');
 
       wrap_entr.append('g').attr('class', 'sc-labels');
       var labels_wrap = wrap.select('.sc-labels');
@@ -3287,12 +3285,12 @@ function gauge() {
       //------------------------------------------------------------
       // Append major data series grouping containers
 
-      gauge_wrap.attr('transform', centerTx);
+      group_wrap.attr('transform', centerTx);
 
-      var series_bind = gauge_wrap.selectAll('.sc-series').data(arcData);
+      var series_bind = group_wrap.selectAll('.sc-series').data(arcData);
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
       series_bind.exit().remove();
-      var series = gauge_wrap.selectAll('.sc-series').merge(series_entr);
+      var series = group_wrap.selectAll('.sc-series').merge(series_entr);
 
       series_entr
         .style('stroke', '#FFF')
@@ -3317,12 +3315,8 @@ function gauge() {
       var pieArc = d3.arc()
             .innerRadius(prop(ringWidth))
             .outerRadius(radius)
-            .startAngle(function(d, i) {
-              return deg2rad(newAngle(d.y0));
-            })
-            .endAngle(function(d, i) {
-              return deg2rad(newAngle(d.y1));
-            });
+            .startAngle(startAngle)
+            .endAngle(endAngle);
 
       var slice_bind = series.selectAll('g.sc-slice').data(
             function(s, i) {
@@ -3395,6 +3389,7 @@ function gauge() {
           return 'rotate(' + newAngle(d) + ') translate(0,' + (prop(-1.5) - radius) + ')';
         })
         .text(utility.identity)
+        .style('fill-opacity', labelOpacity)
         .style('text-anchor', 'middle')
         .style('font-size', prop(0.6) + 'em');
 
@@ -3475,17 +3470,30 @@ function gauge() {
         wrap.attr('transform', 'translate(' + radius + ',' + (margin.top + prop(70) + bbox.height) + ')');
       }
 
-      function deg2rad(deg) {
-        return deg * Math.PI / 180;
-      }
 
       function newAngle(d) {
         return minAngle + (scale(d) * range);
       }
 
+      function startAngle(d) {
+        // DNR (Math): simplify d.startAngle - ((rotateDegrees * Math.PI / 180) * (360 / arcDegrees)) * (arcDegrees / 360);
+        // Pie: return d.startAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
+        return utility.angleToRadians(newAngle(d.y0));
+      }
+
+      function endAngle(d) {
+        // Pie: return d.endAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
+        return utility.angleToRadians(newAngle(d.y1));
+      }
+
       // Center translation
       function centerTx() {
         return 'translate(' + radius + ',' + radius + ')';
+      }
+
+      function labelOpacity(d) {
+        var percent = (endAngle(d) - startAngle(d)) / (2 * Math.PI);
+        return percent > labelThreshold ? 1 : 0;
       }
 
       model.setGaugePointer = setGaugePointer;
@@ -3696,9 +3704,6 @@ function gauge() {
     if (!arguments.length) { return labelInset; }
     labelInset = _;
     return model;
-  };
-  model.isRendered = function(_) {
-    return (svg !== undefined);
   };
 
   //============================================================
@@ -4769,14 +4774,18 @@ function scatter() {
       //------------------------------------------------------------
       // Interactive Layer
 
+      var points_bind;
+      var points_entr;
+      var points;
+
       if (onlyCircles) {
 
-        var points_bind = series.selectAll('circle.sc-point')
-              .data(function(d) { return d.values; });
-        var points_entr = points_bind.enter().append('circle')
-              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
-              .attr('r', circleRadius);
-        var points = series.selectAll('.sc-point').merge(points_entr);
+        points_bind = series.selectAll('circle.sc-point')
+          .data(function(d) { return d.values; });
+        points_entr = points_bind.enter().append('circle')
+          .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+          .attr('r', circleRadius);
+        points = series.selectAll('.sc-point').merge(points_entr);
 
         points
           .filter(function(d) {
@@ -4804,15 +4813,15 @@ function scatter() {
 
       } else {
 
-        var points_bind = series.selectAll('path.sc-point').data(function(d) { return d.values; });
-        var points_enter = points_bind.enter().append('path')
-              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
-              .attr('d',
-                d3.symbol()
-                  .type(getShape)
-                  .size(symbolSize)
-              );
-        var points = series.selectAll('.sc-point').merge(points_entr);
+        points_bind = series.selectAll('path.sc-point').data(function(d) { return d.values; });
+        points_entr = points_bind.enter().append('path')
+          .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+          .attr('d',
+            d3.symbol()
+              .type(getShape)
+              .size(symbolSize)
+          );
+        points = series.selectAll('.sc-point').merge(points_entr);
 
         points
           .filter(function(d) {
@@ -4888,8 +4897,8 @@ function scatter() {
             var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle').merge(clips_entr);
 
             clips
-              .attr('cx', function(d) { return d[0] })
-              .attr('cy', function(d) { return d[1] })
+              .attr('cx', function(d) { return d[0]; })
+              .attr('cy', function(d) { return d[1]; })
               .attr('r', function(d, i) {
                 return circleRadius(d[4], i);
               });
@@ -5127,7 +5136,7 @@ function scatter() {
     return model;
   };
   model.sizeDomain = function(_) {
-    if (!arguments.length) { return sizeDomain; }
+    if (!arguments.length) { return zDomain; }
     zDomain = _;
     return model;
   };
@@ -5645,7 +5654,6 @@ function multibar() {
       locality = utility.buildLocality(),
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
       stacked = true,
-      barColor = null, // adding the ability to set the color for each rather than the whole group
       disabled, // used in conjunction with barColor to communicate to multibarChart what series are disabled
       showValues = false,
       valueFormat = function(d) { return d; },
@@ -5753,7 +5761,7 @@ function multibar() {
       // remap and flatten the data for use in calculating the scales' domains
       var seriesData = d3.merge(data.map(function(d) {
               return d.values.map(function(d, i) {
-                return {x: getX(d, i), y: getY(d, i), y0: d.y0, y0: d.y0};
+                return {x: getX(d, i), y: getY(d, i), y0: d.y0};
               });
             }));
 
@@ -5845,8 +5853,9 @@ function multibar() {
           var maxBarLength = maxY,
               minBarLength = 0,
               maxValuePadding = 0,
-              minValuePadding = 0,
-              gap = vertical ? verticalLabels ? 2 : -2 : 2;
+              minValuePadding = 0;
+
+          gap = vertical ? verticalLabels ? 2 : -2 : 2;
 
           labelData.forEach(function(d, i) {
             var labelDim = labelPosition === 'total' && stacked && vertical && !verticalLabels ? labelThickness : labelLengths[i];
@@ -6080,6 +6089,36 @@ function multibar() {
       //------------------------------------------------------------
       // Bar text: begin, middle, end, top
 
+      function getLabelBoxOffset(d, i, s, gap) {
+        var offset = 0,
+            negative = getY(d, i) < 0 ? -1 : 1,
+            shift = s === negative < 0 ? 1 : 0,
+            barLength = d.barLength - d[dimLabel];
+        if (s ? vertical : !vertical) {
+          offset = (d.barThickness - (verticalLabels === s ? d.labelHeight : d.labelWidth)) / 2;
+        } else {
+          switch (labelPosition) {
+            case 'start':
+              offset = barLength * (0 + shift) + gap * negative;
+              break;
+            case 'middle':
+              offset = barLength / 2;
+              break;
+            case 'end':
+              offset = barLength * (1 - shift) - gap * negative;
+              break;
+            case 'top':
+              offset = d.barLength * (1 - shift) - d.labelWidth * (0 + shift);
+              break;
+            case 'total':
+              offset = d.barLength * (1 - shift) - (verticalLabels === s ? d.labelHeight : d.labelWidth) * (0 + shift);
+              break;
+          }
+        }
+
+        return offset;
+      }
+
       if (showValues) {
 
           barText
@@ -6207,36 +6246,6 @@ function multibar() {
                 return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
               }
             });
-
-          function getLabelBoxOffset(d, i, s, gap) {
-            var offset = 0,
-                negative = getY(d, i) < 0 ? -1 : 1,
-                shift = s === negative < 0 ? 1 : 0,
-                barLength = d.barLength - d[dimLabel];
-            if (s ? vertical : !vertical) {
-              offset = (d.barThickness - (verticalLabels === s ? d.labelHeight : d.labelWidth)) / 2;
-            } else {
-              switch (labelPosition) {
-                case 'start':
-                  offset = barLength * (0 + shift) + gap * negative;
-                  break;
-                case 'middle':
-                  offset = barLength / 2;
-                  break;
-                case 'end':
-                  offset = barLength * (1 - shift) - gap * negative;
-                  break;
-                case 'top':
-                  offset = d.barLength * (1 - shift) - d.labelWidth * (0 + shift);
-                  break;
-                case 'total':
-                  offset = d.barLength * (1 - shift) - (verticalLabels === s ? d.labelHeight : d.labelWidth) * (0 + shift);
-                  break;
-              }
-            }
-
-            return offset;
-          }
 
           //------------------------------------------------------------
           // Label background box
@@ -7228,12 +7237,6 @@ function pie() {
     return model;
   };
 
-  model.values = function(_) {
-    if (!arguments.length) { return getValues; }
-    getValues = _;
-    return model;
-  };
-
   model.textureFill = function(_) {
     if (!arguments.length) { return textureFill; }
     textureFill = _;
@@ -8205,8 +8208,7 @@ function treemap() {
       // Recalcuate the treemap layout dimensions
       d3.treemap()
         .size([availableWidth, availableHeight])
-        .round(false)
-          (TREE);
+        .round(false)(TREE);
 
       // We store the root on first render
       // which gets reused on resize
@@ -8348,12 +8350,7 @@ function treemap() {
         target
           .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            var eo = {
-              point: d,
-              pointIndex: i,
-              id: id,
-              e: d3.event
-            };
+            var eo = buildEventObject(d3.event, d, i);
             dispatch.call('elementMouseover', this, eo);
           })
           .on('mousemove', function(d, i) {
@@ -8368,14 +8365,7 @@ function treemap() {
         children
           .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            var eo = {
-                label: getKey(d),
-                value: getValue(d),
-                point: d,
-                pointIndex: i,
-                e: d3.event,
-                id: id
-            };
+            var eo = buildEventObject(d3.event, d, i);
             dispatch.call('elementMouseover', this, eo);
           })
           .on('mouseout', function(d, i) {
@@ -8384,6 +8374,17 @@ function treemap() {
           });
 
         return grandparent;
+      }
+
+      function buildEventObject(e, d, i) {
+        return {
+          label: getKey(d),
+          value: getValue(d),
+          point: d,
+          pointIndex: i,
+          e: d3.event,
+          id: id
+        };
       }
 
       function transition(d) {
@@ -8506,18 +8507,6 @@ function treemap() {
     return model;
   };
 
-  model.x = function(_) {
-    if (!arguments.length) { return getX; }
-    getX = _;
-    return model;
-  };
-
-  model.y = function(_) {
-    if (!arguments.length) { return getY; }
-    getY = _;
-    return model;
-  };
-
   model.margin = function(_) {
     if (!arguments.length) { return margin; }
     margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
@@ -8548,18 +8537,6 @@ function treemap() {
   model.yScale = function(_) {
     if (!arguments.length) { return y; }
     y = _;
-    return model;
-  };
-
-  model.xDomain = function(_) {
-    if (!arguments.length) { return xDomain; }
-    xDomain = _;
-    return model;
-  };
-
-  model.yDomain = function(_) {
-    if (!arguments.length) { return yDomain; }
-    yDomain = _;
     return model;
   };
 
@@ -8737,9 +8714,9 @@ function stackeareaChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -8929,7 +8906,9 @@ function stackeareaChart() {
             titleBBox = {width: 0, height: 0},
             controlsHeight = 0,
             legendHeight = 0,
-            trans = '';
+            trans = '',
+            xpos = 0,
+            ypos = 0;
 
         title_wrap.select('.sc-title').remove();
 
@@ -8991,8 +8970,8 @@ function stackeareaChart() {
         }
 
         if (showControls) {
-          var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
-              ypos = showTitle ? titleBBox.height : - controls.margin().top;
+          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
+          ypos = showTitle ? titleBBox.height : - controls.margin().top;
           controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
@@ -9000,13 +8979,13 @@ function stackeareaChart() {
         if (showLegend) {
           var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
+              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
+          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
+          ypos = titleBBox.height;
           if (legendTop) {
             ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
-            ypos = - legend.margin().top;
+            ypos = 0 - legend.margin().top;
           }
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
@@ -9661,9 +9640,9 @@ function bubbleChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -10021,7 +10000,7 @@ function bubbleChart() {
         yAxis_wrap
           .call(yAxis);
         yAxis_wrap.select('path.domain')
-          .attr('d', "M0,0V0.5H0V" + innerHeight);
+          .attr('d', 'M0,0V0.5H0V' + innerHeight);
 
         // final call to lines based on new dimensions
         model_wrap
@@ -10437,9 +10416,9 @@ function funnelChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -10783,7 +10762,7 @@ function funnelChart() {
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, model, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
+  fc.rebind(chart, model, 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -11020,9 +10999,9 @@ function gaugeChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -11496,16 +11475,15 @@ function globeChart() {
 
   var tt = null;
 
-  function tooltipContent(eo, properties) {
+  var tooltipContent = function(eo, properties) {
     return '<p><b>' + eo.name + '</b></p>' +
            '<p><b>Amount:</b> $' + d3.format(',.0f')(eo.amount) + '</p>';
-  }
+  };
 
   function showTooltip(eo, offsetElement, properties) {
     var content = tooltipContent(eo, properties);
     return tooltip.show(eo.e, content, null, null, offsetElement);
   }
-
 
   var seriesClick = function(data, e, chart) {
     return;
@@ -11560,11 +11538,9 @@ function globeChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length,
-            x, y;
-        if (hasData) return false;
-        x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
-        y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -11868,7 +11844,7 @@ function globeChart() {
         return (
           results._values[d.id] ||
           results._values[d.properties.name] ||
-          {"_total": 0}
+          {'_total': 0}
         );
       }
 
@@ -12074,24 +12050,6 @@ function globeChart() {
     return chart;
   };
 
-  chart.values = function(_) {
-    if (!arguments.length) return getValues;
-    getValues = _;
-    return chart;
-  };
-
-  chart.x = function(_) {
-    if (!arguments.length) return getX;
-    getX = _;
-    return chart;
-  };
-
-  chart.y = function(_) {
-    if (!arguments.length) return getY;
-    getY = utility.functor(_);
-    return chart;
-  };
-
   chart.showLabels = function(_) {
     if (!arguments.length) return showLabels;
     showLabels = _;
@@ -12107,12 +12065,6 @@ function globeChart() {
   chart.id = function(_) {
     if (!arguments.length) return id;
     id = _;
-    return chart;
-  };
-
-  chart.valueFormat = function(_) {
-    if (!arguments.length) return valueFormat;
-    valueFormat = _;
     return chart;
   };
 
@@ -12215,7 +12167,7 @@ function lineChart() {
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
         var gravity = eo.value < 0 ? 'n' : 's';
-        return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+        return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart) {
@@ -12273,9 +12225,9 @@ function lineChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -12316,17 +12268,17 @@ function lineChart() {
       } else {
 
         xTickValues = d3
-              .merge(
-                data.map(function(d) {
-                  return d.values;
-                })
-              )
-              .reduce(function(a, b) {
-                if (a.indexOf(b.x) === -1) {
-                  a.push(b.x);
-                }
-                return a;
-              }, []);
+          .merge(
+            data.map(function(d) {
+              return d.values;
+            })
+          )
+          .reduce(function(a, b) {
+            if (a.indexOf(b.x) === -1) {
+              a.push(b.x);
+            }
+            return a;
+          }, []);
 
         xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
 
@@ -12350,7 +12302,6 @@ function lineChart() {
       yValueFormat = function(d, i, selection) {
         return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
       };
-
 
 
       //------------------------------------------------------------
@@ -12592,9 +12543,10 @@ function lineChart() {
           maxControlsWidth = availableWidth - legend.width();
         }
 
+        var xpos, ypos;
         if (showControls) {
-          var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
-              ypos = showTitle ? titleBBox.height : - controls.margin().top;
+          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
+          ypos = showTitle ? titleBBox.height : - controls.margin().top;
           controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
@@ -12602,9 +12554,9 @@ function lineChart() {
         if (showLegend) {
           var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
+              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
+          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
+          ypos = titleBBox.height;
           if (legendTop) {
             ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
@@ -12667,9 +12619,6 @@ function lineChart() {
         xAxis
           .ticks(xTickCount)
           .tickSize(-innerHeight + (model.padData() ? pointRadius : 0), 0)
-          .tickFormat(function(d, i, noEllipsis) {
-            return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
-          })
           .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);
@@ -13142,9 +13091,6 @@ function multibarChart() {
       var availableWidth = width,
           availableHeight = height;
 
-      var xIsDatetime = properties.xDataType === 'datetime' || false,
-          yIsCurrency = properties.yDataType === 'currency' || false;
-
       var hasGroupData = properties.groups && Array.isArray(properties.groups) && properties.groups.length;
       var groupLabels = hasGroupData ?
             properties.groups.map(function(d) {
@@ -13181,9 +13127,9 @@ function multibarChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -13663,9 +13609,10 @@ function multibarChart() {
           maxControlsWidth = availableWidth - legend.width();
         }
 
+        var xpos, ypos;
         if (showControls) {
-          var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
-              ypos = showTitle ? titleBBox.height : - controls.margin().top;
+          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
+          ypos = showTitle ? titleBBox.height : - controls.margin().top;
           controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
@@ -13673,9 +13620,9 @@ function multibarChart() {
         if (showLegend) {
           var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
+              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
+          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
+          ypos = titleBBox.height;
           if (legendTop) {
             ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
@@ -14370,7 +14317,6 @@ function paretoChart() {
 
       var yAxisValueFormat = function(d, i, selection, noEllipsis) {
             return yValueFormat(d, i, null, yIsCurrency);
-            return value;
           };
 
       chart.update = function() {
@@ -14383,9 +14329,9 @@ function paretoChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -15077,7 +15023,6 @@ function paretoChart() {
         }).length) {
           data.map(function(d) {
             d.disabled = false;
-            wrap.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
@@ -15340,12 +15285,6 @@ function paretoChart() {
     return chart;
   };
 
-  chart.tooltipContent = function(_) {
-    if (!arguments.length) { return tooltipContent; }
-    tooltipContent = _;
-    return chart;
-  };
-
   chart.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
@@ -15525,9 +15464,9 @@ function pieChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -15870,7 +15809,7 @@ function pieChart() {
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, model, 'values', 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
+  fc.rebind(chart, model, 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
   fc.rebind(chart, model, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 
   chart.colorData = function(_) {
@@ -16062,8 +16001,7 @@ function treeChart() {
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
       color = function (d, i) { return utility.defaultColor()(d, i); },
-      fill = function(d, i) { return color(d,i); },
-      gradient = function(d, i) { return color(d,i); },
+      fill = function(d, i) { return color(d, i); },
 
       setX = function(d, v) { d.x = v; },
       setY = function(d, v) { d.y = v; },
@@ -16077,9 +16015,6 @@ function treeChart() {
 
       getId = function(d) { return d.id || d.data.id; },
 
-      fillGradient = function(d, i) {
-          return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
-      },
       useClass = false,
       clipEdge = true,
       showLabels = true,
@@ -16093,7 +16028,7 @@ function treeChart() {
 
       var container = d3.select(this);
 
-      // trunk is always the either the entire tree (data)
+      // trunk is either the entire tree (data)
       // or a pruning created by chart.filter()
       var trunk = data;
 
@@ -16152,7 +16087,6 @@ function treeChart() {
       g_entr.append('g').attr('class', 'sc-tree');
       var treeChart = wrap.select('.sc-tree');
 
-
       function grow(seed) {
         root = d3.hierarchy(seed, function(d) {
           return d.children;
@@ -16176,7 +16110,6 @@ function treeChart() {
           limb.children.forEach(foliate);
         }
       }
-
 
       chart.setZoom = function() {
         zoom = d3.zoom()
@@ -16280,8 +16213,6 @@ function treeChart() {
 
       // source is either root or a selected node
       chart.update = function(source) {
-        var target = {x: 0, y: 0};
-
         function diagonal(d, p) {
           var dy = getY(d) - (horizontal ? 0 : nodeSize.height - r * 3),
               dx = getX(d) - (horizontal ? nodeSize.width - r * 2 : 0),
@@ -16291,10 +16222,10 @@ function treeChart() {
               cdy = horizontal ? dy : (dy + py) / 2,
               cpx = horizontal ? (dx + px) / 2 : px,
               cpy = horizontal ? py : (dy + py) / 2;
-          return "M" + dx + "," + dy
-               + "C" + cdx + "," + cdy
-               + " " + cpx + "," + cpy
-               + " " + px + "," + py;
+          return 'M' + dx + ',' + dy
+               + 'C' + cdx + ',' + cdy
+               + ' ' + cpx + ',' + cpy
+               + ' ' + px + ',' + py;
         }
         function initial(d) {
           // if the source is root
@@ -16341,6 +16272,8 @@ function treeChart() {
           return id;
         }
 
+        var target = {x: 0, y: 0};
+
         grow(trunk);
 
         var nodeOffsetX = (horizontal ? r - nodeSize.width : nodeSize.width / -2) + 'px',
@@ -16368,24 +16301,29 @@ function treeChart() {
             // For each node create a shape for node content display
             // Create <use> nodes in defs
             nodes_entr.each(function(d) {
-              if (defs.select('#myshape-' + getId(d)).empty()) {
-                var nodeObject = defs.append('svg').attr('class', 'sc-foreign-object')
-                      .attr('id', 'myshape-' + getId(d))
-                      .attr('version', '1.1')
-                      .attr('xmlns', 'http://www.w3.org/2000/svg')
-                      .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
-                      .attr('x', nodeOffsetX)
-                      .attr('y', nodeOffsetY)
-                      .attr('width', nodeSize.width + 'px')
-                      .attr('height', nodeSize.height + 'px')
-                      .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
-                      .attr('xml:space', 'preserve');
-
-                var nodeContent = nodeObject.append('g').attr('class', 'sc-tree-node-content')
-                      .attr('transform', 'translate(' + r + ',' + r + ')');
-
-                nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
+              var nodeObject;
+              var nodeContent;
+              if (!defs.select('#myshape-' + getId(d)).empty()) {
+                return;
               }
+              nodeObject = defs.append('svg')
+                .attr('class', 'sc-foreign-object')
+                .attr('id', 'myshape-' + getId(d))
+                .attr('version', '1.1')
+                .attr('xmlns', 'http://www.w3.org/2000/svg')
+                .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+                .attr('x', nodeOffsetX)
+                .attr('y', nodeOffsetY)
+                .attr('width', nodeSize.width + 'px')
+                .attr('height', nodeSize.height + 'px')
+                .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
+                .attr('xml:space', 'preserve');
+
+              nodeContent = nodeObject.append('g')
+                .attr('class', 'sc-tree-node-content')
+                .attr('transform', 'translate(' + r + ',' + r + ')');
+
+              nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
             });
             // Apply node content from <use>
             nodes_entr.append('use')
@@ -16432,7 +16370,7 @@ function treeChart() {
                 return (d.data._children && d.data._children.length) ? '#fff' : '#bbb';
               });
             nodes.each(function(d) {
-              container.select('#myshape-' + getId(d))
+              defs.select('#myshape-' + getId(d))
                 .attr('x', nodeOffsetX)
                 .attr('y', nodeOffsetY);
             });
@@ -16534,7 +16472,7 @@ function treeChart() {
           .attr('height', availableSize.height);
 
         // TODO: do we need to interrupt transitions on resize to prevent Too late... error?
-        // treeChart.interrupt().selectAll("*").interrupt();
+        // treeChart.interrupt().selectAll('*').interrupt();
 
         treeChart
           .transition(tran).duration(initial ? 0 : duration)
@@ -16551,8 +16489,6 @@ function treeChart() {
       // Note: these cannot be combined because of chart.update
       // which doesn't repopulate X0/Y0 until after render
       foliate(root);
-
-      chart.gradient(fillGradient);
 
       chart.update(root);
 
@@ -16577,11 +16513,6 @@ function treeChart() {
     fill = _;
     return chart;
   };
-  chart.gradient = function(_) {
-    if (!arguments.length) { return gradient; }
-    gradient = _;
-    return chart;
-  };
   chart.useClass = function(_) {
     if (!arguments.length) { return useClass; }
     useClass = _;
@@ -16597,12 +16528,6 @@ function treeChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.values = function(_) {
-    if (!arguments.length) { return getValues; }
-    getValues = _;
     return chart;
   };
 
@@ -16764,6 +16689,7 @@ function treemapChart() {
           container = d3.select(this);
 
       var data = [chartData];
+      var properties = {};
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
@@ -16775,9 +16701,9 @@ function treemapChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d && d.children && d.children.length; }).length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length && d.filter(function(d) { return d && d.children && d.children.length; }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -16817,6 +16743,7 @@ function treemapChart() {
             headerHeight = 0,
             titleBBox = {width: 0, height: 0},
             controlsHeight = 0,
+            titleHeight = 0,
             legendHeight = 0,
             trans = '';
 
@@ -16841,11 +16768,8 @@ function treemapChart() {
         //------------------------------------------------------------
         // Title & Legend
 
-        var titleHeight = 0,
-            legendHeight = 0;
-
         if (showLegend) {
-          g_entr.append('g').attr('class', 'sc-legendWrap');
+          wrap_entr.append('g').attr('class', 'sc-legendWrap');
 
           legend
             .id('legend_' + chart.id())
@@ -16853,7 +16777,7 @@ function treemapChart() {
             .width(availableWidth + margin.left)
             .height(availableHeight);
 
-          g.select('.sc-legendWrap')
+          wrap.select('.sc-legendWrap')
             .datum(data)
             .call(legend);
 
@@ -16864,16 +16788,16 @@ function treemapChart() {
             availableHeight = renderHeight - margin.top - margin.bottom;
           }
 
-          g.select('.sc-legendWrap')
+          wrap.select('.sc-legendWrap')
             .attr('transform', 'translate(' + (-margin.left) + ',' + (-margin.top) + ')');
         }
 
         if (showTitle && properties.title) {
-          g_entr.append('g').attr('class', 'sc-title-wrap');
+          wrap_entr.append('g').attr('class', 'sc-title-wrap');
 
-          g.select('.sc-title').remove();
+          wrap.select('.sc-title').remove();
 
-          g.select('.sc-title-wrap')
+          wrap.select('.sc-title-wrap')
             .append('text')
               .attr('class', 'sc-title')
               .attr('x', 0)
@@ -16883,17 +16807,17 @@ function treemapChart() {
               .attr('stroke', 'none')
               .attr('fill', 'black');
 
-          titleHeight = parseInt(g.select('.sc-title').style('height'), 10) +
-            parseInt(g.select('.sc-title').style('margin-top'), 10) +
-            parseInt(g.select('.sc-title').style('margin-bottom'), 10);
+          titleHeight = parseInt(wrap.select('.sc-title').style('height'), 10) +
+            parseInt(wrap.select('.sc-title').style('margin-top'), 10) +
+            parseInt(wrap.select('.sc-title').style('margin-bottom'), 10);
 
           if (margin.top !== titleHeight + legendHeight) {
             margin.top = titleHeight + legendHeight;
             availableHeight = renderHeight - margin.top - margin.bottom;
           }
 
-          g.select('.sc-title-wrap')
-            .attr('transform', 'translate(0,' + (-margin.top + parseInt(g.select('.sc-title').style('height'), 10)) + ')');
+          wrap.select('.sc-title-wrap')
+            .attr('transform', 'translate(0,' + (-margin.top + parseInt(wrap.select('.sc-title').style('height'), 10)) + ')');
         }
 
         //------------------------------------------------------------
@@ -16911,9 +16835,6 @@ function treemapChart() {
       };
 
       //============================================================
-
-      chart.render();
-
       //============================================================
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
@@ -16924,7 +16845,6 @@ function treemapChart() {
         if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.map(function(d) {
             d.disabled = false;
-            wrap.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
@@ -16934,7 +16854,7 @@ function treemapChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tt = showTooltip(eo, that.parentNode, properties);
+          tt = showTooltip(eo, that.parentNode);
         }
       });
 
@@ -16949,6 +16869,9 @@ function treemapChart() {
           tooltip.cleanup();
         }
       });
+
+      chart.render();
+
 
       //============================================================
 
@@ -16996,7 +16919,7 @@ function treemapChart() {
   chart.legend = legend;
   chart.treemap = model;
 
-  fc.rebind(chart, model, 'x', 'y', 'xDomain', 'yDomain', 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
+  fc.rebind(chart, model, 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }
@@ -17043,20 +16966,6 @@ function treemapChart() {
 
     colorData = arguments[0];
 
-    return chart;
-  };
-
-  chart.x = function(_) {
-    if (!arguments.length) { return getX; }
-    getX = _;
-    model.x(_);
-    return chart;
-  };
-
-  chart.y = function(_) {
-    if (!arguments.length) { return getY; }
-    getY = _;
-    model.y(_);
     return chart;
   };
 
@@ -17262,7 +17171,7 @@ const transform = function(json, chartType, barType) {
         return {
           key: key,
           values: seriesData[i]
-        }
+        };
       });
 
   } else {
@@ -17417,7 +17326,7 @@ const transform = function(json, chartType, barType) {
                     return {
                       x: formatX(getX(value), j),
                       y: formatY(getY(value), j)
-                    }
+                    };
                   } else {
                     value.x = formatX(getX(value), j);
                     value.y = formatY(getY(value), j);
@@ -17427,7 +17336,7 @@ const transform = function(json, chartType, barType) {
                   return {
                     x: formatX(getX(value), j),
                     y: 0
-                  }
+                  };
                 }
               })
             };

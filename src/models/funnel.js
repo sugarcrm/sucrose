@@ -337,6 +337,10 @@ export default function funnel() {
       // Update side labels
 
       function renderSideLabels() {
+        var d0 = 0;
+        var d1 = 0;
+        var g, i, j, l;
+
         // Remove all responsive elements
         sideLabels = labels.filter('.sc-label-side');
         sideLabels.selectAll('.sc-label').remove();
@@ -369,21 +373,20 @@ export default function funnel() {
           .call(calcSideLabelDimensions);
 
         // Reflow side label vertical position to prevent overlap
-        var d0 = 0;
 
         // Top to bottom
-        for (var groups = sideLabels.nodes(), j = groups.length - 1; j >= 0; --j) {
-          var d = d3.select(groups[j]).data()[0];
-          if (d) {
+        for (g = sideLabels.nodes(), j = g.length - 1; j >= 0; j -= 1) {
+          d1 = d3.select(g[j]).data()[0];
+          if (d1) {
             if (!d0) {
-              d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
-              d0 = d.labelBottom;
+              d1.labelBottom = d1.labelTop + d1.labelHeight + labelSpace;
+              d0 = d1.labelBottom;
               continue;
             }
 
-            d.labelTop = Math.max(d0, d.labelTop);
-            d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
-            d0 = d.labelBottom;
+            d1.labelTop = Math.max(d0, d1.labelTop);
+            d1.labelBottom = d1.labelTop + d1.labelHeight + labelSpace;
+            d0 = d1.labelBottom;
           }
         }
 
@@ -393,29 +396,29 @@ export default function funnel() {
           d0 = 0;
 
           // Bottom to top
-          for (var groups = sideLabels.nodes(), j = 0, m = groups.length; j < m; ++j) {
-            var d = d3.select(groups[j]).data()[0];
-            if (d) {
+          for (g = sideLabels.nodes(), i = 0, l = g.length; i < l; i += 1) {
+            d1 = d3.select(g[i]).data()[0];
+            if (d1) {
               if (!d0) {
-                d.labelBottom = calculatedHeight - 1;
-                d.labelTop = d.labelBottom - d.labelHeight;
-                d0 = d.labelTop;
+                d1.labelBottom = calculatedHeight - 1;
+                d1.labelTop = d1.labelBottom - d1.labelHeight;
+                d0 = d1.labelTop;
                 continue;
               }
 
-              d.labelBottom = Math.min(d0, d.labelBottom);
-              d.labelTop = d.labelBottom - d.labelHeight - labelSpace;
-              d0 = d.labelTop;
+              d1.labelBottom = Math.min(d0, d1.labelBottom);
+              d1.labelTop = d1.labelBottom - d1.labelHeight - labelSpace;
+              d0 = d1.labelTop;
             }
           }
 
           // ok, FINALLY, so if we are above the top of the funnel,
           // we need to lower them all back down
           if (d0 < 0) {
-            sideLabels.each(function(d, i) {
-                d.labelTop -= d0;
-                d.labelBottom -= d0;
-              });
+            sideLabels.each(function(d) {
+              d.labelTop -= d0;
+              d.labelBottom -= d0;
+            });
           }
         }
 
@@ -523,7 +526,7 @@ export default function funnel() {
 
         lbl.text(null);
 
-        while (word = words.pop()) {
+        while ((word = words.pop())) {
           line.push(word);
           lbl.text(line.join(' '));
 
@@ -942,12 +945,6 @@ export default function funnel() {
   model.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    return model;
-  };
-
-  model.xScale = function(_) {
-    if (!arguments.length) { return x; }
-    x = _;
     return model;
   };
 

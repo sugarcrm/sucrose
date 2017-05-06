@@ -18,7 +18,6 @@ export default function multibar() {
       locality = utility.buildLocality(),
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
       stacked = true,
-      barColor = null, // adding the ability to set the color for each rather than the whole group
       disabled, // used in conjunction with barColor to communicate to multibarChart what series are disabled
       showValues = false,
       valueFormat = function(d) { return d; },
@@ -130,7 +129,7 @@ export default function multibar() {
       // remap and flatten the data for use in calculating the scales' domains
       var seriesData = d3.merge(data.map(function(d) {
               return d.values.map(function(d, i) {
-                return {x: getX(d, i), y: getY(d, i), y0: d.y0, y0: d.y0};
+                return {x: getX(d, i), y: getY(d, i), y0: d.y0};
               });
             }));
 
@@ -222,8 +221,9 @@ export default function multibar() {
           var maxBarLength = maxY,
               minBarLength = 0,
               maxValuePadding = 0,
-              minValuePadding = 0,
-              gap = vertical ? verticalLabels ? 2 : -2 : 2;
+              minValuePadding = 0;
+
+          gap = vertical ? verticalLabels ? 2 : -2 : 2;
 
           labelData.forEach(function(d, i) {
             var labelDim = labelPosition === 'total' && stacked && vertical && !verticalLabels ? labelThickness : labelLengths[i];
@@ -271,7 +271,7 @@ export default function multibar() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
       var wrap = container.select('.sc-wrap.sc-multibar').merge(wrap_entr);
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
       //set up the gradient constructor function
       gradient = function(d, i, p) {
@@ -457,6 +457,36 @@ export default function multibar() {
       //------------------------------------------------------------
       // Bar text: begin, middle, end, top
 
+      function getLabelBoxOffset(d, i, s, gap) {
+        var offset = 0,
+            negative = getY(d, i) < 0 ? -1 : 1,
+            shift = s === negative < 0 ? 1 : 0,
+            barLength = d.barLength - d[dimLabel];
+        if (s ? vertical : !vertical) {
+          offset = (d.barThickness - (verticalLabels === s ? d.labelHeight : d.labelWidth)) / 2;
+        } else {
+          switch (labelPosition) {
+            case 'start':
+              offset = barLength * (0 + shift) + gap * negative;
+              break;
+            case 'middle':
+              offset = barLength / 2;
+              break;
+            case 'end':
+              offset = barLength * (1 - shift) - gap * negative;
+              break;
+            case 'top':
+              offset = d.barLength * (1 - shift) - d.labelWidth * (0 + shift);
+              break;
+            case 'total':
+              offset = d.barLength * (1 - shift) - (verticalLabels === s ? d.labelHeight : d.labelWidth) * (0 + shift);
+              break;
+          }
+        }
+
+        return offset;
+      }
+
       if (showValues) {
 
           barText
@@ -584,36 +614,6 @@ export default function multibar() {
                 return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
               }
             });
-
-          function getLabelBoxOffset(d, i, s, gap) {
-            var offset = 0,
-                negative = getY(d, i) < 0 ? -1 : 1,
-                shift = s === negative < 0 ? 1 : 0,
-                barLength = d.barLength - d[dimLabel];
-            if (s ? vertical : !vertical) {
-              offset = (d.barThickness - (verticalLabels === s ? d.labelHeight : d.labelWidth)) / 2;
-            } else {
-              switch (labelPosition) {
-                case 'start':
-                  offset = barLength * (0 + shift) + gap * negative;
-                  break;
-                case 'middle':
-                  offset = barLength / 2;
-                  break;
-                case 'end':
-                  offset = barLength * (1 - shift) - gap * negative;
-                  break;
-                case 'top':
-                  offset = d.barLength * (1 - shift) - d.labelWidth * (0 + shift);
-                  break;
-                case 'total':
-                  offset = d.barLength * (1 - shift) - (verticalLabels === s ? d.labelHeight : d.labelWidth) * (0 + shift);
-                  break;
-              }
-            }
-
-            return offset;
-          }
 
           //------------------------------------------------------------
           // Label background box

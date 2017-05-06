@@ -1,4 +1,3 @@
-import fc from 'd3fc-rebind';
 import d3 from 'd3';
 import utility from '../utility.js';
 
@@ -101,8 +100,7 @@ export default function treemap() {
       // Recalcuate the treemap layout dimensions
       d3.treemap()
         .size([availableWidth, availableHeight])
-        .round(false)
-          (TREE);
+        .round(false)(TREE);
 
       // We store the root on first render
       // which gets reused on resize
@@ -244,12 +242,7 @@ export default function treemap() {
         target
           .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            var eo = {
-              point: d,
-              pointIndex: i,
-              id: id,
-              e: d3.event
-            };
+            var eo = buildEventObject(d3.event, d, i);
             dispatch.call('elementMouseover', this, eo);
           })
           .on('mousemove', function(d, i) {
@@ -264,14 +257,7 @@ export default function treemap() {
         children
           .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            var eo = {
-                label: getKey(d),
-                value: getValue(d),
-                point: d,
-                pointIndex: i,
-                e: d3.event,
-                id: id
-            };
+            var eo = buildEventObject(d3.event, d, i);
             dispatch.call('elementMouseover', this, eo);
           })
           .on('mouseout', function(d, i) {
@@ -280,6 +266,17 @@ export default function treemap() {
           });
 
         return grandparent;
+      }
+
+      function buildEventObject(e, d, i) {
+        return {
+          label: getKey(d),
+          value: getValue(d),
+          point: d,
+          pointIndex: i,
+          e: d3.event,
+          id: id
+        };
       }
 
       function transition(d) {
@@ -402,18 +399,6 @@ export default function treemap() {
     return model;
   };
 
-  model.x = function(_) {
-    if (!arguments.length) { return getX; }
-    getX = _;
-    return model;
-  };
-
-  model.y = function(_) {
-    if (!arguments.length) { return getY; }
-    getY = _;
-    return model;
-  };
-
   model.margin = function(_) {
     if (!arguments.length) { return margin; }
     margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
@@ -444,18 +429,6 @@ export default function treemap() {
   model.yScale = function(_) {
     if (!arguments.length) { return y; }
     y = _;
-    return model;
-  };
-
-  model.xDomain = function(_) {
-    if (!arguments.length) { return xDomain; }
-    xDomain = _;
-    return model;
-  };
-
-  model.yDomain = function(_) {
-    if (!arguments.length) { return yDomain; }
-    yDomain = _;
     return model;
   };
 

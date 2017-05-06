@@ -738,12 +738,6 @@ export default function pie() {
     return model;
   };
 
-  model.values = function(_) {
-    if (!arguments.length) { return getValues; }
-    getValues = _;
-    return model;
-  };
-
   model.textureFill = function(_) {
     if (!arguments.length) { return textureFill; }
     textureFill = _;

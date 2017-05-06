@@ -23,10 +23,12 @@ export default function axis() {
       textAnchor = null,
       ticks = null,
       tickPadding = 4,
+      maxLabelWidth = 0,
+      maxLabelHeight = 0,
       valueFormat = function(d) { return d; },
       axisLabelDistance = 8; //The larger this number is, the closer the axis label is to the axis.
 
-  var tickValues, tickSubdivide, tickSize, tickPadding, tickFormat, tickSizeInner, tickSizeOuter;
+  var tickFormat, tickValues, tickSize, tickSizeInner, tickSizeOuter;
 
   // Public Read-only Variables
   //------------------------------------------------------------
@@ -55,8 +57,6 @@ export default function axis() {
 
       var vertical = orient === 'left' || orient === 'right' ? true : false,
           reflect = orient === 'left' || orient === 'top' ? -1 : 1,
-          maxLabelWidth = 0,
-          maxLabelHeight = 0,
           tickGap = 6,
           tickSpacing = 0,
           labelThickness = 0;
@@ -501,6 +501,7 @@ export default function axis() {
           var textNode = d3.select(this);
           var isDate = utility.isValidDate(textContent);
           var dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
+          var di = 0;
           var textArray = (
                 textContent && textContent !== '' ?
                   (
@@ -511,35 +512,34 @@ export default function axis() {
                   []
               ).split(' ');
           var l = textArray.length;
-          var i = 0;
 
           // reset the tick text conent
           this.textContent = '';
 
           var textString,
               textSpan = textNode.append('tspan')
-                .text(textArray[i] + ' ')
+                .text(textArray[di] + ' ')
                 .attr('dy', dy + 'em')
                 .attr('x', 0);
 
           // reset vars
-          i += 1;
+          di += 1;
           dy = 1; // TODO: wrong. fails on reflect with 3 lines of wrap
 
-          while (i < l) {
+          while (di < l) {
             textSpan = textNode.append('tspan')
-              .text(textArray[i] + ' ')
+              .text(textArray[di] + ' ')
               .attr('dy', dy + 'em')
               .attr('x', 0);
 
-            i += 1;
+            di += 1;
 
-            while (i < l) {
+            while (di < l) {
               textString = textSpan.text();
-              textSpan.text(textString + ' ' + textArray[i]);
+              textSpan.text(textString + ' ' + textArray[di]);
               //TODO: this is different than collision test
               if (this.getBoundingClientRect().width <= tickSpacing) {
-                i += 1;
+                di += 1;
               } else {
                 textSpan.text(textString);
                 break;

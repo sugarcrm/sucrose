@@ -60,6 +60,7 @@ export default function treemapChart() {
           container = d3.select(this);
 
       var data = [chartData];
+      var properties = {};
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
@@ -71,9 +72,9 @@ export default function treemapChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d && d.children && d.children.length; }).length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length && d.filter(function(d) { return d && d.children && d.children.length; }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -113,6 +114,7 @@ export default function treemapChart() {
             headerHeight = 0,
             titleBBox = {width: 0, height: 0},
             controlsHeight = 0,
+            titleHeight = 0,
             legendHeight = 0,
             trans = '';
 
@@ -137,11 +139,8 @@ export default function treemapChart() {
         //------------------------------------------------------------
         // Title & Legend
 
-        var titleHeight = 0,
-            legendHeight = 0;
-
         if (showLegend) {
-          g_entr.append('g').attr('class', 'sc-legendWrap');
+          wrap_entr.append('g').attr('class', 'sc-legendWrap');
 
           legend
             .id('legend_' + chart.id())
@@ -149,7 +148,7 @@ export default function treemapChart() {
             .width(availableWidth + margin.left)
             .height(availableHeight);
 
-          g.select('.sc-legendWrap')
+          wrap.select('.sc-legendWrap')
             .datum(data)
             .call(legend);
 
@@ -160,16 +159,16 @@ export default function treemapChart() {
             availableHeight = renderHeight - margin.top - margin.bottom;
           }
 
-          g.select('.sc-legendWrap')
+          wrap.select('.sc-legendWrap')
             .attr('transform', 'translate(' + (-margin.left) + ',' + (-margin.top) + ')');
         }
 
         if (showTitle && properties.title) {
-          g_entr.append('g').attr('class', 'sc-title-wrap');
+          wrap_entr.append('g').attr('class', 'sc-title-wrap');
 
-          g.select('.sc-title').remove();
+          wrap.select('.sc-title').remove();
 
-          g.select('.sc-title-wrap')
+          wrap.select('.sc-title-wrap')
             .append('text')
               .attr('class', 'sc-title')
               .attr('x', 0)
@@ -179,17 +178,17 @@ export default function treemapChart() {
               .attr('stroke', 'none')
               .attr('fill', 'black');
 
-          titleHeight = parseInt(g.select('.sc-title').style('height'), 10) +
-            parseInt(g.select('.sc-title').style('margin-top'), 10) +
-            parseInt(g.select('.sc-title').style('margin-bottom'), 10);
+          titleHeight = parseInt(wrap.select('.sc-title').style('height'), 10) +
+            parseInt(wrap.select('.sc-title').style('margin-top'), 10) +
+            parseInt(wrap.select('.sc-title').style('margin-bottom'), 10);
 
           if (margin.top !== titleHeight + legendHeight) {
             margin.top = titleHeight + legendHeight;
             availableHeight = renderHeight - margin.top - margin.bottom;
           }
 
-          g.select('.sc-title-wrap')
-            .attr('transform', 'translate(0,' + (-margin.top + parseInt(g.select('.sc-title').style('height'), 10)) + ')');
+          wrap.select('.sc-title-wrap')
+            .attr('transform', 'translate(0,' + (-margin.top + parseInt(wrap.select('.sc-title').style('height'), 10)) + ')');
         }
 
         //------------------------------------------------------------
@@ -207,9 +206,6 @@ export default function treemapChart() {
       };
 
       //============================================================
-
-      chart.render();
-
       //============================================================
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
@@ -220,7 +216,6 @@ export default function treemapChart() {
         if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.map(function(d) {
             d.disabled = false;
-            wrap.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
@@ -230,7 +225,7 @@ export default function treemapChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          tt = showTooltip(eo, that.parentNode, properties);
+          tt = showTooltip(eo, that.parentNode);
         }
       });
 
@@ -245,6 +240,9 @@ export default function treemapChart() {
           tooltip.cleanup();
         }
       });
+
+      chart.render();
+
 
       //============================================================
 
@@ -292,7 +290,7 @@ export default function treemapChart() {
   chart.legend = legend;
   chart.treemap = model;
 
-  fc.rebind(chart, model, 'x', 'y', 'xDomain', 'yDomain', 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
+  fc.rebind(chart, model, 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }
@@ -339,20 +337,6 @@ export default function treemapChart() {
 
     colorData = arguments[0];
 
-    return chart;
-  };
-
-  chart.x = function(_) {
-    if (!arguments.length) { return getX; }
-    getX = _;
-    model.x(_);
-    return chart;
-  };
-
-  chart.y = function(_) {
-    if (!arguments.length) { return getY; }
-    getY = _;
-    model.y(_);
     return chart;
   };
 

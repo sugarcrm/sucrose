@@ -40,7 +40,7 @@ const transform = function(json, chartType, barType) {
 
   var sumValues = function(values) {
     return values ? values.reduce(function(a, b) { return parseFloat(a) + b; }, 0) : 0; // 0 is default value if reducing an empty list
-  }
+  };
 
   function hasValues(d) {
     //true => [{}, {}] || [[], []]
@@ -122,7 +122,7 @@ const transform = function(json, chartType, barType) {
         return {
           key: key,
           values: seriesData[i]
-        }
+        };
       });
 
   } else {
@@ -277,7 +277,7 @@ const transform = function(json, chartType, barType) {
                     return {
                       x: formatX(getX(value), j),
                       y: formatY(getY(value), j)
-                    }
+                    };
                   } else {
                     value.x = formatX(getX(value), j);
                     value.y = formatY(getY(value), j);
@@ -287,8 +287,8 @@ const transform = function(json, chartType, barType) {
                   return {
                     x: formatX(getX(value), j),
                     y: 0
-                  }
-                };
+                  };
+                }
               })
             };
           });
@@ -436,6 +436,6 @@ const transform = function(json, chartType, barType) {
     properties: properties,
     data: data
   };
-}
+};
 
 export default transform;

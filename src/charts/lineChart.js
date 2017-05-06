@@ -69,7 +69,7 @@ export default function lineChart() {
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
         var gravity = eo.value < 0 ? 'n' : 's';
-        return sucrose.tooltip.show(eo.e, content, gravity, null, offsetElement);
+        return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
   var seriesClick = function(data, e, chart) {
@@ -127,9 +127,9 @@ export default function lineChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -170,17 +170,17 @@ export default function lineChart() {
       } else {
 
         xTickValues = d3
-              .merge(
-                data.map(function(d) {
-                  return d.values;
-                })
-              )
-              .reduce(function(a, b) {
-                if (a.indexOf(b.x) === -1) {
-                  a.push(b.x);
-                }
-                return a;
-              }, []);
+          .merge(
+            data.map(function(d) {
+              return d.values;
+            })
+          )
+          .reduce(function(a, b) {
+            if (a.indexOf(b.x) === -1) {
+              a.push(b.x);
+            }
+            return a;
+          }, []);
 
         xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
 
@@ -204,7 +204,6 @@ export default function lineChart() {
       yValueFormat = function(d, i, selection) {
         return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
       };
-
 
 
       //------------------------------------------------------------
@@ -446,9 +445,10 @@ export default function lineChart() {
           maxControlsWidth = availableWidth - legend.width();
         }
 
+        var xpos, ypos;
         if (showControls) {
-          var xpos = direction === 'rtl' ? availableWidth - controls.width() : 0,
-              ypos = showTitle ? titleBBox.height : - controls.margin().top;
+          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
+          ypos = showTitle ? titleBBox.height : - controls.margin().top;
           controls_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
@@ -456,9 +456,9 @@ export default function lineChart() {
         if (showLegend) {
           var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
+              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
+          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
+          ypos = titleBBox.height;
           if (legendTop) {
             ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
@@ -521,9 +521,6 @@ export default function lineChart() {
         xAxis
           .ticks(xTickCount)
           .tickSize(-innerHeight + (model.padData() ? pointRadius : 0), 0)
-          .tickFormat(function(d, i, noEllipsis) {
-            return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
-          })
           .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);

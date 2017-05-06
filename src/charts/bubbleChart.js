@@ -143,9 +143,9 @@ export default function bubbleChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -503,7 +503,7 @@ export default function bubbleChart() {
         yAxis_wrap
           .call(yAxis);
         yAxis_wrap.select('path.domain')
-          .attr('d', "M0,0V0.5H0V" + innerHeight);
+          .attr('d', 'M0,0V0.5H0V' + innerHeight);
 
         // final call to lines based on new dimensions
         model_wrap

@@ -251,14 +251,18 @@ export default function scatter() {
       //------------------------------------------------------------
       // Interactive Layer
 
+      var points_bind;
+      var points_entr;
+      var points;
+
       if (onlyCircles) {
 
-        var points_bind = series.selectAll('circle.sc-point')
-              .data(function(d) { return d.values; });
-        var points_entr = points_bind.enter().append('circle')
-              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
-              .attr('r', circleRadius);
-        var points = series.selectAll('.sc-point').merge(points_entr);
+        points_bind = series.selectAll('circle.sc-point')
+          .data(function(d) { return d.values; });
+        points_entr = points_bind.enter().append('circle')
+          .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+          .attr('r', circleRadius);
+        points = series.selectAll('.sc-point').merge(points_entr);
 
         points
           .filter(function(d) {
@@ -286,15 +290,15 @@ export default function scatter() {
 
       } else {
 
-        var points_bind = series.selectAll('path.sc-point').data(function(d) { return d.values; });
-        var points_enter = points_bind.enter().append('path')
-              .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
-              .attr('d',
-                d3.symbol()
-                  .type(getShape)
-                  .size(symbolSize)
-              );
-        var points = series.selectAll('.sc-point').merge(points_entr)
+        points_bind = series.selectAll('path.sc-point').data(function(d) { return d.values; });
+        points_entr = points_bind.enter().append('path')
+          .attr('class', function(d, i) { return 'sc-point sc-enter sc-point-' + i; })
+          .attr('d',
+            d3.symbol()
+              .type(getShape)
+              .size(symbolSize)
+          );
+        points = series.selectAll('.sc-point').merge(points_entr);
 
         points
           .filter(function(d) {
@@ -302,7 +306,7 @@ export default function scatter() {
           })
           .attr('transform', function(d, i) {
             return 'translate(' + x0(getX(d, i)) + ',' + y(0) + ')';
-          })
+          });
         points
           .transition(t)
             .attr('transform', function(d, i) {
@@ -370,8 +374,8 @@ export default function scatter() {
             var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle').merge(clips_entr);
 
             clips
-              .attr('cx', function(d) { return d[0] })
-              .attr('cy', function(d) { return d[1] })
+              .attr('cx', function(d) { return d[0]; })
+              .attr('cy', function(d) { return d[1]; })
               .attr('r', function(d, i) {
                 return circleRadius(d[4], i);
               });
@@ -609,7 +613,7 @@ export default function scatter() {
     return model;
   };
   model.sizeDomain = function(_) {
-    if (!arguments.length) { return sizeDomain; }
+    if (!arguments.length) { return zDomain; }
     zDomain = _;
     return model;
   };

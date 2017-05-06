@@ -1,4 +1,3 @@
-import fc from 'd3fc-rebind';
 import d3 from 'd3';
 import utility from '../utility.js';
 
@@ -33,8 +32,7 @@ export default function treeChart() {
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
       color = function (d, i) { return utility.defaultColor()(d, i); },
-      fill = function(d, i) { return color(d,i); },
-      gradient = function(d, i) { return color(d,i); },
+      fill = function(d, i) { return color(d, i); },
 
       setX = function(d, v) { d.x = v; },
       setY = function(d, v) { d.y = v; },
@@ -48,9 +46,6 @@ export default function treeChart() {
 
       getId = function(d) { return d.id || d.data.id; },
 
-      fillGradient = function(d, i) {
-          return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), wrap.select('defs'));
-      },
       useClass = false,
       clipEdge = true,
       showLabels = true,
@@ -64,7 +59,7 @@ export default function treeChart() {
 
       var container = d3.select(this);
 
-      // trunk is always the either the entire tree (data)
+      // trunk is either the entire tree (data)
       // or a pruning created by chart.filter()
       var trunk = data;
 
@@ -123,7 +118,6 @@ export default function treeChart() {
       g_entr.append('g').attr('class', 'sc-tree');
       var treeChart = wrap.select('.sc-tree');
 
-
       function grow(seed) {
         root = d3.hierarchy(seed, function(d) {
           return d.children;
@@ -148,7 +142,6 @@ export default function treeChart() {
         }
       }
 
-
       chart.setZoom = function() {
         zoom = d3.zoom()
           .scaleExtent([zoomExtents.min, zoomExtents.max])
@@ -159,7 +152,7 @@ export default function treeChart() {
       };
       chart.unsetZoom = function(argument) {
         zoom.on('zoom', null);
-      }
+      };
       chart.resetZoom = function() {
         wrap.call(zoom.transform, d3.zoomIdentity);
       };
@@ -251,8 +244,6 @@ export default function treeChart() {
 
       // source is either root or a selected node
       chart.update = function(source) {
-        var target = {x: 0, y: 0};
-
         function diagonal(d, p) {
           var dy = getY(d) - (horizontal ? 0 : nodeSize.height - r * 3),
               dx = getX(d) - (horizontal ? nodeSize.width - r * 2 : 0),
@@ -262,10 +253,10 @@ export default function treeChart() {
               cdy = horizontal ? dy : (dy + py) / 2,
               cpx = horizontal ? (dx + px) / 2 : px,
               cpy = horizontal ? py : (dy + py) / 2;
-          return "M" + dx + "," + dy
-               + "C" + cdx + "," + cdy
-               + " " + cpx + "," + cpy
-               + " " + px + "," + py;
+          return 'M' + dx + ',' + dy
+               + 'C' + cdx + ',' + cdy
+               + ' ' + cpx + ',' + cpy
+               + ' ' + px + ',' + py;
         }
         function initial(d) {
           // if the source is root
@@ -304,13 +295,15 @@ export default function treeChart() {
         function getCardId(d) {
           var id = 'card-' + getId(d);
           return id;
-        };
+        }
 
         // Get the link id
         function getLinkId(d) {
           var id = 'link-' + (d.parent ? getId(d.parent) : 0) + '-' + getId(d);
           return id;
-        };
+        }
+
+        var target = {x: 0, y: 0};
 
         grow(trunk);
 
@@ -339,24 +332,29 @@ export default function treeChart() {
             // For each node create a shape for node content display
             // Create <use> nodes in defs
             nodes_entr.each(function(d) {
-              if (defs.select('#myshape-' + getId(d)).empty()) {
-                var nodeObject = defs.append('svg').attr('class', 'sc-foreign-object')
-                      .attr('id', 'myshape-' + getId(d))
-                      .attr('version', '1.1')
-                      .attr('xmlns', 'http://www.w3.org/2000/svg')
-                      .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
-                      .attr('x', nodeOffsetX)
-                      .attr('y', nodeOffsetY)
-                      .attr('width', nodeSize.width + 'px')
-                      .attr('height', nodeSize.height + 'px')
-                      .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
-                      .attr('xml:space', 'preserve');
-
-                var nodeContent = nodeObject.append('g').attr('class', 'sc-tree-node-content')
-                      .attr('transform', 'translate(' + r + ',' + r + ')');
-
-                nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
+              var nodeObject;
+              var nodeContent;
+              if (!defs.select('#myshape-' + getId(d)).empty()) {
+                return;
               }
+              nodeObject = defs.append('svg')
+                .attr('class', 'sc-foreign-object')
+                .attr('id', 'myshape-' + getId(d))
+                .attr('version', '1.1')
+                .attr('xmlns', 'http://www.w3.org/2000/svg')
+                .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+                .attr('x', nodeOffsetX)
+                .attr('y', nodeOffsetY)
+                .attr('width', nodeSize.width + 'px')
+                .attr('height', nodeSize.height + 'px')
+                .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
+                .attr('xml:space', 'preserve');
+
+              nodeContent = nodeObject.append('g')
+                .attr('class', 'sc-tree-node-content')
+                .attr('transform', 'translate(' + r + ',' + r + ')');
+
+              nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
             });
             // Apply node content from <use>
             nodes_entr.append('use')
@@ -403,7 +401,7 @@ export default function treeChart() {
                 return (d.data._children && d.data._children.length) ? '#fff' : '#bbb';
               });
             nodes.each(function(d) {
-              container.select('#myshape-' + getId(d))
+              defs.select('#myshape-' + getId(d))
                 .attr('x', nodeOffsetX)
                 .attr('y', nodeOffsetY);
             });
@@ -505,7 +503,7 @@ export default function treeChart() {
           .attr('height', availableSize.height);
 
         // TODO: do we need to interrupt transitions on resize to prevent Too late... error?
-        // treeChart.interrupt().selectAll("*").interrupt();
+        // treeChart.interrupt().selectAll('*').interrupt();
 
         treeChart
           .transition(tran).duration(initial ? 0 : duration)
@@ -522,8 +520,6 @@ export default function treeChart() {
       // Note: these cannot be combined because of chart.update
       // which doesn't repopulate X0/Y0 until after render
       foliate(root);
-
-      chart.gradient(fillGradient);
 
       chart.update(root);
 
@@ -548,11 +544,6 @@ export default function treeChart() {
     fill = _;
     return chart;
   };
-  chart.gradient = function(_) {
-    if (!arguments.length) { return gradient; }
-    gradient = _;
-    return chart;
-  };
   chart.useClass = function(_) {
     if (!arguments.length) { return useClass; }
     useClass = _;
@@ -568,12 +559,6 @@ export default function treeChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.values = function(_) {
-    if (!arguments.length) { return getValues; }
-    getValues = _;
     return chart;
   };
 

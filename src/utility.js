@@ -14,7 +14,7 @@ utility.identity = function(d) {
 };
 
 utility.functor = function functor(v) {
-  return typeof v === "function" ? v : function() {
+  return typeof v === 'function' ? v : function() {
     return v;
   };
 };
@@ -94,12 +94,12 @@ utility.resizeOnPrint = function (fn) {
           }
       });
   } else if (window.attachEvent) {
-    window.attachEvent("onbeforeprint", fn);
+    window.attachEvent('onbeforeprint', fn);
   } else {
     window.onbeforeprint = fn;
   }
   //TODO: allow for a second call back to undo using
-  //window.attachEvent("onafterprint", fn);
+  //window.attachEvent('onafterprint', fn);
 };
 
 utility.unResizeOnPrint = function (fn) {
@@ -111,7 +111,7 @@ utility.unResizeOnPrint = function (fn) {
           }
       });
   } else if (window.detachEvent) {
-    window.detachEvent("onbeforeprint", fn);
+    window.detachEvent('onbeforeprint', fn);
   } else {
     window.onbeforeprint = null;
   }
@@ -131,9 +131,9 @@ utility.getColor = function (color) {
       return d.color || color[i % color.length];
     };
   } else if (Object.prototype.toString.call(color) === '[object String]') {
-    return function(s) {
+    return function(d) {
       return d.color || '#' + color.replace('#', '');
-    }
+    };
   } else {
     return color;
       // can't really help it if someone passes rubbish as color
@@ -162,8 +162,8 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
 
     if (!defIndex) defIndex = defaultColors.length; //used all the default colors, start over
 
-    if (typeof dictionary[key] !== "undefined") {
-      return (typeof dictionary[key] === "function") ? dictionary[key]() : dictionary[key];
+    if (typeof dictionary[key] !== 'undefined') {
+      return (typeof dictionary[key] === 'function') ? dictionary[key]() : dictionary[key];
     } else {
       return defaultColors[--defIndex]; // no match in dictionary, use default color
     }
@@ -174,7 +174,7 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
 // it's a very cool method for doing pjax, I may expand upon it a little bit,
 // open to suggestions on anything that may be useful
 utility.pjax = function (links, content) {
-  d3.selectAll(links).on("click", function () {
+  d3.selectAll(links).on('click', function () {
     history.pushState(this.href, this.textContent, this.href);
     load(this.href);
     d3.event.preventDefault();
@@ -188,7 +188,7 @@ utility.pjax = function (links, content) {
     });
   }
 
-  d3.select(window).on("popstate", function () {
+  d3.select(window).on('popstate', function () {
     if (d3.event.state) { load(d3.event.state); }
   });
 };
@@ -218,7 +218,7 @@ chart.options = utility.optionsFunc.bind(chart);
 utility.optionsFunc = function(args) {
   if (args) {
     d3.map(args).forEach((function(key,value) {
-      if (typeof this[key] === "function") {
+      if (typeof this[key] === 'function') {
          this[key](value);
       }
     }).bind(this));
@@ -331,16 +331,16 @@ utility.getAbsoluteXY = function (element) {
 
 // Creates a rectangle with rounded corners
 utility.roundedRectangle = function (x, y, width, height, radius) {
-  return "M" + x + "," + y +
-       "h" + (width - radius * 2) +
-       "a" + radius + "," + radius + " 0 0 1 " + radius + "," + radius +
-       "v" + (height - 2 - radius * 2) +
-       "a" + radius + "," + radius + " 0 0 1 " + -radius + "," + radius +
-       "h" + (radius * 2 - width) +
-       "a" + -radius + "," + radius + " 0 0 1 " + -radius + "," + -radius +
-       "v" + ( -height + radius * 2 + 2 ) +
-       "a" + radius + "," + radius + " 0 0 1 " + radius + "," + -radius +
-       "z";
+  return 'M' + x + ',' + y +
+       'h' + (width - radius * 2) +
+       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + radius +
+       'v' + (height - 2 - radius * 2) +
+       'a' + radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + radius +
+       'h' + (radius * 2 - width) +
+       'a' + -radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + -radius +
+       'v' + ( -height + radius * 2 + 2 ) +
+       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + -radius +
+       'z';
 };
 
 utility.dropShadow = function (id, defs, options) {
@@ -628,14 +628,14 @@ utility.getDateFormat = function(values) {
 utility.dateFormat = function(d, p, l) {
   var dateString, date, locale, spec, fmtr;
 
-  var formatMillisecond = ".%L",
-      formatSecond = ":%S",
-      formatMinute = "%I:%M",
-      formatHour = "%I %p",
-      formatDay = "%x",
-      formatWeek = "%b %d",
-      formatMonth = "%B",
-      formatYear = "%Y";
+  var formatMillisecond = '.%L',
+      formatSecond = ':%S',
+      formatMinute = '%I:%M',
+      formatHour = '%I %p',
+      formatDay = '%x',
+      formatWeek = '%b %d',
+      formatMonth = '%B',
+      formatYear = '%Y';
 
   function multiFormat(d) {
     var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
@@ -726,12 +726,12 @@ utility.buildLocality = function(l, d) {
         'MMM': '%b',
         'y': '%Y'
       };
+  var def;
 
   for (var key in locale) {
-    var d;
     if (l.hasOwnProperty(key)) {
-      d = locale[key];
-      definition[key] = !deep || !Array.isArray(d) ? d : unfer(d);
+      def = locale[key];
+      definition[key] = !deep || !Array.isArray(def) ? def : unfer(def);
     }
   }
 
