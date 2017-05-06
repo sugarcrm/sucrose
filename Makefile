@@ -20,7 +20,7 @@ HEADER = $(shell cat src/header)
 
 .DEFAULT_GOAL := help
 
-.PHONY: install-prod install-post npm-prod dependencies clean-dependencies \
+.PHONY: install-prod install-post npm-prod dependencies clean-dependencies d3 \
 	install-dev npm-dev all clean scr sgr clean-js clean-css css \
 	examples-prod examples-dev examples-sucrose es \
 	pack nodes grade help list md
@@ -88,6 +88,16 @@ sucrose.js:
 sucrose.min.js: sucrose.js
 	rm -f ./build/$@
 	cat ./build/$^ | $(JS_MINIFIER) --preamble "$(HEADER)" >> ./build/$@
+
+# - copy full D3 bundle from node_modules
+d3: d3.min.js
+d3.js:
+	rm -f ./build/$@
+	echo ";" | cat - ./node_modules/d3/build/$@ >> ./build/$@
+d3.min.js: d3.js
+	rm -f ./build/$@
+	echo ";" | cat - ./node_modules/d3/build/$@ >> ./build/$@
+	rollup -c rollup.d3.js --environment BUILD:$(TAR),DEV:false --banner "$(HEADER)"
 
 # - create a custom D3 bundle with just required components for target
 d3v4.js:

@@ -1,5 +1,6 @@
 import replace from 'rollup-plugin-replace';
 import resolve from 'rollup-plugin-node-resolve';
+import eslint from 'rollup-plugin-eslint';
 
 export default {
   moduleName: 'sucrose',
@@ -8,12 +9,12 @@ export default {
   format: 'umd',
   // node
   external: [
-    'd3v4',
+    'd3',
     'd3fc-rebind',
   ],
   // browser
   globals: {
-    'd3v4': 'd3v4',
+    'd3': 'd3',
     'd3fc-rebind': 'fc',
   },
   // sourceMap: 'inline',
@@ -25,6 +26,33 @@ export default {
         ENV_DEV: (process.env.DEV || true),
         ENV_BUILD: (process.env.BUILD || 'sc'),
       },
+    }),
+    eslint({
+      'env': {
+        'browser': true,
+        'es6': true
+      },
+      'extends': 'eslint:recommended',
+      'parserOptions': {
+        'sourceType': 'module'
+      },
+      'rules': {
+        'indent': [
+          'off',
+        ],
+        'linebreak-style': [
+          'error',
+          'unix'
+        ],
+        'quotes': [
+          'error',
+          'single'
+        ],
+        'semi': [
+          'error',
+          'always'
+        ]
+      }
     }),
     resolve({
       jsnext: true,

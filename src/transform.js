@@ -1,4 +1,4 @@
-import d3 from 'd3v4';
+import d3 from 'd3';
 
 const transform = function(json, chartType, barType) {
   var data = [],
