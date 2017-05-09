@@ -24,7 +24,7 @@ export default {
       exclude: 'node_modules/**',
       values: {
         ENV_DEV: (process.env.DEV || true),
-        ENV_BUILD: (process.env.BUILD || 'sc'),
+        ENV_BUILD: 'scr',
       },
     }),
     eslint(),

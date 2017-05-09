@@ -20,8 +20,8 @@ HEADER = $(shell cat src/header)
 
 .DEFAULT_GOAL := help
 
-.PHONY: install-prod install-post npm-prod dependencies clean-dependencies d3 \
-	install-dev npm-dev all clean scr sgr clean-js clean-css css \
+.PHONY: install-prod install-post npm-prod dependencies clean-dependencies  \
+	install-dev npm-dev all clean scr sgr sucrose d3-scr d3-sgr d3-bundle d3-minify d3-all clean-js clean-css css \
 	examples-prod examples-dev examples-sucrose es \
 	pack nodes grade help list md
 
@@ -68,51 +68,72 @@ all: scr sucrose.min.css
 # - remove sucrose javascript and css files
 clean: clean-js clean-css
 
-# BUILD TARGETS
+
+# SUCROSE BUILD TARGETS
+
+TAR = scr
 
 # - build full sucrose library and D3 custom bundle
-TAR = scr
 scr: TAR = scr
+
 # - build selected sucrose modules and D3 custom bundle for Sugar
 sgr: TAR = sgr
-scr sgr: sucrose.min.js d3v4.min.js
 
-# JAVASCRIPT
+scr sgr: sucrose
+	make d3-$(TAR)
+
+sucrose: sucrose.min.js
+
 
 # - [*] build the main sucrose library js file with components for target
 sucrose.js:
 	rm -f ./build/$@
-	rollup -c rollup.config.js --environment BUILD:$(TAR),DEV:false --banner "$(HEADER)"
+	rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false --banner "$(HEADER)"
 
 # - [*] minify the main library js file
 sucrose.min.js: sucrose.js
 	rm -f ./build/$@
-	cat ./build/$^ | $(JS_MINIFIER) --preamble "$(HEADER)" >> ./build/$@
-
-# - copy full D3 bundle from node_modules
-d3: d3.min.js
-d3.js:
-	rm -f ./build/$@
-	echo ";" | cat - ./node_modules/d3/build/$@ >> ./build/$@
-d3.min.js: d3.js
-	rm -f ./build/$@
-	echo ";" | cat - ./node_modules/d3/build/$@ >> ./build/$@
-	rollup -c rollup.d3.js --environment BUILD:$(TAR),DEV:false --banner "$(HEADER)"
-
-# - create a custom D3 bundle with just required components for target
-d3v4.js:
-	rollup -c ./node_modules/d3/rollup.config.js --banner ";$(shell cd ./node_modules/d3 && preamble)" -f umd -n d3v4 \
-		-o ./build/$@ -i ./src/d3-rebundle/index_$(TAR).js
-
-# - minify the custom D3 bundle
-d3v4.min.js: d3v4.js
-	rm -f ./build/$@
-	cat ./build/$^ | $(JS_MINIFIER) --preamble ";$(shell cd ./node_modules/d3 && preamble)" >> ./build/$@
+	uglifyjs --preamble "$(HEADER)" build/$^ -c negate_iife=false -m -o build/$@
 
 # - remove the main library js files
 clean-js:
 	rm -f ./build/sucrose.js ./build/sucrose.min.js
+	rm -f ./build/d3.js ./build/d3.min.js
 	rm -f ./build/d3v4.js ./build/d3v4.min.js
+
+
+# D3 BUILD TARGETS
+
+D3 = d3
+
+# - build custom D3 bundle with just required components for Sucrose
+d3-scr: D3 = d3
+
+# - build custom D3 bundle with just required components for Sugar
+d3-sgr: D3 = d3v4
+
+d3-scr d3-sgr: d3-minify
+
+# - [*] build the D3 library js file with components for target
+d3-bundle:
+	rm -f ./build/$(D3).js
+	rollup -c ./node_modules/d3/rollup.config.js -f umd -n $(D3) \
+		-i ./src/d3-rebundle/index_$(D3).js -o ./build/$(D3).js \
+		--banner ";$(shell cd ./node_modules/d3 && preamble)"
+
+# - [*] build the D3 library js file with components for target
+d3-minify: d3-bundle
+	rm -f ./build/$(D3).min.js
+	uglifyjs --preamble ";$(shell cd ./node_modules/d3 && preamble)" \
+		build/$(D3).js -c negate_iife=false -m -o build/$(D3).min.js
+
+# - copy full D3 from node_modules to build directory
+d3-all:
+	rm -f ./build/d3.js
+	echo ";" | cat - ./node_modules/d3/build/d3.js >> ./build/d3.js
+	rm -f ./build/d3.min.js
+	echo ";" | cat - ./node_modules/d3/build/d3.min.js >> ./build/d3.min.js
+
 
 # STYLESHEETS
 
@@ -146,11 +167,11 @@ examples-dev: npm-dev
 	cd examples && make install-dev
 
 # - build and copy the sucrose library to the example application
-es examples-scr: sucrose.min.js
+es examples-scr: scr
 	cd examples && make sucrose
 
 # - build and copy the sucrose js and css files to the example application
-examples-sucrose: scr css
+examples-sucrose: scr css scr-d3
 	cd examples && make sucrose && make dependencies
 
 #----
