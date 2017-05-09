@@ -25,6 +25,7 @@ export default function lineChart() {
       state = {},
       x,
       y,
+      pointRadius = 3,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -32,8 +33,6 @@ export default function lineChart() {
         noLabel: 'undefined'
       },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
-
-  var pointRadius = 2;
 
   //============================================================
   // Private Variables
@@ -58,8 +57,6 @@ export default function lineChart() {
 
   var tooltipContent = function(eo, properties) {
         var key = eo.series.key;
-        // var x = model.x()(eo.point, eo.pointIndex);
-        // var y = model.y()(eo.point, eo.pointIndex);
         var x = eo.point.x;
         var y = eo.point.y;
         return '<h3>' + key + '</h3>' +
@@ -95,11 +92,13 @@ export default function lineChart() {
       var availableWidth = width;
       var availableHeight = height;
 
-      var hasGroupData = properties.groups && Array.isArray(properties.groups) && properties.groups.length;
+      var groupData = properties.groups || properties.labels;
+      var hasGroupData = groupData ? Array.isArray(groupData) && groupData.length !== 0 : false;
       var groupLabels = hasGroupData ?
-            properties.groups.map(function(d) {
+            groupData.map(function(d) {
               return d.label || d.l || (typeof d === 'string' ? d : chart.strings().noLabel);
-            }) : [];
+            }) :
+            [];
 
       var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupData || false,
           xIsDatetime = properties.xDataType === 'datetime' || false,
@@ -144,6 +143,18 @@ export default function lineChart() {
       // set title display option
       showTitle = showTitle && properties.title;
 
+      // add series index to each data point for reference
+      // and disable data series if total is zero
+      data.forEach(function(d, i) {
+        d.seriesIndex = i;
+        d.total = d3.sum(d.values, function(d, i) {
+          return model.y()(d, i);
+        });
+        if (!d.total) {
+          d.disabled = true;
+        }
+      });
+
       modelData = data.filter(function(d) { return !d.disabled; });
 
       // safety array
@@ -159,6 +170,7 @@ export default function lineChart() {
         return chart;
       }
 
+      //TODO: handle datetime groupLabels
       if (xIsOrdinal) {
 
         xTickCount = groupLabels.length;
@@ -171,7 +183,7 @@ export default function lineChart() {
 
         xTickValues = d3
           .merge(
-            data.map(function(d) {
+            modelData.map(function(d) {
               return d.values;
             })
           )
@@ -231,6 +243,7 @@ export default function lineChart() {
         // .padDataOuter(-1)
         // set x-scale as time instead of linear
         // .xScale(xIsDatetime && !groupLabels.length ? d3.scaleTime() : d3.scaleLinear()) //TODO: why && !groupLabels.length?
+        // .xScale(hasGroupData ? d3.scaleBand() : xIsDatetime ? d3.scaleTime() : d3.scaleLinear())
         .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear())
         .singlePoint(singlePoint)
         .size(pointSize) // default size set to 3
@@ -876,6 +889,12 @@ export default function lineChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.pointRadius = function(_) {
+    if (!arguments.length) { return pointRadius; }
+    pointRadius = _;
     return chart;
   };
 
