@@ -92,7 +92,7 @@ export default function lineChart() {
       var availableWidth = width;
       var availableHeight = height;
 
-      var groupData = properties.groups || properties.labels;
+      var groupData = properties.groups;
       var hasGroupData = groupData ? Array.isArray(groupData) && groupData.length !== 0 : false;
       var groupLabels = hasGroupData ?
             groupData.map(function(d) {
@@ -197,6 +197,10 @@ export default function lineChart() {
         xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
 
         if (xIsDatetime) {
+          xTickValues = xTickValues.map(function(d) {
+            return new Date(d);
+          });
+
           xDateFormat = utility.getDateFormat(xTickValues);
 
           xValueFormat = function(d, i, selection) {
@@ -306,7 +310,11 @@ export default function lineChart() {
           .yDomain(null);
         xAxis
           .orient('bottom')
+          //NOTE: be careful of this. If the x value is ordinal, then the values
+          // should be [1...n]. If the x value is numeric, then the values are
+          // zero indexed as [0..n-1]
           .tickValues(xIsOrdinal ? d3.range(1, groupLabels.length + 1) : null)
+          .ticks(xIsOrdinal ? groupLabels.length : null)
           .showMaxMin(xIsDatetime)
           .highlightZero(false);
         yAxis

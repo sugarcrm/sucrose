@@ -626,7 +626,7 @@ utility.getDateFormat = function(values) {
         format = 5;
         // format = (d3.timeWeek(date) < date ? 4 : 5);
       } else if (d3.timeYear(date) < d) {
-        format = 6;
+        format = 7;
       } else {
         format = 8;
       }
@@ -634,10 +634,7 @@ utility.getDateFormat = function(values) {
     }) : 0;
   return dateFormats[formatIndex];
 };
-
-utility.dateFormat = function(d, p, l) {
-  var dateString, date, locale, spec, fmtr;
-
+utility.multiFormat = function(d) {
   var formatMillisecond = '.%L',
       formatSecond = ':%S',
       formatMinute = '%I:%M',
@@ -646,38 +643,40 @@ utility.dateFormat = function(d, p, l) {
       formatWeek = '%b %d',
       formatMonth = '%B',
       formatYear = '%Y';
-
-  function multiFormat(d) {
-    var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
-    var format;
-    if (d3.timeSecond(date) < d) {
-      format = formatMillisecond;
-    } else if (d3.timeMinute(date) < d) {
-      format = formatSecond;
-    } else if (d3.timeHour(date) < d) {
-      format = formatMinute;
-    } else if (d3.timeDay(date) < d) {
-      format = formatHour;
-    } else if (d3.timeMonth(date) < d) {
-      format = formatDay;
-      // format = (d3.timeWeek(date) < date ? formatDay : formatWeek);
-    } else if (d3.timeYear(date) < d) {
-      format = formatMonth;
-    } else {
-      format = formatYear;
-    }
-    return format;
+  var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
+  var format;
+  if (d3.timeSecond(date) < d) {
+    format = formatMillisecond;
+  } else if (d3.timeMinute(date) < d) {
+    format = formatSecond;
+  } else if (d3.timeHour(date) < d) {
+    format = formatMinute;
+  } else if (d3.timeDay(date) < d) {
+    format = formatHour;
+  } else if (d3.timeMonth(date) < d) {
+    format = formatDay;
+    // format = (d3.timeWeek(date) < date ? formatDay : formatWeek);
+  } else if (d3.timeYear(date) < d) {
+    format = formatMonth;
+  } else {
+    format = formatYear;
   }
+  return format;
+};
 
-  dateString = d.toString();
+utility.dateFormat = function(d, p, l) {
+  var dateString, date, locale, spec, fmtr;
 
   // if the date value provided is a year
-  if (dateString.length === 4) {
+  dateString = d.toString();
+  if (!isNaN(parseInt(dateString, 10)) && dateString.length === 4) {
     // append day and month parts to get correct UTC offset
-    // dateString = dateString + '-1-1';
+    dateString = dateString + '-1-1';
     // dateString = '1/1/' + dateString;
+    date = new Date(dateString);
+  } else {
+    date = new Date(d);
   }
-  date = new Date(dateString);
 
   if (!(date instanceof Date) || isNaN(date.valueOf())) {
     return d;
@@ -686,13 +685,13 @@ utility.dateFormat = function(d, p, l) {
   if (l && l.hasOwnProperty('timeFormat')) {
     // Use rebuilt locale
     fmtr = l.timeFormat;
-    spec = p && p.indexOf('%') !== -1 ? p : multiFormat(date);
+    spec = p && p.indexOf('%') !== -1 ? p : utility.multiFormat(date);
   } else {
     // Ensure locality object has all needed properties
     // TODO: this is expensive so consider removing
     locale = l || utility.buildLocality(l);
     fmtr = d3.timeFormatLocale(locale).format;
-    spec = p && p.indexOf('%') !== -1 ? p : locale[p] || multiFormat(date);
+    spec = p && p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date);
     // TODO: if not explicit pattern provided, we should use .multi()
   }
   return fmtr(spec)(date);
@@ -12188,7 +12187,7 @@ function lineChart() {
       var availableWidth = width;
       var availableHeight = height;
 
-      var groupData = properties.groups || properties.labels;
+      var groupData = properties.groups;
       var hasGroupData = groupData ? Array.isArray(groupData) && groupData.length !== 0 : false;
       var groupLabels = hasGroupData ?
             groupData.map(function(d) {
@@ -12293,6 +12292,10 @@ function lineChart() {
         xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
 
         if (xIsDatetime) {
+          xTickValues = xTickValues.map(function(d) {
+            return new Date(d);
+          });
+
           xDateFormat = utility.getDateFormat(xTickValues);
 
           xValueFormat = function(d, i, selection) {
@@ -12402,7 +12405,11 @@ function lineChart() {
           .yDomain(null);
         xAxis
           .orient('bottom')
+          //NOTE: be careful of this. If the x value is ordinal, then the values
+          // should be [1...n]. If the x value is numeric, then the values are
+          // zero indexed as [0..n-1]
           .tickValues(xIsOrdinal ? d3.range(1, groupLabels.length + 1) : null)
+          .ticks(xIsOrdinal ? groupLabels.length : null)
           .showMaxMin(xIsDatetime)
           .highlightZero(false);
         yAxis
