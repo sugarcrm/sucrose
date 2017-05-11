@@ -1,44 +1,38 @@
 {
   "properties": {
     "title": "Total is 250",
-    "labels": [
+    "groups": [
       {
         "group": 1,
-        "l": "August 2015"
+        "label": "August 2015",
+        "total": 20
       },
       {
         "group": 2,
-        "l": "September 2015"
-      }
-    ],
-    "values": [
-      {
-        "group": 1,
-        "t": 250
-      },
-      {
-        "group": 2,
-        "t": 300
+        "label": "September 2015",
+        "total": 80
       }
     ]
   },
   "data": [
     {
       "key": "Friends",
+      "total": 20,
       "values": [
-        [
-          0,
-          20
-        ]
+        {
+          "x": 1,
+          "y": 20
+        }
       ]
     },
     {
       "key": "Enemies",
+      "total": 80,
       "values": [
-        [
-          1,
-          80
-        ]
+        {
+          "x": 2,
+          "y": 80
+        }
       ]
     }
   ]
