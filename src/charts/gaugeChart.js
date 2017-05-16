@@ -197,11 +197,9 @@ export default function gaugeChart() {
         // Title & Legend & Controls
 
         // Header variables
-        var maxLegendWidth = 0,
-            headerHeight = 0,
+        var headerHeight = 0,
             titleBBox = {width: 0, height: 0},
-            legendHeight = 0,
-            trans = '';
+            legendHeight = 0;
 
         title_wrap.select('.sc-title').remove();
 

@@ -7,7 +7,7 @@ import line from '../models/line.js';
 import axis from '../models/axis.js';
 import menu from '../models/menu.js';
 
-export default function stackeareaChart() {
+export default function areaChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -72,8 +72,9 @@ export default function stackeareaChart() {
       guidetips = null;
 
   var tooltipContent = function(eo, properties) {
-    console.log('eo: ', eo);
+        console.log('eo: ', eo);
         var key = eo.seriesKey;
+        // var x = xValueFormat(model.x()(d));
         var y = yValueFormat(model.y()(eo));
         return '<p>' + key + ': ' + y + '</p>';
       };
@@ -620,11 +621,7 @@ export default function stackeareaChart() {
 
           // Line
           eo.data.forEach(function(d, i) {
-            var key = d.seriesKey,
-                xval = xValueFormat(model.x()(d)),
-                yval = yValueFormat(model.y()(d)),
-                // content = tooltipContent(key, xval, yval, d, chart);
-                content = tooltipContent(eo, properties);
+            var content = tooltipContent(eo, properties);
             guidePos.clientY = eo.origin.top + y(d[1]);
             d3.select(guidetips[i]).select('.tooltip-inner').html(content);
             tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');

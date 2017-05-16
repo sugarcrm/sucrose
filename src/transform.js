@@ -15,8 +15,7 @@ const transform = function(json, chartType, barType) {
 
   var xIsDatetime = properties.xDataType === 'datetime' || false,
       xIsOrdinal = properties.xDataType === 'ordinal' || false,
-      xIsNumeric = properties.xDataType === 'numeric' || false,
-      yIsCurrency = properties.yDataType === 'currency' || false;
+      xIsNumeric = properties.xDataType === 'numeric' || false;
 
   function pickLabel(d) {
     // d can be {label:'abc'} ['abc'] or 'abc'

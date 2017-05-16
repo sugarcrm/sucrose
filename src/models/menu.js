@@ -58,8 +58,6 @@ export default function menu() {
     selection.each(function(data) {
 
       var container = d3.select(this),
-          containerWidth = width,
-          containerHeight = height,
           keyWidths = [],
           legendHeight = 0,
           dropdownHeight = 0,
@@ -254,8 +252,8 @@ export default function menu() {
             columnWidths = [],
             keyPositions = [],
             maxWidth = containerWidth - margin.left - margin.right,
+            maxHeight = height,
             maxRowWidth = 0,
-            minRowWidth = 0,
             textHeight = this.getLineHeight(),
             lineHeight = diameter + (inline ? 0 : textHeight) + lineSpacing,
             menuMargin = {top: 7, right: 7, bottom: 7, left: 7}, // account for stroke width
@@ -462,7 +460,7 @@ export default function menu() {
             .height(margin.top + diameter + margin.top); //don't use bottom here because we want vertical centering
 
           legendHeight = menuMargin.top + diameter * keys + spacing * (keys - 1) + menuMargin.bottom;
-          dropdownHeight = Math.min(containerHeight - legend.height(), legendHeight);
+          dropdownHeight = Math.min(maxHeight - legend.height(), legendHeight);
 
           clip
             .attr('x', 0.5 - menuMargin.top - radius)

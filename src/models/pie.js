@@ -11,8 +11,6 @@ export default function pie() {
       width = 500,
       height = 500,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getX = function(d) { return d.x; },
-      getY = function(d) { return d.y; },
       getKey = function(d) { return d.key; },
       getValue = function(d, i) { return d.value; },
       fmtKey = function(d) { return getKey(d.series || d); },
@@ -244,7 +242,6 @@ export default function pie() {
           extHeights = [],
           verticalShift = 0,
           verticalReduction = doLabels ? 5 : 0,
-          horizontalShift = 0,
           horizontalReduction = leaderLength + textOffset;
 
       // side effect :: resets extWidths, extHeights
@@ -669,18 +666,6 @@ export default function pie() {
   model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return model;
-  };
-
-  model.x = function(_) {
-    if (!arguments.length) { return getX; }
-    getX = _;
-    return model;
-  };
-
-  model.y = function(_) {
-    if (!arguments.length) { return getY; }
-    getY = utility.functor(_);
     return model;
   };
 

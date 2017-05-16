@@ -108,15 +108,10 @@ export default function treemapChart() {
         availableHeight = renderHeight - margin.top - margin.bottom;
 
         // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
-            widthRatio = 0,
-            headerHeight = 0,
+        var headerHeight = 0,
             titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
             titleHeight = 0,
-            legendHeight = 0,
-            trans = '';
+            legendHeight = 0;
 
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
@@ -290,7 +285,7 @@ export default function treemapChart() {
   chart.legend = legend;
   chart.treemap = model;
 
-  fc.rebind(chart, model, 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient', 'direction');
+  fc.rebind(chart, model, 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }
@@ -394,6 +389,14 @@ export default function treemapChart() {
         strings[prop] = _[prop];
       }
     }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    model.direction(_);
+    legend.direction(_);
     return chart;
   };
 

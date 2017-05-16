@@ -16,14 +16,11 @@ export default function bubbleChart() {
       width = null,
       height = null,
       showTitle = false,
-      showControls = false,
       showLegend = true,
       direction = 'ltr',
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
-      xDomain,
-      yDomain,
       delay = 200,
       duration = 0,
       groupBy = function(d) { return d.y; },
@@ -31,7 +28,6 @@ export default function bubbleChart() {
       clipEdge = false, // if true, masks lines within x and y scale
       seriesLength = 0,
       reduceYTicks = false, // if false a tick will show for every data point
-      format = d3.timeFormat('%Y-%m-%d'),
       tooltips = true,
       x,
       y,
@@ -113,16 +109,15 @@ export default function bubbleChart() {
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData,
-          timeExtent,
-          xD,
-          yD,
+          xDomain,
+          yDomain,
           yValues;
 
-      var xAxisValueFormat = function(d, i, selection, noEllipsis) {
+      var xAxisFormat = function(d, i, selection, noEllipsis) {
             return xValueFormat(d, i, d, xIsDatetime);
           };
 
-      var yAxisValueFormat = function(d, i, selection, noEllipsis) {
+      var yAxisFormat = function(d, i, selection, noEllipsis) {
             var label = yValues && Array.isArray(yValues) ?
                   yValues[i].key || d :
                   d;
@@ -276,11 +271,11 @@ export default function bubbleChart() {
           return d;
         });
 
-      xD = getTimeDomain(modelData);
+      xDomain = getTimeDomain(modelData);
 
       yValues = getGroupTicks(data);
 
-      yD = d3.extent(
+      yDomain = d3.extent(
             d3.merge(
               modelData.map(function(d) {
                 return d.values.map(function(d, i) {
@@ -299,9 +294,9 @@ export default function bubbleChart() {
       xAxis
         .orient('bottom')
         .scale(x)
-        .valueFormat(xAxisValueFormat)
+        .valueFormat(xAxisFormat)
         .ticks(d3.timeMonths, 1)
-        .tickValues(getTimeTicks(xD))
+        .tickValues(getTimeTicks(xDomain))
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
@@ -309,7 +304,7 @@ export default function bubbleChart() {
       yAxis
         .orient('left')
         .scale(y)
-        .valueFormat(yAxisValueFormat)
+        .valueFormat(yAxisFormat)
         .ticks(yValues.length)
         .tickValues(yValues.map(function(d, i) {
           return yValues[i].y;
@@ -345,7 +340,6 @@ export default function bubbleChart() {
         var maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI),
             headerHeight = 0,
             titleBBox = {width: 0, height: 0},
-            legendHeight = 0,
             trans = '';
 
         //------------------------------------------------------------
@@ -442,8 +436,8 @@ export default function bubbleChart() {
           .width(innerWidth)
           .height(innerHeight)
           .id(chart.id())
-          .xDomain(xD)
-          .yDomain(yD);
+          .xDomain(xDomain)
+          .yDomain(yDomain);
 
         model_wrap
           .datum(modelData.filter(function(d) {

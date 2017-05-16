@@ -16,7 +16,6 @@ export default function paretoChart() {
       width = null,
       height = null,
       showTitle = false,
-      showControls = false,
       showLegend = true,
       direction = 'ltr',
       tooltips = true,
@@ -110,17 +109,6 @@ export default function paretoChart() {
         return;
       };
 
-  var getAbsoluteXY = function(element) {
-        var viewportElement = document.documentElement,
-          box = element.getBoundingClientRect(),
-          scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft,
-          scrollTop = viewportElement.scrollTop + document.body.scrollTop,
-          x = box.left + scrollLeft,
-          y = box.top + scrollTop;
-
-        return {'x': x, 'y': y};
-      };
-
   //============================================================
 
   function chart(selection) {
@@ -137,17 +125,13 @@ export default function paretoChart() {
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var maxBarLegendWidth = 0,
-          maxLineLegendWidth = 0,
-          widthRatio = 0,
-          headerHeight = 0,
-          pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
+      var pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
           xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
           yIsCurrency = chartData.properties.yDataType === 'currency' || false;
 
       var baseDimension = bars.stacked() ? 72 : 32;
 
-      var xAxisValueFormat = function(d, i, selection, noEllipsis) {
+      var xAxisFormat = function(d, i, selection, noEllipsis) {
             // Set axis to use trimmed array rather than data
             var label = groupLabels && Array.isArray(groupLabels) ?
                   groupLabels[i] || d:
@@ -160,7 +144,7 @@ export default function paretoChart() {
               value;
           };
 
-      var yAxisValueFormat = function(d, i, selection, noEllipsis) {
+      var yAxisFormat = function(d, i, selection, noEllipsis) {
             return yValueFormat(d, i, null, yIsCurrency);
           };
 
@@ -397,7 +381,7 @@ export default function paretoChart() {
       xAxis
         .orient('bottom')
         .scale(x)
-        .valueFormat(xAxisValueFormat)
+        .valueFormat(xAxisFormat)
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
@@ -406,7 +390,7 @@ export default function paretoChart() {
       yAxis
         .orient('left')
         .scale(y)
-        .valueFormat(yAxisValueFormat)
+        .valueFormat(yAxisFormat)
         .tickPadding(7)
         .showMaxMin(true);
 
@@ -433,14 +417,11 @@ export default function paretoChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
 
         // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
+        var maxBarLegendWidth = 0,
+            maxLineLegendWidth = 0,
             widthRatio = 0,
             headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
-            legendHeight = 0,
-            trans = '';
+            titleBBox = {width: 0, height: 0};
 
         //------------------------------------------------------------
         // Setup containers and skeleton of chart
@@ -1092,11 +1073,6 @@ export default function paretoChart() {
   chart.showTitle = function(_) {
     if (!arguments.length) { return showTitle; }
     showTitle = _;
-    return chart;
-  };
-
-  chart.showControls = function(_) {
-    if (!arguments.length) { return false; }
     return chart;
   };
 

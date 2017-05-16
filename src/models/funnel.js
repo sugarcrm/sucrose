@@ -11,9 +11,6 @@ export default function funnel() {
       width = 960,
       height = 500,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getX = function(d) { return d.x; },
-      getY = function(d) { return d.y; },
-      getH = function(d) { return d.height; },
       getKey = function(d) { return d.key; },
       getValue = function(d, i) { return d.value; },
       getCount = function(d, i) { return d.count; },
@@ -725,7 +722,7 @@ export default function funnel() {
           var // bottom of slice
               sliceBottom = d._bottom,
               // is slice below or above label bottom
-              scalar = d.labelBottom >= sliceBottom ? 1 : 0,
+              // scalar = d.labelBottom >= sliceBottom ? 1 : 0,
               // the width of the angled leader
               // from bottom right of label to bottom of slice
               leaderSlope = Math.abs(d.labelBottom + labelGap - sliceBottom) * r,
@@ -867,18 +864,6 @@ export default function funnel() {
   model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return model;
-  };
-
-  model.x = function(_) {
-    if (!arguments.length) { return getX; }
-    getX = _;
-    return model;
-  };
-
-  model.y = function(_) {
-    if (!arguments.length) { return getY; }
-    getY = utility.functor(_);
     return model;
   };
 

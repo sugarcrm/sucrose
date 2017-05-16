@@ -54,7 +54,6 @@ export default function multibar() {
       // baseDimension = stacked ? vertical ? 72 : 30 : 20;
 
       var container = d3.select(this),
-          orientation = vertical ? 'vertical' : 'horizontal',
           availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
           dimX = vertical ? 'width' : 'height',

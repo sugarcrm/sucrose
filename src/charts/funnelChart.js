@@ -138,7 +138,6 @@ export default function funnelChart() {
 
       // add series index to each data point for reference
       data.forEach(function(s, i) {
-        var y = model.y();
         s.seriesIndex = i;
 
         if (!s.value && !s.values) {
@@ -150,7 +149,7 @@ export default function funnelChart() {
           p.index = j;
           p.series = s;
           if (typeof p.value == 'undefined') {
-            p.value = y(p);
+            p.value = p.y;
           }
         });
 
@@ -202,8 +201,6 @@ export default function funnelChart() {
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
-      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
       var legend_wrap = wrap.select('.sc-legend-wrap');
 
@@ -240,14 +237,9 @@ export default function funnelChart() {
         // Title & Legend & Controls
 
         // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
-            widthRatio = 0,
-            headerHeight = 0,
+        var headerHeight = 0,
             titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
-            legendHeight = 0,
-            trans = '';
+            legendHeight = 0;
 
         title_wrap.select('.sc-title').remove();
 
@@ -428,7 +420,7 @@ export default function funnelChart() {
   chart.legend = legend;
   chart.controls = controls;
 
-  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
+  fc.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
