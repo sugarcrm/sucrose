@@ -264,13 +264,13 @@ var sucroseCharts = function() {
             var key = eo.series.key;
             var x = eo.point.x;
             var y = eo.point.y;
-            var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
-            var content = '<p>Category: <b>' + key + '</b></p>' +
-                          '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>',
-                dateCheck = new Date(x);
-            if (dateCheck instanceof Date && !isNaN(dateCheck.valueOf())) {
-              content += '<p>Date: <b>' + sucrose.utility.dateFormat(x, '%x', chart.locality()) + '</b></p>';
-            }
+            var value = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+            var group = xIsDatetime && eo.group ?
+                  sucrose.utility.dateFormat(eo.group.label, '%x', chart.locality()) :
+                  chart.xAxis.tickFormat()(x, eo.pointIndex, null, false);
+            var content = '<p>Key: <b>' + key + '</b></p>';
+                content += '<p>' + (xIsDatetime ? 'Date' : 'Group') + ': <b>' + group + '</b></p>';
+                content += '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + value + '</b></p>';
             return content;
           });
         callback(chart);
@@ -284,20 +284,24 @@ var sucroseCharts = function() {
             return sucrose.utility.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
           .tooltipContent(function(eo, properties) {
-            var key = eo.group.label;
+            var key = eo.series.key;
+            var label = eo.group.label;
             var y = eo.point.y;
-            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-            var content = '<p>Key: <b>' + key + '</b></p>' +
-                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>';
-            var percent, group;
+            var x = eo.point.x;
+            var value = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+            var group = xIsDatetime ?
+                  sucrose.utility.dateFormat(label, '%x', chart.locality()) :
+                  chart.xAxis.tickFormat()(x, eo.pointIndex, null, false);
+            var percent;
+            var content = '<p>Key: <b>' + key + '</b></p>';
+                content += '<p>' + (xIsDatetime ? 'Date' : 'Group') + ': <b>' + group + '</b></p>';
+                content += '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + value + '</b></p>';
             if (typeof eo.group._height !== 'undefined') {
               percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
               percent = sucrose.utility.numberFormatRound(percent, 2, false, chart.locality());
               content += '<p>Percentage: <b>' + percent + '%</b></p>';
-            } else {
-              group = chart.yAxis.tickFormat()(eo.point.x, eo.pointIndex, null, false);
-              content += '<p>Group: <b>' + group + '%</b></p>';
             }
+
             return content;
           });
           //TODO: fix multibar overfolow handler

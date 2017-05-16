@@ -20,6 +20,7 @@ export default function stackearea() {
       delay = 0, // transition
       duration = 300, // transition
       locality = utility.buildLocality(),
+      direction = 'ltr',
       style = 'stack',
       offset = 'zero',
       order = 'default',
@@ -132,12 +133,6 @@ export default function stackearea() {
       //------------------------------------------------------------
       // Rendering functions
 
-      var area = d3.area()
-            .curve(curve)
-            .x(function(d) { return x(d.data.date); })
-            .y0(function(d) { return y(d[0]); })
-            .y1(function(d) { return y(d[1]); });
-
       var areaEnter = d3.area()
             .curve(curve)
             .x(function(d) { return x(d.data.date); })
@@ -149,6 +144,12 @@ export default function stackearea() {
               var d0 = data0 ? data0[d.si0] : null;
               return (d0 && d0[i]) ? y0(d0[i][1]) : y0(0);
             });
+
+      var area = d3.area()
+            .curve(curve)
+            .x(function(d) { return x(d.data.date); })
+            .y0(function(d) { return y(d[0]); })
+            .y1(function(d) { return y(d[1]); });
 
       var areaExit = d3.area()
             .curve(curve)
@@ -352,6 +353,11 @@ export default function stackearea() {
     height = _;
     return model;
   };
+  model.clipEdge = function(_) {
+    if (!arguments.length) { return clipEdge; }
+    clipEdge = _;
+    return model;
+  };
 
   model.x = function(_) {
     if (!arguments.length) { return getX; }
@@ -410,9 +416,9 @@ export default function stackearea() {
     locality = utility.buildLocality(_);
     return model;
   };
-  model.clipEdge = function(_) {
-    if (!arguments.length) { return clipEdge; }
-    clipEdge = _;
+  model.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
     return model;
   };
 

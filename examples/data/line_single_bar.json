@@ -8,7 +8,7 @@
         "total": 100
       }
     ],
-    "xDataType": "datetime",
+    "xDataType": "ordinal",
     "yDataType": "currency"
   },
   "data": [

@@ -419,11 +419,10 @@ export default function multibar() {
 
       function buildEventObject(e, d, i) {
         return {
-            value: getY(d, i),
-            point: d,
-            series: data[d.seriesIndex],
             pointIndex: i,
+            point: d,
             seriesIndex: d.seriesIndex,
+            series: data[d.seriesIndex],
             groupIndex: d.group,
             id: id,
             e: e

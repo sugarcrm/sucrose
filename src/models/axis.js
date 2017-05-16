@@ -58,7 +58,6 @@ export default function axis() {
       var vertical = orient === 'left' || orient === 'right' ? true : false,
           reflect = orient === 'left' || orient === 'top' ? -1 : 1,
           tickGap = 6,
-          tickSpacing = 0,
           labelThickness = 0;
 
       var tickDimensions = [],
