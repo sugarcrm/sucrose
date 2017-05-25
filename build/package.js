@@ -5,7 +5,6 @@ export var keywords = ["charts","d3","visualization","svg","mobile","canvas"];
 export var homepage = "http://sucrose.io/";
 export var license = "Apache-2.0";
 export var author = {"name":"Henry Rogers","url":"https://github.com/hhrogersii"};
-export var contributors = [{"name":"Travis Hubbard","url":"https://github.com/tshubbard"}];
 export var main = "build/sucrose.node.js";
 export var browser = "build/sucrose.js";
 export var module = "index";

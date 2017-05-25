@@ -16,12 +16,6 @@
     "name": "Henry Rogers",
     "url": "https://github.com/hhrogersii"
   },
-  "contributors": [
-    {
-      "name": "Travis Hubbard",
-      "url": "https://github.com/tshubbard"
-    }
-  ],
   "main": "build/sucrose.node.js",
   "browser": "build/sucrose.js",
   "module": "index",

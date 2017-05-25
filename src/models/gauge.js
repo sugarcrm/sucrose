@@ -212,7 +212,6 @@ export default function gauge() {
 
       labels
         .attr('transform', function(d) {
-          console.log('d: ', d);
           return 'rotate(' + newAngle(d.y) + ') translate(0,' + (prop(-1.5) - radius) + ')';
         })
         .text(getY)
@@ -319,7 +318,6 @@ export default function gauge() {
       }
 
       function labelOpacity(d) {
-        console.log('d: ', d);
         var percent = (endAngle(d) - startAngle(d)) / (2 * Math.PI);
         return percent > labelThreshold ? 1 : 0;
       }
