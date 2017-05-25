@@ -36,11 +36,14 @@ export default function lineChart() {
   var pointRadius = 3;
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
         if (isDate) {
           dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(label, dateFormat, chart.locality());
+          return utility.dateFormat(value, dateFormat, chart.locality());
         } else {
-          return label;
+          return value;
         }
       };
 
@@ -72,11 +75,33 @@ export default function lineChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
+        var seriesLabel = properties.seriesLabel || 'Key';
         var key = eo.series.key;
-        var x = xValueFormat(eo.point.x);
-        var y = yValueFormat(eo.point.y);
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
+
+        var yIsCurrency = properties.yDataType === 'currency';
+        var valueLabel = yIsCurrency ? 'Amount' : 'Count';
+        var y = eo.point.y;
+        var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group && eo.group.label ? eo.group.label : null;
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
+
+        var percent;
+
+        var content = '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
+            content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
+            content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        if (typeof eo.group._height !== 'undefined') {
+          percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
+          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
+          content += '<p>Percentage: <b>' + percent + '%</b></p>';
+        }
+
+        return content;
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -122,8 +147,9 @@ export default function lineChart() {
 
       var modelData = [],
           seriesCount = 0,
-          totalAmount = 0,
-          singlePoint = false;
+          totalAmount = 0;
+
+      var singlePoint = false;
 
           //TODO: allow formatter to be set by data
       var xTickValues = [],
@@ -169,8 +195,7 @@ export default function lineChart() {
         hasGroupLabels = xTickCount > 0;
       }
 
-      // ------------------------------------------
-      // Add series index to each data point for reference
+      // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
         series.seriesIndex = s;
@@ -204,7 +229,8 @@ export default function lineChart() {
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (xIsOrdinal && hasGroupData) {
+      if (hasGroupData) {
+
         groupData.forEach(function(group, g) {
           var label = typeof group.label === 'undefined' ?
             chart.strings().noLabel :
@@ -212,7 +238,6 @@ export default function lineChart() {
           group.group = g,
           group.label = label;
           group.total = 0;
-          group._height = 0;
         });
 
         processLabels(groupData);
@@ -231,7 +256,6 @@ export default function lineChart() {
                 })
                 .forEach(function(value, v) {
                   group.total += value.y;
-                  group._height += Math.abs(value.y);
                 });
             });
         });
@@ -243,8 +267,8 @@ export default function lineChart() {
       } else {
 
         xTickValues = d3
-          .merge(modelData.map(function(d) {
-            return d.values;
+          .merge(modelData.map(function(series) {
+            return series.values;
           }))
           .reduce(function(a, b) {
             if (a.indexOf(b.x) === -1) {
@@ -270,9 +294,9 @@ export default function lineChart() {
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {
-        var label = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
-        var value = xValueFormat(d, i, label, xIsDatetime, xDateFormat);
-        return noEllipsis ? value : utility.stringEllipsify(value, container, xTickMaxWidth);
+        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
       yAxisFormat = function(d, i, selection) {
@@ -733,7 +757,7 @@ export default function lineChart() {
         if (tooltips) {
           if (xIsOrdinal && hasGroupLabels) {
             eo.groupIndex = eo.pointIndex;
-            eo.group = groupData[eo.pointIndex];
+            eo.group = groupData[eo.groupIndex];
           }
           tt = showTooltip(eo, that.parentNode, properties);
         }

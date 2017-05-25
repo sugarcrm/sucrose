@@ -13,9 +13,10 @@ export default function pie() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getKey = function(d) { return d.key; },
       getValue = function(d, i) { return d.value; },
+      getCount = function(d, i) { return d.count; },
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
-      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
+      fmtCount = function(d) { return (' (' + getCount(d.series || d) + ')').replace(' ()', ''); },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -24,8 +25,7 @@ export default function pie() {
       gradient = null,
       fill = color,
       textureFill = false,
-      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
 
   var showLabels = true,
       showLeaders = true,
@@ -41,7 +41,8 @@ export default function pie() {
       rotateDegrees = 0,
       donutRatio = 0.447,
       minRadius = 75,
-      maxRadius = 250;
+      maxRadius = 250,
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   var holeFormat = function(hole_wrap, data) {
         var hole_bind = hole_wrap.selectAll('.sc-hole-container').data(data),
@@ -78,7 +79,6 @@ export default function pie() {
   // Update model
 
   function model(selection) {
-
     selection.each(function(data) {
 
       var availableWidth = width - margin.left - margin.right,
@@ -678,6 +678,12 @@ export default function pie() {
   model.getValue = function(_) {
     if (!arguments.length) { return getValue; }
     getValue = _;
+    return model;
+  };
+
+  model.getCount = function(_) {
+    if (!arguments.length) { return getCount; }
+    getCount = _;
     return model;
   };
 

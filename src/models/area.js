@@ -82,22 +82,25 @@ export default function stackearea() {
       var stack = d3.stack()
             .offset(stackOffset)
             .order(stackOrder)
-            .value(function(d, k) { return d[k]; });
+            .value(function(d, k) {
+              return d[k];
+            });
 
       var indexedData = {};
       chartData.forEach(function(s, i) {
         s.values.forEach(function(p, j) {
-          var x = p[0];
-          var y = p[1];
+          var x = p.x;
+          var y = p.y;
           if (!indexedData[x]) {
             indexedData[x] = [];
-            indexedData[x].date = x;
+            indexedData[x].x = x;
           }
           indexedData[x].push(y);
         });
       });
+
       var keys = d3.keys(indexedData);
-      var dates = keys.map(function(d) { return parseInt(d, 10); });
+      var xValues = keys.map(function(d) { return parseInt(d, 10); });
       var data = stack.keys(d3.range(0, chartData.length))(d3.values(indexedData));
 
       var min = d3.min(data, function(series) {
@@ -135,7 +138,7 @@ export default function stackearea() {
 
       var areaEnter = d3.area()
             .curve(curve)
-            .x(function(d) { return x(d.data.date); })
+            .x(function(d) { return x(d.data.x); })
             .y0(function(d, i) {
               var d0 = data0 ? data0[d.si0] : null;
               return (d0 && d0[i]) ? y0(d0[i][1]) : y0(0);
@@ -147,13 +150,13 @@ export default function stackearea() {
 
       var area = d3.area()
             .curve(curve)
-            .x(function(d) { return x(d.data.date); })
+            .x(function(d) { return x(d.data.x); })
             .y0(function(d) { return y(d[0]); })
             .y1(function(d) { return y(d[1]); });
 
       var areaExit = d3.area()
             .curve(curve)
-            .x(function(d) { return x(d.data.date); })
+            .x(function(d) { return x(d.data.x); })
             .y0(function(d, i) {
               var d0 = data[d.si0];
               return (d0 && d0[i]) ? y(d0[i][1]) : y(0);
@@ -170,7 +173,7 @@ export default function stackearea() {
       //------------------------------------------------------------
       // Setup Scales
 
-      x.domain(d3.extent(dates)).range([0, availableWidth]);
+      x.domain(d3.extent(xValues)).range([0, availableWidth]);
       y.domain([0, max - min]).range([availableHeight, 0]);
 
       //------------------------------------------------------------
@@ -258,7 +261,7 @@ export default function stackearea() {
 
       function buildEventObject(e, d, i) {
         return {
-            points: d,
+            point: d,
             seriesKey: d.key,
             seriesIndex: d.seriesIndex,
             e: e
@@ -275,14 +278,16 @@ export default function stackearea() {
           var eo = buildEventObject(d3.event, d, i);
           var rect = wrap.select('#sc-edge-clip-' + id + ' rect').node().getBoundingClientRect();
           var xpos = d3.event.clientX - rect.left;
-          var index = Math.round((xpos * dates.length) / availableWidth) - 1;
-          eo.data = data.map(function(d,i) {
-            var point = [d[index].data.date, d[index][1]];
+          var index = Math.round((xpos * xValues.length) / availableWidth) - 1;
+          eo.data = data.map(function(d, i) {
+            var point = [d[index].data.x, d[index][1]];
             point.seriesKey = d.key;
             point.seriesIndex = d.seriesIndex;
             return point;
           });
+          eo.pointIndex = index;
           eo.origin = rect;
+
           dispatch.call('elementMousemove', this, eo);
         })
         .on('mouseout', function(d, i) {

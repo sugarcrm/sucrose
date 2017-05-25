@@ -41,11 +41,16 @@ export default function pieChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
-        var key = model.getKey()(eo);
+        var key = model.fmtKey()(eo);
+        var label = properties.seriesLabel || 'Key';
         var y = model.getValue()(eo);
         var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
+        var yIsCurrency = properties.yDataType === 'currency';
+        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
+        return '<p>' + label + ': <b>' + key + '</b></p>' +
+               '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+               '<p>Percent: <b>' + percent + '%</b></p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -65,14 +70,14 @@ export default function pieChart() {
           container = d3.select(this),
           modelClass = 'pie';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -121,7 +126,7 @@ export default function pieChart() {
             .filter(function(d) {
               return d.active !== 'active';
             })
-            .map(function(d) {
+            .forEach(function(d) {
               d.active = 'inactive';
               return d;
             });
@@ -420,7 +425,7 @@ export default function pieChart() {
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
-  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
   fc.rebind(chart, model, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 

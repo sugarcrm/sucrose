@@ -672,15 +672,15 @@ utility.dateFormat = function(d, p, l) {
     return d;
   }
 
-  if (l && l.hasOwnProperty('timeFormat')) {
-    // Use rebuilt locale
-    fmtr = l.timeFormat;
+  if (l && l.hasOwnProperty('utcFormat')) {
+    // Use rebuilt locale formatter
+    fmtr = l.utcFormat;
     spec = p && p.indexOf('%') !== -1 ? p : utility.multiFormat(date);
   } else {
     // Ensure locality object has all needed properties
     // TODO: this is expensive so consider removing
-    locale = l || utility.buildLocality(l);
-    fmtr = d3.timeFormatLocale(locale).format;
+    locale = utility.buildLocality(l);
+    fmtr = d3.timeFormatDefaultLocale(locale).utcFormat;
     spec = p && p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date);
     // TODO: if not explicit pattern provided, we should use .multi()
   }

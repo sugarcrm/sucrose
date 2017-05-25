@@ -682,15 +682,15 @@ utility.dateFormat = function(d, p, l) {
     return d;
   }
 
-  if (l && l.hasOwnProperty('timeFormat')) {
-    // Use rebuilt locale
-    fmtr = l.timeFormat;
+  if (l && l.hasOwnProperty('utcFormat')) {
+    // Use rebuilt locale formatter
+    fmtr = l.utcFormat;
     spec = p && p.indexOf('%') !== -1 ? p : utility.multiFormat(date);
   } else {
     // Ensure locality object has all needed properties
     // TODO: this is expensive so consider removing
-    locale = l || utility.buildLocality(l);
-    fmtr = d3.timeFormatLocale(locale).format;
+    locale = utility.buildLocality(l);
+    fmtr = d3.timeFormatDefaultLocale(locale).utcFormat;
     spec = p && p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date);
     // TODO: if not explicit pattern provided, we should use .multi()
   }
@@ -1003,22 +1003,25 @@ function stackearea() {
       var stack = d3.stack()
             .offset(stackOffset)
             .order(stackOrder)
-            .value(function(d, k) { return d[k]; });
+            .value(function(d, k) {
+              return d[k];
+            });
 
       var indexedData = {};
       chartData.forEach(function(s, i) {
         s.values.forEach(function(p, j) {
-          var x = p[0];
-          var y = p[1];
+          var x = p.x;
+          var y = p.y;
           if (!indexedData[x]) {
             indexedData[x] = [];
-            indexedData[x].date = x;
+            indexedData[x].x = x;
           }
           indexedData[x].push(y);
         });
       });
+
       var keys = d3.keys(indexedData);
-      var dates = keys.map(function(d) { return parseInt(d, 10); });
+      var xValues = keys.map(function(d) { return parseInt(d, 10); });
       var data = stack.keys(d3.range(0, chartData.length))(d3.values(indexedData));
 
       var min = d3.min(data, function(series) {
@@ -1056,7 +1059,7 @@ function stackearea() {
 
       var areaEnter = d3.area()
             .curve(curve)
-            .x(function(d) { return x(d.data.date); })
+            .x(function(d) { return x(d.data.x); })
             .y0(function(d, i) {
               var d0 = data0 ? data0[d.si0] : null;
               return (d0 && d0[i]) ? y0(d0[i][1]) : y0(0);
@@ -1068,13 +1071,13 @@ function stackearea() {
 
       var area = d3.area()
             .curve(curve)
-            .x(function(d) { return x(d.data.date); })
+            .x(function(d) { return x(d.data.x); })
             .y0(function(d) { return y(d[0]); })
             .y1(function(d) { return y(d[1]); });
 
       var areaExit = d3.area()
             .curve(curve)
-            .x(function(d) { return x(d.data.date); })
+            .x(function(d) { return x(d.data.x); })
             .y0(function(d, i) {
               var d0 = data[d.si0];
               return (d0 && d0[i]) ? y(d0[i][1]) : y(0);
@@ -1091,7 +1094,7 @@ function stackearea() {
       //------------------------------------------------------------
       // Setup Scales
 
-      x.domain(d3.extent(dates)).range([0, availableWidth]);
+      x.domain(d3.extent(xValues)).range([0, availableWidth]);
       y.domain([0, max - min]).range([availableHeight, 0]);
 
       //------------------------------------------------------------
@@ -1179,7 +1182,7 @@ function stackearea() {
 
       function buildEventObject(e, d, i) {
         return {
-            points: d,
+            point: d,
             seriesKey: d.key,
             seriesIndex: d.seriesIndex,
             e: e
@@ -1196,14 +1199,16 @@ function stackearea() {
           var eo = buildEventObject(d3.event, d, i);
           var rect = wrap.select('#sc-edge-clip-' + id + ' rect').node().getBoundingClientRect();
           var xpos = d3.event.clientX - rect.left;
-          var index = Math.round((xpos * dates.length) / availableWidth) - 1;
-          eo.data = data.map(function(d,i) {
-            var point = [d[index].data.date, d[index][1]];
+          var index = Math.round((xpos * xValues.length) / availableWidth) - 1;
+          eo.data = data.map(function(d, i) {
+            var point = [d[index].data.x, d[index][1]];
             point.seriesKey = d.key;
             point.seriesIndex = d.seriesIndex;
             return point;
           });
+          eo.pointIndex = index;
           eo.origin = rect;
+
           dispatch.call('elementMousemove', this, eo);
         })
         .on('mouseout', function(d, i) {
@@ -6518,9 +6523,10 @@ function pie() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getKey = function(d) { return d.key; },
       getValue = function(d, i) { return d.value; },
+      getCount = function(d, i) { return d.count; },
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
-      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
+      fmtCount = function(d) { return (' (' + getCount(d.series || d) + ')').replace(' ()', ''); },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -6529,8 +6535,7 @@ function pie() {
       gradient = null,
       fill = color,
       textureFill = false,
-      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
+      classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
 
   var showLabels = true,
       showLeaders = true,
@@ -6546,7 +6551,8 @@ function pie() {
       rotateDegrees = 0,
       donutRatio = 0.447,
       minRadius = 75,
-      maxRadius = 250;
+      maxRadius = 250,
+      dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
 
   var holeFormat = function(hole_wrap, data) {
         var hole_bind = hole_wrap.selectAll('.sc-hole-container').data(data),
@@ -6583,7 +6589,6 @@ function pie() {
   // Update model
 
   function model(selection) {
-
     selection.each(function(data) {
 
       var availableWidth = width - margin.left - margin.right,
@@ -7164,6 +7169,12 @@ function pie() {
   model.getValue = function(_) {
     if (!arguments.length) { return getValue; }
     getValue = _;
+    return model;
+  };
+
+  model.getCount = function(_) {
+    if (!arguments.length) { return getCount; }
+    getCount = _;
     return model;
   };
 
@@ -8616,11 +8627,14 @@ function areaChart() {
   var pointRadius = 3;
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
         if (isDate) {
           dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(label, dateFormat, chart.locality());
+          return utility.dateFormat(value, dateFormat, chart.locality());
         } else {
-          return label;
+          return value;
         }
       };
 
@@ -8634,7 +8648,7 @@ function areaChart() {
   //------------------------------------------------------------
 
   // Chart components
-  var model = stackearea().clipEdge(true);
+  var model = stackearea().clipEdge(true).duration(0);
   var xAxis = axis();
   var yAxis = axis();
   var controls = menu();
@@ -8651,10 +8665,9 @@ function areaChart() {
       guidetips = null;
 
   var tooltipContent = function(eo, properties) {
-        console.log('eo: ', eo);
         var key = eo.seriesKey;
-        // var x = xValueFormat(model.x()(d));
-        var y = yValueFormat(model.y()(eo));
+        var yIsCurrency = properties.yDataType === 'currency';
+        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
         return '<p>' + key + ': ' + y + '</p>';
       };
 
@@ -8668,8 +8681,8 @@ function areaChart() {
           container = d3.select(this),
           modelClass = 'area';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
@@ -8678,24 +8691,11 @@ function areaChart() {
           availableHeight = height;
       var padding = 0;
 
-      var groupData = properties.labels,
+      var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
           hasGroupLabels = hasGroupData ? groupData.filter(function(group) {
             return typeof group.label !== 'undefined';
           }).length !== 0 : false;
-
-      // TODO: what if the dimension is a numerical range?
-      // xValuesAreDates = groupLabels.length ?
-      //       utility.isValidDate(groupLabels[0]) :
-      //       utility.isValidDate(model.x()(data[0].values[0]));
-      // xValuesAreDates = isArrayData && utility.isValidDate(data[0].values[0][0]);
-
-      // SAVE FOR LATER
-      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
-      //   return d3.min(d.values, function(d, i) {
-      //     return model.x()(d, i);
-      //   });
-      // }) > 0;
 
       var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupLabels || false,
           xIsDatetime = properties.xDataType === 'datetime' || false,
@@ -8704,11 +8704,10 @@ function areaChart() {
 
       var modelData = [],
           seriesCount = 0,
-          totalAmount = 0,
-          singlePoint = false;
+          totalAmount = 0;
 
-      var showMaxMin = false,
-          isArrayData = true;
+      var singlePoint = false,
+          showMaxMin = false;
 
           //TODO: allow formatter to be set by data
       var xTickValues = [],
@@ -8718,8 +8717,12 @@ function areaChart() {
           xAxisFormat = null,
           yAxisFormat = null;
 
-      chart.update = function() {
+      chart.update = function(d) {
+        if (d) {
+          model.duration(d);
+        }
         container.transition().duration(duration).call(chart);
+        model.duration(duration);
       };
 
       chart.container = this;
@@ -8745,103 +8748,122 @@ function areaChart() {
       //------------------------------------------------------------
       // Process data
 
-      var groupLabels = hasGroupData ?
-            groupData.map(function(d) {
-              return [].concat(d.l)[0] || chart.strings().noLabel;
-            }) :
-            [];
-
-      isArrayData = Array.isArray(data[0].values[0]);
-      if (isArrayData) {
-        model.x(function(d) { return d ? d[0] : 0; });
-        model.y(function(d) { return d ? d[1] : 0; });
-      } else {
-        model.x(function(d) { return d.x; });
-        model.y(function(d) { return d.y; });
+      function processLabels(groupData) {
+        // Get simple array of group labels for ticks
+        xTickValues = groupData.map(function(group) {
+            return group.label;
+          });
+        xTickCount = xTickValues.length;
+        hasGroupLabels = xTickCount > 0;
       }
 
       // add series index to each data point for reference
       // and disable data series if total is zero
-      data.forEach(function(series, i) {
-        series.seriesIndex = i;
-        series.total = d3.sum(series.values, function(d, i) {
-          return model.y()(d, i);
+      data.forEach(function(series, s) {
+        series.seriesIndex = s;
+
+        series.total = d3.sum(series.values, function(value, v) {
+          return model.y()(value, v);
         });
-        if (!series.total) {
-          series.disabled = true;
-        }
+
+        // disabled if all values in series are zero
+        // or the series was disabled by the legend
+        series.disabled = series.disabled || series.total === 0;
       });
 
-      modelData = data.filter(function(d) { return !d.disabled; });
+      // Remove disabled series data
+      modelData = data
+        .filter(function(series) {
+          return !series.disabled;
+        })
+        .map(function(series, s) {
+          series.seri = s;
+          return series;
+        });
 
-      // safety array
-      if (!modelData.length) {
-        modelData = [{seriesIndex: 0, key: 'Empty', total: 0, disabled: true, values: []}];
-      }
-
-      totalAmount = d3.sum(modelData, function(d) { return d.total; });
-
-      // display No Data message if there's nothing to show.
-      if (!totalAmount) {
-        displayNoData();
-        return chart;
-      }
-
-      //TODO: handle datetime groupLabels
-      if (xIsOrdinal) {
-
-        xTickCount = groupLabels.length;
-
-        xAxisFormat = function(d, i, selection) {
-          return groupLabels[i];
-        };
-
-      } else {
-
-        xTickValues = d3
-          .merge(
-            modelData.map(function(d) {
-              return d.values;
-            })
-          )
-          .reduce(function(a, b) {
-            if (a.indexOf(b.x) === -1) {
-              a.push(b.x);
-            }
-            return a;
-          }, []);
-
-        xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
-
-        if (xIsDatetime) {
-          xTickValues = xTickValues.map(function(d) {
-            return new Date(d);
-          });
-
-          xDateFormat = utility.getDateFormat(xTickValues);
-
-          xAxisFormat = function(d, i, selection) {
-            return utility.dateFormat(d, xDateFormat, chart.locality());
-          };
-
-        } else if (xIsNumeric) {
-
-          xAxisFormat = function(d, i, selection) {
-            return d;
-          };
-
-        }
-
-      }
-
-      yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, d, yIsCurrency, 2);
-      };
+      seriesCount = modelData.length;
 
       // Display No Data message if there's nothing to show.
       if (displayNoData(modelData)) {
         return chart;
       }
+
+      // -------------------------------------------
+      // Get group data from properties or modelData
+
+      if (xIsOrdinal && hasGroupData) {
+
+        groupData.forEach(function(group, g) {
+          var label = typeof group.label === 'undefined' ?
+            chart.strings().noLabel :
+              xIsDatetime ? new Date(group.label) : group.label;
+          group.group = g,
+          group.label = label;
+          group.total = 0;
+        });
+
+        processLabels(groupData);
+
+        // Calculate group totals and height
+        // based on enabled data series
+        groupData.forEach(function(group, g) {
+          //TODO: only sum enabled series
+          // update group data with values
+          modelData
+            .forEach(function(series, s) {
+              //TODO: there is a better way
+              series.values
+                .filter(function(value, v) {
+                  return value.group === g;
+                })
+                .forEach(function(value, v) {
+                  group.total += value.y;
+                });
+            });
+        });
+
+        totalAmount = d3.sum(groupData, function(group) {
+          return group.total;
+        });
+
+      } else {
+
+        xTickValues = d3
+          .merge(modelData.map(function(series) {
+            return series.values;
+          }))
+          .reduce(function(a, b) {
+            if (a.indexOf(b.x) === -1) {
+              a.push(b.x);
+            }
+            return a;
+          }, [])
+          .map(function(value, v) {
+            return xIsDatetime ? new Date(value) : value;
+          });
+
+        xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
+
+        totalAmount = d3.sum(modelData, function(series) {
+          return series.total;
+        });
+
+      }
+
+      // Configure axis format functions
+      if (xIsDatetime) {
+        xDateFormat = utility.getDateFormat(xTickValues);
+      }
+
+      xAxisFormat = function(d, i, selection, noEllipsis) {
+        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
+      };
+
+      yAxisFormat = function(d, i, selection) {
+        return yValueFormat(d, i, d, yIsCurrency, 2);
+      };
 
       // Set title display option
       showTitle = showTitle && properties.title;
@@ -9200,7 +9222,7 @@ function areaChart() {
 
           // Line
           eo.data.forEach(function(d, i) {
-            var content = tooltipContent(eo, properties);
+            var content = tooltipContent(d, properties);
             guidePos.clientY = eo.origin.top + y(d[1]);
             d3.select(guidetips[i]).select('.tooltip-inner').html(content);
             tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');
@@ -9208,7 +9230,7 @@ function areaChart() {
 
           // Top date
           xData.forEach(function(d, i) {
-            var xval = xValueFormat(xpos);
+            var xval = xValueFormat(d, i, xpos, xIsDatetime);
             guidePos.clientY = eo.origin.top;
             d3.select(guidetips['x']).select('.tooltip-inner').html(xval);
             tooltip.position(that.parentNode, guidetips['x'], guidePos, 's');
@@ -9260,7 +9282,7 @@ function areaChart() {
         }
 
         state.disabled = data.map(function(d) { return !!d.disabled; });
-        chart.update();
+        chart.update(300);
         dispatch.call('stateChange', this, state);
       });
 
@@ -9291,7 +9313,7 @@ function areaChart() {
         }
 
         state.style = model.style();
-        chart.update();
+        chart.render();
         dispatch.call('stateChange', this, state);
       });
 
@@ -9390,7 +9412,7 @@ function areaChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.stacked = model;
+  chart.area = model;
   chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
@@ -9592,15 +9614,10 @@ function bubbleChart() {
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
       delay = 200,
       duration = 0,
-      groupBy = function(d) { return d.y; },
-      filterBy = function(d) { return d.y; },
-      clipEdge = false, // if true, masks lines within x and y scale
-      seriesLength = 0,
-      reduceYTicks = false, // if false a tick will show for every data point
       tooltips = true,
+      state = {},
       x,
       y,
-      state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -9609,14 +9626,26 @@ function bubbleChart() {
       },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
-  var xValueFormat = function(d, i, label, isDate) {
-        return isDate ?
-          utility.dateFormat(label, 'MMM', chart.locality()) :
-          label;
+  var groupBy = function(d) { return d.y; },
+      filterBy = function(d) { return d.y; },
+      clipEdge = false, // if true, masks lines within x and y scale
+      seriesLength = 0,
+      reduceYTicks = false; // if false a tick will show for every data point
+
+  var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
+        if (isDate) {
+          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? 'MM' : dateFormat;
+          return utility.dateFormat(value, dateFormat, chart.locality());
+        } else {
+          return value;
+        }
       };
 
-  var yValueFormat = function(d, i, label, isCurrency) {
-        var precision = 2;
+  var yValueFormat = function(d, i, label, isCurrency, precision) {
+        precision = isNaN(precision) ? 2 : precision;
         return utility.numberFormatSI(label, precision, isCurrency, chart.locality());
       };
 
@@ -9630,11 +9659,10 @@ function bubbleChart() {
         .padDataOuter(-1)
         .size(function(d) { return d.y; })
         .sizeRange([256, 1024])
-        .singlePoint(true),
-      xAxis = axis(),
-      yAxis = axis(),
-      legend = menu()
-        .align('center')
+        .singlePoint(true);
+  var xAxis = axis();
+  var yAxis = axis();
+  var legend = menu()
         .key(function(d) { return d.key + '%'; });
 
   var tt = null;
@@ -9653,7 +9681,9 @@ function bubbleChart() {
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart) { return; };
+  var seriesClick = function(data, e, chart, labels) {
+        return;
+      };
 
   //============================================================
 
@@ -9706,8 +9736,10 @@ function bubbleChart() {
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
-      function displayNoData(d) {
-        var hasData = d && d.length;
+      function displayNoData(data) {
+        var hasData = data && data.length && data.filter(function(series) {
+          return !series.disabled && Array.isArray(series.values) && series.values.length;
+        }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
@@ -9717,6 +9749,7 @@ function bubbleChart() {
       if (displayNoData(data)) {
         return chart;
       }
+
 
       //------------------------------------------------------------
       // Process data
@@ -9870,6 +9903,7 @@ function bubbleChart() {
         .tickPadding(4)
         .highlightZero(false)
         .showMaxMin(false);
+
       yAxis
         .orient('left')
         .scale(y)
@@ -9881,6 +9915,34 @@ function bubbleChart() {
         .tickPadding(7)
         .highlightZero(false)
         .showMaxMin(false);
+
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
 
       //------------------------------------------------------------
       // Main chart draw
@@ -9911,36 +9973,9 @@ function bubbleChart() {
             titleBBox = {width: 0, height: 0},
             trans = '';
 
-        //------------------------------------------------------------
-        // Setup containers and skeleton of chart
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
         wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
-
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
-        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
-        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
-
-        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
-        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -9967,7 +10002,7 @@ function bubbleChart() {
 
         if (showLegend) {
           legend
-            .id('legend_' + chart.id())
+            .id('legend_' + model.id())
             .strings(chart.strings().legend)
             .align('center')
             .height(availableHeight - headerHeight);
@@ -10245,9 +10280,7 @@ function bubbleChart() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -10257,65 +10290,50 @@ function bubbleChart() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
+    dispatch.call('stateChange', this, state);
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -10325,9 +10343,7 @@ function bubbleChart() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
     // model.direction(_);
     xAxis.direction(_);
@@ -10337,27 +10353,37 @@ function bubbleChart() {
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     model.duration(_);
     return chart;
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
     return chart;
   };
 
-  chart.seriesClick = function(_) {
+  chart.xValueFormat = function(_) {
     if (!arguments.length) {
-      return seriesClick;
+      return xValueFormat;
     }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) { return seriesClick; }
     seriesClick = _;
     return chart;
   };
@@ -10379,22 +10405,6 @@ function bubbleChart() {
       return filterBy;
     }
     filterBy = _;
-    return chart;
-  };
-
-  chart.xValueFormat = function(_) {
-    if (!arguments.length) {
-      return xValueFormat;
-    }
-    xValueFormat = _;
-    return chart;
-  };
-
-  chart.yValueFormat = function(_) {
-    if (!arguments.length) {
-      return yValueFormat;
-    }
-    yValueFormat = _;
     return chart;
   };
 
@@ -10440,10 +10450,15 @@ function funnelChart() {
 
   var tooltipContent = function(eo, properties) {
         var key = model.fmtKey()(eo);
+        var label = properties.seriesLabel || 'Key';
         var y = model.getValue()(eo);
         var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
+        var yIsCurrency = properties.yDataType === 'currency';
+        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
+        return '<p>' + label + ': <b>' + key + '</b></p>' +
+               '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+               '<p>Percent: <b>' + percent + '%</b></p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -10463,14 +10478,14 @@ function funnelChart() {
           container = d3.select(this),
           modelClass = 'funnel';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -10499,7 +10514,6 @@ function funnelChart() {
       chart.clearActive = function() {
         data.map(function(d) {
           d.active = '';
-          d.values[0].active = '';
           container.selectAll('.nv-series').classed('nv-inactive', false);
           return d;
         });
@@ -10520,7 +10534,7 @@ function funnelChart() {
             .filter(function(d) {
               return d.active !== 'active';
             })
-            .map(function(d) {
+            .forEach(function(d) {
               d.active = 'inactive';
               return d;
             });
@@ -10819,7 +10833,7 @@ function funnelChart() {
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
-  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {
@@ -10997,8 +11011,6 @@ function gaugeChart() {
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y, //can be accessed via chart.yScale()
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         noData: 'No Data Available.',
@@ -11038,14 +11050,14 @@ function gaugeChart() {
           container = d3.select(this),
           modelClass = 'gauge';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -12184,11 +12196,14 @@ function lineChart() {
   var pointRadius = 3;
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
         if (isDate) {
           dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(label, dateFormat, chart.locality());
+          return utility.dateFormat(value, dateFormat, chart.locality());
         } else {
-          return label;
+          return value;
         }
       };
 
@@ -12220,11 +12235,33 @@ function lineChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
+        var seriesLabel = properties.seriesLabel || 'Key';
         var key = eo.series.key;
-        var x = xValueFormat(eo.point.x);
-        var y = yValueFormat(eo.point.y);
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
+
+        var yIsCurrency = properties.yDataType === 'currency';
+        var valueLabel = yIsCurrency ? 'Amount' : 'Count';
+        var y = eo.point.y;
+        var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group && eo.group.label ? eo.group.label : null;
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
+
+        var percent;
+
+        var content = '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
+            content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
+            content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        if (typeof eo.group._height !== 'undefined') {
+          percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
+          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
+          content += '<p>Percentage: <b>' + percent + '%</b></p>';
+        }
+
+        return content;
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -12270,8 +12307,9 @@ function lineChart() {
 
       var modelData = [],
           seriesCount = 0,
-          totalAmount = 0,
-          singlePoint = false;
+          totalAmount = 0;
+
+      var singlePoint = false;
 
           //TODO: allow formatter to be set by data
       var xTickValues = [],
@@ -12317,8 +12355,7 @@ function lineChart() {
         hasGroupLabels = xTickCount > 0;
       }
 
-      // ------------------------------------------
-      // Add series index to each data point for reference
+      // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
         series.seriesIndex = s;
@@ -12352,7 +12389,8 @@ function lineChart() {
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (xIsOrdinal && hasGroupData) {
+      if (hasGroupData) {
+
         groupData.forEach(function(group, g) {
           var label = typeof group.label === 'undefined' ?
             chart.strings().noLabel :
@@ -12360,7 +12398,6 @@ function lineChart() {
           group.group = g,
           group.label = label;
           group.total = 0;
-          group._height = 0;
         });
 
         processLabels(groupData);
@@ -12379,7 +12416,6 @@ function lineChart() {
                 })
                 .forEach(function(value, v) {
                   group.total += value.y;
-                  group._height += Math.abs(value.y);
                 });
             });
         });
@@ -12391,8 +12427,8 @@ function lineChart() {
       } else {
 
         xTickValues = d3
-          .merge(modelData.map(function(d) {
-            return d.values;
+          .merge(modelData.map(function(series) {
+            return series.values;
           }))
           .reduce(function(a, b) {
             if (a.indexOf(b.x) === -1) {
@@ -12418,9 +12454,9 @@ function lineChart() {
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {
-        var label = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
-        var value = xValueFormat(d, i, label, xIsDatetime, xDateFormat);
-        return noEllipsis ? value : utility.stringEllipsify(value, container, xTickMaxWidth);
+        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
       yAxisFormat = function(d, i, selection) {
@@ -12881,7 +12917,7 @@ function lineChart() {
         if (tooltips) {
           if (xIsOrdinal && hasGroupLabels) {
             eo.groupIndex = eo.pointIndex;
-            eo.group = groupData[eo.pointIndex];
+            eo.group = groupData[eo.groupIndex];
           }
           tt = showTooltip(eo, that.parentNode, properties);
         }
@@ -13176,11 +13212,14 @@ function multibarChart() {
       hideEmptyGroups = true;
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
         if (isDate) {
           dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(label, dateFormat, chart.locality());
+          return utility.dateFormat(value, dateFormat, chart.locality());
         } else {
-          return label;
+          return value;
         }
       };
 
@@ -13218,13 +13257,33 @@ function multibarChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
+        var seriesLabel = properties.seriesLabel || 'Key';
         var key = eo.series.key;
-        var label = eo.group.label;
-        var value = eo.point.y;
-        var percent = Math.abs(y * 100 / eo.group._height).toFixed(1) + '%';
-        return '<h3>' + key + '</h3>' +
-               '<p>' + label + '</p>' +
-               '<p>' + value + ' for ' + percent + '</p>';
+
+        var yIsCurrency = properties.yDataType === 'currency';
+        var valueLabel = yIsCurrency ? 'Amount' : 'Count';
+        var y = eo.point.y;
+        var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group && eo.group.label ? eo.group.label : null;
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
+
+        var percent;
+
+        var content = '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
+            content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
+            content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        if (typeof eo.group._height !== 'undefined') {
+          percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
+          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
+          content += '<p>Percentage: <b>' + percent + '%</b></p>';
+        }
+
+        return content;
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -13249,8 +13308,8 @@ function multibarChart() {
           container = d3.select(this),
           modelClass = vertical ? 'multibar' : 'multibar-horizontal';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || [] : [];
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
@@ -13373,8 +13432,7 @@ function multibarChart() {
         hasGroupLabels = xTickCount > 0;
       }
 
-      // ------------------------------------------
-      // Add series index to each data point for reference
+      // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
         // make sure untrimmed values array exists
@@ -13390,7 +13448,7 @@ function multibarChart() {
 
         series.seriesIndex = s;
 
-        series.total = d3.sum(series._values, function(value, v) {
+        series.total = d3.sum(series.values, function(value, v) {
           return value.y;
         });
 
@@ -13419,6 +13477,7 @@ function multibarChart() {
                 'active': typeof series.active !== 'undefined' ? series.active : ''
               };
             });
+
           return series;
         });
 
@@ -13433,6 +13492,7 @@ function multibarChart() {
       // Get group data from properties or modelData
 
       if (hasGroupData) {
+
         groupData.forEach(function(group, g) {
           var label = typeof group.label === 'undefined' ?
             chart.strings().noLabel :
@@ -13442,7 +13502,9 @@ function multibarChart() {
           group.total = 0;
           group._height = 0;
         });
+
       } else {
+
         groupData = d3
           .merge(modelData.map(function(series) {
             return series.values;
@@ -13522,9 +13584,9 @@ function multibarChart() {
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {
-        var label = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
-        var value = xValueFormat(d, i, label, xIsDatetime, xDateFormat);
-        return noEllipsis ? value : utility.stringEllipsify(value, container, xTickMaxWidth);
+        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
       yAxisFormat = function(d, i, selection) {
@@ -13552,17 +13614,17 @@ function multibarChart() {
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
         .scale(x)
-        .tickPadding(4)
         .valueFormat(xAxisFormat)
         .tickSize(0)
+        .tickPadding(4)
         .highlightZero(false)
         .showMaxMin(false);
 
       yAxis
         .orient(vertical ? 'left' : 'bottom')
         .scale(y)
-        .tickPadding(4)
         .valueFormat(yAxisFormat)
+        .tickPadding(4)
         .showMaxMin(true);
 
 
@@ -13963,6 +14025,7 @@ function multibarChart() {
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
           if (xIsOrdinal && hasGroupLabels) {
+            // set the group rather than pass entire groupData
             eo.group = groupData[eo.groupIndex];
           }
           tt = showTooltip(eo, that.parentNode, properties);
@@ -14376,15 +14439,15 @@ function paretoChart() {
           container = d3.select(this),
           modelClass = 'pareto';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
       var pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
-          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+          xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var baseDimension = bars.stacked() ? 72 : 32;
 
@@ -15499,11 +15562,16 @@ function pieChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
-        var key = model.getKey()(eo);
+        var key = model.fmtKey()(eo);
+        var label = properties.seriesLabel || 'Key';
         var y = model.getValue()(eo);
         var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
+        var yIsCurrency = properties.yDataType === 'currency';
+        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
+        return '<p>' + label + ': <b>' + key + '</b></p>' +
+               '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+               '<p>Percent: <b>' + percent + '%</b></p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -15523,14 +15591,14 @@ function pieChart() {
           container = d3.select(this),
           modelClass = 'pie';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -15579,7 +15647,7 @@ function pieChart() {
             .filter(function(d) {
               return d.active !== 'active';
             })
-            .map(function(d) {
+            .forEach(function(d) {
               d.active = 'inactive';
               return d;
             });
@@ -15878,7 +15946,7 @@ function pieChart() {
   chart.controls = controls;
 
   fc.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
-  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
   fc.rebind(chart, model, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
 

@@ -119,15 +119,15 @@ export default function paretoChart() {
           container = d3.select(this),
           modelClass = 'pareto';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
       var pointSize = Math.pow(6, 2) * Math.PI, // set default point size to 6
-          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+          xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var baseDimension = bars.stacked() ? 72 : 32;
 

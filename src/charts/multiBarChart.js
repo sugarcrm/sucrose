@@ -40,11 +40,14 @@ export default function multibarChart() {
       hideEmptyGroups = true;
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
         if (isDate) {
           dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(label, dateFormat, chart.locality());
+          return utility.dateFormat(value, dateFormat, chart.locality());
         } else {
-          return label;
+          return value;
         }
       };
 
@@ -82,13 +85,33 @@ export default function multibarChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
+        var seriesLabel = properties.seriesLabel || 'Key';
         var key = eo.series.key;
-        var label = eo.group.label;
-        var value = eo.point.y;
-        var percent = Math.abs(y * 100 / eo.group._height).toFixed(1) + '%';
-        return '<h3>' + key + '</h3>' +
-               '<p>' + label + '</p>' +
-               '<p>' + value + ' for ' + percent + '</p>';
+
+        var yIsCurrency = properties.yDataType === 'currency';
+        var valueLabel = yIsCurrency ? 'Amount' : 'Count';
+        var y = eo.point.y;
+        var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group && eo.group.label ? eo.group.label : null;
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
+
+        var percent;
+
+        var content = '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
+            content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
+            content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        if (typeof eo.group._height !== 'undefined') {
+          percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
+          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
+          content += '<p>Percentage: <b>' + percent + '%</b></p>';
+        }
+
+        return content;
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -113,8 +136,8 @@ export default function multibarChart() {
           container = d3.select(this),
           modelClass = vertical ? 'multibar' : 'multibar-horizontal';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || [] : [];
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
@@ -237,8 +260,7 @@ export default function multibarChart() {
         hasGroupLabels = xTickCount > 0;
       }
 
-      // ------------------------------------------
-      // Add series index to each data point for reference
+      // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
         // make sure untrimmed values array exists
@@ -254,7 +276,7 @@ export default function multibarChart() {
 
         series.seriesIndex = s;
 
-        series.total = d3.sum(series._values, function(value, v) {
+        series.total = d3.sum(series.values, function(value, v) {
           return value.y;
         });
 
@@ -283,6 +305,7 @@ export default function multibarChart() {
                 'active': typeof series.active !== 'undefined' ? series.active : ''
               };
             });
+
           return series;
         });
 
@@ -297,6 +320,7 @@ export default function multibarChart() {
       // Get group data from properties or modelData
 
       if (hasGroupData) {
+
         groupData.forEach(function(group, g) {
           var label = typeof group.label === 'undefined' ?
             chart.strings().noLabel :
@@ -306,7 +330,9 @@ export default function multibarChart() {
           group.total = 0;
           group._height = 0;
         });
+
       } else {
+
         groupData = d3
           .merge(modelData.map(function(series) {
             return series.values;
@@ -386,9 +412,9 @@ export default function multibarChart() {
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {
-        var label = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
-        var value = xValueFormat(d, i, label, xIsDatetime, xDateFormat);
-        return noEllipsis ? value : utility.stringEllipsify(value, container, xTickMaxWidth);
+        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
       yAxisFormat = function(d, i, selection) {
@@ -416,17 +442,17 @@ export default function multibarChart() {
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
         .scale(x)
-        .tickPadding(4)
         .valueFormat(xAxisFormat)
         .tickSize(0)
+        .tickPadding(4)
         .highlightZero(false)
         .showMaxMin(false);
 
       yAxis
         .orient(vertical ? 'left' : 'bottom')
         .scale(y)
-        .tickPadding(4)
         .valueFormat(yAxisFormat)
+        .tickPadding(4)
         .showMaxMin(true);
 
 
@@ -827,6 +853,7 @@ export default function multibarChart() {
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
           if (xIsOrdinal && hasGroupLabels) {
+            // set the group rather than pass entire groupData
             eo.group = groupData[eo.groupIndex];
           }
           tt = showTooltip(eo, that.parentNode, properties);
