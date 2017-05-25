@@ -1,4 +1,4 @@
-import d3 from 'd3v4';
+import d3 from 'd3';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
@@ -39,16 +39,16 @@ export default function gaugeChart() {
 
   var tt = null;
 
-  var tooltipContent = function(key, x, y, e, graph) {
+  var tooltipContent = function(eo, properties) {
+        var key = model.fmtKey()(eo.point.series);
+        var x = model.getCount()(eo.point.series);
+        var y = model.getValue()(eo.point.y1 - eo.point.y0);
         return '<h3>' + key + '</h3>' +
                '<p>' + y + ' on ' + x + '</p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
-        var key = model.fmtKey()(eo.point.series),
-            x = model.getCount()(eo.point.series),
-            y = model.getValue()(eo.point.y1 - eo.point.y0),
-            content = tooltipContent(key, x, y, eo.e, chart);
+        var content = tooltipContent(eo, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
@@ -81,9 +81,9 @@ export default function gaugeChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -233,7 +233,7 @@ export default function gaugeChart() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),

@@ -13,6 +13,12 @@
   stroke-width: 0.5px;
   stroke: #717171;
 }
+.sc-chart {
+  min-width: 100px;
+  min-height: 100px;
+  overflow: hidden;
+  position: relative;
+}
 .sc-print {
   visibility: hidden;
   position: absolute !important;
@@ -20,24 +26,25 @@
   width: 720px;
   height: 480px;
 }
-/*
-    Minimum height and width is a good idea to prevent negative SVG dimensions...
-    For example width should be =< margin.left + margin.right + 1,
-    of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
-  */
+.sc-image-canvas {
+  visibility: hidden;
+  position: absolute;
+  left: -10000px;
+}
 /**********
  *  SVG
  */
-svg.sc-chart {
+svg.sc-chart,
+.sc-chart svg {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-  /* Trying to get SVG to act like a greedy block in all browsers */
   display: block;
   width: 100%;
   height: 100%;
 }
-svg.sc-chart text {
+svg.sc-chart text,
+.sc-chart svg text {
   font-style: normal;
   font-size: 11px;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -45,25 +52,32 @@ svg.sc-chart text {
   stroke: none;
   cursor: default;
 }
-svg.sc-chart text.sc-noData {
+svg.sc-chart text.sc-noData,
+.sc-chart svg text.sc-noData {
   font-size: 15px;
   font-weight: bold;
 }
-svg.sc-chart text.sc-title {
+svg.sc-chart text.sc-title,
+.sc-chart svg text.sc-title {
   font-size: 13px;
 }
-svg.sc-chart .sc-labels text {
+svg.sc-chart .sc-labels text,
+.sc-chart svg .sc-labels text {
   font-weight: bold;
   fill: #666;
 }
 svg.sc-chart .sc-label-value text,
-svg.sc-chart text.sc-label-value {
+.sc-chart svg .sc-label-value text,
+svg.sc-chart text.sc-label-value,
+.sc-chart svg text.sc-label-value {
   font-size: 13px;
 }
-svg.sc-chart .sc-label-box {
+svg.sc-chart .sc-label-box,
+.sc-chart svg .sc-label-box {
   fill: transparent;
 }
-svg.sc-chart .calc-text-strings {
+svg.sc-chart .calc-text-strings,
+.sc-chart svg .calc-text-strings {
   fill: #000000;
   stroke: rgba(0, 0, 0, 0);
   pointer-events: none;
@@ -76,7 +90,7 @@ svg.sc-chart .calc-text-strings {
   pointer-events: none;
 }
 .texture-line {
-  stroke-opacity: .5;
+  stroke-opacity: 0.5;
   stroke-width: 1px;
 }
 .sc-active .sc-texture {
@@ -258,31 +272,136 @@ svg.sc-chart .calc-text-strings {
   color: #ff6fcf;
 }
 /**********
+* Tooltips
+* Twitter bootstrap classes
+* with
+* SugarCRM Customizations
+  -----------------------*/
+.sctooltip-pending-removal {
+  position: absolute;
+  pointer-events: none;
+}
+.tooltip {
+  position: absolute;
+  z-index: 1070;
+  display: block;
+  visibility: visible;
+  padding: 5px;
+  pointer-events: none;
+  opacity: 0;
+  filter: alpha(opacity=0);
+}
+.tooltip.in {
+  opacity: 1;
+  filter: alpha(opacity=100);
+}
+.tooltip.top {
+  margin-top: -3px;
+}
+.tooltip.right {
+  margin-left: 3px;
+}
+.tooltip.bottom {
+  margin-top: 3px;
+}
+.tooltip.left {
+  margin-left: -3px;
+}
+.tooltip div,
+.tooltip span,
+.tooltip a {
+  color: #fff;
+}
+.tooltip-inner {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: normal;
+  font-size: 11px;
+  line-height: 15px;
+  color: #fff;
+  background-color: #000;
+  max-width: 200px;
+  padding: 3px 8px;
+  text-align: center;
+  text-decoration: none;
+  text-shadow: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border-radius: 3px;
+}
+.tooltip-inner > div {
+  text-align: left;
+}
+.tooltip-inner > p {
+  margin: 0;
+}
+.tooltip-inner h3 {
+  font-size: 13px;
+  color: #b6b6b6;
+  line-height: normal;
+  padding: 0;
+  margin: 0;
+}
+.tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+}
+.tooltip.top .tooltip-arrow {
+  bottom: 0;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px 5px 0;
+  border-top-color: #000;
+}
+.tooltip.right .tooltip-arrow {
+  top: 50%;
+  left: 0;
+  margin-top: -5px;
+  border-width: 5px 5px 5px 0;
+  border-right-color: #000;
+}
+.tooltip.left .tooltip-arrow {
+  top: 50%;
+  right: 0;
+  margin-top: -5px;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #000;
+}
+.tooltip.bottom .tooltip-arrow {
+  top: 0;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 0 5px 5px;
+  border-bottom-color: #000;
+}
+/**********
 *  Legend
 */
-.sc-legend .sc-series {
+.sc-menu .sc-series {
   cursor: pointer;
   font-size: 11px;
 }
-.sc-legend .sc-series line {
+.sc-menu .sc-series line {
   fill: none;
 }
-.sc-legend .sc-series text {
+.sc-menu .sc-series text {
   cursor: pointer;
 }
-.sc-legend .disabled circle {
+.sc-menu .disabled circle {
   fill: #fff;
 }
-.sc-legend-background {
+.sc-menu-background {
   fill: rgba(255, 255, 255, 0.9);
   stroke: rgba(161, 160, 160, 0.75);
   stroke-width: 1px;
 }
-.sc-legend-link {
+.sc-menu-link {
   cursor: pointer;
   fill: #176de5;
 }
-.sc-legend-link:hover {
+.sc-menu-link:hover {
   fill: #1257b7;
   text-decoration: underline;
 }
@@ -307,11 +426,11 @@ svg.sc-chart .calc-text-strings {
 }
 .sc-axis line,
 .sc-axis polyline {
-  stroke-opacity: .3;
+  stroke-opacity: 0.3;
 }
 .sc-axis path,
 .sc-axis line.zero {
-  stroke-opacity: .75;
+  stroke-opacity: 0.75;
 }
 .sc-axis path.domain {
   stroke-width: 2px;
@@ -320,12 +439,41 @@ svg.sc-chart .calc-text-strings {
 .sc-axis .sc-axisMaxMin text {
   font-weight: bold;
 }
-.sc-x.sc-axis text {
+.sc-axis-x .sc-axis text {
   font-size: 11px;
 }
 .sc-axislabel {
   font-weight: 900;
   font-style: italic;
+}
+/**********
+*  Stacked Area
+*/
+.sc-chart-area path.sc-area {
+  fill-opacity: 0.7;
+  stroke-opacity: 0;
+}
+.sc-chart-area path.sc-area.hover {
+  fill-opacity: 0.9;
+}
+.sc-chart-area .sc-guide-wrap .sc-series .sc-line,
+.sc-chart-area .sc-guide-wrap .sc-series .sc-point {
+  pointer-events: none;
+  stroke: #777;
+  fill-opacity: 0;
+  stroke-opacity: 0;
+}
+.sc-chart-area .sc-guide-wrap .sc-series .sc-line {
+  stroke-width: 1.5px;
+}
+.sc-chart-area .sc-guide-wrap .sc-series .sc-point {
+  stroke-width: 1px;
+  fill: #fff;
+}
+.sc-chart-area .sc-guide-wrap.hover .sc-series .sc-line,
+.sc-chart-area .sc-guide-wrap.hover .sc-series .sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
 }
 /**********
 *  MultiBars
@@ -336,7 +484,7 @@ svg.sc-chart .calc-text-strings {
   stroke: #fff;
 }
 .sc-multibar .sc-bar rect:hover {
-  fill-opacity: .75;
+  fill-opacity: 0.75;
 }
 .sc-multibar .sc-bar text {
   fill: #000000;
@@ -347,7 +495,7 @@ svg.sc-chart .calc-text-strings {
 *  Pie Chart
 */
 .sc-pie .sc-series.hover path {
-  fill-opacity: .75;
+  fill-opacity: 0.75;
 }
 .sc-pie polyline.sc-label-leader {
   stroke-width: 1px;
@@ -403,12 +551,6 @@ text.sc-pie-hole-label {
   cursor: ew-resize;
 }
 /**********
-* Distribution
-*/
-.sc-distribution {
-  pointer-events: none;
-}
-/**********
 *  Scatter
 */
 .sc-series .sc-point {
@@ -416,39 +558,10 @@ text.sc-pie-hole-label {
 }
 .sc-series .sc-point.hover {
   stroke-width: 12px;
-  stroke-opacity: .3;
+  stroke-opacity: 0.3;
 }
 .sc-scatter .sc-point.hover {
   fill-opacity: 1;
-}
-/**********
-*  Stacked Area
-*/
-.sc-chart-area path.sc-area {
-  fill-opacity: .7;
-  stroke-opacity: 0;
-}
-.sc-chart-area path.sc-area.hover {
-  fill-opacity: .9;
-}
-.sc-chart-area .sc-guide-wrap .sc-series .sc-line,
-.sc-chart-area .sc-guide-wrap .sc-series .sc-point {
-  pointer-events: none;
-  stroke: #777;
-  fill-opacity: 0;
-  stroke-opacity: 0;
-}
-.sc-chart-area .sc-guide-wrap .sc-series .sc-line {
-  stroke-width: 1.5px;
-}
-.sc-chart-area .sc-guide-wrap .sc-series .sc-point {
-  stroke-width: 1px;
-  fill: #FFF;
-}
-.sc-chart-area .sc-guide-wrap.hover .sc-series .sc-line,
-.sc-chart-area .sc-guide-wrap.hover .sc-series .sc-point {
-  fill-opacity: 1;
-  stroke-opacity: 1;
 }
 /**********
 * Guage
@@ -461,14 +574,14 @@ text.sc-pie-hole-label {
   fill: steelblue;
 }
 .sc-pointer {
-  fill: #888888;
+  fill: #888;
   stroke: #fff;
 }
 /**********
 * Funnel
 */
 .sc-chart-funnel .sc-slice.hover polygon {
-  fill-opacity: .75;
+  fill-opacity: 0.75;
 }
 .sc-chart-funnel polyline.sc-label-leader {
   stroke-width: 1px;
@@ -491,11 +604,10 @@ text.sc-pie-hole-label {
 * Pareto
 */
 .sc-chart-pareto .sc-quota-wrap line {
-  opacity: .8;
+  opacity: 0.8;
   stroke: #444;
   stroke-width: 4px;
   fill: none;
-  /*stroke-dasharray: '20, 5'; dashed lines must be defined in JS*/
 }
 .sc-chart-pareto .sc-quota-wrap line.sc-quota-target {
   stroke: #777;
@@ -524,6 +636,45 @@ text.sc-pie-hole-label {
 }
 .sc-chart-pareto .sc-lines-wrap2 .sc-scatter .sc-group circle {
   stroke: #fff;
+}
+/**********
+* Dendrogram
+*/
+.sc-card {
+  fill: #e9efef;
+  stroke: #aaa;
+  stroke-width: 0.5px;
+}
+.sc-card .sc-circ-front {
+  stroke-width: 0;
+}
+.sc-card line {
+  stroke-width: 2;
+}
+.sc-card .sc-expcoll {
+  cursor: pointer;
+}
+.sc-tree path.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+.sc-chart-org .sc-chart-background {
+  stroke: #d0d0d0;
+  stroke-width: 2px;
+}
+.sc-org-node text {
+  font: normal normal 300 10px / normal "Helvetica Neue", Arial, sans-serif;
+}
+.sc-org-node text.sc-org-name {
+  font-size: 10px;
+  fill: #176de5;
+}
+.sc-org-node text.sc-org-name.hover {
+  text-decoration: underline;
+}
+.sc-org-node text.sc-org-title {
+  font-size: 8px;
 }
 /**********
 * Treemap
@@ -563,158 +714,6 @@ text.sc-pie-hole-label {
   opacity: 0.3;
 }
 /**********
-* Dendrogram
-*/
-.sc-card {
-  fill: #E9EFEF;
-  stroke: #AAA;
-  stroke-width: .5px;
-}
-.sc-card .sc-circ-front {
-  stroke-width: 0;
-}
-.sc-card line {
-  stroke-width: 2;
-}
-.sc-card .sc-expcoll {
-  cursor: pointer;
-}
-.sc-tree path.link {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 1.5px;
-}
-.sc-chart-org .sc-chart-background {
-  stroke: #d0d0d0;
-  stroke-width: 2px;
-}
-.sc-org-node text {
-  font-style: normal;
-  font-variant: normal;
-  font-weight: 300;
-  font-stretch: normal;
-  font-size: 10px;
-  line-height: normal;
-  font-family: "Helvetica Neue", Arial, sans-serif;
-}
-.sc-org-node text.sc-org-name {
-  font-size: 10px;
-  fill: #176de5;
-}
-.sc-org-node text.sc-org-name.hover {
-  text-decoration: underline;
-}
-.sc-org-node text.sc-org-title {
-  font-size: 8px;
-}
-/**********
-* Tooltips
-* Twitter bootstrap classes
-* with
-* SugarCRM Customizations
-  -----------------------*/
-.sctooltip-pending-removal {
-  position: absolute;
-  pointer-events: none;
-}
-.tooltip {
-  position: absolute;
-  z-index: 1070;
-  display: block;
-  visibility: visible;
-  padding: 5px;
-  pointer-events: none;
-  opacity: 0;
-  filter: alpha(opacity=0);
-}
-.tooltip.in {
-  opacity: 1;
-  filter: alpha(opacity=100);
-}
-.tooltip.top {
-  margin-top: -3px;
-}
-.tooltip.right {
-  margin-left: 3px;
-}
-.tooltip.bottom {
-  margin-top: 3px;
-}
-.tooltip.left {
-  margin-left: -3px;
-}
-.tooltip div,
-.tooltip span,
-.tooltip a {
-  color: #fff;
-}
-.tooltip-inner {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-weight: normal;
-  font-size: 11px;
-  line-height: 15px;
-  color: #fff;
-  background-color: #000;
-  max-width: 200px;
-  padding: 3px 8px;
-  text-align: center;
-  text-decoration: none;
-  text-shadow: none;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  -webkit-border-radius: 3px;
-  -moz-border-radius: 3px;
-  border-radius: 3px;
-}
-.tooltip-inner > div {
-  text-align: left;
-}
-.tooltip-inner > p {
-  margin: 0;
-}
-.tooltip-inner h3 {
-  font-size: 13px;
-  color: #b6b6b6;
-  line-height: normal;
-  padding: 0;
-  margin: 0;
-}
-.tooltip-arrow {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-color: transparent;
-  border-style: solid;
-}
-.tooltip.top .tooltip-arrow {
-  bottom: 0;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px 5px 0;
-  border-top-color: #000;
-}
-.tooltip.right .tooltip-arrow {
-  top: 50%;
-  left: 0;
-  margin-top: -5px;
-  border-width: 5px 5px 5px 0;
-  border-right-color: #000;
-}
-.tooltip.left .tooltip-arrow {
-  top: 50%;
-  right: 0;
-  margin-top: -5px;
-  border-width: 5px 0 5px 5px;
-  border-left-color: #000;
-}
-.tooltip.bottom .tooltip-arrow {
-  top: 0;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 0 5px 5px;
-  border-bottom-color: #000;
-}
-/**********
 * Globe
 */
 .sc-chart-globe svg {
@@ -724,24 +723,24 @@ text.sc-pie-hole-label {
   fill: #555;
 }
 .sc-chart-globe .sphere {
-  fill: #DBE4F0;
-  stroke: #DBE4F0;
+  fill: #dbe4f0;
+  stroke: #dbe4f0;
   stroke-width: 1px;
 }
 .sc-chart-globe .graticule {
   fill: none;
   stroke: #777;
-  stroke-width: .5px;
-  stroke-opacity: .6;
+  stroke-width: 0.5px;
+  stroke-opacity: 0.6;
   pointer-events: none;
 }
 .sc-chart-globe .countries {
-  fill: #AAA;
+  fill: #aaa;
 }
 .sc-chart-globe .countries path {
   stroke: #fff;
 }
 .sc-chart-globe .states path {
-  fill: #CCC;
+  fill: #ccc;
   stroke: #fff;
 }

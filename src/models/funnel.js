@@ -1,4 +1,4 @@
-import d3 from 'd3v4';
+import d3 from 'd3';
 import utility from '../utility.js';
 
 export default function funnel() {
@@ -16,9 +16,10 @@ export default function funnel() {
       getH = function(d) { return d.height; },
       getKey = function(d) { return d.key; },
       getValue = function(d, i) { return d.value; },
+      getCount = function(d, i) { return d.count; },
       fmtKey = function(d) { return getKey(d.series || d); },
       fmtValue = function(d) { return getValue(d.series || d); },
-      fmtCount = function(d) { return (' (' + (d.series.count || d.count) + ')').replace(' ()', ''); },
+      fmtCount = function(d) { return (' (' + getCount(d.series || d) + ')').replace(' ()', ''); },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -32,7 +33,7 @@ export default function funnel() {
   var r = 0.3, // ratio of width to height (or slope)
       y = d3.scaleLinear(),
       yDomain,
-      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
+      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
       wrapLabels = true,
       minLabelWidth = 75,
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -47,9 +48,9 @@ export default function funnel() {
       calculatedCenter = 0;
 
   //============================================================
-  // Update chart
+  // Update model
 
-  function chart(selection) {
+  function model(selection) {
     selection.each(function(data) {
 
       var availableWidth = width - margin.left - margin.right,
@@ -137,7 +138,7 @@ export default function funnel() {
       calcScales();
 
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of model
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-funnel');
       var wrap = container.select('.sc-wrap.sc-funnel').merge(wrap_entr);
@@ -336,6 +337,10 @@ export default function funnel() {
       // Update side labels
 
       function renderSideLabels() {
+        var d0 = 0;
+        var d1 = 0;
+        var g, i, j, l;
+
         // Remove all responsive elements
         sideLabels = labels.filter('.sc-label-side');
         sideLabels.selectAll('.sc-label').remove();
@@ -368,21 +373,20 @@ export default function funnel() {
           .call(calcSideLabelDimensions);
 
         // Reflow side label vertical position to prevent overlap
-        var d0 = 0;
 
         // Top to bottom
-        for (var groups = sideLabels.nodes(), j = groups.length - 1; j >= 0; --j) {
-          var d = d3.select(groups[j]).data()[0];
-          if (d) {
+        for (g = sideLabels.nodes(), j = g.length - 1; j >= 0; j -= 1) {
+          d1 = d3.select(g[j]).data()[0];
+          if (d1) {
             if (!d0) {
-              d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
-              d0 = d.labelBottom;
+              d1.labelBottom = d1.labelTop + d1.labelHeight + labelSpace;
+              d0 = d1.labelBottom;
               continue;
             }
 
-            d.labelTop = Math.max(d0, d.labelTop);
-            d.labelBottom = d.labelTop + d.labelHeight + labelSpace;
-            d0 = d.labelBottom;
+            d1.labelTop = Math.max(d0, d1.labelTop);
+            d1.labelBottom = d1.labelTop + d1.labelHeight + labelSpace;
+            d0 = d1.labelBottom;
           }
         }
 
@@ -392,29 +396,29 @@ export default function funnel() {
           d0 = 0;
 
           // Bottom to top
-          for (var groups = sideLabels.nodes(), j = 0, m = groups.length; j < m; ++j) {
-            var d = d3.select(groups[j]).data()[0];
-            if (d) {
+          for (g = sideLabels.nodes(), i = 0, l = g.length; i < l; i += 1) {
+            d1 = d3.select(g[i]).data()[0];
+            if (d1) {
               if (!d0) {
-                d.labelBottom = calculatedHeight - 1;
-                d.labelTop = d.labelBottom - d.labelHeight;
-                d0 = d.labelTop;
+                d1.labelBottom = calculatedHeight - 1;
+                d1.labelTop = d1.labelBottom - d1.labelHeight;
+                d0 = d1.labelTop;
                 continue;
               }
 
-              d.labelBottom = Math.min(d0, d.labelBottom);
-              d.labelTop = d.labelBottom - d.labelHeight - labelSpace;
-              d0 = d.labelTop;
+              d1.labelBottom = Math.min(d0, d1.labelBottom);
+              d1.labelTop = d1.labelBottom - d1.labelHeight - labelSpace;
+              d0 = d1.labelTop;
             }
           }
 
           // ok, FINALLY, so if we are above the top of the funnel,
           // we need to lower them all back down
           if (d0 < 0) {
-            sideLabels.each(function(d, i) {
-                d.labelTop -= d0;
-                d.labelBottom -= d0;
-              });
+            sideLabels.each(function(d) {
+              d.labelTop -= d0;
+              d.labelBottom -= d0;
+            });
           }
         }
 
@@ -501,9 +505,9 @@ export default function funnel() {
       function buildEventObject(e, d, i) {
         return {
           id: id,
-          key: fmtKey(d),
-          value: fmtValue(d),
-          count: fmtCount(d),
+          key: getKey(d),
+          value: getValue(d),
+          count: getCount(d),
           data: d,
           series: d.series,
           e: e
@@ -522,7 +526,7 @@ export default function funnel() {
 
         lbl.text(null);
 
-        while (word = words.pop()) {
+        while ((word = words.pop())) {
           line.push(word);
           lbl.text(line.join(' '));
 
@@ -808,7 +812,7 @@ export default function funnel() {
 
     });
 
-    return chart;
+    return model;
   }
 
 
@@ -816,165 +820,165 @@ export default function funnel() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = dispatch;
+  model.dispatch = dispatch;
 
-  chart.id = function(_) {
+  model.id = function(_) {
     if (!arguments.length) { return id; }
     id = _;
-    return chart;
+    return model;
   };
 
-  chart.color = function(_) {
+  model.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    return chart;
+    return model;
   };
-  chart.fill = function(_) {
+  model.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    return chart;
+    return model;
   };
-  chart.classes = function(_) {
+  model.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    return chart;
+    return model;
   };
-  chart.gradient = function(_) {
+  model.gradient = function(_) {
     if (!arguments.length) { return gradient; }
     gradient = _;
-    return chart;
+    return model;
   };
 
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) { return margin; }
     margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
     margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
     margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
     margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
-    return chart;
+    return model;
   };
 
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
-    return chart;
+    return model;
   };
 
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
+    return model;
   };
 
-  chart.x = function(_) {
+  model.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    return chart;
+    return model;
   };
 
-  chart.y = function(_) {
+  model.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = utility.functor(_);
-    return chart;
+    return model;
   };
 
-  chart.getKey = function(_) {
+  model.getKey = function(_) {
     if (!arguments.length) { return getKey; }
     getKey = _;
-    return chart;
+    return model;
   };
 
-  chart.getValue = function(_) {
+  model.getValue = function(_) {
     if (!arguments.length) { return getValue; }
     getValue = _;
-    return chart;
+    return model;
   };
 
-  chart.fmtKey = function(_) {
+  model.getCount = function(_) {
+    if (!arguments.length) { return getCount; }
+    getCount = _;
+    return model;
+  };
+
+  model.fmtKey = function(_) {
     if (!arguments.length) { return fmtKey; }
     fmtKey = _;
-    return chart;
+    return model;
   };
 
-  chart.fmtValue = function(_) {
+  model.fmtValue = function(_) {
     if (!arguments.length) { return fmtValue; }
     fmtValue = _;
-    return chart;
+    return model;
   };
 
-  chart.fmtCount = function(_) {
+  model.fmtCount = function(_) {
     if (!arguments.length) { return fmtCount; }
     fmtCount = _;
-    return chart;
+    return model;
   };
 
-  chart.direction = function(_) {
+  model.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
-    return chart;
+    return model;
   };
 
-  chart.delay = function(_) {
+  model.delay = function(_) {
     if (!arguments.length) { return delay; }
     delay = _;
-    return chart;
+    return model;
   };
 
-  chart.duration = function(_) {
+  model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    return chart;
+    return model;
   };
 
-  chart.textureFill = function(_) {
+  model.textureFill = function(_) {
     if (!arguments.length) { return textureFill; }
     textureFill = _;
-    return chart;
+    return model;
   };
 
-  chart.locality = function(_) {
+  model.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    return chart;
+    return model;
   };
 
-  chart.xScale = function(_) {
-    if (!arguments.length) { return x; }
-    x = _;
-    return chart;
-  };
-
-  chart.yScale = function(_) {
+  model.yScale = function(_) {
     if (!arguments.length) { return y; }
     y = _;
-    return chart;
+    return model;
   };
 
-  chart.yDomain = function(_) {
+  model.yDomain = function(_) {
     if (!arguments.length) { return yDomain; }
     yDomain = _;
-    return chart;
+    return model;
   };
 
-  chart.forceY = function(_) {
+  model.forceY = function(_) {
     if (!arguments.length) { return forceY; }
     forceY = _;
-    return chart;
+    return model;
   };
 
-  chart.wrapLabels = function(_) {
+  model.wrapLabels = function(_) {
     if (!arguments.length) { return wrapLabels; }
     wrapLabels = _;
-    return chart;
+    return model;
   };
 
-  chart.minLabelWidth = function(_) {
+  model.minLabelWidth = function(_) {
     if (!arguments.length) { return minLabelWidth; }
     minLabelWidth = _;
-    return chart;
+    return model;
   };
 
   //============================================================
 
-  return chart;
+  return model;
 }

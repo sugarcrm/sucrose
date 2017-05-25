@@ -7,14 +7,20 @@
 .sc-background {
   fill: @white;
 }
+
 .sc-chart-background {
   fill: transparent;
   stroke-width: 0.5px;
   stroke: @grayLight;
 }
-// .sc-chart-texture {
-//   background: url(@textureTertiary);
-// }
+
+.sc-chart {
+  min-width: 100px;
+  min-height: 100px;
+  overflow: hidden;
+  position: relative;
+}
+
 .sc-print {
   visibility: hidden;
   position: absolute !important;
@@ -22,46 +28,25 @@
   width: 720px;
   height: 480px;
 }
-// .sc-chart-print {
-//   text {
-//     font-size: 15px;
-//     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-//   }
-//   .sc-y.sc-axis text,
-//   .sc-x.sc-axis text {
-//     font-size: @fontSizeMedium;
-//   }
-//   text.sc-title  {
-//     font-size: @fontSizeLarge;
-//   }
-//   .sc-legend text {
-//     font-size: @fontSizeMedium;
-//   }
-// }
-// .sc-chart {
-//   height: 400px;
-  /*
-    Minimum height and width is a good idea to prevent negative SVG dimensions...
-    For example width should be =< margin.left + margin.right + 1,
-    of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
-  */
-//   min-width: 300px;
-//   min-height: 100px;
-//   overflow: hidden;
-//   position: relative;
-// }
+
+.sc-image-canvas {
+  visibility: hidden;
+  position: absolute;
+  left: -10000px;
+}
 
 /**********
  *  SVG
  */
-svg.sc-chart {
+svg.sc-chart,
+.sc-chart svg {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-  /* Trying to get SVG to act like a greedy block in all browsers */
   display: block;
   width: 100%;
   height: 100%;
+
   text {
     font-style: normal;
     font-size: @chartTextSize;
@@ -70,28 +55,34 @@ svg.sc-chart {
     stroke: none;
     cursor: default;
   }
+
   text.sc-noData {
     font-size: @fontSizeLarge;
     font-weight: bold;
   }
+
   text.sc-title {
     font-size: @fontSizeMedium;
     // font: bold @fontSizeMedium @sansFontFamily;
   }
+
   .sc-labels text {
     font-weight: bold;
     fill: #666;
   }
+
   .sc-label-value text,
   text.sc-label-value {
     font-size: @fontSizeMedium;
   }
+
   .sc-label-box {
     fill: transparent;
   }
+
   .calc-text-strings {
-    fill: rgba(0,0,0,1);
-    stroke: rgba(0,0,0,0);
+    fill: rgba(0, 0, 0, 1);
+    stroke: rgba(0, 0, 0, 0);
     pointer-events: none;
   }
 }
@@ -104,18 +95,22 @@ svg.sc-chart {
   fill-opacity: 0 !important;
   pointer-events: none;
 }
+
 .texture-line {
-  stroke-opacity: .5;
+  stroke-opacity: 0.5;
   stroke-width: 1px;
 }
+
 .sc-active {
   .sc-texture {
     fill-opacity: 1 !important;
   }
+
   .sc-label-box {
     fill: inherit;
   }
 }
+
 .sc-inactive {
   .sc-texture {
     fill-opacity: 0 !important;

@@ -10,3 +10,4 @@ export {default as utils} from './utility.js';
 export {default as tooltip} from './tooltip.js';
 export {default as models} from './models/models_ENV_BUILD.js';
 export {default as charts} from './charts/charts_ENV_BUILD.js';
+export {default as transform} from './transform.js';

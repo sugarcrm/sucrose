@@ -1,4 +1,4 @@
-import d3 from 'd3v4';
+import d3 from 'd3';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import scatter from './scatter.js';
@@ -9,15 +9,15 @@ export default function line() {
   // Public Variables with Default Settings
   //------------------------------------------------------------
 
-  var model = scatter();
+  var points = scatter();
 
   var margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = 960,
       height = 500,
       getX = function(d) { return d.x; }, // accessor to get the x value from a data point
       getY = function(d) { return d.y; }, // accessor to get the y value from a data point
-      x, //can be accessed via chart.xScale()
-      y, //can be accessed via chart.yScale()
+      x, //can be accessed via points.xScale()
+      y, //can be accessed via points.yScale()
       defined = function(d, i) { return !isNaN(getY(d, i)) && getY(d, i) !== null; }, // allows a line to be not continuous when it is not defined
       isArea = function(d) { return (d && d.area) || false; }, // decides if a line is an area or just a line
       interpolate = 'linear', // controls the line interpolation
@@ -38,7 +38,7 @@ export default function line() {
 
   //============================================================
 
-  function chart(selection) {
+  function model(selection) {
     selection.each(function(data) {
 
       var container = d3.select(this);
@@ -66,27 +66,27 @@ export default function line() {
             .y0(function(d, i) { return y(0); })
             .y1(function(d, i) { return y(y.domain()[0] <= 0 ? y.domain()[1] >= 0 ? 0 : y.domain()[1] : y.domain()[0]); });
 
-      var tran = d3.transition('scatter')
+      var tran = d3.transition('points')
             .duration(duration)
             .ease(d3.easeLinear);
 
-      var id = model.id();
+      var id = points.id();
 
       //set up the gradient constructor function
       gradient = function(d, i, p) {
-        return utility.colorLinearGradient(d, chart.id() + '-' + i, p, color(d, i), wrap.select('defs'));
+        return utility.colorLinearGradient(d, points.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
       //------------------------------------------------------------
       // Setup Scales
 
-      x = model.xScale();
-      y = model.yScale();
+      x = points.xScale();
+      y = points.yScale();
       // x0 = x.copy();
       // y0 = y.copy();
 
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-line').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-line');
@@ -142,11 +142,11 @@ export default function line() {
       //------------------------------------------------------------
       // Points
 
-      model
+      points
         .clipEdge(clipEdge)
         .width(availableWidth)
         .height(availableHeight);
-      scatter_wrap.call(model);
+      scatter_wrap.call(points);
 
       //------------------------------------------------------------
       // Areas
@@ -258,112 +258,112 @@ export default function line() {
       // y0 = y.copy();
     });
 
-    return chart;
+    return model;
   }
 
   //============================================================
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = model.dispatch;
-  chart.scatter = model;
+  model.dispatch = points.dispatch;
+  model.scatter = points;
 
-  fc.rebind(chart, model, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'nice', 'locality');
+  fc.rebind(model, points, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'direction', 'nice', 'locality');
 
-  chart.color = function(_) {
+  model.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    model.color(color);
-    return chart;
+    points.color(color);
+    return model;
   };
-  chart.fill = function(_) {
+  model.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    model.fill(fill);
-    return chart;
+    points.fill(fill);
+    return model;
   };
-  chart.classes = function(_) {
+  model.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    model.classes(classes);
-    return chart;
+    points.classes(classes);
+    return model;
   };
-  chart.gradient = function(_) {
+  model.gradient = function(_) {
     if (!arguments.length) { return gradient; }
     gradient = _;
-    return chart;
+    return model;
   };
 
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
       }
     }
-    return chart;
+    return model;
   };
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
-    return chart;
+    return model;
   };
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
+    return model;
   };
 
-  chart.x = function(_) {
+  model.x = function(_) {
     if (!arguments.length) { return getX; }
     getX = _;
-    model.x(_);
-    return chart;
+    points.x(_);
+    return model;
   };
-  chart.y = function(_) {
+  model.y = function(_) {
     if (!arguments.length) { return getY; }
     getY = _;
-    model.y(_);
-    return chart;
+    points.y(_);
+    return model;
   };
 
-  chart.delay = function(_) {
+  model.delay = function(_) {
     if (!arguments.length) { return delay; }
     delay = _;
-    return chart;
+    return model;
   };
-  chart.duration = function(_) {
+  model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    model.duration(_);
-    return chart;
+    points.duration(_);
+    return model;
   };
 
-  chart.clipEdge = function(_) {
+  model.clipEdge = function(_) {
     if (!arguments.length) { return clipEdge; }
     clipEdge = _;
-    return chart;
+    return model;
   };
 
-  chart.interpolate = function(_) {
+  model.interpolate = function(_) {
     if (!arguments.length) { return interpolate; }
     interpolate = _;
-    return chart;
+    return model;
   };
 
-  chart.defined = function(_) {
+  model.defined = function(_) {
     if (!arguments.length) { return defined; }
     defined = _;
-    return chart;
+    return model;
   };
 
-  chart.isArea = function(_) {
+  model.isArea = function(_) {
     if (!arguments.length) { return isArea; }
     isArea = utility.functor(_);
-    return chart;
+    return model;
   };
 
   //============================================================
 
-  return chart;
+  return model;
 }

@@ -28,9 +28,9 @@ LIB_FILES = \
 	node_modules/store2/dist/store2.min.js
 
 DEP_FILES = \
-	js/d3v4.min.js \
-	js/topojson.min.js \
+	js/d3.min.js \
 	js/d3fc-rebind.min.js \
+	js/topojson.min.js \
 	js/jquery.min.js \
 	js/jquerymy.min.js
 
@@ -65,7 +65,8 @@ HEADER = $(shell cat ../src/header)
 
 .DEFAULT_GOAL := help
 
-.PHONY: list clean-sucrose clean-lib clean-dependencies clean-js clean-css help data
+.PHONY: install-prod install-dev npm-prod npm-dev index-prod index-dev \
+	clean-sucrose clean-lib clean-dependencies clean-js clean-css list help md
 
 
 #-----------
@@ -102,7 +103,7 @@ clean-sucrose:
 # - copy dependency js files (D3, jQuery, jQueryMy)
 dependencies: clean-dependencies
 	# copy node module files
-	cp ../build/d3v4.min.js js/d3v4.min.js
+	cp ../build/d3.min.js js/d3.min.js
 	cp ../build/topojson.min.js js/topojson.min.js
 	cp ../build/d3fc-rebind.min.js js/d3fc-rebind.min.js
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
@@ -210,8 +211,8 @@ help:
 	@echo " "
 
 # - generate a MAKE.md from help
-MAKE.md:
-	make help > $@
+md:
+	make help > MAKE.md
 
 # - just list the make targets
 list:

@@ -2,7 +2,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.d3v4 = global.d3v4 || {})));
+	(factory((global.d3 = global.d3 || {})));
 }(this, (function (exports) { 'use strict';
 
 var version = "4.8.0";
@@ -289,6 +289,16 @@ var sum = function(values, valueof) {
   }
 
   return sum;
+};
+
+var transpose = function(matrix) {
+  if (!(n = matrix.length)) return [];
+  for (var i = -1, m = min(matrix, length), transpose = new Array(m); ++i < m;) {
+    for (var j = -1, n, row = transpose[i] = new Array(n); ++j < n;) {
+      row[j] = matrix[j][i];
+    }
+  }
+  return transpose;
 };
 
 function length(d) {
@@ -2817,7 +2827,7 @@ var formatLocale = function(locale) {
 
 var locale$1;
 
-var formatPrefix;
+
 
 defaultLocale({
   decimal: ".",
@@ -2829,7 +2839,7 @@ defaultLocale({
 function defaultLocale(definition) {
   locale$1 = formatLocale(definition);
   exports.format = locale$1.format;
-  formatPrefix = locale$1.formatPrefix;
+  exports.formatPrefix = locale$1.formatPrefix;
   return locale$1;
 }
 
@@ -4288,7 +4298,7 @@ var tickFormat = function(domain, count, specifier) {
     case "s": {
       var value = Math.max(Math.abs(start), Math.abs(stop));
       if (specifier.precision == null && !isNaN(precision = precisionPrefix(step, value))) specifier.precision = precision;
-      return formatPrefix(specifier, value);
+      return exports.formatPrefix(specifier, value);
     }
     case "":
     case "e":
@@ -4482,6 +4492,8 @@ millisecond.every = function(k) {
   });
 };
 
+var milliseconds = millisecond.range;
+
 var durationSecond$1 = 1e3;
 var durationMinute$1 = 6e4;
 var durationHour$1 = 36e5;
@@ -4498,6 +4510,8 @@ var second = newInterval(function(date) {
   return date.getUTCSeconds();
 });
 
+var seconds = second.range;
+
 var minute = newInterval(function(date) {
   date.setTime(Math.floor(date / durationMinute$1) * durationMinute$1);
 }, function(date, step) {
@@ -4507,6 +4521,8 @@ var minute = newInterval(function(date) {
 }, function(date) {
   return date.getMinutes();
 });
+
+var minutes = minute.range;
 
 var hour = newInterval(function(date) {
   var offset = date.getTimezoneOffset() * durationMinute$1 % durationHour$1;
@@ -4520,6 +4536,8 @@ var hour = newInterval(function(date) {
   return date.getHours();
 });
 
+var hours = hour.range;
+
 var day = newInterval(function(date) {
   date.setHours(0, 0, 0, 0);
 }, function(date, step) {
@@ -4529,6 +4547,8 @@ var day = newInterval(function(date) {
 }, function(date) {
   return date.getDate() - 1;
 });
+
+var days = day.range;
 
 function weekday(i) {
   return newInterval(function(date) {
@@ -4548,6 +4568,14 @@ var wednesday = weekday(3);
 var thursday = weekday(4);
 var friday = weekday(5);
 var saturday = weekday(6);
+
+var sundays = sunday.range;
+var mondays = monday.range;
+var tuesdays = tuesday.range;
+var wednesdays = wednesday.range;
+var thursdays = thursday.range;
+var fridays = friday.range;
+var saturdays = saturday.range;
 
 var month = newInterval(function(date) {
   date.setDate(1);
@@ -4584,6 +4612,8 @@ year.every = function(k) {
   });
 };
 
+var years = year.range;
+
 var utcMinute = newInterval(function(date) {
   date.setUTCSeconds(0, 0);
 }, function(date, step) {
@@ -4593,6 +4623,8 @@ var utcMinute = newInterval(function(date) {
 }, function(date) {
   return date.getUTCMinutes();
 });
+
+var utcMinutes = utcMinute.range;
 
 var utcHour = newInterval(function(date) {
   date.setUTCMinutes(0, 0, 0);
@@ -4604,6 +4636,8 @@ var utcHour = newInterval(function(date) {
   return date.getUTCHours();
 });
 
+var utcHours = utcHour.range;
+
 var utcDay = newInterval(function(date) {
   date.setUTCHours(0, 0, 0, 0);
 }, function(date, step) {
@@ -4613,6 +4647,8 @@ var utcDay = newInterval(function(date) {
 }, function(date) {
   return date.getUTCDate() - 1;
 });
+
+var utcDays = utcDay.range;
 
 function utcWeekday(i) {
   return newInterval(function(date) {
@@ -4633,6 +4669,14 @@ var utcThursday = utcWeekday(4);
 var utcFriday = utcWeekday(5);
 var utcSaturday = utcWeekday(6);
 
+var utcSundays = utcSunday.range;
+var utcMondays = utcMonday.range;
+var utcTuesdays = utcTuesday.range;
+var utcWednesdays = utcWednesday.range;
+var utcThursdays = utcThursday.range;
+var utcFridays = utcFriday.range;
+var utcSaturdays = utcSaturday.range;
+
 var utcMonth = newInterval(function(date) {
   date.setUTCDate(1);
   date.setUTCHours(0, 0, 0, 0);
@@ -4643,6 +4687,8 @@ var utcMonth = newInterval(function(date) {
 }, function(date) {
   return date.getUTCMonth();
 });
+
+var utcMonths = utcMonth.range;
 
 var utcYear = newInterval(function(date) {
   date.setUTCMonth(0, 1);
@@ -4665,6 +4711,8 @@ utcYear.every = function(k) {
     date.setUTCFullYear(date.getUTCFullYear() + step * k);
   });
 };
+
+var utcYears = utcYear.range;
 
 function localDate(d) {
   if (0 <= d.y && d.y < 100) {
@@ -12090,6 +12138,7 @@ exports.merge = merge;
 exports.min = min;
 exports.range = range;
 exports.sum = sum;
+exports.transpose = transpose;
 exports.axisBottom = axisBottom;
 exports.axisLeft = axisLeft;
 exports.axisRight = axisRight;
@@ -12132,9 +12181,6 @@ exports.stackOffsetWiggle = wiggle;
 exports.stackOrderInsideOut = insideOut;
 exports.stackOrderNone = none$2;
 exports.symbol = symbol;
-exports.timeDay = day;
-exports.timeMonth = month;
-exports.timeMonths = months;
 exports.timeFormatLocale = formatLocale$1;
 exports.transition = transition;
 exports.voronoi = voronoi;
@@ -12157,6 +12203,67 @@ exports.touch = touch;
 exports.touches = touches;
 exports.window = window;
 exports.customEvent = customEvent;
+exports.timeInterval = newInterval;
+exports.timeMillisecond = millisecond;
+exports.timeMilliseconds = milliseconds;
+exports.utcMillisecond = millisecond;
+exports.utcMilliseconds = milliseconds;
+exports.timeSecond = second;
+exports.timeSeconds = seconds;
+exports.utcSecond = second;
+exports.utcSeconds = seconds;
+exports.timeMinute = minute;
+exports.timeMinutes = minutes;
+exports.timeHour = hour;
+exports.timeHours = hours;
+exports.timeDay = day;
+exports.timeDays = days;
+exports.timeWeek = sunday;
+exports.timeWeeks = sundays;
+exports.timeSunday = sunday;
+exports.timeSundays = sundays;
+exports.timeMonday = monday;
+exports.timeMondays = mondays;
+exports.timeTuesday = tuesday;
+exports.timeTuesdays = tuesdays;
+exports.timeWednesday = wednesday;
+exports.timeWednesdays = wednesdays;
+exports.timeThursday = thursday;
+exports.timeThursdays = thursdays;
+exports.timeFriday = friday;
+exports.timeFridays = fridays;
+exports.timeSaturday = saturday;
+exports.timeSaturdays = saturdays;
+exports.timeMonth = month;
+exports.timeMonths = months;
+exports.timeYear = year;
+exports.timeYears = years;
+exports.utcMinute = utcMinute;
+exports.utcMinutes = utcMinutes;
+exports.utcHour = utcHour;
+exports.utcHours = utcHours;
+exports.utcDay = utcDay;
+exports.utcDays = utcDays;
+exports.utcWeek = utcSunday;
+exports.utcWeeks = utcSundays;
+exports.utcSunday = utcSunday;
+exports.utcSundays = utcSundays;
+exports.utcMonday = utcMonday;
+exports.utcMondays = utcMondays;
+exports.utcTuesday = utcTuesday;
+exports.utcTuesdays = utcTuesdays;
+exports.utcWednesday = utcWednesday;
+exports.utcWednesdays = utcWednesdays;
+exports.utcThursday = utcThursday;
+exports.utcThursdays = utcThursdays;
+exports.utcFriday = utcFriday;
+exports.utcFridays = utcFridays;
+exports.utcSaturday = utcSaturday;
+exports.utcSaturdays = utcSaturdays;
+exports.utcMonth = utcMonth;
+exports.utcMonths = utcMonths;
+exports.utcYear = utcYear;
+exports.utcYears = utcYears;
 exports.request = request;
 exports.html = html;
 exports.json = json;

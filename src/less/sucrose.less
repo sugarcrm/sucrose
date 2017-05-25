@@ -4,30 +4,32 @@
 // Mixins
 @import "mixins";
 
-// Sucrose Styles
+// Core Styles
 @import "core";
-
 @import "colors";
+@import "tooltip";
 
-@import "models/legend";
+// Model Styles
+@import "models/menu";
 @import "models/axis";
-// @import "models/bars";
+@import "models/area";
 @import "models/multibar";
 @import "models/pie";
 @import "models/line";
-@import "models/distribution";
 @import "models/scatter";
-@import "models/stackedarea";
 @import "models/gauge";
 @import "models/funnel";
 @import "models/bubble";
 @import "models/pareto";
-@import "models/treemap";
 @import "models/dendrogram";
 
-@import "tooltip";
-
+// Sucrose Only
+@import "models/treemap";
 @import "models/globe";
+
+// Development
+// @import "models/distribution";
+// @import "models/bars";
 // @import "models/brush";
 // @import "models/sparkline";
 // @import "models/lineplusbar";

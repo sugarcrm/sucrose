@@ -1,4 +1,4 @@
-import d3 from 'd3v4';
+import d3 from 'd3';
 import utility from '../utility.js';
 
 export default function menu() {
@@ -89,7 +89,7 @@ export default function menu() {
       // Setup containers and skeleton of legend
 
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-legend');
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-menu');
       var wrap = container.select('g.sc-wrap').merge(wrap_entr);
       wrap.attr('transform', 'translate(0,0)');
 
@@ -99,15 +99,15 @@ export default function menu() {
       defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
       var clip = wrap.select('#sc-edge-clip-' + id + ' rect');
 
-      wrap_entr.append('rect').attr('class', 'sc-legend-background');
-      var back = wrap.select('.sc-legend-background');
-      var backFilter = utility.dropShadow('legend_back_' + id, defs, {blur: 2});
+      wrap_entr.append('rect').attr('class', 'sc-menu-background');
+      var back = wrap.select('.sc-menu-background');
+      var backFilter = utility.dropShadow('menu_back_' + id, defs, {blur: 2});
 
-      wrap_entr.append('text').attr('class', 'sc-legend-link');
-      var link = wrap.select('.sc-legend-link');
+      wrap_entr.append('text').attr('class', 'sc-menu-link');
+      var link = wrap.select('.sc-menu-link');
 
-      var mask_entr = wrap_entr.append('g').attr('class', 'sc-legend-mask');
-      var mask = wrap.select('.sc-legend-mask');
+      var mask_entr = wrap_entr.append('g').attr('class', 'sc-menu-mask');
+      var mask = wrap.select('.sc-menu-mask');
 
       mask_entr.append('g').attr('class', 'sc-group');
       var g = wrap.select('.sc-group');
@@ -131,7 +131,7 @@ export default function menu() {
       series
           .attr('class', classes)
           .attr('fill', color)
-          .attr('stroke', color)
+          .attr('stroke', color);
       series_entr
         .append('rect')
           .attr('x', (diameter + textGap) / -2)
@@ -567,48 +567,11 @@ export default function menu() {
               g.call(drag);
 
             } else {
+              back.on('.zoom', null);
+              g.on('.zoom', null);
 
-              back
-                  .on("mousedown.zoom", null)
-                  .on("mousewheel.zoom", null)
-                  .on("mousemove.zoom", null)
-                  .on("DOMMouseScroll.zoom", null)
-                  .on("dblclick.zoom", null)
-                  .on("touchstart.zoom", null)
-                  .on("touchmove.zoom", null)
-                  .on("touchend.zoom", null)
-                  .on("wheel.zoom", null);
-              g
-                  .on("mousedown.zoom", null)
-                  .on("mousewheel.zoom", null)
-                  .on("mousemove.zoom", null)
-                  .on("DOMMouseScroll.zoom", null)
-                  .on("dblclick.zoom", null)
-                  .on("touchstart.zoom", null)
-                  .on("touchmove.zoom", null)
-                  .on("touchend.zoom", null)
-                  .on("wheel.zoom", null);
-
-              back
-                  .on("mousedown.drag", null)
-                  .on("mousewheel.drag", null)
-                  .on("mousemove.drag", null)
-                  .on("DOMMouseScroll.drag", null)
-                  .on("dblclick.drag", null)
-                  .on("touchstart.drag", null)
-                  .on("touchmove.drag", null)
-                  .on("touchend.drag", null)
-                  .on("wheel.drag", null);
-              g
-                  .on("mousedown.drag", null)
-                  .on("mousewheel.drag", null)
-                  .on("mousemove.drag", null)
-                  .on("DOMMouseScroll.drag", null)
-                  .on("dblclick.drag", null)
-                  .on("touchstart.drag", null)
-                  .on("touchmove.drag", null)
-                  .on("touchend.drag", null)
-                  .on("wheel.drag", null);
+              back.on('.drag', null);
+              g.on('.drag', null);
             }
           };
 
@@ -653,7 +616,7 @@ export default function menu() {
       };
 
       //============================================================
-      // Event Handling/Dispatching (in chart's scope)
+      // Event Handling/Dispatching (in legend's scope)
       //------------------------------------------------------------
 
       function displayMenu() {

@@ -17,3 +17,5 @@ examples/js/jquerymy.min.js
 examples/js/sucrose.js
 examples/js/sucrose.min.js
 examples/js/topojson.min.js
+d3v4.js
+d3v4.min.js

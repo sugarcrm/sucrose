@@ -5,37 +5,44 @@
 
 .sc-chart-pareto {
   .sc-quota-wrap line {
-    opacity: .8;
+    opacity: 0.8;
     stroke: #444;
     stroke-width: 4px;
     fill: none;
-    /*stroke-dasharray: '20, 5'; dashed lines must be defined in JS*/
   }
+
   .sc-quota-wrap line.sc-quota-target {
     stroke: #777;
   }
+
   .sc-quota-wrap line.sc-quota-background {
     opacity: 0;
     stroke-width: 12px;
   }
+
   .sc-axis-y .domain {
     display: none;
   }
+
   .sc-axis-y text.sc-quota-value,
   .sc-axis-y text.sc-target-quota-value {
     font-weight: bold;
   }
+
   .sc-line .sc-group path {
     stroke-width: 4px;
   }
+
   .sc-lines-wrap1 .sc-line .sc-group path {
     stroke-width: 6px;
   }
+
   .sc-scatter .sc-group .sc-point {
     fill-opacity: 1;
     stroke-opacity: 1;
     stroke-width: 2px;
   }
+
   .sc-lines-wrap2 .sc-scatter .sc-group circle {
     stroke: @white;
   }

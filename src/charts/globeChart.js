@@ -1,5 +1,4 @@
-import d3 from 'd3v4';
-import fc from 'd3fc-rebind';
+import d3 from 'd3';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 
@@ -70,16 +69,15 @@ export default function globeChart() {
 
   var tt = null;
 
-  function tooltipContent(d) {
-    return '<p><b>' + d.name + '</b></p>' +
-           '<p><b>Amount:</b> $' + d3.format(',.0f')(d.amount) + '</p>';
-  }
-
-  function showTooltip(eo, offsetElement) {
-    var content = tooltipContent(eo);
-    tt = tooltip.show(eo.e, content, null, null, offsetElement);
+  var tooltipContent = function(eo, properties) {
+    return '<p><b>' + eo.name + '</b></p>' +
+           '<p><b>Amount:</b> $' + d3.format(',.0f')(eo.amount) + '</p>';
   };
 
+  function showTooltip(eo, offsetElement, properties) {
+    var content = tooltipContent(eo, properties);
+    return tooltip.show(eo.e, content, null, null, offsetElement);
+  }
 
   var seriesClick = function(data, e, chart) {
     return;
@@ -134,11 +132,9 @@ export default function globeChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length,
-            x, y;
-        if (hasData) return false;
-        x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
-        y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -263,7 +259,7 @@ export default function globeChart() {
           .scale(scale)
           .translate(translate);
         refresh();
-      }
+      };
 
       chart.render = function() {
 
@@ -281,7 +277,7 @@ export default function globeChart() {
 
         if (showGraticule) {
           grid
-            .attr('d', path)
+            .attr('d', path);
         }
 
         backg
@@ -442,7 +438,7 @@ export default function globeChart() {
         return (
           results._values[d.id] ||
           results._values[d.properties.name] ||
-          {"_total": 0}
+          {'_total': 0}
         );
       }
 
@@ -477,7 +473,7 @@ export default function globeChart() {
 
       dispatch.on('tooltipShow', function(eo) {
           if (tooltips) {
-            showTooltip(eo, that.parentNode);
+            tt = showTooltip(eo, that.parentNode, properties);
           }
         });
 
@@ -648,24 +644,6 @@ export default function globeChart() {
     return chart;
   };
 
-  chart.values = function(_) {
-    if (!arguments.length) return getValues;
-    getValues = _;
-    return chart;
-  };
-
-  chart.x = function(_) {
-    if (!arguments.length) return getX;
-    getX = _;
-    return chart;
-  };
-
-  chart.y = function(_) {
-    if (!arguments.length) return getY;
-    getY = utility.functor(_);
-    return chart;
-  };
-
   chart.showLabels = function(_) {
     if (!arguments.length) return showLabels;
     showLabels = _;
@@ -681,12 +659,6 @@ export default function globeChart() {
   chart.id = function(_) {
     if (!arguments.length) return id;
     id = _;
-    return chart;
-  };
-
-  chart.valueFormat = function(_) {
-    if (!arguments.length) return valueFormat;
-    valueFormat = _;
     return chart;
   };
 

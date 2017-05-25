@@ -1,5 +1,4 @@
-import d3 from 'd3v4';
-import fc from 'd3fc-rebind';
+import d3 from 'd3';
 import utility from '../utility.js';
 
 export default function treemap() {
@@ -11,8 +10,8 @@ export default function treemap() {
   var margin = {top: 20, right: 0, bottom: 0, left: 0},
       width = 0,
       height = 0,
-      x = d3.scaleLinear(), //can be accessed via chart.xScale()
-      y = d3.scaleLinear(), //can be accessed via chart.yScale()
+      x = d3.scaleLinear(), //can be accessed via model.xScale()
+      y = d3.scaleLinear(), //can be accessed via model.yScale()
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID incase user doesn't select one
       getValue = function(d) { return d.size; }, // accessor to get the size value from a data point
       getKey = function(d) { return d.name; }, // accessor to get the name value from a data point
@@ -69,7 +68,7 @@ export default function treemap() {
   // 4. change groupby,
   // 5. contrasting text
 
-  function chart(selection) {
+  function model(selection) {
     selection.each(function(chartData) {
 
       var availableWidth = width - margin.left - margin.right,
@@ -101,8 +100,7 @@ export default function treemap() {
       // Recalcuate the treemap layout dimensions
       d3.treemap()
         .size([availableWidth, availableHeight])
-        .round(false)
-          (TREE);
+        .round(false)(TREE);
 
       // We store the root on first render
       // which gets reused on resize
@@ -115,7 +113,7 @@ export default function treemap() {
        .range([0, availableHeight]);
 
       //------------------------------------------------------------
-      // Setup containers and skeleton of chart
+      // Setup containers and skeleton of model
 
       var wrap_bind = container.selectAll('g.sc-wrap.sc-treemap').data([TREE]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-treemap');
@@ -157,7 +155,7 @@ export default function treemap() {
         .attr('height', margin.top);
 
       //------------------------------------------------------------
-      // Main Chart
+      // Main Model
 
       var gold = render();
 
@@ -244,12 +242,7 @@ export default function treemap() {
         target
           .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            var eo = {
-              point: d,
-              pointIndex: i,
-              id: id,
-              e: d3.event
-            };
+            var eo = buildEventObject(d3.event, d, i);
             dispatch.call('elementMouseover', this, eo);
           })
           .on('mousemove', function(d, i) {
@@ -264,14 +257,7 @@ export default function treemap() {
         children
           .on('mouseover', function(d, i) {
             d3.select(this).classed('hover', true);
-            var eo = {
-                label: getKey(d),
-                value: getValue(d),
-                point: d,
-                pointIndex: i,
-                e: d3.event,
-                id: id
-            };
+            var eo = buildEventObject(d3.event, d, i);
             dispatch.call('elementMouseover', this, eo);
           })
           .on('mouseout', function(d, i) {
@@ -280,6 +266,17 @@ export default function treemap() {
           });
 
         return grandparent;
+      }
+
+      function buildEventObject(e, d, i) {
+        return {
+          label: getKey(d),
+          value: getValue(d),
+          point: d,
+          pointIndex: i,
+          e: d3.event,
+          id: id
+        };
       }
 
       function transition(d) {
@@ -371,7 +368,7 @@ export default function treemap() {
       }
     });
 
-    return chart;
+    return model;
   }
 
 
@@ -379,138 +376,114 @@ export default function treemap() {
   // Expose Public Variables
   //------------------------------------------------------------
 
-  chart.dispatch = dispatch;
+  model.dispatch = dispatch;
 
-  chart.color = function(_) {
+  model.color = function(_) {
     if (!arguments.length) { return color; }
     color = _;
-    return chart;
+    return model;
   };
-  chart.fill = function(_) {
+  model.fill = function(_) {
     if (!arguments.length) { return fill; }
     fill = _;
-    return chart;
+    return model;
   };
-  chart.classes = function(_) {
+  model.classes = function(_) {
     if (!arguments.length) { return classes; }
     classes = _;
-    return chart;
+    return model;
   };
-  chart.gradient = function(_) {
+  model.gradient = function(_) {
     if (!arguments.length) { return gradient; }
     gradient = _;
-    return chart;
+    return model;
   };
 
-  chart.x = function(_) {
-    if (!arguments.length) { return getX; }
-    getX = _;
-    return chart;
-  };
-
-  chart.y = function(_) {
-    if (!arguments.length) { return getY; }
-    getY = _;
-    return chart;
-  };
-
-  chart.margin = function(_) {
+  model.margin = function(_) {
     if (!arguments.length) { return margin; }
     margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
     margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
     margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
     margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
-    return chart;
+    return model;
   };
 
-  chart.width = function(_) {
+  model.width = function(_) {
     if (!arguments.length) { return width; }
     width = _;
-    return chart;
+    return model;
   };
 
-  chart.height = function(_) {
+  model.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
+    return model;
   };
 
-  chart.xScale = function(_) {
+  model.xScale = function(_) {
     if (!arguments.length) { return x; }
     x = _;
-    return chart;
+    return model;
   };
 
-  chart.yScale = function(_) {
+  model.yScale = function(_) {
     if (!arguments.length) { return y; }
     y = _;
-    return chart;
+    return model;
   };
 
-  chart.xDomain = function(_) {
-    if (!arguments.length) { return xDomain; }
-    xDomain = _;
-    return chart;
-  };
-
-  chart.yDomain = function(_) {
-    if (!arguments.length) { return yDomain; }
-    yDomain = _;
-    return chart;
-  };
-
-  chart.leafClick = function(_) {
+  model.leafClick = function(_) {
     if (!arguments.length) { return leafClick; }
     leafClick = _;
-    return chart;
+    return model;
   };
 
-  chart.getValue = function(_) {
+  model.getValue = function(_) {
     if (!arguments.length) { return getValue; }
     getValue = _;
-    return chart;
+    return model;
   };
 
-  chart.getKey = function(_) {
+  model.getKey = function(_) {
     if (!arguments.length) { return getKey; }
     getKey = _;
-    return chart;
+    return model;
   };
 
-  chart.groupBy = function(_) {
+  model.groupBy = function(_) {
     if (!arguments.length) { return groupBy; }
     groupBy = _;
-    return chart;
+    return model;
   };
 
-  chart.groups = function(_) {
+  model.groups = function(_) {
     if (!arguments.length) { return NODES; }
     NODES = _;
-    return chart;
+    return model;
   };
 
-  chart.duration = function(_) {
+  model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
-    return chart;
+    return model;
   };
 
-  chart.id = function(_) {
+  model.id = function(_) {
     if (!arguments.length) { return id; }
     id = _;
-    return chart;
+    return model;
   };
 
-  chart.direction = function(_) {
+  model.direction = function(_) {
     if (!arguments.length) {
       return direction;
     }
     direction = _;
-    return chart;
+    return model;
   };
 
   //============================================================
 
 
-  return chart;
+  return model;
 }

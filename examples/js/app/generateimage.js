@@ -48,7 +48,7 @@ function generateImage(e) {
       var height = chart.height();
       var dom = chart.find('svg').html();
       var svg = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="' +
-                 width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '" class="sc-chart-print">' +
+                 width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '" class="sc-print">' +
                 '<defs><style rel="stylesheet/less" type="text/css"><![CDATA[' + css + ']]></style></defs>' + dom + '</svg>';
       var url = 'data:image/svg+xml;charset=utf-8;base64,' + window.btoa(reEncode(svg));
       var canvas = document.createElement('canvas');

@@ -1,4 +1,4 @@
-import d3 from 'd3v4';
+import d3 from 'd3';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
@@ -162,7 +162,6 @@ export default function paretoChart() {
 
       var yAxisValueFormat = function(d, i, selection, noEllipsis) {
             return yValueFormat(d, i, null, yIsCurrency);
-            return value;
           };
 
       chart.update = function() {
@@ -175,9 +174,9 @@ export default function paretoChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -869,7 +868,6 @@ export default function paretoChart() {
         }).length) {
           data.map(function(d) {
             d.disabled = false;
-            wrap.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
@@ -1129,12 +1127,6 @@ export default function paretoChart() {
   chart.tooltips = function(_) {
     if (!arguments.length) { return tooltips; }
     tooltips = _;
-    return chart;
-  };
-
-  chart.tooltipContent = function(_) {
-    if (!arguments.length) { return tooltipContent; }
-    tooltipContent = _;
     return chart;
   };
 

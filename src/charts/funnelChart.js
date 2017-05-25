@@ -1,4 +1,4 @@
-import d3 from 'd3v4';
+import d3 from 'd3';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
@@ -40,17 +40,16 @@ export default function funnelChart() {
 
   var tt = null;
 
-  var tooltipContent = function(key, x, y, e, graph) {
+  var tooltipContent = function(eo, properties) {
+        var key = model.fmtKey()(eo);
+        var y = model.getValue()(eo);
+        var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
         return '<h3>' + key + '</h3>' +
                '<p>' + y + ' on ' + x + '</p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
-        var key = model.getKey()(eo),
-            y = model.getValue()(eo),
-            x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100,
-            content = tooltipContent(key, x, y, eo, chart);
-
+        var content = tooltipContent(eo, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
@@ -85,9 +84,9 @@ export default function funnelChart() {
       // Private method for displaying no data message.
 
       function displayNoData(d) {
-        var hasData = d && d.length,
-            x = (containerWidth - margin.left - margin.right) / 2 + margin.left,
-            y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        var hasData = d && d.length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
       }
 
@@ -280,7 +279,7 @@ export default function funnelChart() {
           legend
             .arrange(availableWidth);
 
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-legend-link')),
+          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
               legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
               xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
@@ -431,7 +430,7 @@ export default function funnelChart() {
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, model, 'xScale', 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
+  fc.rebind(chart, model, 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {
     var type = arguments[0],
