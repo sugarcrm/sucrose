@@ -8,7 +8,7 @@
 d3 = 'default' in d3 ? d3['default'] : d3;
 fc = 'default' in fc ? fc['default'] : fc;
 
-var version = "0.5.6";
+var version = "0.5.7";
 
 /*-------------------
       UTILITIES
@@ -3380,7 +3380,6 @@ function gauge() {
 
       labels
         .attr('transform', function(d) {
-          console.log('d: ', d);
           return 'rotate(' + newAngle(d.y) + ') translate(0,' + (prop(-1.5) - radius) + ')';
         })
         .text(getY)
@@ -3487,7 +3486,6 @@ function gauge() {
       }
 
       function labelOpacity(d) {
-        console.log('d: ', d);
         var percent = (endAngle(d) - startAngle(d)) / (2 * Math.PI);
         return percent > labelThreshold ? 1 : 0;
       }
@@ -8648,7 +8646,7 @@ function areaChart() {
   //------------------------------------------------------------
 
   // Chart components
-  var model = stackearea().clipEdge(true).duration(0);
+  var model = stackearea().clipEdge(true);
   var xAxis = axis();
   var yAxis = axis();
   var controls = menu();
@@ -8717,12 +8715,8 @@ function areaChart() {
           xAxisFormat = null,
           yAxisFormat = null;
 
-      chart.update = function(d) {
-        if (d) {
-          model.duration(d);
-        }
+      chart.update = function() {
         container.transition().duration(duration).call(chart);
-        model.duration(duration);
       };
 
       chart.container = this;
@@ -9282,7 +9276,7 @@ function areaChart() {
         }
 
         state.disabled = data.map(function(d) { return !!d.disabled; });
-        chart.update(300);
+        chart.update();
         dispatch.call('stateChange', this, state);
       });
 
