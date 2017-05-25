@@ -1,8 +1,9 @@
 {
   "properties": {
-    "title": "All Opportunities by Lead Source",
+    "title": "All Opportunities by Close Date",
     "yDataType": "currency",
-    "xDataType": "datetime"
+    "xDataType": "datetime",
+    "seriesLabel": "Source"
   },
   "data": [
     {

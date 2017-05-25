@@ -1,4 +1,9 @@
 {
+  "properties": {
+    "title": "Opportunity Metrics",
+    "value": 3,
+    "label": 3
+  },
   "data": [
     {
       "key": "Won",
@@ -15,10 +20,5 @@
       "value": 5,
       "classes": "active"
     }
-  ],
-  "properties": {
-    "title": "Opportunity Metrics",
-    "value": 3,
-    "label": 3
-  }
+  ]
 }

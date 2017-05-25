@@ -306,8 +306,6 @@ function transformTableData(chartData, chartType, Chart) {
   };
 }
 
-// var xTickLabels;
-
 function postProcessData(chartData, chartType, Chart) {
 
   if (chartData.properties) {
@@ -317,13 +315,10 @@ function postProcessData(chartData, chartType, Chart) {
 
   switch (chartType) {
 
+    case 'area':
     case 'line':
-      // xTickLabels = chartData.properties.labels ?
-      //   chartData.properties.labels.map(function (d) { return d.l || d; }) :
-      //   [];
-
       if (chartData.data.length) {
-        if (chartData.data[0].values.length && Array.isArray(chartData.data[0].values[0])) {
+        if (Array.isArray(chartData.data[0].values) && Array.isArray(chartData.data[0].values[0])) {
           // Convert array data to objects
           chartData.data.forEach(function(d, i) {
             d.values = d.values.map(function(g, j) {
@@ -334,32 +329,6 @@ function postProcessData(chartData, chartType, Chart) {
               return value;
             });
           });
-          // Chart
-          //   .x(function (d) { return d[0]; })
-          //   .y(function (d) { return d[1]; });
-
-          // if (sucrose.isValidDate(chartData.data[0].values[0][0])) {
-          //   Chart.xAxis
-          //     .tickFormat(function (d) {
-          //       return d3.time.format('%x')(new Date(d));
-          //     });
-          // } else if (xTickLabels.length > 0) {
-          //   Chart.xAxis
-          //     .tickFormat(function (d) {
-          //       return xTickLabels[d] || ' ';
-          //     });
-          // }
-        // } else {
-        //   Chart
-        //     .x(function (d) { return d.x; })
-        //     .y(function (d) { return d.y; });
-
-          // if (xTickLabels.length > 0) {
-          //   Chart.xAxis
-          //     .tickFormat(function (d) {
-          //       return xTickLabels[d - 1] || ' ';
-          //     });
-          // }
         }
       }
       break;
