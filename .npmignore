@@ -1,0 +1,14 @@
+*.sublime-*
+.eslintignore
+.eslintrc.json
+.gitignore
+.gjslintrc
+.jshintrc
+d3.*
+d3v4.*
+d3fc-rebind.*
+topojson.*
+dist/
+examples/
+src/
+test/

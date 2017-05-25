@@ -54,7 +54,6 @@ export default function multibar() {
       // baseDimension = stacked ? vertical ? 72 : 30 : 20;
 
       var container = d3.select(this),
-          orientation = vertical ? 'vertical' : 'horizontal',
           availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
           dimX = vertical ? 'width' : 'height',
@@ -419,11 +418,10 @@ export default function multibar() {
 
       function buildEventObject(e, d, i) {
         return {
-            value: getY(d, i),
-            point: d,
-            series: data[d.seriesIndex],
             pointIndex: i,
+            point: d,
             seriesIndex: d.seriesIndex,
+            series: data[d.seriesIndex],
             groupIndex: d.group,
             id: id,
             e: e

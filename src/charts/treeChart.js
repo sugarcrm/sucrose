@@ -34,7 +34,7 @@ export default function treeChart() {
       color = function (d, i) { return utility.defaultColor()(d, i); },
       fill = function(d, i) { return color(d, i); },
 
-      setX = function(d, v) { d.x = v; },
+      // setX = function(d, v) { d.x = v; },
       setY = function(d, v) { d.y = v; },
       setX0 = function(d, v) { d.data.x0 = v; },
       setY0 = function(d, v) { d.data.y0 = v; },

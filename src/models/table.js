@@ -10,7 +10,6 @@ export default function table() {
   var margin = {top: 2, right: 0, bottom: 2, left: 0},
       width = 0,
       height = 0,
-      animate = true,
       getX = function (d) { return d.x; },
       getY = function (d) { return d.y; },
       strings = {

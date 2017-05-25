@@ -3,9 +3,8 @@
     "title": "Pipeline Total is €11,981.70",
     "total": "11981.700000",
     "scale": 1000,
-    "units": "€",
-    "xDataType": "string",
-    "yDataType": "currency"
+    "yDataType": "currency",
+    "seriesLabel": "Stage"
   },
   "data": [
     {

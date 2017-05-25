@@ -7,7 +7,7 @@ import line from '../models/line.js';
 import axis from '../models/axis.js';
 import menu from '../models/menu.js';
 
-export default function stackeareaChart() {
+export default function areaChart() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -23,37 +23,61 @@ export default function stackeareaChart() {
       delay = 0,
       duration = 0,
       tooltips = true,
-      guidetips = null,
+      state = {},
       x,
       y,
-      state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
       },
-      pointRadius = 3,
       dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  var pointRadius = 3;
+
+  var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
+        if (isDate) {
+          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
+          return utility.dateFormat(value, dateFormat, chart.locality());
+        } else {
+          return value;
+        }
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency, precision) {
+        precision = isNaN(precision) ? 2 : precision;
+        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+      };
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var model = area()
-        .clipEdge(true),
-      xAxis = axis(),
-      yAxis = axis(),
-      legend = menu()
-        .align('right'),
-      controls = menu()
-        .align('left')
-        .color(['#444']),
-      guide = line().duration(0);
+  // Chart components
+  var model = area().clipEdge(true);
+  var xAxis = axis();
+  var yAxis = axis();
+  var controls = menu();
+  var legend = menu();
+  var guide = line().duration(0);
 
-  var tt = null;
+  var controlsData = [
+    {key: 'Stacked', disabled: model.offset() !== 'zero'},
+    {key: 'Stream', disabled: model.offset() !== 'wiggle'},
+    {key: 'Expanded', disabled: model.offset() !== 'expand'}
+  ];
 
-  var tooltipContent = function(key, x, y, e, graph) {
+  var tt = null,
+      guidetips = null;
+
+  var tooltipContent = function(eo, properties) {
+        var key = eo.seriesKey;
+        var yIsCurrency = properties.yDataType === 'currency';
+        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
         return '<p>' + key + ': ' + y + '</p>';
       };
 
@@ -67,34 +91,41 @@ export default function stackeareaChart() {
           container = d3.select(this),
           modelClass = 'area';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null,
-          labels = properties.labels ? properties.labels.map(function(d) { return d.l || d; }) : [];
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
+      var availableWidth = width,
+          availableHeight = height;
+      var padding = 0;
+
+      var groupData = properties.groups,
+          hasGroupData = Array.isArray(groupData) && groupData.length,
+          hasGroupLabels = hasGroupData ? groupData.filter(function(group) {
+            return typeof group.label !== 'undefined';
+          }).length !== 0 : false;
+
+      var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupLabels || false,
+          xIsDatetime = properties.xDataType === 'datetime' || false,
+          xIsNumeric = properties.xDataType === 'numeric' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
+
       var modelData = [],
-          xTickLabels = [],
-          totalAmount = 0,
-          singlePoint = false,
-          showMaxMin = false,
-          isArrayData = true,
-          xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+          seriesCount = 0,
+          totalAmount = 0;
 
-      var xValueFormat = function(d, i, selection, noEllipsis) {
-            var label = xIsDatetime ?
-                          utility.dateFormat(d, 'yMMMM', chart.locality()) :
-                          isNaN(parseInt(d, 10)) || !xTickLabels || !Array.isArray(xTickLabels) ?
-                            d :
-                            xTickLabels[parseInt(d, 10)];
-            return label;
-          };
+      var singlePoint = false,
+          showMaxMin = false;
 
-      var yValueFormat = function(d) {
-            return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
-          };
+          //TODO: allow formatter to be set by data
+      var xTickValues = [],
+          xTickCount = 0,
+          xTickMaxWidth = 75,
+          xDateFormat = null,
+          xAxisFormat = null,
+          yAxisFormat = null;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -105,8 +136,10 @@ export default function stackeareaChart() {
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
-      function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
+      function displayNoData(data) {
+        var hasData = data && data.length && data.filter(function(series) {
+          return !series.disabled && Array.isArray(series.values) && series.values.length;
+        }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
@@ -117,84 +150,142 @@ export default function stackeareaChart() {
         return chart;
       }
 
+
       //------------------------------------------------------------
       // Process data
 
-      isArrayData = Array.isArray(data[0].values[0]);
-      if (isArrayData) {
-        model.x(function(d) { return d ? d[0] : 0; });
-        model.y(function(d) { return d ? d[1] : 0; });
-      } else {
-        model.x(function(d) { return d.x; });
-        model.y(function(d) { return d.y; });
+      function processLabels(groupData) {
+        // Get simple array of group labels for ticks
+        xTickValues = groupData.map(function(group) {
+            return group.label;
+          });
+        xTickCount = xTickValues.length;
+        hasGroupLabels = xTickCount > 0;
       }
-
-      // set title display option
-      showTitle = showTitle && properties.title;
 
       // add series index to each data point for reference
       // and disable data series if total is zero
-      data.map(function(d, i) {
-        d.seriesIndex = i;
-        d.total = d3.sum(d.values, function(d, i) {
-          return model.y()(d, i);
+      data.forEach(function(series, s) {
+        series.seriesIndex = s;
+
+        series.total = d3.sum(series.values, function(value, v) {
+          return model.y()(value, v);
         });
-        if (!d.total) {
-          d.disabled = true;
-        }
+
+        // disabled if all values in series are zero
+        // or the series was disabled by the legend
+        series.disabled = series.disabled || series.total === 0;
       });
 
-      xTickLabels = properties.labels ?
-          properties.labels.map(function(d) { return [].concat(d.l)[0] || chart.strings().noLabel; }) :
-          [];
-
-      // TODO: what if the dimension is a numerical range?
-      // xValuesAreDates = xTickLabels.length ?
-      //       utility.isValidDate(xTickLabels[0]) :
-      //       utility.isValidDate(model.x()(data[0].values[0]));
-      // xValuesAreDates = isArrayData && utility.isValidDate(data[0].values[0][0]);
-
-      // SAVE FOR LATER
-      // isOrdinalSeries = !xValuesAreDates && labels.length > 0 && d3.min(modelData, function(d) {
-      //   return d3.min(d.values, function(d, i) {
-      //     return model.x()(d, i);
-      //   });
-      // }) > 0;
-
-      modelData = data.filter(function(d) {
-          return !d.disabled;
+      // Remove disabled series data
+      modelData = data
+        .filter(function(series) {
+          return !series.disabled;
+        })
+        .map(function(series, s) {
+          series.seri = s;
+          return series;
         });
 
-      // safety array
-      modelData = modelData.length ? modelData : [{series: 0, total: 0, disabled: true, values: []}];
+      seriesCount = modelData.length;
 
-      totalAmount = d3.sum(modelData, function(d) {
-          return d.total;
-        });
-
-      //------------------------------------------------------------
       // Display No Data message if there's nothing to show.
-
-      if (!totalAmount) {
-        displayNoData();
+      if (displayNoData(modelData)) {
         return chart;
       }
 
-      // set state.disabled
+      // -------------------------------------------
+      // Get group data from properties or modelData
+
+      if (xIsOrdinal && hasGroupData) {
+
+        groupData.forEach(function(group, g) {
+          var label = typeof group.label === 'undefined' ?
+            chart.strings().noLabel :
+              xIsDatetime ? new Date(group.label) : group.label;
+          group.group = g,
+          group.label = label;
+          group.total = 0;
+        });
+
+        processLabels(groupData);
+
+        // Calculate group totals and height
+        // based on enabled data series
+        groupData.forEach(function(group, g) {
+          //TODO: only sum enabled series
+          // update group data with values
+          modelData
+            .forEach(function(series, s) {
+              //TODO: there is a better way
+              series.values
+                .filter(function(value, v) {
+                  return value.group === g;
+                })
+                .forEach(function(value, v) {
+                  group.total += value.y;
+                });
+            });
+        });
+
+        totalAmount = d3.sum(groupData, function(group) {
+          return group.total;
+        });
+
+      } else {
+
+        xTickValues = d3
+          .merge(modelData.map(function(series) {
+            return series.values;
+          }))
+          .reduce(function(a, b) {
+            if (a.indexOf(b.x) === -1) {
+              a.push(b.x);
+            }
+            return a;
+          }, [])
+          .map(function(value, v) {
+            return xIsDatetime ? new Date(value) : value;
+          });
+
+        xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
+
+        totalAmount = d3.sum(modelData, function(series) {
+          return series.total;
+        });
+
+      }
+
+      // Configure axis format functions
+      if (xIsDatetime) {
+        xDateFormat = utility.getDateFormat(xTickValues);
+      }
+
+      xAxisFormat = function(d, i, selection, noEllipsis) {
+        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
+      };
+
+      yAxisFormat = function(d, i, selection) {
+        return yValueFormat(d, i, d, yIsCurrency, 2);
+      };
+
+      // Set title display option
+      showTitle = showTitle && properties.title;
+
+
+      //------------------------------------------------------------
+      // State persistence model
+
       state.disabled = modelData.map(function(d) { return !!d.disabled; });
       state.style = model.style();
 
-      var controlsData = [
-        { key: 'Stacked', disabled: model.offset() !== 'zero' },
-        { key: 'Stream', disabled: model.offset() !== 'wiggle' },
-        { key: 'Expanded', disabled: model.offset() !== 'expand' }
-      ];
 
       //------------------------------------------------------------
       // Setup Scales and Axes
 
       model
-        .id(chart.id())
         .xDomain(null)  //?why null?
         .yDomain(null)
         .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear());
@@ -210,7 +301,8 @@ export default function stackeareaChart() {
         .highlightZero(false)
         .scale(x)
         .tickPadding(6)
-        .valueFormat(xValueFormat);
+        .valueFormat(xAxisFormat);
+
       yAxis
         .orient('left')
         .ticks(null)
@@ -218,14 +310,15 @@ export default function stackeareaChart() {
         .highlightZero(true)
         .scale(y)
         .tickPadding(6)
-        .valueFormat(yValueFormat);
+        .valueFormat(yAxisFormat);
 
       guide
-        .id(chart.id())
+        .id(model.id())
         .useVoronoi(false)
         .clipEdge(false)
         .xScale(x)
         .yScale(y);
+
 
       //------------------------------------------------------------
       // Main chart wrappers
@@ -265,7 +358,6 @@ export default function stackeareaChart() {
 
         // Chart layout variables
         var renderWidth, renderHeight,
-            availableWidth, availableHeight,
             innerMargin,
             innerWidth, innerHeight;
 
@@ -281,6 +373,8 @@ export default function stackeareaChart() {
         innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        xTickMaxWidth = Math.max(availableWidth * 0.2, 75);
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
         wrap.select('.sc-background')
@@ -322,8 +416,9 @@ export default function stackeareaChart() {
 
         if (showControls) {
           controls
-            .id('controls_' + chart.id())
+            .id('controls_' + model.id())
             .strings(chart.strings().controls)
+            .color(['#444'])
             .align('left')
             .height(availableHeight - headerHeight);
           controls_wrap
@@ -332,9 +427,10 @@ export default function stackeareaChart() {
 
           maxControlsWidth = controls.calcMaxWidth();
         }
+
         if (showLegend) {
           legend
-            .id('legend_' + chart.id())
+            .id('legend_' + model.id())
             .strings(chart.strings().legend)
             .align('right')
             .height(availableHeight - headerHeight);
@@ -355,6 +451,7 @@ export default function stackeareaChart() {
             .arrange(maxControlsWidth);
           maxLegendWidth = availableWidth - controls.width();
         }
+
         if (showLegend) {
           legend
             .arrange(maxLegendWidth);
@@ -368,6 +465,7 @@ export default function stackeareaChart() {
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height();
         }
+
         if (showLegend) {
           var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
@@ -425,10 +523,7 @@ export default function stackeareaChart() {
 
         // Y-Axis
         yAxis
-          .margin(innerMargin)
-          .tickFormat(function(d, i) {
-            return yAxis.valueFormat()(d, yIsCurrency);
-          });
+          .margin(innerMargin);
         yAxis_wrap
           .call(yAxis);
         // reset inner dimensions
@@ -439,29 +534,26 @@ export default function stackeareaChart() {
         // X-Axis
         // resize ticks based on new dimensions
         xAxis
-          .tickSize(-innerHeight, 0)
-          .margin(innerMargin)
-          .tickFormat(function(d, i, noEllipsis) {
-            return xAxis.valueFormat()(d - !isArrayData, xTickLabels, xIsDatetime);
-          });
+          .tickSize(padding - innerHeight, 0)
+          .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);
+
+        // reset inner dimensions
         xAxisMargin = xAxis.margin();
         setInnerMargins();
         setInnerDimensions();
-        // xAxis
-        //  .resizeTickLines(-innerHeight);
 
         // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
           .ticks(model.offset() === 'wiggle' ? 0 : null)
-          .tickSize(-innerWidth, 0)
+          .tickSize(padding - innerWidth, 0)
           .margin(innerMargin);
         yAxis_wrap
           .call(yAxis);
 
         xAxis
-          .tickSize(-innerHeight, 0)
+          .tickSize(padding - innerHeight, 0)
           .margin(innerMargin);
         xAxis_wrap
           .call(xAxis);
@@ -498,14 +590,10 @@ export default function stackeareaChart() {
           }])
           .call(guide);
 
-        chart.showTooltip = function(eo, offsetElement) {
-          var key = eo.seriesKey,
-              x = xValueFormat(model.x()(eo)),
-              y = yValueFormat(model.y()(eo)),
-              content = tooltipContent(key, x, y, eo, chart);
+        chart.showTooltip = function(eo, offsetElement, properties) {
+          var content = tooltipContent(eo, properties);
           return tooltip.show(eo.e, content, null, null, offsetElement);
         };
-
 
         chart.moveGuide = function(svg, container, eo) {
           var xpos = eo.data[0][0];
@@ -533,17 +621,14 @@ export default function stackeareaChart() {
             guidetips = {};
             eo.data.forEach(function(d, i) {
               d.e = eo.e;
-              guidetips[i] = chart.showTooltip(d, that.parentNode);
+              guidetips[i] = chart.showTooltip(d, that.parentNode, properties);
             });
-            guidetips['x'] = chart.showTooltip(xData, that.parentNode);
+            guidetips['x'] = chart.showTooltip(xData, that.parentNode, properties);
           }
 
           // Line
           eo.data.forEach(function(d, i) {
-            var key = d.seriesKey,
-                xval = xValueFormat(model.x()(d)),
-                yval = yValueFormat(model.y()(d)),
-                content = tooltipContent(key, xval, yval, d, chart);
+            var content = tooltipContent(d, properties);
             guidePos.clientY = eo.origin.top + y(d[1]);
             d3.select(guidetips[i]).select('.tooltip-inner').html(content);
             tooltip.position(that.parentNode, guidetips[i], guidePos, 'e');
@@ -551,7 +636,7 @@ export default function stackeareaChart() {
 
           // Top date
           xData.forEach(function(d, i) {
-            var xval = xValueFormat(xpos);
+            var xval = xValueFormat(d, i, xpos, xIsDatetime);
             guidePos.clientY = eo.origin.top;
             d3.select(guidetips['x']).select('.tooltip-inner').html(xval);
             tooltip.position(that.parentNode, guidetips['x'], guidePos, 's');
@@ -580,28 +665,6 @@ export default function stackeareaChart() {
         guide_wrap
           .attr('transform', 'translate(' + trans + ')');
 
-        dispatch.on('tooltipShow', function(eo) {
-          if (tooltips) {
-            tt = true;
-            guide_wrap.classed('hover', true);
-          }
-        });
-
-        dispatch.on('tooltipMove', function(eo) {
-          if (tt) {
-            chart.moveGuide(that.parentNode, container, eo);
-          }
-        });
-
-        dispatch.on('tooltipHide', function() {
-          if (tooltips) {
-            tt = false;
-            tooltip.cleanup();
-            guidetips = null;
-            guide_wrap.classed('hover', false);
-          }
-        });
-
       };
 
       //============================================================
@@ -612,41 +675,21 @@ export default function stackeareaChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      model.dispatch.on('elementClick.toggle', function(e) {
-        if (data.filter(function(d) { return !d.disabled; }).length === 1) {
-          data = data.map(function(d) {
-            d.disabled = false;
-            return d;
-          });
-        } else {
-          data = data.map(function(d,i) {
-            d.disabled = (i !== e.seriesIndex);
-            return d;
-          });
-        }
+      legend.dispatch.on('legendClick', function(series, i) {
+        series.disabled = !series.disabled;
+        series.active = 'inactive';
 
-        state.disabled = data.map(function(d) { return !!d.disabled; });
-        dispatch.call('stateChange', this, state);
-        dispatch.call('tooltipHide', this);
-
-        container.transition().duration(duration).call(chart);
-      });
-
-      legend.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
-
+        // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.map(function(d) {
             d.disabled = false;
-            container.selectAll('.sc-series').classed('disabled', false);
             return d;
           });
         }
 
         state.disabled = data.map(function(d) { return !!d.disabled; });
+        chart.update();
         dispatch.call('stateChange', this, state);
-
-        container.transition().duration(duration).call(chart);
       });
 
       controls.dispatch.on('legendClick', function(d, i) {
@@ -676,9 +719,49 @@ export default function stackeareaChart() {
         }
 
         state.style = model.style();
+        chart.render();
         dispatch.call('stateChange', this, state);
+      });
 
-        container.transition().duration(duration).call(chart);
+      dispatch.on('tooltipShow', function(eo) {
+        if (tooltips) {
+          tt = true;
+          guide_wrap.classed('hover', true);
+        }
+      });
+
+      dispatch.on('tooltipMove', function(eo) {
+        if (tt) {
+          chart.moveGuide(that.parentNode, container, eo);
+        }
+      });
+
+      dispatch.on('tooltipHide', function() {
+        if (tooltips) {
+          tt = false;
+          tooltip.cleanup();
+          guidetips = null;
+          guide_wrap.classed('hover', false);
+        }
+      });
+
+      model.dispatch.on('elementClick.toggle', function(e) {
+        if (data.filter(function(d) { return !d.disabled; }).length === 1) {
+          data = data.map(function(d) {
+            d.disabled = false;
+            return d;
+          });
+        } else {
+          data = data.map(function(d,i) {
+            d.disabled = (i !== e.seriesIndex);
+            return d;
+          });
+        }
+
+        state.disabled = data.map(function(d) { return !!d.disabled; });
+        chart.update();
+        dispatch.call('stateChange', this, state);
+        dispatch.call('tooltipHide', this);
       });
 
       // Update chart from a state object passed to event handler
@@ -695,7 +778,7 @@ export default function stackeareaChart() {
           state.style = eo.style;
         }
 
-        container.transition().duration(duration).call(chart);
+        chart.update();
       });
 
       dispatch.on('chartClick', function() {
@@ -724,8 +807,9 @@ export default function stackeareaChart() {
     dispatch.call('tooltipMove', this, e);
   });
 
-  model.dispatch.on('elementMouseout.tooltip', function() {
-    dispatch.call('tooltipHide', this);
+  model.dispatch.on('elementMouseout.tooltip', function(eo) {
+    // need eo for removing hover class on element
+    dispatch.call('tooltipHide', this, eo);
   });
 
   //============================================================
@@ -734,7 +818,7 @@ export default function stackeareaChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.stacked = model;
+  chart.area = model;
   chart.legend = legend;
   chart.controls = controls;
   chart.xAxis = xAxis;
@@ -853,6 +937,7 @@ export default function stackeareaChart() {
   chart.state = function(_) {
     if (!arguments.length) { return state; }
     state = _;
+    dispatch.call('stateChange', this, state);
     return chart;
   };
 
@@ -869,6 +954,7 @@ export default function stackeareaChart() {
   chart.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
+    model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
     legend.direction(_);
@@ -887,6 +973,28 @@ export default function stackeareaChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.xValueFormat = function(_) {
+    if (!arguments.length) {
+      return xValueFormat;
+    }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
+    return chart;
+  };
+
+  chart.pointRadius = function(_) {
+    if (!arguments.length) { return pointRadius; }
+    pointRadius = _;
     return chart;
   };
 

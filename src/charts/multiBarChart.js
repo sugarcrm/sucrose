@@ -39,14 +39,20 @@ export default function multibarChart() {
       overflowHandler = function(d) { return; },
       hideEmptyGroups = true;
 
-  var xValueFormat = function(d, i, label, isDate) {
-        return isDate ?
-          utility.dateFormat(label, '%x', chart.locality()) :
-          label;
+  var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
+        if (isDate) {
+          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
+          return utility.dateFormat(value, dateFormat, chart.locality());
+        } else {
+          return value;
+        }
       };
 
-  var yValueFormat = function(d, i, label, isCurrency) {
-        var precision = 2;
+  var yValueFormat = function(d, i, label, isCurrency, precision) {
+        precision = isNaN(precision) ? 2 : precision;
         return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
       };
 
@@ -54,15 +60,16 @@ export default function multibarChart() {
   // Private Variables
   //------------------------------------------------------------
 
+  // Chart components
+  var model = multibar().stacked(false).clipEdge(false);
+  var xAxis = axis();
+  var yAxis = axis();
+  var controls = menu();
+  var legend = menu();
+
   // Scroll variables
   var useScroll = false;
   var scrollOffset = 0;
-
-  var model = multibar().stacked(false).clipEdge(false);
-  var xAxis = axis(); //.orient('bottom'),
-  var yAxis = axis(); //.orient('left'),
-  var controls = menu().color(['#444']);
-  var legend = menu();
 
   if (scrollEnabled) {
     var scroll = scroller()
@@ -70,19 +77,41 @@ export default function multibarChart() {
       .vertical(vertical);
   }
 
-  var tt = null;
-
   var controlsData = [
-    { key: 'Grouped', disabled: state.stacked },
-    { key: 'Stacked', disabled: !state.stacked }
+    {key: 'Grouped', disabled: state.stacked},
+    {key: 'Stacked', disabled: !state.stacked}
   ];
 
+  var tt = null;
+
   var tooltipContent = function(eo, properties) {
-        var key = eo.group.label,
-            x = Math.abs(y * 100 / eo.group._height).toFixed(1),
-            y = eo.point.y;
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
+        var seriesLabel = properties.seriesLabel || 'Key';
+        var key = eo.series.key;
+
+        var yIsCurrency = properties.yDataType === 'currency';
+        var valueLabel = yIsCurrency ? 'Amount' : 'Count';
+        var y = eo.point.y;
+        var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group && eo.group.label ? eo.group.label : null;
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
+
+        var percent;
+
+        var content = '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
+            content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
+            content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        if (typeof eo.group._height !== 'undefined') {
+          percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
+          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
+          content += '<p>Percentage: <b>' + percent + '%</b></p>';
+        }
+
+        return content;
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -107,64 +136,42 @@ export default function multibarChart() {
           container = d3.select(this),
           modelClass = vertical ? 'multibar' : 'multibar-horizontal';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || [] : [];
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
       var availableWidth = width,
           availableHeight = height;
+      var baseDimension = model.stacked() ? vertical ? 72 : 32 : 32;
 
-      var hasGroupData = properties.groups && Array.isArray(properties.groups) && properties.groups.length;
-      var groupLabels = hasGroupData ?
-            properties.groups.map(function(d) {
-              return d.label || d.l || (typeof d === 'string' ? d : chart.strings().noLabel);
-            }) : [];
-      var hasGroupLabels = groupLabels && Array.isArray(groupLabels) && groupLabels.length;
+      var groupData = properties.groups,
+          hasGroupData = Array.isArray(groupData) && groupData.length,
+          hasGroupLabels = hasGroupData ? groupData.filter(function(group) {
+            return typeof group.label !== 'undefined';
+          }).length !== 0 : false;
 
-      var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupData || false,
+      var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupLabels || false,
           xIsDatetime = properties.xDataType === 'datetime' || false,
           xIsNumeric = properties.xDataType === 'numeric' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
-      var seriesData = [],
+      var modelData = [],
           seriesCount = 0,
-          groupData = [],
-          groupCount = 0,
-          xTickValues = [],
-          xTickMaxWidth = 0,
-          xDateFormat = null,
-          xValueFormat = null,
-          yValueFormat = null,
-          totalAmount = 0,
-          hasData = false;
+          totalAmount = 0;
 
-      var baseDimension = model.stacked() ? vertical ? 72 : 32 : 32;
+          //TODO: allow formatter to be set by data
+      var xTickValues = [],
+          xTickCount = 0,
+          xTickMaxWidth = 75,
+          xDateFormat = null,
+          xAxisFormat = null,
+          yAxisFormat = null;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
       };
-
-      chart.container = this;
-
-      //------------------------------------------------------------
-      // Private method for displaying no data message.
-
-      function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
-        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
-        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
-      }
-
-      // Check to see if there's nothing to show.
-      if (displayNoData(data)) {
-        return chart;
-      }
-
-      //------------------------------------------------------------
-      // Process data
 
       chart.clearActive = function() {
         data.forEach(function(d) {
@@ -221,10 +228,40 @@ export default function multibarChart() {
         chart.render();
       };
 
-      // set title display option
-      showTitle = showTitle && properties.title;
+      chart.container = this;
+
+      //------------------------------------------------------------
+      // Private method for displaying no data message.
+
+      function displayNoData(data) {
+        var hasData = data && data.length && data.filter(function(series) {
+          return !series.disabled && Array.isArray(series.values) && series.values.length;
+        }).length;
+        var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
+        var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
+        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+      }
+
+      // Check to see if there's nothing to show.
+      if (displayNoData(data)) {
+        return chart;
+      }
+
+
+      //------------------------------------------------------------
+      // Process data
+
+      function processLabels(groupData) {
+        // Get simple array of group labels for ticks
+        xTickValues = groupData.map(function(group) {
+            return group.label;
+          });
+        xTickCount = xTickValues.length;
+        hasGroupLabels = xTickCount > 0;
+      }
 
       // add series index to each data point for reference
+      // and disable data series if total is zero
       data.forEach(function(series, s) {
         // make sure untrimmed values array exists
         // and set immutable series values
@@ -239,69 +276,91 @@ export default function multibarChart() {
 
         series.seriesIndex = s;
 
-        series.values = series._values.map(function(value, v) {
-            return {
-              'seriesIndex': series.seriesIndex,
-              'group': v,
-              'color': typeof series.color !== 'undefined' ? series.color : '',
-              'x': model.x()(value, v),
-              'y': model.y()(value, v),
-              'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
-              'active': typeof series.active !== 'undefined' ? series.active : ''
-            };
-          });
-
         series.total = d3.sum(series.values, function(value, v) {
-            return value.y;
-          });
+          return value.y;
+        });
 
         // disabled if all values in series are zero
         // or the series was disabled by the legend
         series.disabled = series.disabled || series.total === 0;
-        // inherit values from series
-        series.values.forEach(function(value, v) {
-          // do not eval d.active because it can be false
-          value.active = typeof series.active !== 'undefined' ? series.active : '';
-        });
       });
 
-      seriesData = data
-        .filter(function(series, s) {
-          return !series.disabled && (!series.type || series.type === 'bar');
+      // Remove disabled series data
+      modelData = data
+        .filter(function(series) {
+          return !series.disabled;
         })
         .map(function(series, s) {
           series.seri = s;
-          series.values
-            .forEach(function(value, v) {
-              value.seri = series.seri;
+
+          // reconstruct values referencing series attributes
+          series.values = series._values.map(function(value, v) {
+              return {
+                'seriesIndex': series.seriesIndex,
+                'group': v,
+                'color': typeof series.color !== 'undefined' ? series.color : '',
+                'x': model.x()(value, v),
+                'y': model.y()(value, v),
+                'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
+                'active': typeof series.active !== 'undefined' ? series.active : ''
+              };
             });
+
           return series;
         });
 
-      seriesCount = seriesData.length;
-      hasData = seriesCount > 0;
-      // hasGroupLabels = groupLabels && Array.isArray(groupLabels) && groupLabels.length;
+      seriesCount = modelData.length;
 
-      // update groupTotal amounts based on enabled data series
-      groupData = hasGroupLabels ? properties.groups.map(function(group, g) {
+      // Display No Data message if there's nothing to show.
+      if (displayNoData(modelData)) {
+        return chart;
+      }
+
+      // -------------------------------------------
+      // Get group data from properties or modelData
+
+      if (hasGroupData) {
+
+        groupData.forEach(function(group, g) {
+          var label = typeof group.label === 'undefined' ?
+            chart.strings().noLabel :
+              xIsDatetime ? new Date(group.label) : group.label;
+          group.group = g,
+          group.label = label;
           group.total = 0;
           group._height = 0;
-          return group;
-        }) :
-        //TODO: this doesn't collapse discontinuous data
-        seriesData[0].values.map(function(value, i) {
-          return {
-            group: i,
-            label: value.x,
-            total: 0,
-            _height: 0
-          };
         });
 
+      } else {
+
+        groupData = d3
+          .merge(modelData.map(function(series) {
+            return series.values;
+          }))
+          .reduce(function(a, b) {
+            if (a.indexOf(b.x) === -1) {
+              a.push(b.x);
+            }
+            return a;
+          }, [])
+          .map(function(value, v) {
+            return {
+              group: v,
+              label: xIsDatetime ? new Date(value) : value,
+              total: 0,
+              _height: 0
+            };
+          });
+      }
+
+      processLabels(groupData);
+
+      // Calculate group totals and height
+      // based on enabled data series
       groupData.forEach(function(group, g) {
         //TODO: only sum enabled series
         // update group data with values
-        seriesData
+        modelData
           .forEach(function(series, s) {
             //TODO: there is a better way
             series.values
@@ -315,28 +374,15 @@ export default function multibarChart() {
           });
       });
 
-      // build a trimmed array for active group only labels
-      groupLabels = groupData
-        .filter(function(group, g) {
-          return hideEmptyGroups ? group._height !== 0 : true;
-        })
-        .map(function(group) {
-          return group.l || group.label || chart.strings().noLabel;
-        });
-
-      // groupLabels = properties.groups ?
-      //   properties.groups.map(function(d) {
-      //     return d.label || d.l || d || chart.strings().noLabel;
-      //   }) : [];
-
-      groupCount = groupLabels.length;
-
-      totalAmount = d3.sum(groupData, function(group) { return group.total; });
-
       if (hideEmptyGroups) {
+        // build a trimmed array for active group only labels
+        processLabels(groupData.filter(function(group, g) {
+            return group._height !== 0;
+        }));
+
         // build a discrete array of data values for the multibar
         // based on enabled data series
-        seriesData.forEach(function(series, s) {
+        modelData.forEach(function(series, s) {
           // reset series values to exlcude values for
           // groups that have all zero values
           series.values = series.values
@@ -349,117 +395,43 @@ export default function multibarChart() {
             });
           return series;
         });
+
+        // Display No Data message if there's nothing to show.
+        if (displayNoData(modelData)) {
+          return chart;
+        }
       }
 
-      hasGroupLabels = groupLabels && Array.isArray(groupLabels) && groupLabels.length;
+      totalAmount = d3.sum(groupData, function(group) {
+        return group.total;
+      });
 
-      if (xIsOrdinal && hasGroupLabels) {
-
-        groupCount = groupLabels.length;
-
-        xTickMaxWidth = Math.max(vertical ?
-                          baseDimension * 2 :
-                          availableWidth * 0.2, 75);
-
-        xValueFormat = function(d, i, selection, noEllipsis) {
-          return noEllipsis ?
-                    groupLabels[i] :
-                    utility.stringEllipsify(groupLabels[i], container, xTickMaxWidth);
-        };
-
-      } else if (xIsDatetime) {
-
-        xDateFormat = utility.getDateFormat(groupLabels);
-
-        xValueFormat = function(d, i, selection, noEllipsis) {
-          return utility.dateFormat(d, xDateFormat, chart.locality());
-        };
-
-      } else if (xIsNumeric) {
-
-        xValueFormat = function(d, i, selection, noEllipsis) {
-          return d;
-        };
-
+      // Configure axis format functions
+      if (xIsDatetime) {
+        xDateFormat = utility.getDateFormat(xTickValues);
       }
 
-      // var xValueFormat = function(d, i, selection, noEllipsis) {
-      //       console.log(arguments);
-      //       // Set axis to use trimmed array rather than data
-      //       var value = groupLabels && Array.isArray(groupLabels) ?
-      //                     groupLabels[i] || d:
-      //                     d;
-      //       var label = xIsDatetime ?
-      //                     utility.dateFormat(value, '%x', chart.locality()) :
-      //                     value;
-      //       var width = Math.max(vertical ?
-      //                     baseDimension * 2 :
-      //                     availableWidth * 0.2, 75);
-      //       return !noEllipsis ?
-      //                 utility.stringEllipsify(label, container, width) :
-      //                 label;
-      //     };
-
-      yValueFormat = function(d, i, selection) {
-        return utility.numberFormatSI(d, 2, yIsCurrency, chart.locality());
+      xAxisFormat = function(d, i, selection, noEllipsis) {
+        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
-
-      chart.dataSeriesActivate = function(eo) {
-        var series = eo.series;
-
-        series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
-        series.values.map(function(d) {
-          d.active = series.active;
-        });
-
-        // if you have activated a data series, inactivate the rest
-        if (series.active === 'active') {
-          data
-            .filter(function(d) {
-              return d.active !== 'active';
-            })
-            .map(function(d) {
-              d.active = 'inactive';
-              d.values.map(function(d) {
-                d.active = 'inactive';
-              });
-              return d;
-            });
-        }
-
-        // if there are no active data series, activate them all
-        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
-              d.active = '';
-              d.values.map(function(d) {
-                d.active = '';
-              });
-              container.selectAll('.sc-series').classed('sc-inactive', false);
-              return d;
-            });
-        }
-
-        container.call(chart);
+      yAxisFormat = function(d, i, selection) {
+        return yValueFormat(d, i, d, yIsCurrency, 2);
       };
+
+      // Set title display option
+      showTitle = showTitle && properties.title;
+
 
       //------------------------------------------------------------
-      // Display No Data message if there's nothing to show.
+      // State persistence model
 
-      if (!hasData) {
-        displayNoData();
-        return chart;
-      }
-
-      // safety array
-      if (!seriesData.length) {
-        seriesData = [{values: []}];
-      }
-
-      // set state.disabled
-      state.disabled = data.map(function(d) { return !!d.disabled; });
-      state.active = data.map(function(d) { return d.active === 'active'; });
+      state.disabled = modelData.map(function(d) { return !!d.disabled; });
+      state.active = modelData.map(function(d) { return d.active === 'active'; });
       state.stacked = model.stacked();
+
 
       //------------------------------------------------------------
       // Setup Scales and Axes
@@ -470,7 +442,7 @@ export default function multibarChart() {
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
         .scale(x)
-        .valueFormat(xValueFormat)
+        .valueFormat(xAxisFormat)
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
@@ -479,14 +451,15 @@ export default function multibarChart() {
       yAxis
         .orient(vertical ? 'left' : 'bottom')
         .scale(y)
-        .valueFormat(yValueFormat)
+        .valueFormat(yAxisFormat)
         .tickPadding(4)
         .showMaxMin(true);
+
 
       //------------------------------------------------------------
       // Main chart wrappers
 
-      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([data]);
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
@@ -518,9 +491,6 @@ export default function multibarChart() {
       var legend_wrap = wrap.select('.sc-legend-wrap');
 
       if (scrollEnabled) {
-        var scroll = scroller()
-          .id(chart.id())
-          .vertical(vertical);
         scroll(wrap, wrap_entr, scroll_wrap, xAxis);
       }
 
@@ -547,12 +517,14 @@ export default function multibarChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
+        xTickMaxWidth = Math.max(vertical ? baseDimension * 2 : availableWidth * 0.2, 75);
+
         // Scroll variables
         // for stacked, baseDimension is width of bar plus 1/4 of bar for gap
         // for grouped, baseDimension is width of bar plus width of one bar for gap
         var boundsWidth = state.stacked ? baseDimension : baseDimension * seriesCount + baseDimension,
             gap = baseDimension * (state.stacked ? 0.25 : 1),
-            minDimension = groupCount * boundsWidth + gap;
+            minDimension = xTickCount * boundsWidth + gap;
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -567,7 +539,9 @@ export default function multibarChart() {
             titleBBox = {width: 0, height: 0},
             controlsHeight = 0,
             legendHeight = 0,
-            trans = '';
+            trans = '',
+            xpos = 0,
+            ypos = 0;
 
         title_wrap.select('.sc-title').remove();
 
@@ -589,8 +563,9 @@ export default function multibarChart() {
 
         if (showControls) {
           controls
-            .id('controls_' + chart.id())
+            .id('controls_' + model.id())
             .strings(chart.strings().controls)
+            .color(['#444'])
             .align('left')
             .height(availableHeight - headerHeight);
           controls_wrap
@@ -599,15 +574,10 @@ export default function multibarChart() {
 
           maxControlsWidth = controls.calcMaxWidth();
         }
-        if (showLegend) {
-          if (model.barColor()) {
-            data.forEach(function(series, i) {
-              series.color = d3.rgb('#ccc').darker(i * 1.5).toString();
-            });
-          }
 
+        if (showLegend) {
           legend
-            .id('legend_' + chart.id())
+            .id('legend_' + model.id())
             .strings(chart.strings().legend)
             .align('right')
             .height(availableHeight - headerHeight);
@@ -628,13 +598,13 @@ export default function multibarChart() {
             .arrange(maxControlsWidth);
           maxLegendWidth = availableWidth - controls.width();
         }
+
         if (showLegend) {
           legend
             .arrange(maxLegendWidth);
           maxControlsWidth = availableWidth - legend.width();
         }
 
-        var xpos, ypos;
         if (showControls) {
           xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
           ypos = showTitle ? titleBBox.height : - controls.margin().top;
@@ -642,6 +612,7 @@ export default function multibarChart() {
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
           controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
         }
+
         if (showLegend) {
           var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
               legendSpace = availableWidth - titleBBox.width - 6,
@@ -651,7 +622,7 @@ export default function multibarChart() {
           if (legendTop) {
             ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
           } else if (!showTitle) {
-            ypos = - legend.margin().top;
+            ypos = 0 - legend.margin().top;
           }
           legend_wrap
             .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
@@ -686,7 +657,7 @@ export default function multibarChart() {
           .width(getDimension('width'))
           .height(getDimension('height'));
         model_wrap
-          .data([seriesData])
+          .data([modelData])
           .call(model);
 
         //------------------------------------------------------------
@@ -723,7 +694,7 @@ export default function multibarChart() {
         // X-Axis
         xAxis
           .margin(innerMargin)
-          .ticks(groupCount);
+          .ticks(xTickCount);
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
@@ -733,7 +704,7 @@ export default function multibarChart() {
         xAxisMargin = xAxis.margin();
         setInnerMargins();
 
-        // resize ticks based on new dimensions
+        // recall y-axis, x-axis and lines to set final size based on new dimensions
         xAxis
           .tickSize(0)
           .margin(innerMargin);
@@ -847,11 +818,8 @@ export default function multibarChart() {
           chart.clearActive();
         }
 
-        // state.disabled = data.map(function(d) { return !!d.disabled; });
         chart.update();
         dispatch.call('stateChange', this, state);
-
-        // container.transition().duration(duration).call(chart);
       });
 
       controls.dispatch.on('legendClick', function(d, i) {
@@ -880,13 +848,14 @@ export default function multibarChart() {
         state.stacked = model.stacked();
         chart.update();
         dispatch.call('stateChange', this, state);
-
-        // container.transition().duration(duration).call(chart);
       });
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          eo.group = groupData[eo.groupIndex];
+          if (xIsOrdinal && hasGroupLabels) {
+            // set the group rather than pass entire groupData
+            eo.group = groupData[eo.groupIndex];
+          }
           tt = showTooltip(eo, that.parentNode, properties);
         }
       });
@@ -931,8 +900,7 @@ export default function multibarChart() {
           state.stacked = eo.stacked;
         }
 
-        // container.transition().duration(duration).call(chart);
-        chart.render();
+        chart.update();
       });
 
       dispatch.on('chartClick', function() {
@@ -947,7 +915,7 @@ export default function multibarChart() {
 
       model.dispatch.on('elementClick', function(eo) {
         dispatch.call('chartClick', this);
-        seriesClick(data, eo, chart, groupLabels);
+        seriesClick(data, eo, chart, xTickValues);
       });
 
     });
@@ -1097,7 +1065,7 @@ export default function multibarChart() {
   chart.state = function(_) {
     if (!arguments.length) { return state; }
     state = _;
-    dispatch.stateChange(state);
+    dispatch.call('stateChange', this, state);
     return chart;
   };
 
@@ -1136,6 +1104,22 @@ export default function multibarChart() {
     return chart;
   };
 
+  chart.xValueFormat = function(_) {
+    if (!arguments.length) {
+      return xValueFormat;
+    }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
+    return chart;
+  };
+
   chart.seriesClick = function(_) {
     if (!arguments.length) { return seriesClick; }
     seriesClick = _;
@@ -1163,22 +1147,6 @@ export default function multibarChart() {
   chart.hideEmptyGroups = function(_) {
     if (!arguments.length) { return hideEmptyGroups; }
     hideEmptyGroups = _;
-    return chart;
-  };
-
-  chart.xValueFormat = function(_) {
-    if (!arguments.length) {
-      return xValueFormat;
-    }
-    xValueFormat = _;
-    return chart;
-  };
-
-  chart.yValueFormat = function(_) {
-    if (!arguments.length) {
-      return yValueFormat;
-    }
-    yValueFormat = _;
     return chart;
   };
 

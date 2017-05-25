@@ -18,27 +18,27 @@
   // }
 
   .sc-guide-wrap .sc-series {
-    .sc-line,
-    .sc-point {
+    path.sc-line,
+    circle.sc-point {
       pointer-events: none;
       stroke: #777;
       fill-opacity: 0;
       stroke-opacity: 0;
     }
 
-    .sc-line {
+    path.sc-line {
       stroke-width: 1.5px;
     }
 
-    .sc-point {
+    circle.sc-point {
       stroke-width: 1px;
       fill: #fff;
     }
   }
 
   .sc-guide-wrap.hover .sc-series {
-    .sc-line,
-    .sc-point {
+    path.sc-line,
+    circle.sc-point {
       fill-opacity: 1;
       stroke-opacity: 1;
     }

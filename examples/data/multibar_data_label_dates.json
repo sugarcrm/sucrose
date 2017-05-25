@@ -1,0 +1,32 @@
+{
+  "properties": {
+    "title": "Total is 1890.00",
+    "yDataType": "currency",
+    "xDataType": "datetime",
+    "groups": [
+      {"label": "01 Jan 2016 00:00:00 GMT"},
+      {"label": "01 Feb 2016 00:00:00 GMT"},
+      {"label": "01 Mar 2016 00:00:00 GMT"}
+    ],
+    "seriesLabel": "Fruit",
+    "groupLabel": "Harvested"
+  },
+  "data": [
+    {
+      "key": "Apples",
+      "values": [
+        {"x": 1, "y": 1234},
+        {"x": 2, "y": 567},
+        {"x": 3, "y": 89}
+      ]
+    },
+    {
+      "key": "Oranges",
+      "values": [
+        {"x": 1, "y": 89},
+        {"x": 2, "y": 567},
+        {"x": 3, "y": 1234}
+      ]
+    }
+  ]
+}

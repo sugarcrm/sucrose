@@ -9,6 +9,8 @@
         {"value": "multibar_data_long", "label": "Accounts by Type by Industry"},
         {"value": "multibar_data_short", "label": "Apples or Oranges"},
         {"value": "multibar_data_raw", "label": "Raw Report Data"},
+        {"value": "multibar_data_dates", "label": "Data Dates"},
+        {"value": "multibar_data_label_dates", "label": "Label Dates"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
     "line": [

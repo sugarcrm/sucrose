@@ -199,7 +199,9 @@ export default function gauge() {
       //------------------------------------------------------------
       // Gauge labels
 
-      var labelData = [0].concat(data.map(getY));
+      var labelData = data.map(function(d) {
+        return d.values[0];
+      });
 
       labels_wrap.attr('transform', centerTx);
 
@@ -210,9 +212,9 @@ export default function gauge() {
 
       labels
         .attr('transform', function(d) {
-          return 'rotate(' + newAngle(d) + ') translate(0,' + (prop(-1.5) - radius) + ')';
+          return 'rotate(' + newAngle(d.y) + ') translate(0,' + (prop(-1.5) - radius) + ')';
         })
-        .text(utility.identity)
+        .text(getY)
         .style('fill-opacity', labelOpacity)
         .style('text-anchor', 'middle')
         .style('font-size', prop(0.6) + 'em');

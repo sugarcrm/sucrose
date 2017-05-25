@@ -42,10 +42,15 @@ export default function funnelChart() {
 
   var tooltipContent = function(eo, properties) {
         var key = model.fmtKey()(eo);
+        var label = properties.seriesLabel || 'Key';
         var y = model.getValue()(eo);
         var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
+        var yIsCurrency = properties.yDataType === 'currency';
+        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
+        return '<p>' + label + ': <b>' + key + '</b></p>' +
+               '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+               '<p>Percent: <b>' + percent + '%</b></p>';
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -65,14 +70,14 @@ export default function funnelChart() {
           container = d3.select(this),
           modelClass = 'funnel';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -101,7 +106,6 @@ export default function funnelChart() {
       chart.clearActive = function() {
         data.map(function(d) {
           d.active = '';
-          d.values[0].active = '';
           container.selectAll('.nv-series').classed('nv-inactive', false);
           return d;
         });
@@ -122,7 +126,7 @@ export default function funnelChart() {
             .filter(function(d) {
               return d.active !== 'active';
             })
-            .map(function(d) {
+            .forEach(function(d) {
               d.active = 'inactive';
               return d;
             });
@@ -138,7 +142,6 @@ export default function funnelChart() {
 
       // add series index to each data point for reference
       data.forEach(function(s, i) {
-        var y = model.y();
         s.seriesIndex = i;
 
         if (!s.value && !s.values) {
@@ -150,7 +153,7 @@ export default function funnelChart() {
           p.index = j;
           p.series = s;
           if (typeof p.value == 'undefined') {
-            p.value = y(p);
+            p.value = p.y;
           }
         });
 
@@ -202,8 +205,6 @@ export default function funnelChart() {
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
-      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
       var legend_wrap = wrap.select('.sc-legend-wrap');
 
@@ -240,14 +241,9 @@ export default function funnelChart() {
         // Title & Legend & Controls
 
         // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
-            widthRatio = 0,
-            headerHeight = 0,
+        var headerHeight = 0,
             titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
-            legendHeight = 0,
-            trans = '';
+            legendHeight = 0;
 
         title_wrap.select('.sc-title').remove();
 
@@ -428,8 +424,8 @@ export default function funnelChart() {
   chart.legend = legend;
   chart.controls = controls;
 
-  fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
-  fc.rebind(chart, model, 'getKey', 'getValue', 'fmtKey', 'fmtValue', 'fmtCount');
+  fc.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
+  fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
 
   chart.colorData = function(_) {

@@ -16,26 +16,17 @@ export default function bubbleChart() {
       width = null,
       height = null,
       showTitle = false,
-      showControls = false,
       showLegend = true,
       direction = 'ltr',
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
-      xDomain,
-      yDomain,
       delay = 200,
       duration = 0,
-      groupBy = function(d) { return d.y; },
-      filterBy = function(d) { return d.y; },
-      clipEdge = false, // if true, masks lines within x and y scale
-      seriesLength = 0,
-      reduceYTicks = false, // if false a tick will show for every data point
-      format = d3.timeFormat('%Y-%m-%d'),
       tooltips = true,
+      state = {},
       x,
       y,
-      state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -44,14 +35,26 @@ export default function bubbleChart() {
       },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
-  var xValueFormat = function(d, i, label, isDate) {
-        return isDate ?
-          utility.dateFormat(label, 'MMM', chart.locality()) :
-          label;
+  var groupBy = function(d) { return d.y; },
+      filterBy = function(d) { return d.y; },
+      clipEdge = false, // if true, masks lines within x and y scale
+      seriesLength = 0,
+      reduceYTicks = false; // if false a tick will show for every data point
+
+  var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
+        if (isDate) {
+          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? 'MM' : dateFormat;
+          return utility.dateFormat(value, dateFormat, chart.locality());
+        } else {
+          return value;
+        }
       };
 
-  var yValueFormat = function(d, i, label, isCurrency) {
-        var precision = 2;
+  var yValueFormat = function(d, i, label, isCurrency, precision) {
+        precision = isNaN(precision) ? 2 : precision;
         return utility.numberFormatSI(label, precision, isCurrency, chart.locality());
       };
 
@@ -65,11 +68,10 @@ export default function bubbleChart() {
         .padDataOuter(-1)
         .size(function(d) { return d.y; })
         .sizeRange([256, 1024])
-        .singlePoint(true),
-      xAxis = axis(),
-      yAxis = axis(),
-      legend = menu()
-        .align('center')
+        .singlePoint(true);
+  var xAxis = axis();
+  var yAxis = axis();
+  var legend = menu()
         .key(function(d) { return d.key + '%'; });
 
   var tt = null;
@@ -88,7 +90,9 @@ export default function bubbleChart() {
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart) { return; };
+  var seriesClick = function(data, e, chart, labels) {
+        return;
+      };
 
   //============================================================
 
@@ -113,16 +117,15 @@ export default function bubbleChart() {
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData,
-          timeExtent,
-          xD,
-          yD,
+          xDomain,
+          yDomain,
           yValues;
 
-      var xAxisValueFormat = function(d, i, selection, noEllipsis) {
+      var xAxisFormat = function(d, i, selection, noEllipsis) {
             return xValueFormat(d, i, d, xIsDatetime);
           };
 
-      var yAxisValueFormat = function(d, i, selection, noEllipsis) {
+      var yAxisFormat = function(d, i, selection, noEllipsis) {
             var label = yValues && Array.isArray(yValues) ?
                   yValues[i].key || d :
                   d;
@@ -142,8 +145,10 @@ export default function bubbleChart() {
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
-      function displayNoData(d) {
-        var hasData = d && d.length;
+      function displayNoData(data) {
+        var hasData = data && data.length && data.filter(function(series) {
+          return !series.disabled && Array.isArray(series.values) && series.values.length;
+        }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
@@ -153,6 +158,7 @@ export default function bubbleChart() {
       if (displayNoData(data)) {
         return chart;
       }
+
 
       //------------------------------------------------------------
       // Process data
@@ -276,11 +282,11 @@ export default function bubbleChart() {
           return d;
         });
 
-      xD = getTimeDomain(modelData);
+      xDomain = getTimeDomain(modelData);
 
       yValues = getGroupTicks(data);
 
-      yD = d3.extent(
+      yDomain = d3.extent(
             d3.merge(
               modelData.map(function(d) {
                 return d.values.map(function(d, i) {
@@ -299,17 +305,18 @@ export default function bubbleChart() {
       xAxis
         .orient('bottom')
         .scale(x)
-        .valueFormat(xAxisValueFormat)
+        .valueFormat(xAxisFormat)
         .ticks(d3.timeMonths, 1)
-        .tickValues(getTimeTicks(xD))
+        .tickValues(getTimeTicks(xDomain))
         .tickSize(0)
         .tickPadding(4)
         .highlightZero(false)
         .showMaxMin(false);
+
       yAxis
         .orient('left')
         .scale(y)
-        .valueFormat(yAxisValueFormat)
+        .valueFormat(yAxisFormat)
         .ticks(yValues.length)
         .tickValues(yValues.map(function(d, i) {
           return yValues[i].y;
@@ -317,6 +324,34 @@ export default function bubbleChart() {
         .tickPadding(7)
         .highlightZero(false)
         .showMaxMin(false);
+
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('rect').attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
+
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
 
       //------------------------------------------------------------
       // Main chart draw
@@ -345,39 +380,11 @@ export default function bubbleChart() {
         var maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI),
             headerHeight = 0,
             titleBBox = {width: 0, height: 0},
-            legendHeight = 0,
             trans = '';
-
-        //------------------------------------------------------------
-        // Setup containers and skeleton of chart
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
 
         wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
-
-        wrap_entr.append('g').attr('class', 'sc-title-wrap');
-        var title_wrap = wrap.select('.sc-title-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
-        var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
-
-        wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
-        var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
-
-        wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
-        var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
-
-        wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-        var legend_wrap = wrap.select('.sc-legend-wrap');
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
@@ -404,7 +411,7 @@ export default function bubbleChart() {
 
         if (showLegend) {
           legend
-            .id('legend_' + chart.id())
+            .id('legend_' + model.id())
             .strings(chart.strings().legend)
             .align('center')
             .height(availableHeight - headerHeight);
@@ -442,8 +449,8 @@ export default function bubbleChart() {
           .width(innerWidth)
           .height(innerHeight)
           .id(chart.id())
-          .xDomain(xD)
-          .yDomain(yD);
+          .xDomain(xDomain)
+          .yDomain(yDomain);
 
         model_wrap
           .datum(modelData.filter(function(d) {
@@ -682,9 +689,7 @@ export default function bubbleChart() {
   };
 
   chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         margin[prop] = _[prop];
@@ -694,65 +699,50 @@ export default function bubbleChart() {
   };
 
   chart.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
+    if (!arguments.length) { return width; }
     width = _;
     return chart;
   };
 
   chart.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
+    if (!arguments.length) { return height; }
     height = _;
     return chart;
   };
 
   chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
+    if (!arguments.length) { return showTitle; }
     showTitle = _;
     return chart;
   };
 
   chart.showLegend = function(_) {
-    if (!arguments.length) {
-      return showLegend;
-    }
+    if (!arguments.length) { return showLegend; }
     showLegend = _;
     return chart;
   };
 
   chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
+    if (!arguments.length) { return tooltips; }
     tooltips = _;
     return chart;
   };
 
   chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
+    if (!arguments.length) { return tooltipContent; }
     tooltipContent = _;
     return chart;
   };
 
   chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
+    if (!arguments.length) { return state; }
     state = _;
+    dispatch.call('stateChange', this, state);
     return chart;
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
@@ -762,9 +752,7 @@ export default function bubbleChart() {
   };
 
   chart.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
+    if (!arguments.length) { return direction; }
     direction = _;
     // model.direction(_);
     xAxis.direction(_);
@@ -774,27 +762,37 @@ export default function bubbleChart() {
   };
 
   chart.duration = function(_) {
-    if (!arguments.length) {
-      return duration;
-    }
+    if (!arguments.length) { return duration; }
     duration = _;
     model.duration(_);
     return chart;
   };
 
   chart.delay = function(_) {
-    if (!arguments.length) {
-      return delay;
-    }
+    if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
     return chart;
   };
 
-  chart.seriesClick = function(_) {
+  chart.xValueFormat = function(_) {
     if (!arguments.length) {
-      return seriesClick;
+      return xValueFormat;
     }
+    xValueFormat = _;
+    return chart;
+  };
+
+  chart.yValueFormat = function(_) {
+    if (!arguments.length) {
+      return yValueFormat;
+    }
+    yValueFormat = _;
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) { return seriesClick; }
     seriesClick = _;
     return chart;
   };
@@ -816,22 +814,6 @@ export default function bubbleChart() {
       return filterBy;
     }
     filterBy = _;
-    return chart;
-  };
-
-  chart.xValueFormat = function(_) {
-    if (!arguments.length) {
-      return xValueFormat;
-    }
-    xValueFormat = _;
-    return chart;
-  };
-
-  chart.yValueFormat = function(_) {
-    if (!arguments.length) {
-      return yValueFormat;
-    }
-    yValueFormat = _;
     return chart;
   };
 

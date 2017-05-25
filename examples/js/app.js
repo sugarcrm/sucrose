@@ -197,21 +197,6 @@ var sucroseCharts = function() {
       tooltips: true,
       useVoronoi: false,
       _format: function format(chart, callback) {
-        // chart
-          // .x(function(d) { return d[0]; })
-          // .y(function(d) { return d[1]; })
-          //.clipEdge(true)
-          //.style('expand', 'stream', 'stacked')
-          // .tooltipContent(function(key, x, y, e, graph) {
-          //   return '<p>Category: <b>' + key + '</b></p>';
-          // });
-
-        // chart.yAxis
-        //   .axisLabel('Expenditures ($)')
-        //   .tickFormat(d3.format(',.2f'));
-
-        // chart.xAxis
-        //   .tickFormat(function(d) { return d3.timeFormat('%x')(new Date(d)); });
         callback(chart);
       }
     },
@@ -226,14 +211,14 @@ var sucroseCharts = function() {
           .filterBy(function(d) {
             return d.probability;
           })
-          .tooltipContent(function(eo, properties) {
-            var point = eo.point;
-            return '<p>Assigned: <b>' + point.assigned_user_name + '</b></p>' +
-                   '<p>Amount: <b>$' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
-                   '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(point.x)) + '</b></p>' +
-                   '<p>Probability: <b>' + point.probability + '%</b></p>' +
-                   '<p>Account: <b>' + point.account_name + '</b></p>';
-          });
+          // .tooltipContent(function(eo, properties) {
+          //   var point = eo.point;
+          //   return '<p>Assigned: <b>' + point.assigned_user_name + '</b></p>' +
+          //          '<p>Amount: <b>$' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
+          //          '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(point.x)) + '</b></p>' +
+          //          '<p>Probability: <b>' + point.probability + '%</b></p>' +
+          //          '<p>Account: <b>' + point.account_name + '</b></p>';
+          // });
         callback(chart);
       }
     },
@@ -242,25 +227,11 @@ var sucroseCharts = function() {
       wrapLabels: null,
       _format: function format(chart, callback) {
         chart
-          // .fmtCount(function(d) {
-          // })
-          // .fmtKey(function(d) {
-          // })
           .fmtValue(function(d) {
               return sucrose.utility.numberFormatSI(chart.getValue()(d), 0, yIsCurrency, chart.locality());
           })
           .fmtCount(function(d) {
               return d.count ? ' (' + sucrose.utility.numberFormatSI(d.count, 0, false, chart.locality()) + ')' : '';
-          })
-          .tooltipContent(function(eo, properties) {
-            var key = chart.fmtKey()(eo);
-            var y = chart.getValue()(eo);
-            var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
-            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-            var percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
-            return '<p>Stage: <b>' + key + '</b></p>' +
-                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-                   '<p>Percent: <b>' + percent + '%</b></p>';
           });
         callback(chart);
       }
@@ -270,9 +241,6 @@ var sucroseCharts = function() {
       maxValue: 9,
       transitionMs: 4000,
       _format: function format(chart, callback) {
-        chart
-          .x(function(d) { return d.key; })
-          .y(function(d) { return d.y; });
         callback(chart);
       }
     },
@@ -299,20 +267,20 @@ var sucroseCharts = function() {
       useVoronoi: true,
       clipEdge: false,
       _format: function format(chart, callback) {
-        chart
-          .tooltipContent(function(eo, properties) {
-            var key = eo.series.key;
-            var x = eo.point.x;
-            var y = eo.point.y;
-            var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
-            var content = '<p>Category: <b>' + key + '</b></p>' +
-                          '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>',
-                dateCheck = new Date(x);
-            if (dateCheck instanceof Date && !isNaN(dateCheck.valueOf())) {
-              content += '<p>Date: <b>' + sucrose.utility.dateFormat(x, '%x', chart.locality()) + '</b></p>';
-            }
-            return content;
-          });
+        // chart
+        //   .tooltipContent(function(eo, properties) {
+        //     var key = eo.series.key;
+        //     var x = eo.point.x;
+        //     var y = eo.point.y;
+        //     var value = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+        //     var group = xIsDatetime && eo.group ?
+        //           sucrose.utility.dateFormat(eo.group.label, '%x', chart.locality()) :
+        //           chart.xAxis.tickFormat()(x, eo.pointIndex, null, false);
+        //     var content = '<p>Key: <b>' + key + '</b></p>';
+        //         content += '<p>' + (xIsDatetime ? 'Date' : 'Group') + ': <b>' + group + '</b></p>';
+        //         content += '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + value + '</b></p>';
+        //     return content;
+        //   });
         callback(chart);
       }
     },
@@ -323,23 +291,31 @@ var sucroseCharts = function() {
           .valueFormat(function(d) {
             return sucrose.utility.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
-          .tooltipContent(function(eo, properties) {
-            var key = eo.group.label;
-            var y = eo.point.y;
-            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-            var content = '<p>Key: <b>' + key + '</b></p>' +
-                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>';
-            var percent, group;
-            if (typeof eo.group._height !== 'undefined') {
-              percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-              percent = sucrose.utility.numberFormatRound(percent, 2, false, chart.locality());
-              content += '<p>Percentage: <b>' + percent + '%</b></p>';
-            } else {
-              group = chart.yAxis.tickFormat()(eo.point.x, eo.pointIndex, null, false);
-              content += '<p>Group: <b>' + group + '%</b></p>';
-            }
-            return content;
-          });
+          // .yValueFormat(function(d, i, label, isCurrency, precision) {
+          //   precision = isNaN(precision) ? 2 : precision;
+          //   return sucrose.utility.numberFormatRound(d, precision, yIsCurrency, chart.locality());
+          // })
+          // .tooltipContent(function(eo, properties) {
+          //   var key = eo.series.key;
+          //   var label = eo.group.label;
+          //   var y = eo.point.y;
+          //   var x = eo.point.x;
+          //   var value = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+          //   var group = xIsDatetime ?
+          //         sucrose.utility.dateFormat(label, '%x', chart.locality()) :
+          //         chart.xAxis.tickFormat()(x, eo.pointIndex, null, false);
+          //   var percent;
+          //   var content = '<p>Key: <b>' + key + '</b></p>';
+          //       content += '<p>' + (xIsDatetime ? 'Date' : 'Group') + ': <b>' + group + '</b></p>';
+          //       content += '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + value + '</b></p>';
+          //   if (typeof eo.group._height !== 'undefined') {
+          //     percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
+          //     percent = sucrose.utility.numberFormatRound(percent, 2, false, chart.locality());
+          //     content += '<p>Percentage: <b>' + percent + '%</b></p>';
+          //   }
+
+          //   return content;
+          // });
           //TODO: fix multibar overfolow handler
           // .overflowHandler(function(d) {
           //   var b = $('body');
@@ -418,17 +394,6 @@ var sucroseCharts = function() {
       //   return Math.max(r, 75);
       // }
       _format: function format(chart, callback) {
-        chart
-          .tooltipContent(function(eo, properties) {
-            var key = chart.fmtKey()(eo);
-            var y = chart.getValue()(eo);
-            var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
-            var val = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-            var percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
-            return '<p>Stage: <b>' + key + '</b></p>' +
-                   '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-                   '<p>Percent: <b>' + percent + '%</b></p>';
-          });
         callback(chart);
       }
     },
@@ -899,8 +864,6 @@ function transformTableData(chartData, chartType, Chart) {
   };
 }
 
-// var xTickLabels;
-
 function postProcessData(chartData, chartType, Chart) {
 
   if (chartData.properties) {
@@ -910,13 +873,10 @@ function postProcessData(chartData, chartType, Chart) {
 
   switch (chartType) {
 
+    case 'area':
     case 'line':
-      // xTickLabels = chartData.properties.labels ?
-      //   chartData.properties.labels.map(function (d) { return d.l || d; }) :
-      //   [];
-
       if (chartData.data.length) {
-        if (chartData.data[0].values.length && Array.isArray(chartData.data[0].values[0])) {
+        if (Array.isArray(chartData.data[0].values) && Array.isArray(chartData.data[0].values[0])) {
           // Convert array data to objects
           chartData.data.forEach(function(d, i) {
             d.values = d.values.map(function(g, j) {
@@ -927,32 +887,6 @@ function postProcessData(chartData, chartType, Chart) {
               return value;
             });
           });
-          // Chart
-          //   .x(function (d) { return d[0]; })
-          //   .y(function (d) { return d[1]; });
-
-          // if (sucrose.isValidDate(chartData.data[0].values[0][0])) {
-          //   Chart.xAxis
-          //     .tickFormat(function (d) {
-          //       return d3.time.format('%x')(new Date(d));
-          //     });
-          // } else if (xTickLabels.length > 0) {
-          //   Chart.xAxis
-          //     .tickFormat(function (d) {
-          //       return xTickLabels[d] || ' ';
-          //     });
-          // }
-        // } else {
-        //   Chart
-        //     .x(function (d) { return d.x; })
-        //     .y(function (d) { return d.y; });
-
-          // if (xTickLabels.length > 0) {
-          //   Chart.xAxis
-          //     .tickFormat(function (d) {
-          //       return xTickLabels[d - 1] || ' ';
-          //     });
-          // }
         }
       }
       break;

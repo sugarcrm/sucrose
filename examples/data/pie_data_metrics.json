@@ -1,4 +1,11 @@
 {
+  "properties": {
+    "title": "Verkaufschancen im Überblick",
+    "value": 3,
+    "label": 2,
+    "yDataType": "numeric",
+    "xDataType": "string"
+  },
   "data": [
     {
       "key": "Gewonnen",
@@ -15,12 +22,5 @@
       "value": 2,
       "classes": "active"
     }
-  ],
-  "properties": {
-    "title": "Verkaufschancen im Überblick",
-    "value": 3,
-    "label": 2,
-    "yDataType": "numeric",
-    "xDataType": "string"
-  }
+  ]
 }

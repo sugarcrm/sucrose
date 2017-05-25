@@ -45,13 +45,82 @@ function ascendingComparator(f) {
 
 var ascendingBisect = bisector(ascending);
 var bisectRight = ascendingBisect.right;
+var bisectLeft = ascendingBisect.left;
+
+var pairs = function(array, f) {
+  if (f == null) f = pair;
+  var i = 0, n = array.length - 1, p = array[0], pairs = new Array(n < 0 ? 0 : n);
+  while (i < n) pairs[i] = f(p, p = array[++i]);
+  return pairs;
+};
 
 function pair(a, b) {
   return [a, b];
 }
 
+var cross = function(values0, values1, reduce) {
+  var n0 = values0.length,
+      n1 = values1.length,
+      values = new Array(n0 * n1),
+      i0,
+      i1,
+      i,
+      value0;
+
+  if (reduce == null) reduce = pair;
+
+  for (i0 = i = 0; i0 < n0; ++i0) {
+    for (value0 = values0[i0], i1 = 0; i1 < n1; ++i1, ++i) {
+      values[i] = reduce(value0, values1[i1]);
+    }
+  }
+
+  return values;
+};
+
+var descending = function(a, b) {
+  return b < a ? -1 : b > a ? 1 : b >= a ? 0 : NaN;
+};
+
 var number = function(x) {
   return x === null ? NaN : +x;
+};
+
+var variance = function(values, valueof) {
+  var n = values.length,
+      m = 0,
+      i = -1,
+      mean = 0,
+      value,
+      delta,
+      sum = 0;
+
+  if (valueof == null) {
+    while (++i < n) {
+      if (!isNaN(value = number(values[i]))) {
+        delta = value - mean;
+        mean += delta / ++m;
+        sum += delta * (value - mean);
+      }
+    }
+  }
+
+  else {
+    while (++i < n) {
+      if (!isNaN(value = number(valueof(values[i], i, values)))) {
+        delta = value - mean;
+        mean += delta / ++m;
+        sum += delta * (value - mean);
+      }
+    }
+  }
+
+  if (m > 1) return sum / (m - 1);
+};
+
+var deviation = function(array, f) {
+  var v = variance(array, f);
+  return v ? Math.sqrt(v) : v;
 };
 
 var extent = function(values, valueof) {
@@ -90,6 +159,17 @@ var extent = function(values, valueof) {
   }
 
   return [min, max];
+};
+
+var array = Array.prototype;
+
+var slice = array.slice;
+var map = array.map;
+
+var constant = function(x) {
+  return function() {
+    return x;
+  };
 };
 
 var identity = function(x) {
@@ -165,6 +245,73 @@ var sturges = function(values) {
   return Math.ceil(Math.log(values.length) / Math.LN2) + 1;
 };
 
+var histogram = function() {
+  var value = identity,
+      domain = extent,
+      threshold = sturges;
+
+  function histogram(data) {
+    var i,
+        n = data.length,
+        x,
+        values = new Array(n);
+
+    for (i = 0; i < n; ++i) {
+      values[i] = value(data[i], i, data);
+    }
+
+    var xz = domain(values),
+        x0 = xz[0],
+        x1 = xz[1],
+        tz = threshold(values, x0, x1);
+
+    // Convert number of thresholds into uniform thresholds.
+    if (!Array.isArray(tz)) {
+      tz = tickStep(x0, x1, tz);
+      tz = range(Math.ceil(x0 / tz) * tz, Math.floor(x1 / tz) * tz, tz); // exclusive
+    }
+
+    // Remove any thresholds outside the domain.
+    var m = tz.length;
+    while (tz[0] <= x0) tz.shift(), --m;
+    while (tz[m - 1] > x1) tz.pop(), --m;
+
+    var bins = new Array(m + 1),
+        bin;
+
+    // Initialize bins.
+    for (i = 0; i <= m; ++i) {
+      bin = bins[i] = [];
+      bin.x0 = i > 0 ? tz[i - 1] : x0;
+      bin.x1 = i < m ? tz[i] : x1;
+    }
+
+    // Assign data to bins by value, ignoring any outside the domain.
+    for (i = 0; i < n; ++i) {
+      x = values[i];
+      if (x0 <= x && x <= x1) {
+        bins[bisectRight(tz, x, 0, m)].push(data[i]);
+      }
+    }
+
+    return bins;
+  }
+
+  histogram.value = function(_) {
+    return arguments.length ? (value = typeof _ === "function" ? _ : constant(_), histogram) : value;
+  };
+
+  histogram.domain = function(_) {
+    return arguments.length ? (domain = typeof _ === "function" ? _ : constant([_[0], _[1]]), histogram) : domain;
+  };
+
+  histogram.thresholds = function(_) {
+    return arguments.length ? (threshold = typeof _ === "function" ? _ : Array.isArray(_) ? constant(slice.call(_)) : constant(_), histogram) : threshold;
+  };
+
+  return histogram;
+};
+
 var threshold = function(values, p, valueof) {
   if (valueof == null) valueof = number;
   if (!(n = values.length)) return;
@@ -176,6 +323,15 @@ var threshold = function(values, p, valueof) {
       value0 = +valueof(values[i0], i0, values),
       value1 = +valueof(values[i0 + 1], i0 + 1, values);
   return value0 + (value1 - value0) * (i - i0);
+};
+
+var freedmanDiaconis = function(values, min, max) {
+  values = map.call(values, number).sort(ascending);
+  return Math.ceil((max - min) / (2 * (threshold(values, 0.75) - threshold(values, 0.25)) * Math.pow(values.length, -1 / 3)));
+};
+
+var scott = function(values, min, max) {
+  return Math.ceil((max - min) / (3.5 * deviation(values) * Math.pow(values.length, -1 / 3)));
 };
 
 var max = function(values, valueof) {
@@ -211,6 +367,55 @@ var max = function(values, valueof) {
   }
 
   return max;
+};
+
+var mean = function(values, valueof) {
+  var n = values.length,
+      m = n,
+      i = -1,
+      value,
+      sum = 0;
+
+  if (valueof == null) {
+    while (++i < n) {
+      if (!isNaN(value = number(values[i]))) sum += value;
+      else --m;
+    }
+  }
+
+  else {
+    while (++i < n) {
+      if (!isNaN(value = number(valueof(values[i], i, values)))) sum += value;
+      else --m;
+    }
+  }
+
+  if (m) return sum / m;
+};
+
+var median = function(values, valueof) {
+  var n = values.length,
+      i = -1,
+      value,
+      numbers = [];
+
+  if (valueof == null) {
+    while (++i < n) {
+      if (!isNaN(value = number(values[i]))) {
+        numbers.push(value);
+      }
+    }
+  }
+
+  else {
+    while (++i < n) {
+      if (!isNaN(value = number(valueof(values[i], i, values)))) {
+        numbers.push(value);
+      }
+    }
+  }
+
+  return threshold(numbers.sort(ascending), 0.5);
 };
 
 var merge = function(arrays) {
@@ -270,6 +475,46 @@ var min = function(values, valueof) {
   return min;
 };
 
+var permute = function(array, indexes) {
+  var i = indexes.length, permutes = new Array(i);
+  while (i--) permutes[i] = array[indexes[i]];
+  return permutes;
+};
+
+var scan = function(values, compare) {
+  if (!(n = values.length)) return;
+  var n,
+      i = 0,
+      j = 0,
+      xi,
+      xj = values[j];
+
+  if (compare == null) compare = ascending;
+
+  while (++i < n) {
+    if (compare(xi = values[i], xj) < 0 || compare(xj, xj) !== 0) {
+      xj = xi, j = i;
+    }
+  }
+
+  if (compare(xj, xj) === 0) return j;
+};
+
+var shuffle = function(array, i0, i1) {
+  var m = (i1 == null ? array.length : i1) - (i0 = i0 == null ? 0 : +i0),
+      t,
+      i;
+
+  while (m) {
+    i = Math.random() * m-- | 0;
+    t = array[m + i0];
+    array[m + i0] = array[i + i0];
+    array[i + i0] = t;
+  }
+
+  return array;
+};
+
 var sum = function(values, valueof) {
   var n = values.length,
       i = -1,
@@ -304,6 +549,10 @@ var transpose = function(matrix) {
 function length(d) {
   return d.length;
 }
+
+var zip = function() {
+  return transpose(arguments);
+};
 
 var slice$1 = Array.prototype.slice;
 
@@ -5245,8 +5494,8 @@ function formatLiteralPercent() {
 var locale$2;
 
 
-var utcFormat;
-var utcParse;
+
+
 
 defaultLocale$1({
   dateTime: "%x, %X",
@@ -5263,8 +5512,8 @@ function defaultLocale$1(definition) {
   locale$2 = formatLocale$1(definition);
   exports.timeFormat = locale$2.format;
   exports.timeParse = locale$2.parse;
-  utcFormat = locale$2.utcFormat;
-  utcParse = locale$2.utcParse;
+  exports.utcFormat = locale$2.utcFormat;
+  exports.utcParse = locale$2.utcParse;
   return locale$2;
 }
 
@@ -5276,7 +5525,7 @@ function formatIsoNative(date) {
 
 var formatIso = Date.prototype.toISOString
     ? formatIsoNative
-    : utcFormat(isoSpecifier);
+    : exports.utcFormat(isoSpecifier);
 
 function parseIsoNative(string) {
   var date = new Date(string);
@@ -5285,7 +5534,7 @@ function parseIsoNative(string) {
 
 var parseIso = +new Date("2000-01-01T00:00:00.000Z")
     ? parseIsoNative
-    : utcParse(isoSpecifier);
+    : exports.utcParse(isoSpecifier);
 
 var durationSecond = 1000;
 var durationMinute = durationSecond * 60;
@@ -7463,6 +7712,25 @@ var selection_transition = function(name) {
 selection.prototype.interrupt = selection_interrupt;
 selection.prototype.transition = selection_transition;
 
+var root$1 = [null];
+
+var active = function(node, name) {
+  var schedules = node.__transition,
+      schedule,
+      i;
+
+  if (schedules) {
+    name = name == null ? null : name + "";
+    for (i in schedules) {
+      if ((schedule = schedules[i]).state > SCHEDULED && schedule.name === name) {
+        return new Transition([[node]], root$1, name, +i);
+      }
+    }
+  }
+
+  return null;
+};
+
 var constant$7 = function(x) {
   return function() {
     return x;
@@ -8506,6 +8774,12 @@ Transform.prototype = {
 };
 
 var identity$6 = new Transform(1, 0, 0);
+
+transform.prototype = Transform.prototype;
+
+function transform(node) {
+  return node.__zoom || identity$6;
+}
 
 function nopropagation$1() {
   exports.event.stopImmediatePropagation();
@@ -12132,13 +12406,6 @@ var transverseMercator = function() {
 };
 
 exports.version = version;
-exports.extent = extent;
-exports.max = max;
-exports.merge = merge;
-exports.min = min;
-exports.range = range;
-exports.sum = sum;
-exports.transpose = transpose;
 exports.axisBottom = axisBottom;
 exports.axisLeft = axisLeft;
 exports.axisRight = axisRight;
@@ -12150,10 +12417,8 @@ exports.values = values;
 exports.lab = lab;
 exports.rgb = rgb;
 exports.dispatch = dispatch;
-exports.drag = drag;
 exports.easeElastic = elasticOut;
 exports.easeLinear = linear;
-exports.formatLocale = formatLocale;
 exports.hierarchy = hierarchy;
 exports.tree = tree;
 exports.interpolate = interpolateValue;
@@ -12181,13 +12446,49 @@ exports.stackOffsetWiggle = wiggle;
 exports.stackOrderInsideOut = insideOut;
 exports.stackOrderNone = none$2;
 exports.symbol = symbol;
-exports.timeFormatLocale = formatLocale$1;
-exports.transition = transition;
 exports.voronoi = voronoi;
-exports.zoom = zoom;
-exports.zoomIdentity = identity$6;
 exports.treemap = index$1;
 exports.easeCubicIn = cubicIn;
+exports.bisect = bisectRight;
+exports.bisectRight = bisectRight;
+exports.bisectLeft = bisectLeft;
+exports.ascending = ascending;
+exports.bisector = bisector;
+exports.cross = cross;
+exports.descending = descending;
+exports.deviation = deviation;
+exports.extent = extent;
+exports.histogram = histogram;
+exports.thresholdFreedmanDiaconis = freedmanDiaconis;
+exports.thresholdScott = scott;
+exports.thresholdSturges = sturges;
+exports.max = max;
+exports.mean = mean;
+exports.median = median;
+exports.merge = merge;
+exports.min = min;
+exports.pairs = pairs;
+exports.permute = permute;
+exports.quantile = threshold;
+exports.range = range;
+exports.scan = scan;
+exports.shuffle = shuffle;
+exports.sum = sum;
+exports.ticks = ticks;
+exports.tickIncrement = tickIncrement;
+exports.tickStep = tickStep;
+exports.transpose = transpose;
+exports.variance = variance;
+exports.zip = zip;
+exports.drag = drag;
+exports.dragDisable = dragDisable;
+exports.dragEnable = yesdrag;
+exports.formatDefaultLocale = defaultLocale;
+exports.formatLocale = formatLocale;
+exports.formatSpecifier = formatSpecifier;
+exports.precisionFixed = precisionFixed;
+exports.precisionPrefix = precisionPrefix;
+exports.precisionRound = precisionRound;
 exports.creator = creator;
 exports.local = local;
 exports.matcher = matcher$1;
@@ -12264,6 +12565,16 @@ exports.utcMonth = utcMonth;
 exports.utcMonths = utcMonths;
 exports.utcYear = utcYear;
 exports.utcYears = utcYears;
+exports.timeFormatDefaultLocale = defaultLocale$1;
+exports.timeFormatLocale = formatLocale$1;
+exports.isoFormat = formatIso;
+exports.isoParse = parseIso;
+exports.transition = transition;
+exports.active = active;
+exports.interrupt = interrupt;
+exports.zoom = zoom;
+exports.zoomTransform = transform;
+exports.zoomIdentity = identity$6;
 exports.request = request;
 exports.html = html;
 exports.json = json;

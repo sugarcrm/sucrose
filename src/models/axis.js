@@ -58,7 +58,6 @@ export default function axis() {
       var vertical = orient === 'left' || orient === 'right' ? true : false,
           reflect = orient === 'left' || orient === 'top' ? -1 : 1,
           tickGap = 6,
-          tickSpacing = 0,
           labelThickness = 0;
 
       var tickDimensions = [],
@@ -386,7 +385,7 @@ export default function axis() {
               tickDimensions.push({
                 key: d,
                 width: parseInt(bbox.width, 10),
-                height: parseInt(bbox.height / 1.2, 10),
+                height: parseInt(bbox.height, 10),
                 left: bbox.left,
                 right: bbox.right,
                 top: bbox.top,
@@ -461,8 +460,7 @@ export default function axis() {
           extent = getRangeExtent();
           scaleWidth = Math.abs(extent[1] - extent[0]);
 
-          axis
-            .scale(scaleCalc);
+          axis.scale(scaleCalc);
           wrap.call(axis);
         }
       }
@@ -474,8 +472,7 @@ export default function axis() {
         extent = getRangeExtent();
         scaleWidth = Math.abs(extent[1] - extent[0]);
 
-        axis
-          .scale(scale);
+        axis.scale(scale);
 
         wrap.call(axis);
 
@@ -555,7 +552,7 @@ export default function axis() {
       function handleStagger() {
         tickText
           .attr('transform', function(d, i) {
-            var yOffset = tickDimensionsHash['key-' + d.toString()].index % 2 * (maxLabelHeight + 2);
+            var yOffset = tickDimensionsHash['key-' + d.toString()].index % 2 * (maxLabelHeight);
             return 'translate(0,' + yOffset + ')';
           });
 

@@ -31,8 +31,6 @@ export default function globeChart() {
       width = null,
       height = null,
       showTitle = false,
-      showControls = false,
-      showLegend = true,
       direction = 'ltr',
       tooltips = true,
       initialTilt = 0,
@@ -101,16 +99,6 @@ export default function globeChart() {
 
       var tooltips0 = tooltips,
           m0, n0, o0;
-
-      // Header variables
-      var maxControlsWidth = 0,
-          maxLegendWidth = 0,
-          widthRatio = 0,
-          headerHeight = 0,
-          titleBBox = {width: 0, height: 0},
-          controlsHeight = 0,
-          legendHeight = 0,
-          trans = '';
 
       // Globe variables
       var world,
@@ -641,6 +629,12 @@ export default function globeChart() {
         strings[prop] = _[prop];
       }
     }
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
     return chart;
   };
 

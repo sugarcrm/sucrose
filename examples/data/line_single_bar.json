@@ -1,24 +1,22 @@
 {
   "properties": {
     "title": "Total is 100",
-    "labels": [
+    "groups": [
       {
         "group": 1,
-        "l": "September 2015"
+        "label": "September 2015",
+        "total": 100
       }
     ],
-    "values": [
-      {
-        "group": 1,
-        "t": 100
-      }
-    ]
+    "xDataType": "ordinal",
+    "yDataType": "currency"
   },
   "data": [
     {
       "key": "Friends",
+      "total": 100,
       "values": [
-        {"series": 0, "x": 1, "y": 100, "y0": 0}
+        {"x": 1, "y": 100}
       ]
     }
   ]

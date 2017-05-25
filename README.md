@@ -13,13 +13,15 @@ SugarCRM's Chart Library: based on [D3](http://d3js.org) and derived from [NVD3]
 ## Using
 
 1. Include a link tag to the sucrose.min.css in you document head
+1. Include a script tag to the d3.min.js at the bottom of your document
+1. Include a script tag to the d3fc-rebind.min.js at the bottom of your document
 1. Include a script tag to the sucrose.min.js at the bottom of your document
 
 ### Notes
 This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose.
 
 ## Developing
-1.
+1. Under construction
 
 ### Contributing:
 See [CONTRIBUTING](CONTRIBUTING.md) for how you can contribute changes back into this project.

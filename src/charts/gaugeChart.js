@@ -21,8 +21,6 @@ export default function gaugeChart() {
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y, //can be accessed via chart.yScale()
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         noData: 'No Data Available.',
@@ -62,14 +60,14 @@ export default function gaugeChart() {
           container = d3.select(this),
           modelClass = 'gauge';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var xIsDatetime = chartData.properties.xDataType === 'datetime' || false,
-          yIsCurrency = chartData.properties.yDataType === 'currency' || false;
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -197,11 +195,9 @@ export default function gaugeChart() {
         // Title & Legend & Controls
 
         // Header variables
-        var maxLegendWidth = 0,
-            headerHeight = 0,
+        var headerHeight = 0,
             titleBBox = {width: 0, height: 0},
-            legendHeight = 0,
-            trans = '';
+            legendHeight = 0;
 
         title_wrap.select('.sc-title').remove();
 
