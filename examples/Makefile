@@ -65,7 +65,7 @@ HEADER = $(shell cat ../src/header)
 
 .DEFAULT_GOAL := help
 
-.PHONY: install-prod install-dev npm-prod npm-dev index-prod index-dev \
+.PHONY: prod dev npm-prod npm-dev index-prod index-dev \
 	clean-sucrose clean-lib clean-dependencies clean-js clean-css list help md
 
 
@@ -73,7 +73,7 @@ HEADER = $(shell cat ../src/header)
 # PRODUCTION
 
 # - install sucrose example application [main]
-install-prod: npm-prod
+prod: npm-prod
 
 # - copy sucrose and dependency files and generate index
 install-post: all index-prod
@@ -104,8 +104,8 @@ clean-sucrose:
 dependencies: clean-dependencies
 	# copy node module files
 	cp ../build/d3.min.js js/d3.min.js
-	cp ../build/topojson.min.js js/topojson.min.js
-	cp ../build/d3fc-rebind.min.js js/d3fc-rebind.min.js
+	cp ../node_modules/topojson/build/topojson.min.js js/topojson.min.js
+	cp ../node_modules/d3fc-rebind/build/d3fc-rebind.min.js js/d3fc-rebind.min.js
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
 	cp node_modules/jquerymy/jquerymy.min.js js/jquerymy.min.js
 
@@ -129,7 +129,7 @@ index-prod:
 # DEVELOPMENT
 
 # - install development environment [main dev]
-install-dev: npm-dev examples index-dev
+dev: npm-dev examples index-dev
 
 # - install development npm packages and copy files
 npm-dev:

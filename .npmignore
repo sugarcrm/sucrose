@@ -4,6 +4,7 @@
 .gitignore
 .gjslintrc
 .jshintrc
+_dev
 d3.*
 d3v4.*
 d3fc-rebind.*

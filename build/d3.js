@@ -1,11 +1,11 @@
-;// https://d3js.org Version 4.8.0. Copyright 2017 Mike Bostock.
+;// https://d3js.org Version 4.9.1. Copyright 2017 Mike Bostock.
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
 	(factory((global.d3 = global.d3 || {})));
 }(this, (function (exports) { 'use strict';
 
-var version = "4.8.0";
+var version = "4.9.1";
 
 var ascending = function(a, b) {
   return a < b ? -1 : a > b ? 1 : a >= b ? 0 : NaN;
@@ -567,15 +567,15 @@ var left = 4;
 var epsilon = 1e-6;
 
 function translateX(x) {
-  return "translate(" + x + ",0)";
+  return "translate(" + (x + 0.5) + ",0)";
 }
 
 function translateY(y) {
-  return "translate(0," + y + ")";
+  return "translate(0," + (y + 0.5) + ")";
 }
 
 function center(scale) {
-  var offset = scale.bandwidth() / 2;
+  var offset = Math.max(0, scale.bandwidth() - 1) / 2; // Adjust for 0.5px offset.
   if (scale.round()) offset = Math.round(offset);
   return function(d) {
     return scale(d) + offset;
@@ -594,7 +594,7 @@ function axis(orient, scale) {
       tickSizeOuter = 6,
       tickPadding = 3,
       k = orient === top || orient === left ? -1 : 1,
-      x, y = orient === left || orient === right ? (x = "x", "y") : (x = "y", "x"),
+      x = orient === left || orient === right ? "x" : "y",
       transform = orient === top || orient === bottom ? translateX : translateY;
 
   function axis(context) {
@@ -621,14 +621,11 @@ function axis(orient, scale) {
 
     line = line.merge(tickEnter.append("line")
         .attr("stroke", "#000")
-        .attr(x + "2", k * tickSizeInner)
-        .attr(y + "1", 0.5)
-        .attr(y + "2", 0.5));
+        .attr(x + "2", k * tickSizeInner));
 
     text = text.merge(tickEnter.append("text")
         .attr("fill", "#000")
         .attr(x, k * spacing)
-        .attr(y, 0.5)
         .attr("dy", orient === top ? "0em" : orient === bottom ? "0.71em" : "0.32em"));
 
     if (context !== selection) {
@@ -2103,7 +2100,7 @@ var selection_attr = function(name, value) {
       : (fullname.local ? attrConstantNS : attrConstant)))(fullname, value));
 };
 
-var window = function(node) {
+var defaultView = function(node) {
   return (node.ownerDocument && node.ownerDocument.defaultView) // node is a Node
       || (node.document && node) // node is a Window
       || node.defaultView; // node is a Document
@@ -2130,16 +2127,18 @@ function styleFunction(name, value, priority) {
 }
 
 var selection_style = function(name, value, priority) {
-  var node;
   return arguments.length > 1
       ? this.each((value == null
             ? styleRemove : typeof value === "function"
             ? styleFunction
             : styleConstant)(name, value, priority == null ? "" : priority))
-      : window(node = this.node())
-          .getComputedStyle(node, null)
-          .getPropertyValue(name);
+      : styleValue(this.node(), name);
 };
+
+function styleValue(node, name) {
+  return node.style.getPropertyValue(name)
+      || defaultView(node).getComputedStyle(node, null).getPropertyValue(name);
+}
 
 function propertyRemove(name) {
   return function() {
@@ -2349,13 +2348,13 @@ var selection_datum = function(value) {
 };
 
 function dispatchEvent(node, type, params) {
-  var window$$1 = window(node),
-      event = window$$1.CustomEvent;
+  var window = defaultView(node),
+      event = window.CustomEvent;
 
-  if (event) {
+  if (typeof event === "function") {
     event = new event(type, params);
   } else {
-    event = window$$1.document.createEvent("Event");
+    event = window.document.createEvent("Event");
     if (params) event.initEvent(type, params.bubbles, params.cancelable), event.detail = params.detail;
     else event.initEvent(type, false, false);
   }
@@ -2538,8 +2537,11 @@ var drag = function() {
       gestures = {},
       listeners = dispatch("start", "drag", "end"),
       active = 0,
+      mousedownx,
+      mousedowny,
       mousemoving,
-      touchending;
+      touchending,
+      clickDistance2 = 0;
 
   function drag(selection$$1) {
     selection$$1
@@ -2558,12 +2560,17 @@ var drag = function() {
     dragDisable(exports.event.view);
     nopropagation();
     mousemoving = false;
+    mousedownx = exports.event.clientX;
+    mousedowny = exports.event.clientY;
     gesture("start");
   }
 
   function mousemoved() {
     noevent();
-    mousemoving = true;
+    if (!mousemoving) {
+      var dx = exports.event.clientX - mousedownx, dy = exports.event.clientY - mousedowny;
+      mousemoving = dx * dx + dy * dy > clickDistance2;
+    }
     gestures.mouse("drag");
   }
 
@@ -2651,6 +2658,10 @@ var drag = function() {
   drag.on = function() {
     var value = listeners.on.apply(listeners, arguments);
     return value === listeners ? drag : value;
+  };
+
+  drag.clickDistance = function(_) {
+    return arguments.length ? (clickDistance2 = (_ = +_) * _, drag) : Math.sqrt(clickDistance2);
   };
 
   return drag;
@@ -3939,7 +3950,7 @@ var interpolateValue = function(a, b) {
       : b instanceof color ? interpolateRgb
       : b instanceof Date ? date
       : Array.isArray(b) ? array$1
-      : isNaN(b) ? object
+      : typeof b.valueOf !== "function" && typeof b.toString !== "function" || isNaN(b) ? object
       : interpolateNumber)(a, b);
 };
 
@@ -4176,7 +4187,6 @@ var slice$2 = [].slice;
 var noabort = {};
 
 function Queue(size) {
-  if (!(size >= 1)) throw new Error;
   this._size = size;
   this._call =
   this._error = null;
@@ -4191,7 +4201,8 @@ function Queue(size) {
 Queue.prototype = queue.prototype = {
   constructor: Queue,
   defer: function(callback) {
-    if (typeof callback !== "function" || this._call) throw new Error;
+    if (typeof callback !== "function") throw new Error("invalid callback");
+    if (this._call) throw new Error("defer after await");
     if (this._error != null) return this;
     var t = slice$2.call(arguments, 1);
     t.push(callback);
@@ -4204,13 +4215,15 @@ Queue.prototype = queue.prototype = {
     return this;
   },
   await: function(callback) {
-    if (typeof callback !== "function" || this._call) throw new Error;
+    if (typeof callback !== "function") throw new Error("invalid callback");
+    if (this._call) throw new Error("multiple await");
     this._call = function(error, results) { callback.apply(null, [error].concat(results)); };
     maybeNotify(this);
     return this;
   },
   awaitAll: function(callback) {
-    if (typeof callback !== "function" || this._call) throw new Error;
+    if (typeof callback !== "function") throw new Error("invalid callback");
+    if (this._call) throw new Error("multiple await");
     this._call = callback;
     maybeNotify(this);
     return this;
@@ -4286,7 +4299,9 @@ function maybeNotify(q) {
 }
 
 function queue(concurrency) {
-  return new Queue(arguments.length ? +concurrency : Infinity);
+  if (concurrency == null) concurrency = Infinity;
+  else if (!((concurrency = +concurrency) >= 1)) throw new Error("invalid concurrency");
+  return new Queue(concurrency);
 }
 
 var array$2 = Array.prototype;
@@ -4399,7 +4414,7 @@ function band() {
   };
 
   scale.paddingOuter = function(_) {
-    return arguments.length ? (paddingOuter = Math.max(0, _), rescale()) : paddingOuter;
+    return arguments.length ? (paddingOuter = Math.max(0, Math.min(1, _)), rescale()) : paddingOuter;
   };
 
   scale.align = function(_) {
@@ -4579,17 +4594,39 @@ function linearish(scale) {
   };
 
   scale.nice = function(count) {
-    var d = domain(),
-        i = d.length - 1,
-        n = count == null ? 10 : count,
-        start = d[0],
-        stop = d[i],
-        step = tickStep(start, stop, n);
+    if (count == null) count = 10;
 
-    if (step) {
-      step = tickStep(Math.floor(start / step) * step, Math.ceil(stop / step) * step, n);
-      d[0] = Math.floor(start / step) * step;
-      d[i] = Math.ceil(stop / step) * step;
+    var d = domain(),
+        i0 = 0,
+        i1 = d.length - 1,
+        start = d[i0],
+        stop = d[i1],
+        step;
+
+    if (stop < start) {
+      step = start, start = stop, stop = step;
+      step = i0, i0 = i1, i1 = step;
+    }
+
+    step = tickIncrement(start, stop, count);
+
+    if (step > 0) {
+      start = Math.floor(start / step) * step;
+      stop = Math.ceil(stop / step) * step;
+      step = tickIncrement(start, stop, count);
+    } else if (step < 0) {
+      start = Math.ceil(start * step) / step;
+      stop = Math.floor(stop * step) / step;
+      step = tickIncrement(start, stop, count);
+    }
+
+    if (step > 0) {
+      d[i0] = Math.floor(start / step) * step;
+      d[i1] = Math.ceil(stop / step) * step;
+      domain(d);
+    } else if (step < 0) {
+      d[i0] = Math.ceil(start * step) / step;
+      d[i1] = Math.floor(stop * step) / step;
       domain(d);
     }
 
@@ -6376,6 +6413,8 @@ var pie = function() {
   return pie;
 };
 
+var slice$4 = Array.prototype.slice;
+
 var circle = {
   draw: function(context, size) {
     var r = Math.sqrt(size / pi$2);
@@ -6692,13 +6731,11 @@ var natural = function(context) {
   return new Natural(context);
 };
 
-var slice$4 = Array.prototype.slice;
-
 var none$1 = function(series, order) {
   if (!((n = series.length) > 1)) return;
-  for (var i = 1, s0, s1 = series[order[0]], n, m = s1.length; i < n; ++i) {
+  for (var i = 1, j, s0, s1 = series[order[0]], n, m = s1.length; i < n; ++i) {
     s0 = s1, s1 = series[order[i]];
-    for (var j = 0; j < m; ++j) {
+    for (j = 0; j < m; ++j) {
       s1[j][1] += s1[j][0] = isNaN(s0[j][1]) ? s0[j][0] : s0[j][1];
     }
   }
@@ -7514,9 +7551,8 @@ function styleRemove$1(name, interpolate$$2) {
       value10,
       interpolate0;
   return function() {
-    var style = window(this).getComputedStyle(this, null),
-        value0 = style.getPropertyValue(name),
-        value1 = (this.style.removeProperty(name), style.getPropertyValue(name));
+    var value0 = styleValue(this, name),
+        value1 = (this.style.removeProperty(name), styleValue(this, name));
     return value0 === value1 ? null
         : value0 === value00 && value1 === value10 ? interpolate0
         : interpolate0 = interpolate$$2(value00 = value0, value10 = value1);
@@ -7533,7 +7569,7 @@ function styleConstant$1(name, interpolate$$2, value1) {
   var value00,
       interpolate0;
   return function() {
-    var value0 = window(this).getComputedStyle(this, null).getPropertyValue(name);
+    var value0 = styleValue(this, name);
     return value0 === value1 ? null
         : value0 === value00 ? interpolate0
         : interpolate0 = interpolate$$2(value00 = value0, value1);
@@ -7545,10 +7581,9 @@ function styleFunction$1(name, interpolate$$2, value) {
       value10,
       interpolate0;
   return function() {
-    var style = window(this).getComputedStyle(this, null),
-        value0 = style.getPropertyValue(name),
+    var value0 = styleValue(this, name),
         value1 = value(this);
-    if (value1 == null) value1 = (this.style.removeProperty(name), style.getPropertyValue(name));
+    if (value1 == null) value1 = (this.style.removeProperty(name), styleValue(this, name));
     return value0 === value1 ? null
         : value0 === value00 && value1 === value10 ? interpolate0
         : interpolate0 = interpolate$$2(value00 = value0, value10 = value1);
@@ -8828,7 +8863,8 @@ var zoom = function() {
       touchstarting,
       touchending,
       touchDelay = 500,
-      wheelDelay = 150;
+      wheelDelay = 150,
+      clickDistance2 = 0;
 
   function zoom(selection$$1) {
     selection$$1
@@ -9018,7 +9054,9 @@ var zoom = function() {
     if (touchending || !filter.apply(this, arguments)) return;
     var g = gesture(this, arguments),
         v = select(exports.event.view).on("mousemove.zoom", mousemoved, true).on("mouseup.zoom", mouseupped, true),
-        p = mouse(this);
+        p = mouse(this),
+        x0 = exports.event.clientX,
+        y0 = exports.event.clientY;
 
     dragDisable(exports.event.view);
     nopropagation$1();
@@ -9028,7 +9066,10 @@ var zoom = function() {
 
     function mousemoved() {
       noevent$1();
-      g.moved = true;
+      if (!g.moved) {
+        var dx = exports.event.clientX - x0, dy = exports.event.clientY - y0;
+        g.moved = dx * dx + dy * dy > clickDistance2;
+      }
       g.zoom("mouse", constrain(translate(g.that.__zoom, g.mouse[0] = mouse(g.that), g.mouse[1]), g.extent));
     }
 
@@ -9160,6 +9201,10 @@ var zoom = function() {
     return value === listeners ? zoom : value;
   };
 
+  zoom.clickDistance = function(_) {
+    return arguments.length ? (clickDistance2 = (_ = +_) * _, zoom) : Math.sqrt(clickDistance2);
+  };
+    
   return zoom;
 };
 
@@ -10366,8 +10411,8 @@ var clipPolygon = function(segments, compareIntersection, startInside, interpola
   if (!subject.length) return;
 
   clip.sort(compareIntersection);
-  link(subject);
-  link(clip);
+  link$1(subject);
+  link$1(clip);
 
   for (i = 0, n = clip.length; i < n; ++i) {
     clip[i].e = startInside = !startInside;
@@ -10410,7 +10455,7 @@ var clipPolygon = function(segments, compareIntersection, startInside, interpola
   }
 };
 
-function link(array) {
+function link$1(array) {
   if (!(n = array.length)) return;
   var n,
       i = 0,
@@ -11209,9 +11254,11 @@ function PathString() {
 }
 
 PathString.prototype = {
+  _radius: 4.5,
   _circle: circle$2(4.5),
   pointRadius: function(_) {
-    return this._circle = circle$2(_), this;
+    if ((_ = +_) !== this._radius) this._radius = _, this._circle = null;
+    return this;
   },
   polygonStart: function() {
     this._line = 0;
@@ -11238,6 +11285,7 @@ PathString.prototype = {
         break;
       }
       default: {
+        if (this._circle == null) this._circle = circle$2(this._radius);
         this._string.push("M", x, ",", y, this._circle);
         break;
       }
@@ -11248,6 +11296,8 @@ PathString.prototype = {
       var result = this._string.join("");
       this._string = [];
       return result;
+    } else {
+      return null;
     }
   }
 };
@@ -11572,7 +11622,7 @@ var clipCircle = function(radius, delta) {
         // TODO ignore if not clipping polygons.
         if (v !== v0) {
           point2 = intersect(point0, point1);
-          if (pointEqual(point0, point2) || pointEqual(point1, point2)) {
+          if (!point2 || pointEqual(point0, point2) || pointEqual(point1, point2)) {
             point1[0] += epsilon$4;
             point1[1] += epsilon$4;
             v = visible(point1[0], point1[1]);
@@ -12500,9 +12550,10 @@ exports.selectAll = selectAll;
 exports.selection = selection;
 exports.selector = selector;
 exports.selectorAll = selectorAll;
+exports.style = styleValue;
 exports.touch = touch;
 exports.touches = touches;
-exports.window = window;
+exports.window = defaultView;
 exports.customEvent = customEvent;
 exports.timeInterval = newInterval;
 exports.timeMillisecond = millisecond;
