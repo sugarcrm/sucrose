@@ -20,50 +20,31 @@ HEADER = $(shell cat src/header)
 
 .DEFAULT_GOAL := help
 
-.PHONY: install-prod install-post npm-prod dependencies clean-dependencies  \
-	install-dev npm-dev all clean scr sgr sucrose d3-scr d3-sgr d3-bundle d3-minify d3-all clean-js clean-css css \
+.PHONY: prod dev npm-dev all scr sgr sucrose css \
+	clean clean-js clean-css \
+	d3-scr d3-sgr d3-bundle d3-minify d3-all \
 	examples-prod examples-dev examples-sucrose es \
 	pack nodes grade help list md
-
 
 #-----------
 # PRODUCTION
 
-# - install sucrose dependent npm packages and copy build files [main]
-install-prod: npm-prod
-
-# - copy sucrose and dependency files and generate index
-install-post: dependencies
-
-# - install production npm packages
-npm-prod:
+# - install sucrose & production npm packages [main]
+prod:
 	npm i --production
-
-# - copy dependency js files (D3, D3FC)
-dependencies: clean-dependencies
-	cp ./node_modules/topojson/build/topojson.js ./build/topojson.js
-	cp ./node_modules/topojson/build/topojson.min.js ./build/topojson.min.js
-	cp ./node_modules/d3fc-rebind/build/d3fc-rebind.js ./build/d3fc-rebind.js
-	cp ./node_modules/d3fc-rebind/build/d3fc-rebind.min.js ./build/d3fc-rebind.min.js
-
-# - remove dependency js files
-clean-dependencies:
-	rm -f ./build/topojson.js ./build/d3fc-rebind.js
-	rm -f ./build/topojson.min.js ./build/d3fc-rebind.min.js
-
 
 #------------
 # DEVELOPMENT
 
 # - install development environment [main dev]
-install-dev: npm-dev dependencies all
+dev: npm-dev all
 
 # - install development npm packages
 npm-dev:
 	npm i
 
 # - compile sucrose javascript and css files
-all: scr sucrose.min.css
+all: scr css
 
 # - remove sucrose javascript and css files
 clean: clean-js clean-css
@@ -138,7 +119,7 @@ d3-all:
 # STYLESHEETS
 
 # - [*] compile and compress sucrose library LESS source files into CSS
-css: clean-css sucrose.css sucrose.min.css
+css: clean-css sucrose.min.css
 
 # - compile LESS files with lessc
 sucrose.css: $(CSS_FILES)

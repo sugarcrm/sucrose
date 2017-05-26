@@ -33,8 +33,7 @@
   "scripts": {
     "package": "json2module package.json > build/package.js",
     "test": "tape 'test/**/*-test.js'",
-    "lintcss": "stylelint \"src/less/**/*.less\" --syntax less",
-    "postinstall": "make install-post"
+    "lintcss": "stylelint \"src/less/**/*.less\" --syntax less"
   },
   "dependencies": {
     "d3": "^4.8.0",
