@@ -1,5 +1,5 @@
 export var name = "sucrose";
-export var version = "0.5.7";
+export var version = "0.5.8";
 export var description = "Interactive Charts for Business Applications";
 export var keywords = ["charts","d3","visualization","svg","mobile","canvas"];
 export var homepage = "http://sucrose.io/";
