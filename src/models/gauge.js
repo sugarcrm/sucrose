@@ -16,7 +16,6 @@ export default function gauge() {
       getKey = function(d) { return typeof d.key === 'undefined' ? d : d.key; },
       getValue = function(d, i) { return isNaN(d.value) ? d : d.value; },
       getCount = function(d, i) { return isNaN(d.count) ? d : d.count; },
-      getValues = function(d) { return d.values; },
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
       fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
@@ -453,12 +452,6 @@ export default function gauge() {
   model.locality = function(_) {
     if (!arguments.length) { return locality; }
     locality = utility.buildLocality(_);
-    return model;
-  };
-
-  model.values = function(_) {
-    if (!arguments.length) { return getValues; }
-    getValues = _;
     return model;
   };
 

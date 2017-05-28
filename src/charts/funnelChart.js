@@ -34,9 +34,11 @@ export default function funnelChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var model = funnel(),
-      controls = menu().align('center'),
-      legend = menu().align('center');
+  var model = funnel();
+  var controls = menu();
+  var legend = menu();
+
+  var controlsData = [];
 
   var tt = null;
 
@@ -120,7 +122,7 @@ export default function funnelChart() {
 
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
 
-        // if you have activated a data series, inactivate the rest
+        // if you have activated a data series, inactivate the other non-active series
         if (series.active === 'active') {
           data
             .filter(function(d) {
@@ -194,6 +196,8 @@ export default function funnelChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
+      wrap_entr.append('defs');
+
       wrap_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
@@ -205,6 +209,8 @@ export default function funnelChart() {
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
       var legend_wrap = wrap.select('.sc-legend-wrap');
 
@@ -345,7 +351,7 @@ export default function funnelChart() {
         state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(duration).call(chart);
+        chart.update();
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -375,7 +381,7 @@ export default function funnelChart() {
           state.disabled = eo.disabled;
         }
 
-        container.transition().duration(duration).call(chart);
+        chart.update();
       });
 
       dispatch.on('chartClick', function() {
@@ -534,6 +540,7 @@ export default function funnelChart() {
   chart.state = function(_) {
     if (!arguments.length) { return state; }
     state = _;
+    dispatch.call('stateChange', this, state);
     return chart;
   };
 

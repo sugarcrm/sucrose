@@ -65,12 +65,6 @@ export default function areaChart() {
   var legend = menu();
   var guide = line().duration(0);
 
-  var controlsData = [
-    {key: 'Stacked', disabled: model.offset() !== 'zero'},
-    {key: 'Stream', disabled: model.offset() !== 'wiggle'},
-    {key: 'Expanded', disabled: model.offset() !== 'expand'}
-  ];
-
   var tt = null,
       guidetips = null;
 
@@ -80,6 +74,7 @@ export default function areaChart() {
         var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
         return '<p>' + key + ': ' + y + '</p>';
       };
+
 
   //============================================================
 
@@ -99,39 +94,42 @@ export default function areaChart() {
 
       var availableWidth = width,
           availableHeight = height;
-      var padding = 0;
 
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
-          hasGroupLabels = hasGroupData ? groupData.filter(function(group) {
-            return typeof group.label !== 'undefined';
-          }).length !== 0 : false;
+          groupLabels = [],
+          groupCount = 0,
+          hasGroupLabels = false;
 
-      var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupLabels || false,
-          xIsDatetime = properties.xDataType === 'datetime' || false,
-          xIsNumeric = properties.xDataType === 'numeric' || false,
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
           seriesCount = 0,
           totalAmount = 0;
 
-      var singlePoint = false,
-          showMaxMin = false;
+      var padding = 0;
+      var singlePoint = false;
+      var showMaxMin = false;
 
           //TODO: allow formatter to be set by data
-      var xTickValues = [],
-          xTickCount = 0,
-          xTickMaxWidth = 75,
+      var xTickMaxWidth = 75,
           xDateFormat = null,
           xAxisFormat = null,
           yAxisFormat = null;
+
+      var controlsData = [
+        {key: 'Stacked', disabled: model.offset() !== 'zero'},
+        {key: 'Stream', disabled: model.offset() !== 'wiggle'},
+        {key: 'Expanded', disabled: model.offset() !== 'expand'}
+      ];
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
       };
 
       chart.container = this;
+
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -142,7 +140,7 @@ export default function areaChart() {
         }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -154,20 +152,20 @@ export default function areaChart() {
       //------------------------------------------------------------
       // Process data
 
-      function processLabels(groupData) {
+      function setGroupLabels(groupData) {
         // Get simple array of group labels for ticks
-        xTickValues = groupData.map(function(group) {
+        groupLabels = groupData.map(function(group) {
             return group.label;
           });
-        xTickCount = xTickValues.length;
-        hasGroupLabels = xTickCount > 0;
+        groupCount = groupLabels.length;
+        hasGroupLabels = groupCount > 0;
       }
 
       // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
         series.seriesIndex = s;
-
+        series.key = series.key || strings.noLabel;
         series.total = d3.sum(series.values, function(value, v) {
           return model.y()(value, v);
         });
@@ -183,6 +181,7 @@ export default function areaChart() {
           return !series.disabled;
         })
         .map(function(series, s) {
+          // this is the iterative index, not the data index
           series.seri = s;
           return series;
         });
@@ -197,18 +196,18 @@ export default function areaChart() {
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (xIsOrdinal && hasGroupData) {
+      if (hasGroupData) {
 
         groupData.forEach(function(group, g) {
-          var label = typeof group.label === 'undefined' ?
-            chart.strings().noLabel :
-              xIsDatetime ? new Date(group.label) : group.label;
+          var label = typeof group.label === 'undefined' || group.label === '' ?
+            strings.noLabel :
+              xIsDatetime ?
+                new Date(group.label) :
+                group.label;
           group.group = g,
           group.label = label;
           group.total = 0;
         });
-
-        processLabels(groupData);
 
         // Calculate group totals and height
         // based on enabled data series
@@ -217,7 +216,7 @@ export default function areaChart() {
           // update group data with values
           modelData
             .forEach(function(series, s) {
-              //TODO: there is a better way
+            //TODO: there is a better way with map reduce?
               series.values
                 .filter(function(value, v) {
                   return value.group === g;
@@ -228,13 +227,15 @@ export default function areaChart() {
             });
         });
 
+        setGroupLabels(groupData);
+
         totalAmount = d3.sum(groupData, function(group) {
           return group.total;
         });
 
       } else {
 
-        xTickValues = d3
+        groupLabels = d3
           .merge(modelData.map(function(series) {
             return series.values;
           }))
@@ -248,7 +249,7 @@ export default function areaChart() {
             return xIsDatetime ? new Date(value) : value;
           });
 
-        xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
+        groupCount = Math.min(Math.ceil(innerWidth / 100), groupLabels.length);
 
         totalAmount = d3.sum(modelData, function(series) {
           return series.total;
@@ -258,17 +259,17 @@ export default function areaChart() {
 
       // Configure axis format functions
       if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(xTickValues);
+        xDateFormat = utility.getDateFormat(groupLabels);
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {
-        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var group = hasGroupLabels ? groupLabels[i] : d;
         var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
         return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
       yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, d, yIsCurrency, 2);
+        return yValueFormat(d, i, null, yIsCurrency, 2);
       };
 
       // Set title display option
@@ -327,10 +328,10 @@ export default function areaChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
+      wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
       var title_wrap = wrap.select('.sc-title-wrap');
@@ -350,6 +351,14 @@ export default function areaChart() {
 
       wrap_entr.append('g').attr('class', 'sc-guide-wrap');
       var guide_wrap = wrap.select('.sc-guide-wrap');
+
+      wrap_entr.select('.sc-background-wrap')
+        .append('rect')
+          .attr('class', 'sc-background')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('fill', 'rgba(215, 235, 255, 0.1)');
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -380,6 +389,7 @@ export default function areaChart() {
         wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
 
         //------------------------------------------------------------
         // Title & Legend & Controls
@@ -417,7 +427,7 @@ export default function areaChart() {
         if (showControls) {
           controls
             .id('controls_' + model.id())
-            .strings(chart.strings().controls)
+            .strings(strings.controls)
             .color(['#444'])
             .align('left')
             .height(availableHeight - headerHeight);
@@ -431,7 +441,7 @@ export default function areaChart() {
         if (showLegend) {
           legend
             .id('legend_' + model.id())
-            .strings(chart.strings().legend)
+            .strings(strings.legend)
             .align('right')
             .height(availableHeight - headerHeight);
           legend_wrap
@@ -495,6 +505,7 @@ export default function areaChart() {
         model_wrap
           .datum(modelData)
           .call(model);
+
 
         //------------------------------------------------------------
         // Axes
@@ -681,32 +692,30 @@ export default function areaChart() {
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
-          data.map(function(d) {
+          data.forEach(function(d) {
             d.disabled = false;
-            return d;
           });
         }
-
         state.disabled = data.map(function(d) { return !!d.disabled; });
+
         chart.update();
         dispatch.call('stateChange', this, state);
       });
 
-      controls.dispatch.on('legendClick', function(d, i) {
+      controls.dispatch.on('legendClick', function(control, i) {
         //if the option is currently enabled (i.e., selected)
-        if (!d.disabled) {
+        if (!control.disabled) {
           return;
         }
 
         //set the controls all to false
-        controlsData = controlsData.map(function(s) {
-          s.disabled = true;
-          return s;
+        controlsData.forEach(function(control) {
+          control.disabled = true;
         });
         //activate the the selected control option
-        d.disabled = false;
+        control.disabled = false;
 
-        switch (d.key) {
+        switch (control.key) {
           case 'Stacked':
             model.style('stack');
             break;
@@ -717,8 +726,8 @@ export default function areaChart() {
             model.style('expand');
             break;
         }
-
         state.style = model.style();
+
         chart.render();
         dispatch.call('stateChange', this, state);
       });
@@ -790,6 +799,10 @@ export default function areaChart() {
         }
       });
 
+      container.on('click', function() {
+        d3.event.stopPropagation();
+        dispatch.call('chartClick', this);
+      });
     });
 
     return chart;

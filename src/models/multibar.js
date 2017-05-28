@@ -68,7 +68,9 @@ export default function multibar() {
           verticalLabels = false,
           labelPosition = showValues,
           labelLengths = [],
-          labelThickness = 0;
+          labelThickness = 0,
+          labelData = [],
+          seriesData = [];
 
       function barLength(d, i) {
         return Math.max(Math.round(Math.abs(y(getY(d, i)) - y(0))), 0);
@@ -126,21 +128,21 @@ export default function multibar() {
       // Setup Scales
 
       // remap and flatten the data for use in calculating the scales' domains
-      var seriesData = d3.merge(data.map(function(d) {
-              return d.values.map(function(d, i) {
-                return {x: getX(d, i), y: getY(d, i), y0: d.y0};
-              });
-            }));
+      seriesData = d3.merge(data.map(function(d) {
+          return d.values.map(function(d, i) {
+            return {x: getX(d, i), y: getY(d, i), y0: d.y0};
+          });
+        }));
 
-      groupCount = data[0].values.length;
       seriesCount = data.length;
+      groupCount = data[0].values.length;
 
       if (showValues) {
-        var labelData = labelPosition === 'total' && stacked ?
-              groupTotals.map(function(d) { return d.neg; }).concat(
-                groupTotals.map(function(d) { return d.pos; })
-              ) :
-              seriesData.map(getY);
+        labelData = labelPosition === 'total' && stacked ?
+          groupTotals.map(function(d) { return d.neg; }).concat(
+            groupTotals.map(function(d) { return d.pos; })
+          ) :
+          seriesData.map(getY);
 
         var seriesExtents = d3.extent(data.map(function(d, i) { return d.seriesIndex; }));
         minSeries = seriesExtents[0];
@@ -382,6 +384,7 @@ export default function multibar() {
         .attr('class', function(d, i) {
           return 'sc-bar ' + (getY(d, i) < 0 ? 'negative' : 'positive');
         })
+        .classed('sc-active', function(d) { return d.active === 'active'; })
         .attr('transform', function(d, i) {
           var trans = stacked ? {
                 x: Math.round(x(getX(d, i))),
@@ -405,7 +408,6 @@ export default function multibar() {
             .attr(valX, 0)
             .attr(dimY, barLength)
             .attr(dimX, barThickness)
-            .classed('sc-active', function(d) { return d.active === 'active'; })
             .style('fill', function(d, i) {
               var backColor = fill(d),
                   foreColor = utility.getTextContrast(backColor, i);
@@ -421,7 +423,7 @@ export default function multibar() {
             pointIndex: i,
             point: d,
             seriesIndex: d.seriesIndex,
-            series: data[d.seriesIndex],
+            series: data[d.seri],
             groupIndex: d.group,
             id: id,
             e: e

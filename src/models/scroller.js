@@ -304,7 +304,7 @@ export default function scroller() {
 
     /* Background rectangle for mouse events */
     function scrollTarget_create() {
-      g_entr.select('.sc-scroll-background')
+      g_entr.select('.sc-background-wrap')
         .append('rect')
         .attr('class', 'sc-scroll-target')
         //.attr('fill', '#FFF');
@@ -321,7 +321,7 @@ export default function scroller() {
 
     /* Background shadow rectangles */
     function backShadows_create() {
-      var backShadows_entr = g_entr.select('.sc-scroll-background')
+      var backShadows_entr = g_entr.select('.sc-background-wrap')
             .append('g')
             .attr('class', 'sc-back-shadow-wrap');
       backShadows_entr
@@ -354,7 +354,7 @@ export default function scroller() {
 
     /* Foreground shadow rectangles */
     function foreShadows_create() {
-      var foreShadows_entr = g_entr.select('.sc-scroll-background')
+      var foreShadows_entr = g_entr.select('.sc-background-wrap')
             .insert('g')
             .attr('class', 'sc-fore-shadow-wrap');
       foreShadows_entr

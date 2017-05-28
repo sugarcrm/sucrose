@@ -62,7 +62,6 @@ export default function bubbleChart() {
   // Private Variables
   //------------------------------------------------------------
 
-
   var model = scatter()
         .padData(true)
         .padDataOuter(-1)
@@ -122,7 +121,7 @@ export default function bubbleChart() {
           yValues;
 
       var xAxisFormat = function(d, i, selection, noEllipsis) {
-            return xValueFormat(d, i, d, xIsDatetime);
+            return xValueFormat(d, i, d, xIsDatetime, '%B');
           };
 
       var yAxisFormat = function(d, i, selection, noEllipsis) {
@@ -146,9 +145,7 @@ export default function bubbleChart() {
       // Private method for displaying no data message.
 
       function displayNoData(data) {
-        var hasData = data && data.length && data.filter(function(series) {
-          return !series.disabled && Array.isArray(series.values) && series.values.length;
-        }).length;
+        var hasData = data && data.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);

@@ -132,8 +132,12 @@ var sucroseCharts = function() {
       id: 'chart_',
       locality: null,
       margin: {top: 10, right: 10, bottom: 10, left: 10},
-      seriesClick: function(data, eo, chart) {
+      seriesClick: function(data, eo, chart, labels) {
+        if (chart.cellActivate) {
+          chart.cellActivate(eo);
+        } else {
         chart.dataSeriesActivate(eo);
+        }
       },
       showTitle: true,
       showLegend: true,
@@ -171,14 +175,14 @@ var sucroseCharts = function() {
           .filterBy(function(d) {
             return d.probability;
           })
-          // .tooltipContent(function(eo, properties) {
-          //   var point = eo.point;
-          //   return '<p>Assigned: <b>' + point.assigned_user_name + '</b></p>' +
-          //          '<p>Amount: <b>$' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
-          //          '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(point.x)) + '</b></p>' +
-          //          '<p>Probability: <b>' + point.probability + '%</b></p>' +
-          //          '<p>Account: <b>' + point.account_name + '</b></p>';
-          // });
+          .tooltipContent(function(eo, properties) {
+            var point = eo.point;
+            return '<p>Assigned: <b>' + point.assigned_user_name + '</b></p>' +
+                   '<p>Amount: <b>$' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
+                   '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(point.x)) + '</b></p>' +
+                   '<p>Probability: <b>' + point.probability + '%</b></p>' +
+                   '<p>Account: <b>' + point.account_name + '</b></p>';
+          });
         callback(chart);
       }
     },
@@ -247,10 +251,10 @@ var sucroseCharts = function() {
     multibar: {
       stacked: true,
       _format: function format(chart, callback) {
-        chart
-          .valueFormat(function(d) {
-            return sucrose.utility.numberFormatSI(d, 0, yIsCurrency, chart.locality());
-          })
+        // chart
+        //   .valueFormat(function(d) {
+        //     return sucrose.utility.numberFormatRound(d, 2, yIsCurrency, chart.locality());
+        //   })
           // .yValueFormat(function(d, i, label, isCurrency, precision) {
           //   precision = isNaN(precision) ? 2 : precision;
           //   return sucrose.utility.numberFormatRound(d, precision, yIsCurrency, chart.locality());

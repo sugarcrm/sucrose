@@ -344,34 +344,38 @@ utility.roundedRectangle = function (x, y, width, height, radius) {
 };
 
 utility.dropShadow = function (id, defs, options) {
-  var opt = options || {}
-    , h = opt.height || '130%'
-    , o = opt.offset || 2
-    , b = opt.blur || 1;
+  var opt = options || {};
+  var h = opt.height || '130%';
+  var o = opt.offset || 2;
+  var b = opt.blur || 1;
+  var filter;
+  var merge;
 
   if (defs.select('#' + id).empty()) {
-    var filter = defs.append('filter')
-          .attr('id',id)
-          .attr('height',h);
-    var offset = filter.append('feOffset')
-          .attr('in','SourceGraphic')
-          .attr('result','offsetBlur')
-          .attr('dx',o)
-          .attr('dy',o); //how much to offset
-    var color = filter.append('feColorMatrix')
-          .attr('in','offsetBlur')
-          .attr('result','matrixOut')
-          .attr('type','matrix')
-          .attr('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0');
-    var blur = filter.append('feGaussianBlur')
-          .attr('in','matrixOut')
-          .attr('result','blurOut')
-          .attr('stdDeviation',b); //stdDeviation is how much to blur
-    var merge = filter.append('feMerge');
-        merge.append('feMergeNode'); //this contains the offset blurred image
-        merge.append('feMergeNode')
-          .attr('in','SourceGraphic'); //this contains the element that the filter is applied to
+    filter = defs.append('filter')
+      .attr('id', id)
+      .attr('height', h);
+    filter.append('feOffset')
+      .attr('in', 'SourceGraphic')
+      .attr('result', 'offsetBlur')
+      .attr('dx', o)
+      .attr('dy', o); //how much to offset
+    filter.append('feColorMatrix')
+      .attr('in', 'offsetBlur')
+      .attr('result', 'matrixOut')
+      .attr('type', 'matrix')
+      .attr('values', '1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0');
+    filter.append('feGaussianBlur')
+      .attr('in', 'matrixOut')
+      .attr('result', 'blurOut')
+      .attr('stdDeviation', b); //stdDeviation is how much to blur
+
+    merge = filter.append('feMerge');
+    merge.append('feMergeNode'); //this contains the offset blurred image
+    merge.append('feMergeNode')
+      .attr('in', 'SourceGraphic'); //this contains the element that the filter is applied to
   }
+
   return 'url(#' + id + ')';
 };
 // <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
@@ -581,8 +585,8 @@ utility.numberFormatRound = function(d, p, c, l) {
   if (isNaN(d)) {
     return d;
   }
-  c = typeof c === 'undefined' ? false : !!c;
-  p = typeof p === 'undefined' ? c ? 2 : 0 : p;
+  c = typeof c === 'boolean' ? c : false;
+  p = Number.isFinite(p) ? p : c ? 2 : 0;
   fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
   spec = c ? '$,.' + p + 'f' : ',';
   return fmtr(spec)(d);
@@ -624,13 +628,14 @@ utility.getDateFormat = function(values) {
     }) : 0;
   return dateFormats[formatIndex];
 };
+
 utility.multiFormat = function(d) {
   var formatMillisecond = '.%L',
       formatSecond = ':%S',
       formatMinute = '%I:%M',
       formatHour = '%I %p',
       formatDay = '%x',
-      formatWeek = '%b %d',
+      // formatWeek = '%b %d',
       formatMonth = '%B',
       formatYear = '%Y';
   var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);

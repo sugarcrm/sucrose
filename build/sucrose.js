@@ -354,34 +354,38 @@ utility.roundedRectangle = function (x, y, width, height, radius) {
 };
 
 utility.dropShadow = function (id, defs, options) {
-  var opt = options || {}
-    , h = opt.height || '130%'
-    , o = opt.offset || 2
-    , b = opt.blur || 1;
+  var opt = options || {};
+  var h = opt.height || '130%';
+  var o = opt.offset || 2;
+  var b = opt.blur || 1;
+  var filter;
+  var merge;
 
   if (defs.select('#' + id).empty()) {
-    var filter = defs.append('filter')
-          .attr('id',id)
-          .attr('height',h);
-    var offset = filter.append('feOffset')
-          .attr('in','SourceGraphic')
-          .attr('result','offsetBlur')
-          .attr('dx',o)
-          .attr('dy',o); //how much to offset
-    var color = filter.append('feColorMatrix')
-          .attr('in','offsetBlur')
-          .attr('result','matrixOut')
-          .attr('type','matrix')
-          .attr('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0');
-    var blur = filter.append('feGaussianBlur')
-          .attr('in','matrixOut')
-          .attr('result','blurOut')
-          .attr('stdDeviation',b); //stdDeviation is how much to blur
-    var merge = filter.append('feMerge');
-        merge.append('feMergeNode'); //this contains the offset blurred image
-        merge.append('feMergeNode')
-          .attr('in','SourceGraphic'); //this contains the element that the filter is applied to
+    filter = defs.append('filter')
+      .attr('id', id)
+      .attr('height', h);
+    filter.append('feOffset')
+      .attr('in', 'SourceGraphic')
+      .attr('result', 'offsetBlur')
+      .attr('dx', o)
+      .attr('dy', o); //how much to offset
+    filter.append('feColorMatrix')
+      .attr('in', 'offsetBlur')
+      .attr('result', 'matrixOut')
+      .attr('type', 'matrix')
+      .attr('values', '1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0');
+    filter.append('feGaussianBlur')
+      .attr('in', 'matrixOut')
+      .attr('result', 'blurOut')
+      .attr('stdDeviation', b); //stdDeviation is how much to blur
+
+    merge = filter.append('feMerge');
+    merge.append('feMergeNode'); //this contains the offset blurred image
+    merge.append('feMergeNode')
+      .attr('in', 'SourceGraphic'); //this contains the element that the filter is applied to
   }
+
   return 'url(#' + id + ')';
 };
 // <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
@@ -591,8 +595,8 @@ utility.numberFormatRound = function(d, p, c, l) {
   if (isNaN(d)) {
     return d;
   }
-  c = typeof c === 'undefined' ? false : !!c;
-  p = typeof p === 'undefined' ? c ? 2 : 0 : p;
+  c = typeof c === 'boolean' ? c : false;
+  p = Number.isFinite(p) ? p : c ? 2 : 0;
   fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
   spec = c ? '$,.' + p + 'f' : ',';
   return fmtr(spec)(d);
@@ -634,13 +638,14 @@ utility.getDateFormat = function(values) {
     }) : 0;
   return dateFormats[formatIndex];
 };
+
 utility.multiFormat = function(d) {
   var formatMillisecond = '.%L',
       formatSecond = ':%S',
       formatMinute = '%I:%M',
       formatHour = '%I %p',
       formatDay = '%x',
-      formatWeek = '%b %d',
+      // formatWeek = '%b %d',
       formatMonth = '%B',
       formatYear = '%Y';
   var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
@@ -3184,7 +3189,6 @@ function gauge() {
       getKey = function(d) { return typeof d.key === 'undefined' ? d : d.key; },
       getValue = function(d, i) { return isNaN(d.value) ? d : d.value; },
       getCount = function(d, i) { return isNaN(d.count) ? d : d.count; },
-      getValues = function(d) { return d.values; },
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
       fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
@@ -3624,12 +3628,6 @@ function gauge() {
     return model;
   };
 
-  model.values = function(_) {
-    if (!arguments.length) { return getValues; }
-    getValues = _;
-    return model;
-  };
-
   // GAUGE
 
   model.showLabels = function(_) {
@@ -3703,817 +3701,6 @@ function gauge() {
   //============================================================
 
   return model;
-}
-
-function menu() {
-
-  //============================================================
-  // Public Variables with Default Settings
-  //------------------------------------------------------------
-
-  var margin = {top: 10, right: 10, bottom: 15, left: 10},
-      width = 0,
-      height = 0,
-      align = 'right',
-      direction = 'ltr',
-      position = 'start',
-      radius = 6, // size of dot
-      diameter = radius * 2, // diamter of dot plus stroke
-      gutter = 10, // horizontal gap between keys
-      spacing = 12, // vertical gap between keys
-      textGap = 5, // gap between dot and label accounting for dot stroke
-      equalColumns = true,
-      showAll = false,
-      showMenu = false,
-      collapsed = false,
-      rowsCount = 3, //number of rows to display if showAll = false
-      enabled = false,
-      strings = {
-        close: 'Hide legend',
-        type: 'Show legend',
-        noLabel: 'undefined'
-      },
-      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getKey = function(d) {
-        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
-      },
-      color = function(d) {
-        return utility.defaultColor()(d, d.seriesIndex);
-      },
-      classes = function(d) {
-        return 'sc-series sc-series-' + d.seriesIndex;
-      },
-      dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout', 'toggleMenu', 'closeMenu');
-
-  // Private Variables
-  //------------------------------------------------------------
-
-  var legendOpen = 0;
-
-  var useScroll = false,
-      scrollEnabled = true,
-      scrollOffset = 0,
-      overflowHandler = function(d) { return; };
-
-  //============================================================
-
-  function legend(selection) {
-
-    selection.each(function(data) {
-
-      var container = d3.select(this),
-          keyWidths = [],
-          legendHeight = 0,
-          dropdownHeight = 0,
-          type = '',
-          inline = position === 'start' ? true : false,
-          rtl = direction === 'rtl' ? true : false,
-          lineSpacing = spacing * (inline ? 1 : 0.6),
-          padding = gutter + (inline ? diameter + textGap : 0);
-
-      if (!data || !data.length || !data.filter(function(d) { return !d.values || d.values.length; }).length) {
-        return legend;
-      }
-
-      // enforce existence of series for static legend keys
-      var iSeries = data.filter(function(d) { return d.hasOwnProperty('seriesIndex'); }).length;
-      data.filter(function(d) { return !d.hasOwnProperty('seriesIndex'); }).map(function(d, i) {
-        d.seriesIndex = iSeries;
-        iSeries += 1;
-      });
-
-      enabled = true;
-
-      type = !data[0].type || data[0].type === 'bar' ? 'bar' : 'line';
-      align = rtl && align !== 'center' ? align === 'left' ? 'right' : 'left' : align;
-
-      //------------------------------------------------------------
-      // Setup containers and skeleton of legend
-
-      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-menu');
-      var wrap = container.select('g.sc-wrap').merge(wrap_entr);
-      wrap.attr('transform', 'translate(0,0)');
-
-      var defs_entr = wrap_entr.append('defs');
-      var defs = wrap.select('defs');
-
-      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
-      var clip = wrap.select('#sc-edge-clip-' + id + ' rect');
-
-      wrap_entr.append('rect').attr('class', 'sc-menu-background');
-      var back = wrap.select('.sc-menu-background');
-      var backFilter = utility.dropShadow('menu_back_' + id, defs, {blur: 2});
-
-      wrap_entr.append('text').attr('class', 'sc-menu-link');
-      var link = wrap.select('.sc-menu-link');
-
-      var mask_entr = wrap_entr.append('g').attr('class', 'sc-menu-mask');
-      var mask = wrap.select('.sc-menu-mask');
-
-      mask_entr.append('g').attr('class', 'sc-group');
-      var g = wrap.select('.sc-group');
-
-      var series_bind = g.selectAll('.sc-series').data(utility.identity, function(d) { return d.seriesIndex; });
-      series_bind.exit().remove();
-      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
-            .on('mouseover', function(d, i) {
-              dispatch.call('legendMouseover', this, d);
-            })
-            .on('mouseout', function(d, i) {
-              dispatch.call('legendMouseout', this, d);
-            })
-            .on('click', function(d, i) {
-              d3.event.preventDefault();
-              d3.event.stopPropagation();
-              dispatch.call('legendClick', this, d);
-            });
-      var series = g.selectAll('.sc-series').merge(series_entr);
-
-      series
-          .attr('class', classes)
-          .attr('fill', color)
-          .attr('stroke', color);
-      series_entr
-        .append('rect')
-          .attr('x', (diameter + textGap) / -2)
-          .attr('y', (diameter + lineSpacing) / -2)
-          .attr('width', diameter + textGap)
-          .attr('height', diameter + lineSpacing)
-          .style('fill', '#FFE')
-          .style('stroke-width', 0)
-          .style('opacity', 0.1);
-
-      var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
-      circles_bind.exit().remove();
-      var circles_entr = circles_bind.enter()
-        .append('circle')
-          .attr('r', radius)
-          .style('stroke-width', '2px');
-      var circles = series.selectAll('circle').merge(circles_entr);
-
-      var line_bind = series_entr.selectAll('line').data(type === 'line' ? function(d) { return [d]; } : []);
-      line_bind.exit().remove();
-      var lines_entr = line_bind.enter()
-        .append('line')
-          .attr('x0', 0)
-          .attr('y0', 0)
-          .attr('y1', 0)
-          .style('stroke-width', '4px');
-      var lines = series.selectAll('line').merge(lines_entr);
-
-      var texts_entr = series_entr.append('text')
-        .attr('dx', 0);
-      var texts = series.selectAll('text').merge(texts_entr);
-
-      texts
-        .attr('dy', inline ? '.36em' : '.71em')
-        .text(getKey);
-
-      //------------------------------------------------------------
-      // Update legend attributes
-
-      clip
-        .attr('x', 0.5)
-        .attr('y', 0.5)
-        .attr('width', 0)
-        .attr('height', 0);
-
-      back
-        .attr('x', 0.5)
-        .attr('y', 0.5)
-        .attr('width', 0)
-        .attr('height', 0)
-        .style('opacity', 0)
-        .style('pointer-events', 'all')
-        .on('click', function(d, i) {
-          d3.event.stopPropagation();
-        });
-
-      link
-        .text(legendOpen === 1 ? legend.strings().close : legend.strings().open)
-        .attr('text-anchor', align === 'left' ? rtl ? 'end' : 'start' : rtl ? 'start' : 'end')
-        .attr('dy', '.36em')
-        .attr('dx', 0)
-        .style('opacity', 0)
-        .on('click', function(d, i) {
-          d3.event.preventDefault();
-          d3.event.stopPropagation();
-          dispatch.call('toggleMenu', this, d, i);
-        });
-
-      series.classed('disabled', function(d) {
-        return d.disabled;
-      });
-
-      //------------------------------------------------------------
-
-      //TODO: add ability to add key to legend
-      //TODO: have series display values on hover
-      //var label = g.append('text').text('Probability:').attr('class','sc-series-label').attr('transform','translate(0,0)');
-
-      // store legend label widths
-      legend.calcMaxWidth = function() {
-        keyWidths = [];
-
-        g.style('display', 'inline');
-
-        texts.each(function(d, i) {
-          var textWidth = d3.select(this).node().getBoundingClientRect().width;
-          keyWidths.push(Math.max(Math.floor(textWidth), (type === 'line' ? 50 : 20)));
-        });
-
-        legend.width(d3.sum(keyWidths) + keyWidths.length * padding - gutter);
-
-        return legend.width();
-      };
-
-      legend.getLineHeight = function() {
-        g.style('display', 'inline');
-        var lineHeightBB = Math.floor(texts.node().getBoundingClientRect().height);
-        return lineHeightBB;
-      };
-
-      legend.arrange = function(containerWidth) {
-
-        if (keyWidths.length === 0) {
-          this.calcMaxWidth();
-        }
-
-        function keyWidth(i) {
-          return keyWidths[i] + padding;
-        }
-        function keyWidthNoGutter(i) {
-          return keyWidths[i] + padding - gutter;
-        }
-        function sign(bool) {
-          return bool ? 1 : -1;
-        }
-
-        var keys = keyWidths.length,
-            rows = 1,
-            cols = keys,
-            columnWidths = [],
-            keyPositions = [],
-            maxWidth = containerWidth - margin.left - margin.right,
-            maxHeight = height,
-            maxRowWidth = 0,
-            textHeight = this.getLineHeight(),
-            lineHeight = diameter + (inline ? 0 : textHeight) + lineSpacing,
-            menuMargin = {top: 7, right: 7, bottom: 7, left: 7}, // account for stroke width
-            xpos = 0,
-            ypos = 0,
-            i,
-            mod,
-            shift;
-
-        if (equalColumns) {
-
-          //keep decreasing the number of keys per row until
-          //legend width is less than the available width
-          while (cols > 0) {
-            columnWidths = [];
-
-            for (i = 0; i < keys; i += 1) {
-              if (keyWidth(i) > (columnWidths[i % cols] || 0)) {
-                columnWidths[i % cols] = keyWidth(i);
-              }
-            }
-
-            if (d3.sum(columnWidths) - gutter < maxWidth) {
-              break;
-            }
-            cols -= 1;
-          }
-          cols = cols || 1;
-
-          rows = Math.ceil(keys / cols);
-          maxRowWidth = d3.sum(columnWidths) - gutter;
-
-          for (i = 0; i < keys; i += 1) {
-            mod = i % cols;
-
-            if (inline) {
-              if (mod === 0) {
-                xpos = rtl ? maxRowWidth : 0;
-              } else {
-                xpos += columnWidths[mod - 1] * sign(!rtl);
-              }
-            } else {
-              if (mod === 0) {
-                xpos = (rtl ? maxRowWidth : 0) + (columnWidths[mod] - gutter) / 2 * sign(!rtl);
-              } else {
-                xpos += (columnWidths[mod - 1] + columnWidths[mod]) / 2 * sign(!rtl);
-              }
-            }
-
-            ypos = Math.floor(i / cols) * lineHeight;
-            keyPositions[i] = {x: xpos, y: ypos};
-          }
-
-        } else {
-
-          if (rtl) {
-
-            xpos = maxWidth;
-
-            for (i = 0; i < keys; i += 1) {
-              if (xpos - keyWidthNoGutter(i) < 0) {
-                maxRowWidth = Math.max(maxRowWidth, keyWidthNoGutter(i));
-                xpos = maxWidth;
-                if (i) {
-                  rows += 1;
-                }
-              }
-              if (xpos - keyWidthNoGutter(i) > maxRowWidth) {
-                maxRowWidth = xpos - keyWidthNoGutter(i);
-              }
-              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
-              xpos -= keyWidth(i);
-            }
-
-          } else {
-
-            xpos = 0;
-
-            for (i = 0; i < keys; i += 1) {
-              if (i && xpos + keyWidthNoGutter(i) > maxWidth) {
-                xpos = 0;
-                rows += 1;
-              }
-              if (xpos + keyWidthNoGutter(i) > maxRowWidth) {
-                maxRowWidth = xpos + keyWidthNoGutter(i);
-              }
-              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
-              xpos += keyWidth(i);
-            }
-
-          }
-
-        }
-
-        if (!showMenu && (showAll || rows <= rowsCount)) {
-
-          legendOpen = 0;
-          collapsed = false;
-          useScroll = false;
-
-          legend
-            .width(margin.left + maxRowWidth + margin.right)
-            .height(margin.top + rows * lineHeight - lineSpacing + margin.bottom);
-
-          switch (align) {
-            case 'left':
-              shift = 0;
-              break;
-            case 'center':
-              shift = (containerWidth - legend.width()) / 2;
-              break;
-            case 'right':
-              shift = 0;
-              break;
-          }
-
-          clip
-            .attr('y', 0)
-            .attr('width', legend.width())
-            .attr('height', legend.height());
-
-          back
-            .attr('x', shift)
-            .attr('width', legend.width())
-            .attr('height', legend.height())
-            .attr('rx', 0)
-            .attr('ry', 0)
-            .attr('filter', 'none')
-            .style('display', 'inline')
-            .style('opacity', 0);
-
-          mask
-            .attr('clip-path', 'none')
-            .attr('transform', function(d, i) {
-              var xpos = shift + margin.left + (inline ? radius * sign(!rtl) : 0),
-                  ypos = margin.top + menuMargin.top;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            });
-
-          g
-            .style('opacity', 1)
-            .style('display', 'inline');
-
-          series
-            .attr('transform', function(d) {
-              var pos = keyPositions[d.seriesIndex];
-              return 'translate(' + pos.x + ',' + pos.y + ')';
-            });
-
-          series.select('rect')
-            .attr('x', function(d) {
-              var xpos = 0;
-              if (inline) {
-                xpos = (diameter + gutter) / 2 * sign(rtl);
-                xpos -= rtl ? keyWidth(d.seriesIndex) : 0;
-              } else {
-                xpos = keyWidth(d.seriesIndex) / -2;
-              }
-              return xpos;
-            })
-            .attr('width', function(d) {
-              return keyWidth(d.seriesIndex);
-            })
-            .attr('height', lineHeight);
-
-          circles
-            .attr('r', function(d) {
-              return d.type === 'dash' ? 0 : radius;
-            })
-            .attr('transform', function(d, i) {
-              var xpos = inline || type === 'bar' ? 0 : radius * 3 * sign(i);
-              return 'translate(' + xpos + ',0)';
-            });
-
-          lines
-            .attr('x1', function(d) {
-              return d.type === 'dash' ? radius * 8 : radius * 4;
-            })
-            .attr('transform', function(d) {
-              var xpos = radius * (d.type === 'dash' ? -4 : -2);
-              return 'translate(' + xpos + ',0)';
-            })
-            .style('stroke-dasharray', function(d) {
-              return d.type === 'dash' ? '8, 8' : 'none';
-            })
-            .style('stroke-dashoffset', -4);
-
-          texts
-            .attr('dy', inline ? '.36em' : '.71em')
-            .attr('text-anchor', position)
-            .attr('transform', function(d) {
-              var xpos = inline ? (radius + textGap) * sign(!rtl) : 0,
-                  ypos = inline ? 0 : (diameter + lineSpacing) / 2;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            });
-
-        } else {
-
-          collapsed = true;
-          useScroll = true;
-
-          legend
-            .width(menuMargin.left + d3.max(keyWidths) + diameter + textGap + menuMargin.right)
-            .height(margin.top + diameter + margin.top); //don't use bottom here because we want vertical centering
-
-          legendHeight = menuMargin.top + diameter * keys + spacing * (keys - 1) + menuMargin.bottom;
-          dropdownHeight = Math.min(maxHeight - legend.height(), legendHeight);
-
-          clip
-            .attr('x', 0.5 - menuMargin.top - radius)
-            .attr('y', 0.5 - menuMargin.top - radius)
-            .attr('width', legend.width())
-            .attr('height', dropdownHeight);
-
-          back
-            .attr('x', 0.5)
-            .attr('y', 0.5 + legend.height())
-            .attr('width', legend.width())
-            .attr('height', dropdownHeight)
-            .attr('rx', 2)
-            .attr('ry', 2)
-            .attr('filter', backFilter)
-            .style('opacity', legendOpen * 0.9)
-            .style('display', legendOpen ? 'inline' : 'none');
-
-          link
-            .attr('transform', function(d, i) {
-              var xpos = align === 'left' ? 0.5 : 0.5 + legend.width(),
-                  ypos = margin.top + radius;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            })
-            .style('opacity', 1);
-
-          mask
-            .attr('clip-path', 'url(#sc-edge-clip-' + id + ')')
-            .attr('transform', function(d, i) {
-              var xpos = menuMargin.left + radius,
-                  ypos = legend.height() + menuMargin.top + radius;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            });
-
-          g
-            .style('opacity', legendOpen)
-            .style('display', legendOpen ? 'inline' : 'none')
-            .attr('transform', function(d, i) {
-              var xpos = rtl ? d3.max(keyWidths) + radius : 0;
-              return 'translate(' + xpos + ',0)';
-            });
-
-          series
-            .attr('transform', function(d, i) {
-              var ypos = i * (diameter + spacing);
-              return 'translate(0,' + ypos + ')';
-            });
-
-          series.select('rect')
-            .attr('x', function(d) {
-              var w = (diameter + gutter) / 2 * sign(rtl);
-              w -= rtl ? keyWidth(d.seriesIndex) : 0;
-              return w;
-            })
-            .attr('width', function(d) {
-              return keyWidth(d.seriesIndex);
-            })
-            .attr('height', diameter + lineSpacing);
-
-          circles
-            .attr('r', function(d) {
-              return d.type === 'dash' ? 0 : d.type === 'line' ? radius - 2 : radius;
-            })
-            .attr('transform', '');
-
-          lines
-            .attr('x1', 16)
-            .attr('transform', 'translate(-8,0)')
-            .style('stroke-dasharray', function(d) {
-              return d.type === 'dash' ? '6, 4, 6' : 'none';
-            })
-            .style('stroke-dashoffset', 0);
-
-          texts
-            .attr('text-anchor', 'start')
-            .attr('dy', '.36em')
-            .attr('transform', function(d) {
-              var xpos = (radius + textGap) * sign(!rtl);
-              return 'translate(' + xpos + ',0)';
-            });
-
-        }
-
-        //------------------------------------------------------------
-        // Enable scrolling
-        if (scrollEnabled) {
-          var diff = dropdownHeight - legendHeight;
-
-          var assignScrollEvents = function(enable) {
-            if (enable) {
-
-              var zoom = d3.zoom()
-                    .on('zoom', panLegend);
-              var drag = d3.drag()
-                    .subject(utility.identity)
-                    .on('drag', panLegend);
-
-              back.call(zoom);
-              g.call(zoom);
-
-              back.call(drag);
-              g.call(drag);
-
-            } else {
-              back.on('.zoom', null);
-              g.on('.zoom', null);
-
-              back.on('.drag', null);
-              g.on('.drag', null);
-            }
-          };
-
-          var panLegend = function() {
-            var distance = 0,
-                overflowDistance = 0,
-                translate = '',
-                x = 0,
-                y = 0;
-
-            // don't fire on events other than zoom and drag
-            // we need click for handling legend toggle
-            if (d3.event) {
-              if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
-                x = d3.event.sourceEvent.deltaX || 0;
-                y = d3.event.sourceEvent.deltaY || 0;
-                distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
-              } else if (d3.event.type === 'drag') {
-                x = d3.event.dx || 0;
-                y = d3.event.dy || 0;
-                distance = y;
-              } else if (d3.event.type !== 'click') {
-                return 0;
-              }
-              overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
-            }
-
-            // reset value defined in panMultibar();
-            scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), 0);
-            translate = 'translate(' + (rtl ? d3.max(keyWidths) + radius : 0) + ',' + scrollOffset + ')';
-
-            if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
-              overflowHandler(overflowDistance);
-            }
-
-            g.attr('transform', translate);
-          };
-
-          assignScrollEvents(useScroll);
-        }
-
-      };
-
-      //============================================================
-      // Event Handling/Dispatching (in legend's scope)
-      //------------------------------------------------------------
-
-      function displayMenu() {
-        back
-          .style('opacity', legendOpen * 0.9)
-          .style('display', legendOpen ? 'inline' : 'none');
-        g
-          .style('opacity', legendOpen)
-          .style('display', legendOpen ? 'inline' : 'none');
-        link
-          .text(legendOpen === 1 ? legend.strings().close : legend.strings().open);
-      }
-
-      dispatch.on('toggleMenu', function(d) {
-        d3.event.stopPropagation();
-        legendOpen = 1 - legendOpen;
-        displayMenu();
-      });
-
-      dispatch.on('closeMenu', function(d) {
-        if (legendOpen === 1) {
-          legendOpen = 0;
-          displayMenu();
-        }
-      });
-
-    });
-
-    return legend;
-  }
-
-
-  //============================================================
-  // Expose Public Variables
-  //------------------------------------------------------------
-
-  legend.dispatch = dispatch;
-
-  legend.margin = function(_) {
-    if (!arguments.length) { return margin; }
-    margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
-    return legend;
-  };
-
-  legend.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
-    width = Math.round(_);
-    return legend;
-  };
-
-  legend.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
-    height = Math.round(_);
-    return legend;
-  };
-
-  legend.id = function(_) {
-    if (!arguments.length) {
-      return id;
-    }
-    id = _;
-    return legend;
-  };
-
-  legend.key = function(_) {
-    if (!arguments.length) {
-      return getKey;
-    }
-    getKey = _;
-    return legend;
-  };
-
-  legend.color = function(_) {
-    if (!arguments.length) {
-      return color;
-    }
-    color = utility.getColor(_);
-    return legend;
-  };
-
-  legend.classes = function(_) {
-    if (!arguments.length) {
-      return classes;
-    }
-    classes = _;
-    return legend;
-  };
-
-  legend.align = function(_) {
-    if (!arguments.length) {
-      return align;
-    }
-    align = _;
-    return legend;
-  };
-
-  legend.position = function(_) {
-    if (!arguments.length) {
-      return position;
-    }
-    position = _;
-    return legend;
-  };
-
-  legend.showAll = function(_) {
-    if (!arguments.length) { return showAll; }
-    showAll = _;
-    return legend;
-  };
-
-  legend.showMenu = function(_) {
-    if (!arguments.length) { return showMenu; }
-    showMenu = _;
-    return legend;
-  };
-
-  legend.collapsed = function(_) {
-    return collapsed;
-  };
-
-  legend.rowsCount = function(_) {
-    if (!arguments.length) {
-      return rowsCount;
-    }
-    rowsCount = _;
-    return legend;
-  };
-
-  legend.spacing = function(_) {
-    if (!arguments.length) {
-      return spacing;
-    }
-    spacing = _;
-    return legend;
-  };
-
-  legend.gutter = function(_) {
-    if (!arguments.length) {
-      return gutter;
-    }
-    gutter = _;
-    return legend;
-  };
-
-  legend.radius = function(_) {
-    if (!arguments.length) {
-      return radius;
-    }
-    radius = _;
-    return legend;
-  };
-
-  legend.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
-    strings = _;
-    return legend;
-  };
-
-  legend.equalColumns = function(_) {
-    if (!arguments.length) {
-      return equalColumns;
-    }
-    equalColumns = _;
-    return legend;
-  };
-
-  legend.enabled = function(_) {
-    if (!arguments.length) {
-      return enabled;
-    }
-    enabled = _;
-    return legend;
-  };
-
-  legend.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
-    direction = _;
-    return legend;
-  };
-
-  //============================================================
-
-
-  return legend;
 }
 
 function scatter() {
@@ -5629,6 +4816,817 @@ function line() {
   return model;
 }
 
+function menu() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 15, left: 10},
+      width = 0,
+      height = 0,
+      align = 'right',
+      direction = 'ltr',
+      position = 'start',
+      radius = 6, // size of dot
+      diameter = radius * 2, // diamter of dot plus stroke
+      gutter = 10, // horizontal gap between keys
+      spacing = 12, // vertical gap between keys
+      textGap = 5, // gap between dot and label accounting for dot stroke
+      equalColumns = true,
+      showAll = false,
+      showMenu = false,
+      collapsed = false,
+      rowsCount = 3, //number of rows to display if showAll = false
+      enabled = false,
+      strings = {
+        close: 'Hide legend',
+        type: 'Show legend',
+        noLabel: 'undefined'
+      },
+      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
+      getKey = function(d) {
+        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
+      },
+      color = function(d) {
+        return utility.defaultColor()(d, d.seriesIndex);
+      },
+      classes = function(d) {
+        return 'sc-series sc-series-' + d.seriesIndex;
+      },
+      dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout', 'toggleMenu', 'closeMenu');
+
+  // Private Variables
+  //------------------------------------------------------------
+
+  var legendOpen = 0;
+
+  var useScroll = false,
+      scrollEnabled = true,
+      scrollOffset = 0,
+      overflowHandler = function(d) { return; };
+
+  //============================================================
+
+  function legend(selection) {
+
+    selection.each(function(data) {
+
+      var container = d3.select(this),
+          keyWidths = [],
+          legendHeight = 0,
+          dropdownHeight = 0,
+          type = '',
+          inline = position === 'start' ? true : false,
+          rtl = direction === 'rtl' ? true : false,
+          lineSpacing = spacing * (inline ? 1 : 0.6),
+          padding = gutter + (inline ? diameter + textGap : 0);
+
+      if (!data || !data.length || !data.filter(function(d) { return !d.values || d.values.length; }).length) {
+        return legend;
+      }
+
+      // enforce existence of series for static legend keys
+      var iSeries = data.filter(function(d) { return d.hasOwnProperty('seriesIndex'); }).length;
+      data.filter(function(d) { return !d.hasOwnProperty('seriesIndex'); }).map(function(d, i) {
+        d.seriesIndex = iSeries;
+        iSeries += 1;
+      });
+
+      enabled = true;
+
+      type = !data[0].type || data[0].type === 'bar' ? 'bar' : 'line';
+      align = rtl && align !== 'center' ? align === 'left' ? 'right' : 'left' : align;
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of legend
+
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-menu');
+      var wrap = container.select('g.sc-wrap').merge(wrap_entr);
+      wrap.attr('transform', 'translate(0,0)');
+
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
+
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
+      var clip = wrap.select('#sc-edge-clip-' + id + ' rect');
+
+      wrap_entr.append('rect').attr('class', 'sc-menu-background');
+      var back = wrap.select('.sc-menu-background');
+      var backFilter = utility.dropShadow('menu_back_' + id, defs, {blur: 2});
+
+      wrap_entr.append('text').attr('class', 'sc-menu-link');
+      var link = wrap.select('.sc-menu-link');
+
+      var mask_entr = wrap_entr.append('g').attr('class', 'sc-menu-mask');
+      var mask = wrap.select('.sc-menu-mask');
+
+      mask_entr.append('g').attr('class', 'sc-group');
+      var g = wrap.select('.sc-group');
+
+      var series_bind = g.selectAll('.sc-series').data(utility.identity, function(d) { return d.seriesIndex; });
+      series_bind.exit().remove();
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
+            .on('mouseover', function(d, i) {
+              dispatch.call('legendMouseover', this, d);
+            })
+            .on('mouseout', function(d, i) {
+              dispatch.call('legendMouseout', this, d);
+            })
+            .on('click', function(d, i) {
+              d3.event.preventDefault();
+              d3.event.stopPropagation();
+              dispatch.call('legendClick', this, d);
+            });
+      var series = g.selectAll('.sc-series').merge(series_entr);
+
+      series
+          .attr('class', classes)
+          .attr('fill', color)
+          .attr('stroke', color);
+      series_entr
+        .append('rect')
+          .attr('x', (diameter + textGap) / -2)
+          .attr('y', (diameter + lineSpacing) / -2)
+          .attr('width', diameter + textGap)
+          .attr('height', diameter + lineSpacing)
+          .style('fill', '#FFE')
+          .style('stroke-width', 0)
+          .style('opacity', 0.1);
+
+      var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
+      circles_bind.exit().remove();
+      var circles_entr = circles_bind.enter()
+        .append('circle')
+          .attr('r', radius)
+          .style('stroke-width', '2px');
+      var circles = series.selectAll('circle').merge(circles_entr);
+
+      var line_bind = series_entr.selectAll('line').data(type === 'line' ? function(d) { return [d]; } : []);
+      line_bind.exit().remove();
+      var lines_entr = line_bind.enter()
+        .append('line')
+          .attr('x0', 0)
+          .attr('y0', 0)
+          .attr('y1', 0)
+          .style('stroke-width', '4px');
+      var lines = series.selectAll('line').merge(lines_entr);
+
+      var texts_entr = series_entr.append('text')
+        .attr('dx', 0);
+      var texts = series.selectAll('text').merge(texts_entr);
+
+      texts
+        .attr('dy', inline ? '.36em' : '.71em')
+        .text(getKey);
+
+      //------------------------------------------------------------
+      // Update legend attributes
+
+      clip
+        .attr('x', 0.5)
+        .attr('y', 0.5)
+        .attr('width', 0)
+        .attr('height', 0);
+
+      back
+        .attr('x', 0.5)
+        .attr('y', 0.5)
+        .attr('width', 0)
+        .attr('height', 0)
+        .style('opacity', 0)
+        .style('pointer-events', 'all')
+        .on('click', function(d, i) {
+          d3.event.stopPropagation();
+        });
+
+      link
+        .text(legendOpen === 1 ? legend.strings().close : legend.strings().open)
+        .attr('text-anchor', align === 'left' ? rtl ? 'end' : 'start' : rtl ? 'start' : 'end')
+        .attr('dy', '.36em')
+        .attr('dx', 0)
+        .style('opacity', 0)
+        .on('click', function(d, i) {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+          dispatch.call('toggleMenu', this, d, i);
+        });
+
+      series.classed('disabled', function(d) {
+        return d.disabled;
+      });
+
+      //------------------------------------------------------------
+
+      //TODO: add ability to add key to legend
+      //TODO: have series display values on hover
+      //var label = g.append('text').text('Probability:').attr('class','sc-series-label').attr('transform','translate(0,0)');
+
+      // store legend label widths
+      legend.calcMaxWidth = function() {
+        keyWidths = [];
+
+        g.style('display', 'inline');
+
+        texts.each(function(d, i) {
+          var textWidth = d3.select(this).node().getBoundingClientRect().width;
+          keyWidths.push(Math.max(Math.floor(textWidth), (type === 'line' ? 50 : 20)));
+        });
+
+        legend.width(d3.sum(keyWidths) + keyWidths.length * padding - gutter);
+
+        return legend.width();
+      };
+
+      legend.getLineHeight = function() {
+        g.style('display', 'inline');
+        var lineHeightBB = Math.floor(texts.node().getBoundingClientRect().height);
+        return lineHeightBB;
+      };
+
+      legend.arrange = function(containerWidth) {
+
+        if (keyWidths.length === 0) {
+          this.calcMaxWidth();
+        }
+
+        function keyWidth(i) {
+          return keyWidths[i] + padding;
+        }
+        function keyWidthNoGutter(i) {
+          return keyWidths[i] + padding - gutter;
+        }
+        function sign(bool) {
+          return bool ? 1 : -1;
+        }
+
+        var keys = keyWidths.length,
+            rows = 1,
+            cols = keys,
+            columnWidths = [],
+            keyPositions = [],
+            maxWidth = containerWidth - margin.left - margin.right,
+            maxHeight = height,
+            maxRowWidth = 0,
+            textHeight = this.getLineHeight(),
+            lineHeight = diameter + (inline ? 0 : textHeight) + lineSpacing,
+            menuMargin = {top: 7, right: 7, bottom: 7, left: 7}, // account for stroke width
+            xpos = 0,
+            ypos = 0,
+            i,
+            mod,
+            shift;
+
+        if (equalColumns) {
+
+          //keep decreasing the number of keys per row until
+          //legend width is less than the available width
+          while (cols > 0) {
+            columnWidths = [];
+
+            for (i = 0; i < keys; i += 1) {
+              if (keyWidth(i) > (columnWidths[i % cols] || 0)) {
+                columnWidths[i % cols] = keyWidth(i);
+              }
+            }
+
+            if (d3.sum(columnWidths) - gutter < maxWidth) {
+              break;
+            }
+            cols -= 1;
+          }
+          cols = cols || 1;
+
+          rows = Math.ceil(keys / cols);
+          maxRowWidth = d3.sum(columnWidths) - gutter;
+
+          for (i = 0; i < keys; i += 1) {
+            mod = i % cols;
+
+            if (inline) {
+              if (mod === 0) {
+                xpos = rtl ? maxRowWidth : 0;
+              } else {
+                xpos += columnWidths[mod - 1] * sign(!rtl);
+              }
+            } else {
+              if (mod === 0) {
+                xpos = (rtl ? maxRowWidth : 0) + (columnWidths[mod] - gutter) / 2 * sign(!rtl);
+              } else {
+                xpos += (columnWidths[mod - 1] + columnWidths[mod]) / 2 * sign(!rtl);
+              }
+            }
+
+            ypos = Math.floor(i / cols) * lineHeight;
+            keyPositions[i] = {x: xpos, y: ypos};
+          }
+
+        } else {
+
+          if (rtl) {
+
+            xpos = maxWidth;
+
+            for (i = 0; i < keys; i += 1) {
+              if (xpos - keyWidthNoGutter(i) < 0) {
+                maxRowWidth = Math.max(maxRowWidth, keyWidthNoGutter(i));
+                xpos = maxWidth;
+                if (i) {
+                  rows += 1;
+                }
+              }
+              if (xpos - keyWidthNoGutter(i) > maxRowWidth) {
+                maxRowWidth = xpos - keyWidthNoGutter(i);
+              }
+              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
+              xpos -= keyWidth(i);
+            }
+
+          } else {
+
+            xpos = 0;
+
+            for (i = 0; i < keys; i += 1) {
+              if (i && xpos + keyWidthNoGutter(i) > maxWidth) {
+                xpos = 0;
+                rows += 1;
+              }
+              if (xpos + keyWidthNoGutter(i) > maxRowWidth) {
+                maxRowWidth = xpos + keyWidthNoGutter(i);
+              }
+              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
+              xpos += keyWidth(i);
+            }
+
+          }
+
+        }
+
+        if (!showMenu && (showAll || rows <= rowsCount)) {
+
+          legendOpen = 0;
+          collapsed = false;
+          useScroll = false;
+
+          legend
+            .width(margin.left + maxRowWidth + margin.right)
+            .height(margin.top + rows * lineHeight - lineSpacing + margin.bottom);
+
+          switch (align) {
+            case 'left':
+              shift = 0;
+              break;
+            case 'center':
+              shift = (containerWidth - legend.width()) / 2;
+              break;
+            case 'right':
+              shift = 0;
+              break;
+          }
+
+          clip
+            .attr('y', 0)
+            .attr('width', legend.width())
+            .attr('height', legend.height());
+
+          back
+            .attr('x', shift)
+            .attr('width', legend.width())
+            .attr('height', legend.height())
+            .attr('rx', 0)
+            .attr('ry', 0)
+            .attr('filter', 'none')
+            .style('display', 'inline')
+            .style('opacity', 0);
+
+          mask
+            .attr('clip-path', 'none')
+            .attr('transform', function(d, i) {
+              var xpos = shift + margin.left + (inline ? radius * sign(!rtl) : 0),
+                  ypos = margin.top + menuMargin.top;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            });
+
+          g
+            .style('opacity', 1)
+            .style('display', 'inline');
+
+          series
+            .attr('transform', function(d) {
+              var pos = keyPositions[d.seriesIndex];
+              return 'translate(' + pos.x + ',' + pos.y + ')';
+            });
+
+          series.select('rect')
+            .attr('x', function(d) {
+              var xpos = 0;
+              if (inline) {
+                xpos = (diameter + gutter) / 2 * sign(rtl);
+                xpos -= rtl ? keyWidth(d.seriesIndex) : 0;
+              } else {
+                xpos = keyWidth(d.seriesIndex) / -2;
+              }
+              return xpos;
+            })
+            .attr('width', function(d) {
+              return keyWidth(d.seriesIndex);
+            })
+            .attr('height', lineHeight);
+
+          circles
+            .attr('r', function(d) {
+              return d.type === 'dash' ? 0 : radius;
+            })
+            .attr('transform', function(d, i) {
+              var xpos = inline || type === 'bar' ? 0 : radius * 3 * sign(i);
+              return 'translate(' + xpos + ',0)';
+            });
+
+          lines
+            .attr('x1', function(d) {
+              return d.type === 'dash' ? radius * 8 : radius * 4;
+            })
+            .attr('transform', function(d) {
+              var xpos = radius * (d.type === 'dash' ? -4 : -2);
+              return 'translate(' + xpos + ',0)';
+            })
+            .style('stroke-dasharray', function(d) {
+              return d.type === 'dash' ? '8, 8' : 'none';
+            })
+            .style('stroke-dashoffset', -4);
+
+          texts
+            .attr('dy', inline ? '.36em' : '.71em')
+            .attr('text-anchor', position)
+            .attr('transform', function(d) {
+              var xpos = inline ? (radius + textGap) * sign(!rtl) : 0,
+                  ypos = inline ? 0 : (diameter + lineSpacing) / 2;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            });
+
+        } else {
+
+          collapsed = true;
+          useScroll = true;
+
+          legend
+            .width(menuMargin.left + d3.max(keyWidths) + diameter + textGap + menuMargin.right)
+            .height(margin.top + diameter + margin.top); //don't use bottom here because we want vertical centering
+
+          legendHeight = menuMargin.top + diameter * keys + spacing * (keys - 1) + menuMargin.bottom;
+          dropdownHeight = Math.min(maxHeight - legend.height(), legendHeight);
+
+          clip
+            .attr('x', 0.5 - menuMargin.top - radius)
+            .attr('y', 0.5 - menuMargin.top - radius)
+            .attr('width', legend.width())
+            .attr('height', dropdownHeight);
+
+          back
+            .attr('x', 0.5)
+            .attr('y', 0.5 + legend.height())
+            .attr('width', legend.width())
+            .attr('height', dropdownHeight)
+            .attr('rx', 2)
+            .attr('ry', 2)
+            .attr('filter', backFilter)
+            .style('opacity', legendOpen * 0.9)
+            .style('display', legendOpen ? 'inline' : 'none');
+
+          link
+            .attr('transform', function(d, i) {
+              var xpos = align === 'left' ? 0.5 : 0.5 + legend.width(),
+                  ypos = margin.top + radius;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            })
+            .style('opacity', 1);
+
+          mask
+            .attr('clip-path', 'url(#sc-edge-clip-' + id + ')')
+            .attr('transform', function(d, i) {
+              var xpos = menuMargin.left + radius,
+                  ypos = legend.height() + menuMargin.top + radius;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            });
+
+          g
+            .style('opacity', legendOpen)
+            .style('display', legendOpen ? 'inline' : 'none')
+            .attr('transform', function(d, i) {
+              var xpos = rtl ? d3.max(keyWidths) + radius : 0;
+              return 'translate(' + xpos + ',0)';
+            });
+
+          series
+            .attr('transform', function(d, i) {
+              var ypos = i * (diameter + spacing);
+              return 'translate(0,' + ypos + ')';
+            });
+
+          series.select('rect')
+            .attr('x', function(d) {
+              var w = (diameter + gutter) / 2 * sign(rtl);
+              w -= rtl ? keyWidth(d.seriesIndex) : 0;
+              return w;
+            })
+            .attr('width', function(d) {
+              return keyWidth(d.seriesIndex);
+            })
+            .attr('height', diameter + lineSpacing);
+
+          circles
+            .attr('r', function(d) {
+              return d.type === 'dash' ? 0 : d.type === 'line' ? radius - 2 : radius;
+            })
+            .attr('transform', '');
+
+          lines
+            .attr('x1', 16)
+            .attr('transform', 'translate(-8,0)')
+            .style('stroke-dasharray', function(d) {
+              return d.type === 'dash' ? '6, 4, 6' : 'none';
+            })
+            .style('stroke-dashoffset', 0);
+
+          texts
+            .attr('text-anchor', 'start')
+            .attr('dy', '.36em')
+            .attr('transform', function(d) {
+              var xpos = (radius + textGap) * sign(!rtl);
+              return 'translate(' + xpos + ',0)';
+            });
+
+        }
+
+        //------------------------------------------------------------
+        // Enable scrolling
+        if (scrollEnabled) {
+          var diff = dropdownHeight - legendHeight;
+
+          var assignScrollEvents = function(enable) {
+            if (enable) {
+
+              var zoom = d3.zoom()
+                    .on('zoom', panLegend);
+              var drag = d3.drag()
+                    .subject(utility.identity)
+                    .on('drag', panLegend);
+
+              back.call(zoom);
+              g.call(zoom);
+
+              back.call(drag);
+              g.call(drag);
+
+            } else {
+              back.on('.zoom', null);
+              g.on('.zoom', null);
+
+              back.on('.drag', null);
+              g.on('.drag', null);
+            }
+          };
+
+          var panLegend = function() {
+            var distance = 0,
+                overflowDistance = 0,
+                translate = '',
+                x = 0,
+                y = 0;
+
+            // don't fire on events other than zoom and drag
+            // we need click for handling legend toggle
+            if (d3.event) {
+              if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
+                x = d3.event.sourceEvent.deltaX || 0;
+                y = d3.event.sourceEvent.deltaY || 0;
+                distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
+              } else if (d3.event.type === 'drag') {
+                x = d3.event.dx || 0;
+                y = d3.event.dy || 0;
+                distance = y;
+              } else if (d3.event.type !== 'click') {
+                return 0;
+              }
+              overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
+            }
+
+            // reset value defined in panMultibar();
+            scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), 0);
+            translate = 'translate(' + (rtl ? d3.max(keyWidths) + radius : 0) + ',' + scrollOffset + ')';
+
+            if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
+              overflowHandler(overflowDistance);
+            }
+
+            g.attr('transform', translate);
+          };
+
+          assignScrollEvents(useScroll);
+        }
+
+      };
+
+      //============================================================
+      // Event Handling/Dispatching (in legend's scope)
+      //------------------------------------------------------------
+
+      function displayMenu() {
+        back
+          .style('opacity', legendOpen * 0.9)
+          .style('display', legendOpen ? 'inline' : 'none');
+        g
+          .style('opacity', legendOpen)
+          .style('display', legendOpen ? 'inline' : 'none');
+        link
+          .text(legendOpen === 1 ? legend.strings().close : legend.strings().open);
+      }
+
+      dispatch.on('toggleMenu', function(d) {
+        d3.event.stopPropagation();
+        legendOpen = 1 - legendOpen;
+        displayMenu();
+      });
+
+      dispatch.on('closeMenu', function(d) {
+        if (legendOpen === 1) {
+          legendOpen = 0;
+          displayMenu();
+        }
+      });
+
+    });
+
+    return legend;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  legend.dispatch = dispatch;
+
+  legend.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
+    return legend;
+  };
+
+  legend.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = Math.round(_);
+    return legend;
+  };
+
+  legend.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = Math.round(_);
+    return legend;
+  };
+
+  legend.id = function(_) {
+    if (!arguments.length) {
+      return id;
+    }
+    id = _;
+    return legend;
+  };
+
+  legend.key = function(_) {
+    if (!arguments.length) {
+      return getKey;
+    }
+    getKey = _;
+    return legend;
+  };
+
+  legend.color = function(_) {
+    if (!arguments.length) {
+      return color;
+    }
+    color = utility.getColor(_);
+    return legend;
+  };
+
+  legend.classes = function(_) {
+    if (!arguments.length) {
+      return classes;
+    }
+    classes = _;
+    return legend;
+  };
+
+  legend.align = function(_) {
+    if (!arguments.length) {
+      return align;
+    }
+    align = _;
+    return legend;
+  };
+
+  legend.position = function(_) {
+    if (!arguments.length) {
+      return position;
+    }
+    position = _;
+    return legend;
+  };
+
+  legend.showAll = function(_) {
+    if (!arguments.length) { return showAll; }
+    showAll = _;
+    return legend;
+  };
+
+  legend.showMenu = function(_) {
+    if (!arguments.length) { return showMenu; }
+    showMenu = _;
+    return legend;
+  };
+
+  legend.collapsed = function(_) {
+    return collapsed;
+  };
+
+  legend.rowsCount = function(_) {
+    if (!arguments.length) {
+      return rowsCount;
+    }
+    rowsCount = _;
+    return legend;
+  };
+
+  legend.spacing = function(_) {
+    if (!arguments.length) {
+      return spacing;
+    }
+    spacing = _;
+    return legend;
+  };
+
+  legend.gutter = function(_) {
+    if (!arguments.length) {
+      return gutter;
+    }
+    gutter = _;
+    return legend;
+  };
+
+  legend.radius = function(_) {
+    if (!arguments.length) {
+      return radius;
+    }
+    radius = _;
+    return legend;
+  };
+
+  legend.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    strings = _;
+    return legend;
+  };
+
+  legend.equalColumns = function(_) {
+    if (!arguments.length) {
+      return equalColumns;
+    }
+    equalColumns = _;
+    return legend;
+  };
+
+  legend.enabled = function(_) {
+    if (!arguments.length) {
+      return enabled;
+    }
+    enabled = _;
+    return legend;
+  };
+
+  legend.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    return legend;
+  };
+
+  //============================================================
+
+
+  return legend;
+}
+
 function multibar() {
 
   //============================================================
@@ -5696,7 +5694,9 @@ function multibar() {
           verticalLabels = false,
           labelPosition = showValues,
           labelLengths = [],
-          labelThickness = 0;
+          labelThickness = 0,
+          labelData = [],
+          seriesData = [];
 
       function barLength(d, i) {
         return Math.max(Math.round(Math.abs(y(getY(d, i)) - y(0))), 0);
@@ -5750,21 +5750,21 @@ function multibar() {
       // Setup Scales
 
       // remap and flatten the data for use in calculating the scales' domains
-      var seriesData = d3.merge(data.map(function(d) {
-              return d.values.map(function(d, i) {
-                return {x: getX(d, i), y: getY(d, i), y0: d.y0};
-              });
-            }));
+      seriesData = d3.merge(data.map(function(d) {
+          return d.values.map(function(d, i) {
+            return {x: getX(d, i), y: getY(d, i), y0: d.y0};
+          });
+        }));
 
-      groupCount = data[0].values.length;
       seriesCount = data.length;
+      groupCount = data[0].values.length;
 
       if (showValues) {
-        var labelData = labelPosition === 'total' && stacked ?
-              groupTotals.map(function(d) { return d.neg; }).concat(
-                groupTotals.map(function(d) { return d.pos; })
-              ) :
-              seriesData.map(getY);
+        labelData = labelPosition === 'total' && stacked ?
+          groupTotals.map(function(d) { return d.neg; }).concat(
+            groupTotals.map(function(d) { return d.pos; })
+          ) :
+          seriesData.map(getY);
 
         var seriesExtents = d3.extent(data.map(function(d, i) { return d.seriesIndex; }));
         minSeries = seriesExtents[0];
@@ -6045,7 +6045,7 @@ function multibar() {
             pointIndex: i,
             point: d,
             seriesIndex: d.seriesIndex,
-            series: data[d.seriesIndex],
+            series: data[d.seri],
             groupIndex: d.group,
             id: id,
             e: e
@@ -10436,9 +10436,11 @@ function funnelChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var model = funnel(),
-      controls = menu().align('center'),
-      legend = menu().align('center');
+  var model = funnel();
+  var controls = menu();
+  var legend = menu();
+
+  var controlsData = [];
 
   var tt = null;
 
@@ -10522,7 +10524,7 @@ function funnelChart() {
 
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
 
-        // if you have activated a data series, inactivate the rest
+        // if you have activated a data series, inactivate the other non-active series
         if (series.active === 'active') {
           data
             .filter(function(d) {
@@ -10596,6 +10598,8 @@ function funnelChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
+      wrap_entr.append('defs');
+
       wrap_entr.append('rect').attr('class', 'sc-background')
         .attr('x', -margin.left)
         .attr('y', -margin.top)
@@ -10607,6 +10611,8 @@ function funnelChart() {
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
       var legend_wrap = wrap.select('.sc-legend-wrap');
 
@@ -10747,7 +10753,7 @@ function funnelChart() {
         state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(duration).call(chart);
+        chart.update();
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -10777,7 +10783,7 @@ function funnelChart() {
           state.disabled = eo.disabled;
         }
 
-        container.transition().duration(duration).call(chart);
+        chart.update();
       });
 
       dispatch.on('chartClick', function() {
@@ -10936,6 +10942,7 @@ function funnelChart() {
   chart.state = function(_) {
     if (!arguments.length) { return state; }
     state = _;
+    dispatch.call('stateChange', this, state);
     return chart;
   };
 
@@ -11329,7 +11336,7 @@ function gaugeChart() {
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
-  fc.rebind(chart, model, 'values', 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue');
+  fc.rebind(chart, model, 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -12217,15 +12224,6 @@ function lineChart() {
   var controls = menu();
   var legend = menu();
 
-  var controlsData = [
-    {key: 'Linear', disabled: model.interpolate() !== 'linear'},
-    {key: 'Basis', disabled: model.interpolate() !== 'basis'},
-    {key: 'Monotone', disabled: model.interpolate() !== 'monotone'},
-    {key: 'Cardinal', disabled: model.interpolate() !== 'cardinal'},
-    {key: 'Line', disabled: model.isArea()() === true},
-    {key: 'Area', disabled: model.isArea()() === false}
-  ];
-
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
@@ -12264,7 +12262,7 @@ function lineChart() {
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart, labels) {
+  var seriesClick = function(data, eo, chart, labels) {
         return;
       };
 
@@ -12278,8 +12276,8 @@ function lineChart() {
           container = d3.select(this),
           modelClass = 'line';
 
-      var properties = chartData ? chartData.properties : {},
-          data = chartData ? chartData.data : null;
+      var properties = chartData ? chartData.properties || {} : {},
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
@@ -12296,7 +12294,6 @@ function lineChart() {
 
       var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupLabels || false,
           xIsDatetime = properties.xDataType === 'datetime' || false,
-          xIsNumeric = properties.xDataType === 'numeric' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
@@ -12313,6 +12310,15 @@ function lineChart() {
           xAxisFormat = null,
           yAxisFormat = null;
 
+      var controlsData = [
+        {key: 'Linear', disabled: model.interpolate() !== 'linear'},
+        {key: 'Basis', disabled: model.interpolate() !== 'basis'},
+        {key: 'Monotone', disabled: model.interpolate() !== 'monotone'},
+        {key: 'Cardinal', disabled: model.interpolate() !== 'cardinal'},
+        {key: 'Line', disabled: model.isArea()() === true},
+        {key: 'Area', disabled: model.isArea()() === false}
+      ];
+
       chart.update = function() {
         container.transition().duration(duration).call(chart);
       };
@@ -12328,7 +12334,7 @@ function lineChart() {
         }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -12340,7 +12346,7 @@ function lineChart() {
       //------------------------------------------------------------
       // Process data
 
-      function processLabels(groupData) {
+      function setXTickValues(groupData) {
         // Get simple array of group labels for ticks
         xTickValues = groupData.map(function(group) {
             return group.label;
@@ -12355,7 +12361,7 @@ function lineChart() {
         series.seriesIndex = s;
 
         series.total = d3.sum(series.values, function(value, v) {
-          return model.y()(value, v);
+          return value.y;
         });
 
         // disabled if all values in series are zero
@@ -12369,6 +12375,7 @@ function lineChart() {
           return !series.disabled;
         })
         .map(function(series, s) {
+          // this is the iterative index, not the data index
           series.seri = s;
           return series;
         });
@@ -12386,15 +12393,17 @@ function lineChart() {
       if (hasGroupData) {
 
         groupData.forEach(function(group, g) {
-          var label = typeof group.label === 'undefined' ?
-            chart.strings().noLabel :
-              xIsDatetime ? new Date(group.label) : group.label;
+          var label = typeof group.label === 'undefined' || group.label === '' ?
+            strings.noLabel :
+              xIsDatetime ?
+                new Date(group.label) :
+                group.label;
           group.group = g,
           group.label = label;
           group.total = 0;
         });
 
-        processLabels(groupData);
+        setXTickValues(groupData);
 
         // Calculate group totals and height
         // based on enabled data series
@@ -12454,7 +12463,7 @@ function lineChart() {
       };
 
       yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, d, yIsCurrency, 2);
+        return yValueFormat(d, i, null, yIsCurrency, 2);
       };
 
       // Set title display option
@@ -12669,7 +12678,7 @@ function lineChart() {
         if (showControls) {
           controls
             .id('controls_' + model.id())
-            .strings(chart.strings().controls)
+            .strings(strings.controls)
             .color(['#444'])
             .align('left')
             .height(availableHeight - headerHeight);
@@ -12683,7 +12692,7 @@ function lineChart() {
         if (showLegend) {
           legend
             .id('legend_' + model.id())
-            .strings(chart.strings().legend)
+            .strings(strings.legend)
             .align('right')
             .height(availableHeight - headerHeight);
           legend_wrap
@@ -12855,9 +12864,8 @@ function lineChart() {
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
-          data.map(function(d) {
+          data.forEach(function(d) {
             d.disabled = false;
-            return d;
           });
         }
 
@@ -12866,21 +12874,20 @@ function lineChart() {
         dispatch.call('stateChange', this, state);
       });
 
-      controls.dispatch.on('legendClick', function(d, i) {
+      controls.dispatch.on('legendClick', function(control, i) {
         //if the option is currently enabled (i.e., selected)
-        if (!d.disabled) {
+        if (!control.disabled) {
           return;
         }
 
         //set the controls all to false
-        controlsData = controlsData.map(function(s) {
-          s.disabled = true;
-          return s;
+        controlsData.forEach(function(control) {
+          control.disabled = true;
         });
         //activate the the selected control option
-        d.disabled = false;
+        control.disabled = false;
 
-        switch (d.key) {
+        switch (control.key) {
           case 'Basis':
             model.interpolate('basis');
             break;
@@ -12900,9 +12907,9 @@ function lineChart() {
             model.isArea(true);
             break;
         }
-
         state.interpolate = model.interpolate();
         state.isArea = model.isArea();
+
         chart.update();
         dispatch.call('stateChange', this, state);
       });
@@ -12995,7 +13002,7 @@ function lineChart() {
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
 
-  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -13189,7 +13196,9 @@ function multibarChart() {
       delay = 0,
       duration = 0,
       tooltips = true,
-      state = {},
+      state = {
+        stacked: true
+      },
       x,
       y,
       strings = {
@@ -13227,7 +13236,7 @@ function multibarChart() {
   //------------------------------------------------------------
 
   // Chart components
-  var model = multibar().stacked(false).clipEdge(false);
+  var model = multibar();
   var xAxis = axis();
   var yAxis = axis();
   var controls = menu();
@@ -13236,17 +13245,7 @@ function multibarChart() {
   // Scroll variables
   var useScroll = false;
   var scrollOffset = 0;
-
-  if (scrollEnabled) {
-    var scroll = scroller()
-      .id(model.id())
-      .vertical(vertical);
-  }
-
-  var controlsData = [
-    {key: 'Grouped', disabled: state.stacked},
-    {key: 'Stacked', disabled: !state.stacked}
-  ];
+  var scroll = scroller().id(model.id());
 
   var tt = null;
 
@@ -13257,7 +13256,10 @@ function multibarChart() {
         var yIsCurrency = properties.yDataType === 'currency';
         var valueLabel = yIsCurrency ? 'Amount' : 'Count';
         var y = eo.point.y;
-        var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+        // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+        // we can't use yValueFormat because it needs SI units
+        // for tooltip, we want the full value
+        var value = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
 
         var xIsDatetime = properties.xDataType === 'datetime';
         var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
@@ -13288,9 +13290,11 @@ function multibarChart() {
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart, labels) {
+  var seriesClick = function(data, eo, chart, labels) {
         return;
       };
+
+var timer = new Date();
 
   //============================================================
 
@@ -13320,7 +13324,6 @@ function multibarChart() {
 
       var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupLabels || false,
           xIsDatetime = properties.xDataType === 'datetime' || false,
-          xIsNumeric = properties.xDataType === 'numeric' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
@@ -13334,6 +13337,11 @@ function multibarChart() {
           xDateFormat = null,
           xAxisFormat = null,
           yAxisFormat = null;
+
+      var controlsData = [
+        {key: 'Grouped', disabled: model.stacked()},
+        {key: 'Stacked', disabled: !model.stacked()}
+      ];
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -13360,34 +13368,34 @@ function multibarChart() {
 
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
+        // toggle active state
+        var activeState = (
+            typeof series.active === 'undefined' ||
+            series.active === 'inactive' ||
+            series.active === ''
+          ) ? 'active' : 'inactive';
 
-        // series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
-        series.active = (typeof series.active === 'undefined' || series.active === 'inactive' || series.active === '') ? 'active' : 'inactive';
-
-        series.values.map(function(d) {
-          d.active = series.active;
-        });
-
-        // if you have activated a data series, inactivate the other non-active series
-        if (series.active === 'active') {
-          data
-            .filter(function(d) {
-              return d.active !== 'active';
-            })
-            .map(function(d) {
-              d.active = 'inactive';
-              d.values.map(function(d) {
-                d.active = 'inactive';
-              });
-              return d;
-            });
+        function setActiveState(series, state) {
+          series.active = state;
+          series.values.forEach(function(value) {
+            value.active = state;
+          });
         }
 
-        // if there are no active data series, unset active state
-        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+        // if you have activated a data series,
+        if (activeState === 'active') {
+          // inactivate all series
+          data.forEach(setActiveState, 'inactive');
+          // then activate the selected series
+          setActiveState(series, activeState);
+          // set the state to a truthy map
+          state.active = data.map(function(d) {
+            return d.active === 'active';
+          });
+        }
+        // if there are no active data series, unset entire active state
+        else {
           chart.clearActive();
-        } else {
-          state.active = data.map(function(d) { return typeof d.active === 'undefined' || d.active === 'active'; });
         }
 
         // container.call(chart);
@@ -13395,6 +13403,7 @@ function multibarChart() {
       };
 
       chart.container = this;
+
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -13405,7 +13414,7 @@ function multibarChart() {
         }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -13416,8 +13425,9 @@ function multibarChart() {
 
       //------------------------------------------------------------
       // Process data
+timer = (new Date()).valueOf();
 
-      function processLabels(groupData) {
+      function setXTickValues(groupData) {
         // Get simple array of group labels for ticks
         xTickValues = groupData.map(function(group) {
             return group.label;
@@ -13431,6 +13441,7 @@ function multibarChart() {
       data.forEach(function(series, s) {
         // make sure untrimmed values array exists
         // and set immutable series values
+        // x & y are the only attributes allowed in values (TODO: array?)
         if (!series._values) {
           series._values = series.values.map(function(value, v) {
             return {
@@ -13442,7 +13453,7 @@ function multibarChart() {
 
         series.seriesIndex = s;
 
-        series.total = d3.sum(series.values, function(value, v) {
+        series.total = d3.sum(series._values, function(value, v) {
           return value.y;
         });
 
@@ -13457,17 +13468,19 @@ function multibarChart() {
           return !series.disabled;
         })
         .map(function(series, s) {
+          // this is the iterative index, not the data index
           series.seri = s;
 
           // reconstruct values referencing series attributes
+          // and stack
           series.values = series._values.map(function(value, v) {
               return {
                 'seriesIndex': series.seriesIndex,
                 'group': v,
-                'color': typeof series.color !== 'undefined' ? series.color : '',
-                'x': model.x()(value, v),
-                'y': model.y()(value, v),
-                'y0': value.y + (s > 0 ? data[series.seriesIndex - 1].values[v].y0 : 0),
+                'color': series.color || '',
+                'x': value.x,
+                'y': value.y,
+                'y0': value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0),
                 'active': typeof series.active !== 'undefined' ? series.active : ''
               };
             });
@@ -13481,16 +13494,20 @@ function multibarChart() {
       if (displayNoData(modelData)) {
         return chart;
       }
+console.log((new Date()).valueOf() - timer);
+timer = (new Date()).valueOf();
 
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (hasGroupData) {
+      if (xIsOrdinal) {
 
         groupData.forEach(function(group, g) {
-          var label = typeof group.label === 'undefined' ?
-            chart.strings().noLabel :
-              xIsDatetime ? new Date(group.label) : group.label;
+          var label = typeof group.label === 'undefined' || group.label === '' ?
+            strings.noLabel :
+              xIsDatetime ?
+                new Date(group.label) :
+                group.label;
           group.group = g,
           group.label = label;
           group.total = 0;
@@ -13498,28 +13515,27 @@ function multibarChart() {
         });
 
       } else {
-
-        groupData = d3
-          .merge(modelData.map(function(series) {
-            return series.values;
-          }))
-          .reduce(function(a, b) {
-            if (a.indexOf(b.x) === -1) {
-              a.push(b.x);
-            }
-            return a;
-          }, [])
-          .map(function(value, v) {
+        // support for uneven value lengths
+        // groupData = d3
+        // .merge(modelData.map(function(series) {
+        //   return series.values;
+        // }))
+        // .reduce(function(a, b) {
+        //   if (a.indexOf(b.x) === -1) {
+        //     a.push(b.x);
+        //   }
+        //   return a;
+        // }, [])
+        groupData = modelData[0].values.map(function(value, v) {
             return {
               group: v,
-              label: xIsDatetime ? new Date(value) : value,
+              label: xIsDatetime ? new Date(value.x) : value.x,
               total: 0,
               _height: 0
             };
           });
-      }
 
-      processLabels(groupData);
+      }
 
       // Calculate group totals and height
       // based on enabled data series
@@ -13528,7 +13544,7 @@ function multibarChart() {
         // update group data with values
         modelData
           .forEach(function(series, s) {
-            //TODO: there is a better way
+            //TODO: there is a better way with map reduce?
             series.values
               .filter(function(value, v) {
                 return value.group === g;
@@ -13540,14 +13556,17 @@ function multibarChart() {
           });
       });
 
+      setXTickValues(groupData);
+
       if (hideEmptyGroups) {
         // build a trimmed array for active group only labels
-        processLabels(groupData.filter(function(group, g) {
+        setXTickValues(groupData.filter(function(group, g) {
             return group._height !== 0;
         }));
 
         // build a discrete array of data values for the multibar
         // based on enabled data series
+        // referencing the groupData
         modelData.forEach(function(series, s) {
           // reset series values to exlcude values for
           // groups that have all zero values
@@ -13556,6 +13575,7 @@ function multibarChart() {
               return groupData[v]._height !== 0;
             })
             .map(function(value, v) {
+              // this is the new iterative index, not the data index
               value.seri = series.seri;
               return value;
             });
@@ -13578,13 +13598,15 @@ function multibarChart() {
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {
-        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        //TODO: isn't there always xTickValues?
+        // var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var group = xTickValues[i];
         var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
         return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
       yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, d, yIsCurrency, 2);
+        return yValueFormat(d, i, null, yIsCurrency, 2);
       };
 
       // Set title display option
@@ -13601,6 +13623,11 @@ function multibarChart() {
 
       //------------------------------------------------------------
       // Setup Scales and Axes
+
+      // we want the bar value label to have the same formatting as y-axis
+      model.valueFormat(function(d, i) {
+        return yValueFormat(d, i, null, yIsCurrency, 2);
+      });
 
       x = model.xScale();
       y = model.yScale();
@@ -13629,7 +13656,6 @@ function multibarChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      /* Clipping box for scroll */
       wrap_entr.append('defs');
 
       /* Container for scroll elements */
@@ -13730,7 +13756,7 @@ function multibarChart() {
         if (showControls) {
           controls
             .id('controls_' + model.id())
-            .strings(chart.strings().controls)
+            .strings(strings.controls)
             .color(['#444'])
             .align('left')
             .height(availableHeight - headerHeight);
@@ -13744,7 +13770,7 @@ function multibarChart() {
         if (showLegend) {
           legend
             .id('legend_' + model.id())
-            .strings(chart.strings().legend)
+            .strings(strings.legend)
             .align('right')
             .height(availableHeight - headerHeight);
           legend_wrap
@@ -13938,6 +13964,7 @@ function multibarChart() {
             .height(innerHeight)
             .margin(innerMargin)
             .minDimension(minDimension)
+            .vertical(vertical)
             .panHandler(panMultibar)
             .resize(scrollOffset, overflowHandler);
 
@@ -13947,35 +13974,37 @@ function multibarChart() {
       };
 
       //============================================================
+timer = (new Date()).valueOf();
 
       chart.render();
-
+console.log((new Date()).valueOf() - timer);
+timer = (new Date()).valueOf();
       //============================================================
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
+      //TODO: change legendClick to menuClick
       legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
+
+        // on legend click, clear active cell state
         series.active = 'inactive';
-        series.values.map(function(d) {
+        series.values.forEach(function(d) {
           d.active = 'inactive';
         });
 
-        if (hideEmptyGroups) {
-          data.map(function(m, j) {
-            m._values.map(function(v, k) {
-              v.disabled = (k === i ? series.disabled : v.disabled ? true : false);
-              return v;
-            });
-            return m;
-          });
-        }
+        // if (hideEmptyGroups) {
+        //   data.forEach(function(m, j) {
+        //     m._values.forEach(function(v, k) {
+        //       v.disabled = (k === i ? series.disabled : v.disabled);
+        //     });
+        //   });
+        // }
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
-          data.map(function(d) {
+          data.forEach(function(d) {
             d.disabled = false;
-            return d;
           });
         }
 
@@ -13988,40 +14017,30 @@ function multibarChart() {
         dispatch.call('stateChange', this, state);
       });
 
-      controls.dispatch.on('legendClick', function(d, i) {
+      controls.dispatch.on('legendClick', function(control, i) {
         //if the option is currently enabled (i.e., selected)
-        if (!d.disabled) {
+        if (!control.disabled) {
           return;
         }
 
         //set the controls all to false
-        controlsData = controlsData.map(function(s) {
-          s.disabled = true;
-          return s;
+        controlsData.forEach(function(control) {
+          control.disabled = true;
         });
         //activate the the selected control option
-        d.disabled = false;
+        control.disabled = false;
 
-        switch (d.key) {
-          case 'Grouped':
-            model.stacked(false);
-            break;
-          case 'Stacked':
-            model.stacked(true);
-            break;
-        }
-
+        model.stacked(control.key === 'Grouped' ? false : true);
         state.stacked = model.stacked();
+
         chart.update();
         dispatch.call('stateChange', this, state);
       });
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          if (xIsOrdinal && hasGroupLabels) {
-            // set the group rather than pass entire groupData
-            eo.group = groupData[eo.groupIndex];
-          }
+          // set the group rather than pass entire groupData
+          eo.group = groupData[eo.groupIndex];
           tt = showTooltip(eo, that.parentNode, properties);
         }
       });
@@ -14050,7 +14069,7 @@ function multibarChart() {
         if (typeof eo.active !== 'undefined') {
           data.forEach(function(series, i) {
             series.active = eo.active[i] ? 'active' : 'inactive';
-            series.values.map(function(d) {
+            series.values.forEach(function(d) {
               d.active = series.active;
             });
           });
@@ -14070,6 +14089,7 @@ function multibarChart() {
       });
 
       dispatch.on('chartClick', function() {
+        console.log('chartClick');
         //dispatch.call('tooltipHide', this);
         if (controls.enabled()) {
           controls.dispatch.call('closeMenu', this);
@@ -14080,6 +14100,7 @@ function multibarChart() {
       });
 
       model.dispatch.on('elementClick', function(eo) {
+        eo.group = groupData[eo.groupIndex];
         dispatch.call('chartClick', this);
         seriesClick(data, eo, chart, xTickValues);
       });

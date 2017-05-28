@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
     <title>Sucrose Chart</title>
-    <link rel="stylesheet" href="sucrose.min.css">
+    <link rel="stylesheet" href="../build/sucrose.css">
     <style>
         .chart {
             position: absolute;
@@ -22,9 +22,9 @@
       <a id="toggleData">Toggle Data</a>
     </div>
 
-    <script src="d3.min.js"></script>
-    <script src="d3fc-rebind.min.js"></script>
-    <script src="sucrose.min.js"></script>
+    <script src="../build/d3.js"></script>
+    <script src="../examples/js/d3fc-rebind.min.js"></script>
+    <script src="../build/sucrose.js"></script>
 
     <script>
 var type = 'multibar';
@@ -315,8 +315,8 @@ var config = {
     "left": 10
   },
   "showTitle": true,
-  "showLegend": true,
-  "showControls": true,
+  "showLegend": false,
+  "showControls": false,
   "strings": {
     "legend": {
       "close": "Hide",
@@ -347,7 +347,7 @@ var config = {
   ],
   "colorOptions": {}
 };
-var chart = sucrose.multiBarChart();
+var chart = sucrose.charts.multibarChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
@@ -404,22 +404,22 @@ function configure(chart) {
 }
 
 function format(chart) {
-  chart
-    .valueFormat(function (d) {
-      return sucrose.numberFormatSI(d, 0, yIsCurrency, chart.locality());
-    })
-    .tooltipContent(function (eo, graph) {
-      var key = eo.group.label,
-          y = eo.point.y,
-          x = (typeof eo.group._height !== 'undefined') ?
-                Math.abs(y * 100 / eo.group._height).toFixed(1) :
-                chart.xAxis.tickFormat()(eo.point.x);
-      var val = sucrose.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-          percent = sucrose.numberFormatRound(x, 2, false, chart.locality());
-      return '<p>Outcome: <b>' + key + '</b></p>' +
-             '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-             '<p>Percentage: <b>' + percent + '%</b></p>';
-    });
+  // chart
+  //   .valueFormat(function (d) {
+  //     return sucrose.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+  //   })
+  //   .tooltipContent(function (eo, graph) {
+  //     var key = eo.group.label,
+  //         y = eo.point.y,
+  //         x = (typeof eo.group._height !== 'undefined') ?
+  //               Math.abs(y * 100 / eo.group._height).toFixed(1) :
+  //               chart.xAxis.tickFormat()(eo.point.x);
+  //     var val = sucrose.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
+  //         percent = sucrose.numberFormatRound(x, 2, false, chart.locality());
+  //     return '<p>Outcome: <b>' + key + '</b></p>' +
+  //            '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+  //            '<p>Percentage: <b>' + percent + '%</b></p>';
+  //   });
     // .overflowHandler(function (d) {
     //   var b = $('body');
     //   b.scrollTop(b.scrollTop() + d);
