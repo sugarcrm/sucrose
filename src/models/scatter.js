@@ -279,7 +279,11 @@ export default function scatter() {
             .attr('cx', function(d, i) { return x(getX(d, i)); })
             .attr('cy', function(d, i) { return y(getY(d, i)); })
             .on('end', function(d) {
-              d3.select(this).classed('sc-enter', false);
+              d3.select(this)
+                .classed('sc-enter', false)
+                .classed('sc-active', function(d) {
+                  return d.active === 'active';
+                });
             });
 
         series_bind.exit()
@@ -316,7 +320,12 @@ export default function scatter() {
               d3.symbol()
                 .type(getShape)
                 .size(symbolSize)
-            );
+            )
+            .on('end', function(d) {
+              d3.select(this)
+                .classed('sc-enter', false)
+                .classed('active', function(d) { return d.active === 'active'; });
+            });
 
         series_bind.exit()
           .transition(t).selectAll('.sc-point')
@@ -329,10 +338,10 @@ export default function scatter() {
 
       function buildEventObject(e, d, i, s) {
         return {
-            series: s,
-            point: s.values[i],
             pointIndex: i,
+            point: s.values[i],
             seriesIndex: s.seriesIndex,
+            series: s,
             id: id,
             e: e
           };
@@ -357,10 +366,13 @@ export default function scatter() {
                   var pX = getX(point, pointIndex);
                   var pY = getY(point, pointIndex);
 
-                  return [x(pX) + Math.random() * 1e-4,
-                          y(pY) + Math.random() * 1e-4,
+                  return [
+                      x(pX) + Math.random() * 1e-4,
+                      y(pY) + Math.random() * 1e-4,
                       groupIndex,
-                      pointIndex, point]; //temp hack to add noise until I think of a better way so there are no duplicates
+                      pointIndex,
+                      point
+                    ]; //temp hack to add noise until I think of a better way so there are no duplicates
                 })
                 .filter(function(pointArray, pointIndex) {
                   return pointActive(pointArray[4], pointIndex); // Issue #237.. move filter to after map, so pointIndex is correct!
@@ -441,8 +453,10 @@ export default function scatter() {
             //.data(dataWithPoints)
             .style('pointer-events', 'auto') // recaptivate events, disabled by css
             .on('mouseover', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
-              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              var series, eo;
+              series = d3.select(this.parentNode).datum();
+              if (needsUpdate || !series) return 0; //check if this is a dummy point
+              eo = buildEventObject(d3.event, d, i, series);
               dispatch.call('elementMouseover', this, eo);
             })
             .on('mousemove', function(d, i) {
@@ -450,13 +464,17 @@ export default function scatter() {
               dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
-              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              var series, eo;
+              series = d3.select(this.parentNode).datum();
+              if (needsUpdate || !series) return 0; //check if this is a dummy point
+              eo = buildEventObject(d3.event, d, i, series);
               dispatch.call('elementMouseout', this, eo);
             })
             .on('click', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
-              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              var series, eo;
+              series = d3.select(this.parentNode).datum();
+              if (needsUpdate || !series) return 0; //check if this is a dummy point
+              eo = buildEventObject(d3.event, d, i, series);
               dispatch.call('elementClick', this, eo);
             });
 

@@ -88,8 +88,8 @@ export default function lineChart() {
         var content = '';
 
         content += '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
-            content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
-            content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
+        content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
 
         if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
@@ -144,7 +144,7 @@ export default function lineChart() {
           totalAmount = 0;
 
      var padding = (model.padData() ? pointRadius : 0);
-      var singlePoint = false;
+     var singlePoint = false;
 
           //TODO: allow formatter to be set by data
       var xTickMaxWidth = 75,
@@ -165,7 +165,86 @@ export default function lineChart() {
         container.transition().duration(duration).call(chart);
       };
 
+      chart.setActiveState = function(series, state) {
+        series.active = state;
+        series.values.forEach(function(v) {
+          v.active = state;
+        });
+      };
+
+      chart.clearActive = function() {
+        data.forEach(function(s) {
+          chart.setActiveState(s, '');
+        });
+        delete state.active;
+      };
+
+      chart.seriesActivate = function(series) {
+        // inactivate all series
+        data.forEach(function(s) {
+          chart.setActiveState(s, 'inactive');
+        });
+        // then activate the selected series
+        chart.setActiveState(series, 'active');
+        // set the state to a truthy map
+        state.active = data.map(function(s) {
+          return s.active === 'active';
+        });
+      };
+
+      chart.cellActivate = function(eo) {
+        var cell = data[eo.seriesIndex].values[eo.pointIndex];
+        var activeState;
+
+        if (!cell) {
+          return;
+        }
+
+        // toggle active state
+        activeState = (
+            typeof cell.active === 'undefined' ||
+            cell.active === 'inactive' ||
+            cell.active === ''
+          ) ? 'active' : 'inactive';
+
+        if (activeState === 'active') {
+          cell.active = 'active';
+        } else {
+          // if there are no active data series, unset entire active state
+          chart.clearActive();
+        }
+
+        chart.render();
+      };
+
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+
+        if (!series) {
+          return;
+        }
+
+        // toggle active state
+        activeState = (
+            typeof series.active === 'undefined' ||
+            series.active === 'inactive' ||
+            series.active === ''
+          ) ? 'active' : 'inactive';
+
+        if (activeState === 'active') {
+          // if you have activated a data series,
+          chart.seriesActivate(series);
+        } else {
+          // if there are no active data series, unset entire active state
+          chart.clearActive();
+        }
+
+        chart.render();
+      };
+
       chart.container = this;
+
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -830,6 +909,14 @@ export default function lineChart() {
         }
       });
 
+      model.dispatch.on('elementClick', function(eo) {
+        if (hasGroupLabels) {
+          eo.groupIndex = eo.pointIndex;
+          eo.group = groupData[eo.groupIndex];
+        }
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart, groupLabels);
+      });
 
       container.on('click', function() {
         d3.event.stopPropagation();
@@ -1033,6 +1120,12 @@ export default function lineChart() {
       return yValueFormat;
     }
     yValueFormat = _;
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) { return seriesClick; }
+    seriesClick = _;
     return chart;
   };
 

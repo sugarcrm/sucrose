@@ -3981,7 +3981,11 @@ function scatter() {
             .attr('cx', function(d, i) { return x(getX(d, i)); })
             .attr('cy', function(d, i) { return y(getY(d, i)); })
             .on('end', function(d) {
-              d3.select(this).classed('sc-enter', false);
+              d3.select(this)
+                .classed('sc-enter', false)
+                .classed('sc-active', function(d) {
+                  return d.active === 'active';
+                });
             });
 
         series_bind.exit()
@@ -4018,7 +4022,12 @@ function scatter() {
               d3.symbol()
                 .type(getShape)
                 .size(symbolSize)
-            );
+            )
+            .on('end', function(d) {
+              d3.select(this)
+                .classed('sc-enter', false)
+                .classed('active', function(d) { return d.active === 'active'; });
+            });
 
         series_bind.exit()
           .transition(t).selectAll('.sc-point')
@@ -4031,10 +4040,10 @@ function scatter() {
 
       function buildEventObject(e, d, i, s) {
         return {
-            series: s,
-            point: s.values[i],
             pointIndex: i,
+            point: s.values[i],
             seriesIndex: s.seriesIndex,
+            series: s,
             id: id,
             e: e
           };
@@ -4059,10 +4068,13 @@ function scatter() {
                   var pX = getX(point, pointIndex);
                   var pY = getY(point, pointIndex);
 
-                  return [x(pX) + Math.random() * 1e-4,
-                          y(pY) + Math.random() * 1e-4,
+                  return [
+                      x(pX) + Math.random() * 1e-4,
+                      y(pY) + Math.random() * 1e-4,
                       groupIndex,
-                      pointIndex, point]; //temp hack to add noise until I think of a better way so there are no duplicates
+                      pointIndex,
+                      point
+                    ]; //temp hack to add noise until I think of a better way so there are no duplicates
                 })
                 .filter(function(pointArray, pointIndex) {
                   return pointActive(pointArray[4], pointIndex); // Issue #237.. move filter to after map, so pointIndex is correct!
@@ -4143,8 +4155,10 @@ function scatter() {
             //.data(dataWithPoints)
             .style('pointer-events', 'auto') // recaptivate events, disabled by css
             .on('mouseover', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
-              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              var series, eo;
+              series = d3.select(this.parentNode).datum();
+              if (needsUpdate || !series) return 0; //check if this is a dummy point
+              eo = buildEventObject(d3.event, d, i, series);
               dispatch.call('elementMouseover', this, eo);
             })
             .on('mousemove', function(d, i) {
@@ -4152,13 +4166,17 @@ function scatter() {
               dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
-              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              var series, eo;
+              series = d3.select(this.parentNode).datum();
+              if (needsUpdate || !series) return 0; //check if this is a dummy point
+              eo = buildEventObject(d3.event, d, i, series);
               dispatch.call('elementMouseout', this, eo);
             })
             .on('click', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0; //check if this is a dummy point
-              var eo = buildEventObject(d3.event, d, i, data[d.seriesIndex]);
+              var series, eo;
+              series = d3.select(this.parentNode).datum();
+              if (needsUpdate || !series) return 0; //check if this is a dummy point
+              eo = buildEventObject(d3.event, d, i, series);
               dispatch.call('elementClick', this, eo);
             });
 
@@ -6006,6 +6024,7 @@ function multibar() {
         .attr('class', function(d, i) {
           return 'sc-bar ' + (getY(d, i) < 0 ? 'negative' : 'positive');
         })
+        .classed('sc-active', function(d) { return d.active === 'active'; })
         .attr('transform', function(d, i) {
           var trans = stacked ? {
                 x: Math.round(x(getX(d, i))),
@@ -6029,7 +6048,6 @@ function multibar() {
             .attr(valX, 0)
             .attr(dimY, barLength)
             .attr(dimX, barThickness)
-            .classed('sc-active', function(d) { return d.active === 'active'; })
             .style('fill', function(d, i) {
               var backColor = fill(d),
                   foreColor = utility.getTextContrast(backColor, i);
@@ -7636,7 +7654,7 @@ function scroller() {
 
     /* Background rectangle for mouse events */
     function scrollTarget_create() {
-      g_entr.select('.sc-scroll-background')
+      g_entr.select('.sc-background-wrap')
         .append('rect')
         .attr('class', 'sc-scroll-target')
         //.attr('fill', '#FFF');
@@ -7653,7 +7671,7 @@ function scroller() {
 
     /* Background shadow rectangles */
     function backShadows_create() {
-      var backShadows_entr = g_entr.select('.sc-scroll-background')
+      var backShadows_entr = g_entr.select('.sc-background-wrap')
             .append('g')
             .attr('class', 'sc-back-shadow-wrap');
       backShadows_entr
@@ -7686,7 +7704,7 @@ function scroller() {
 
     /* Foreground shadow rectangles */
     function foreShadows_create() {
-      var foreShadows_entr = g_entr.select('.sc-scroll-background')
+      var foreShadows_entr = g_entr.select('.sc-background-wrap')
             .insert('g')
             .attr('class', 'sc-fore-shadow-wrap');
       foreShadows_entr
@@ -8653,12 +8671,6 @@ function areaChart() {
   var legend = menu();
   var guide = line().duration(0);
 
-  var controlsData = [
-    {key: 'Stacked', disabled: model.offset() !== 'zero'},
-    {key: 'Stream', disabled: model.offset() !== 'wiggle'},
-    {key: 'Expanded', disabled: model.offset() !== 'expand'}
-  ];
-
   var tt = null,
       guidetips = null;
 
@@ -8668,6 +8680,7 @@ function areaChart() {
         var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
         return '<p>' + key + ': ' + y + '</p>';
       };
+
 
   //============================================================
 
@@ -8687,39 +8700,42 @@ function areaChart() {
 
       var availableWidth = width,
           availableHeight = height;
-      var padding = 0;
 
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
-          hasGroupLabels = hasGroupData ? groupData.filter(function(group) {
-            return typeof group.label !== 'undefined';
-          }).length !== 0 : false;
+          groupLabels = [],
+          groupCount = 0,
+          hasGroupLabels = false;
 
-      var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupLabels || false,
-          xIsDatetime = properties.xDataType === 'datetime' || false,
-          xIsNumeric = properties.xDataType === 'numeric' || false,
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
           seriesCount = 0,
           totalAmount = 0;
 
-      var singlePoint = false,
-          showMaxMin = false;
+      var padding = 0;
+      var singlePoint = false;
+      var showMaxMin = false;
 
           //TODO: allow formatter to be set by data
-      var xTickValues = [],
-          xTickCount = 0,
-          xTickMaxWidth = 75,
+      var xTickMaxWidth = 75,
           xDateFormat = null,
           xAxisFormat = null,
           yAxisFormat = null;
+
+      var controlsData = [
+        {key: 'Stacked', disabled: model.offset() !== 'zero'},
+        {key: 'Stream', disabled: model.offset() !== 'wiggle'},
+        {key: 'Expanded', disabled: model.offset() !== 'expand'}
+      ];
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
       };
 
       chart.container = this;
+
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -8730,7 +8746,7 @@ function areaChart() {
         }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -8742,20 +8758,20 @@ function areaChart() {
       //------------------------------------------------------------
       // Process data
 
-      function processLabels(groupData) {
+      function setGroupLabels(groupData) {
         // Get simple array of group labels for ticks
-        xTickValues = groupData.map(function(group) {
+        groupLabels = groupData.map(function(group) {
             return group.label;
           });
-        xTickCount = xTickValues.length;
-        hasGroupLabels = xTickCount > 0;
+        groupCount = groupLabels.length;
+        hasGroupLabels = groupCount > 0;
       }
 
       // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
         series.seriesIndex = s;
-
+        series.key = series.key || strings.noLabel;
         series.total = d3.sum(series.values, function(value, v) {
           return model.y()(value, v);
         });
@@ -8771,6 +8787,7 @@ function areaChart() {
           return !series.disabled;
         })
         .map(function(series, s) {
+          // this is the iterative index, not the data index
           series.seri = s;
           return series;
         });
@@ -8785,18 +8802,18 @@ function areaChart() {
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (xIsOrdinal && hasGroupData) {
+      if (hasGroupData) {
 
         groupData.forEach(function(group, g) {
-          var label = typeof group.label === 'undefined' ?
-            chart.strings().noLabel :
-              xIsDatetime ? new Date(group.label) : group.label;
+          var label = typeof group.label === 'undefined' || group.label === '' ?
+            strings.noLabel :
+              xIsDatetime ?
+                new Date(group.label) :
+                group.label;
           group.group = g,
           group.label = label;
           group.total = 0;
         });
-
-        processLabels(groupData);
 
         // Calculate group totals and height
         // based on enabled data series
@@ -8805,7 +8822,7 @@ function areaChart() {
           // update group data with values
           modelData
             .forEach(function(series, s) {
-              //TODO: there is a better way
+            //TODO: there is a better way with map reduce?
               series.values
                 .filter(function(value, v) {
                   return value.group === g;
@@ -8816,13 +8833,15 @@ function areaChart() {
             });
         });
 
+        setGroupLabels(groupData);
+
         totalAmount = d3.sum(groupData, function(group) {
           return group.total;
         });
 
       } else {
 
-        xTickValues = d3
+        groupLabels = d3
           .merge(modelData.map(function(series) {
             return series.values;
           }))
@@ -8836,7 +8855,7 @@ function areaChart() {
             return xIsDatetime ? new Date(value) : value;
           });
 
-        xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
+        groupCount = Math.min(Math.ceil(innerWidth / 100), groupLabels.length);
 
         totalAmount = d3.sum(modelData, function(series) {
           return series.total;
@@ -8846,17 +8865,17 @@ function areaChart() {
 
       // Configure axis format functions
       if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(xTickValues);
+        xDateFormat = utility.getDateFormat(groupLabels);
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {
-        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var group = hasGroupLabels ? groupLabels[i] : d;
         var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
         return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
       yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, d, yIsCurrency, 2);
+        return yValueFormat(d, i, null, yIsCurrency, 2);
       };
 
       // Set title display option
@@ -8915,10 +8934,10 @@ function areaChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
+      wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
       var title_wrap = wrap.select('.sc-title-wrap');
@@ -8938,6 +8957,14 @@ function areaChart() {
 
       wrap_entr.append('g').attr('class', 'sc-guide-wrap');
       var guide_wrap = wrap.select('.sc-guide-wrap');
+
+      wrap_entr.select('.sc-background-wrap')
+        .append('rect')
+          .attr('class', 'sc-background')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('fill', 'rgba(215, 235, 255, 0.1)');
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -8968,6 +8995,7 @@ function areaChart() {
         wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
 
         //------------------------------------------------------------
         // Title & Legend & Controls
@@ -9005,7 +9033,7 @@ function areaChart() {
         if (showControls) {
           controls
             .id('controls_' + model.id())
-            .strings(chart.strings().controls)
+            .strings(strings.controls)
             .color(['#444'])
             .align('left')
             .height(availableHeight - headerHeight);
@@ -9019,7 +9047,7 @@ function areaChart() {
         if (showLegend) {
           legend
             .id('legend_' + model.id())
-            .strings(chart.strings().legend)
+            .strings(strings.legend)
             .align('right')
             .height(availableHeight - headerHeight);
           legend_wrap
@@ -9083,6 +9111,7 @@ function areaChart() {
         model_wrap
           .datum(modelData)
           .call(model);
+
 
         //------------------------------------------------------------
         // Axes
@@ -9269,32 +9298,30 @@ function areaChart() {
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
-          data.map(function(d) {
+          data.forEach(function(d) {
             d.disabled = false;
-            return d;
           });
         }
-
         state.disabled = data.map(function(d) { return !!d.disabled; });
+
         chart.update();
         dispatch.call('stateChange', this, state);
       });
 
-      controls.dispatch.on('legendClick', function(d, i) {
+      controls.dispatch.on('legendClick', function(control, i) {
         //if the option is currently enabled (i.e., selected)
-        if (!d.disabled) {
+        if (!control.disabled) {
           return;
         }
 
         //set the controls all to false
-        controlsData = controlsData.map(function(s) {
-          s.disabled = true;
-          return s;
+        controlsData.forEach(function(control) {
+          control.disabled = true;
         });
         //activate the the selected control option
-        d.disabled = false;
+        control.disabled = false;
 
-        switch (d.key) {
+        switch (control.key) {
           case 'Stacked':
             model.style('stack');
             break;
@@ -9305,8 +9332,8 @@ function areaChart() {
             model.style('expand');
             break;
         }
-
         state.style = model.style();
+
         chart.render();
         dispatch.call('stateChange', this, state);
       });
@@ -9378,6 +9405,10 @@ function areaChart() {
         }
       });
 
+      container.on('click', function() {
+        d3.event.stopPropagation();
+        dispatch.call('chartClick', this);
+      });
     });
 
     return chart;
@@ -9647,7 +9678,6 @@ function bubbleChart() {
   // Private Variables
   //------------------------------------------------------------
 
-
   var model = scatter()
         .padData(true)
         .padDataOuter(-1)
@@ -9707,7 +9737,7 @@ function bubbleChart() {
           yValues;
 
       var xAxisFormat = function(d, i, selection, noEllipsis) {
-            return xValueFormat(d, i, d, xIsDatetime);
+            return xValueFormat(d, i, d, xIsDatetime, '%B');
           };
 
       var yAxisFormat = function(d, i, selection, noEllipsis) {
@@ -9731,9 +9761,7 @@ function bubbleChart() {
       // Private method for displaying no data message.
 
       function displayNoData(data) {
-        var hasData = data && data.length && data.filter(function(series) {
-          return !series.disabled && Array.isArray(series.values) && series.values.length;
-        }).length;
+        var hasData = data && data.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
         return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
@@ -12233,7 +12261,10 @@ function lineChart() {
         var yIsCurrency = properties.yDataType === 'currency';
         var valueLabel = yIsCurrency ? 'Amount' : 'Count';
         var y = eo.point.y;
-        var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+        // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+        // we can't use yValueFormat because it needs SI units
+        // for tooltip, we want the full value
+        var value = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
 
         var xIsDatetime = properties.xDataType === 'datetime';
         var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
@@ -12243,11 +12274,13 @@ function lineChart() {
         var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
 
         var percent;
+        var content = '';
 
-        var content = '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
-            content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
-            content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
-        if (typeof eo.group._height !== 'undefined') {
+        content += '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
+        content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
+        content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+
+        if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
           percent = utility.numberFormatRound(percent, 2, false, chart.locality());
           content += '<p>Percentage: <b>' + percent + '%</b></p>';
@@ -12265,6 +12298,7 @@ function lineChart() {
   var seriesClick = function(data, eo, chart, labels) {
         return;
       };
+
 
   //============================================================
 
@@ -12284,28 +12318,25 @@ function lineChart() {
 
       var availableWidth = width,
           availableHeight = height;
-      var padding = (model.padData() ? pointRadius : 0);
 
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
-          hasGroupLabels = hasGroupData ? groupData.filter(function(group) {
-            return typeof group.label !== 'undefined';
-          }).length !== 0 : false;
+          groupLabels = [],
+          groupCount = 0,
+          hasGroupLabels = false;
 
-      var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupLabels || false,
-          xIsDatetime = properties.xDataType === 'datetime' || false,
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
           seriesCount = 0,
           totalAmount = 0;
 
-      var singlePoint = false;
+     var padding = (model.padData() ? pointRadius : 0);
+     var singlePoint = false;
 
           //TODO: allow formatter to be set by data
-      var xTickValues = [],
-          xTickCount = 0,
-          xTickMaxWidth = 75,
+      var xTickMaxWidth = 75,
           xDateFormat = null,
           xAxisFormat = null,
           yAxisFormat = null;
@@ -12323,7 +12354,86 @@ function lineChart() {
         container.transition().duration(duration).call(chart);
       };
 
+      chart.setActiveState = function(series, state) {
+        series.active = state;
+        series.values.forEach(function(v) {
+          v.active = state;
+        });
+      };
+
+      chart.clearActive = function() {
+        data.forEach(function(s) {
+          chart.setActiveState(s, '');
+        });
+        delete state.active;
+      };
+
+      chart.seriesActivate = function(series) {
+        // inactivate all series
+        data.forEach(function(s) {
+          chart.setActiveState(s, 'inactive');
+        });
+        // then activate the selected series
+        chart.setActiveState(series, 'active');
+        // set the state to a truthy map
+        state.active = data.map(function(s) {
+          return s.active === 'active';
+        });
+      };
+
+      chart.cellActivate = function(eo) {
+        var cell = data[eo.seriesIndex].values[eo.pointIndex];
+        var activeState;
+
+        if (!cell) {
+          return;
+        }
+
+        // toggle active state
+        activeState = (
+            typeof cell.active === 'undefined' ||
+            cell.active === 'inactive' ||
+            cell.active === ''
+          ) ? 'active' : 'inactive';
+
+        if (activeState === 'active') {
+          cell.active = 'active';
+        } else {
+          // if there are no active data series, unset entire active state
+          chart.clearActive();
+        }
+
+        chart.render();
+      };
+
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+
+        if (!series) {
+          return;
+        }
+
+        // toggle active state
+        activeState = (
+            typeof series.active === 'undefined' ||
+            series.active === 'inactive' ||
+            series.active === ''
+          ) ? 'active' : 'inactive';
+
+        if (activeState === 'active') {
+          // if you have activated a data series,
+          chart.seriesActivate(series);
+        } else {
+          // if there are no active data series, unset entire active state
+          chart.clearActive();
+        }
+
+        chart.render();
+      };
+
       chart.container = this;
+
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -12346,20 +12456,20 @@ function lineChart() {
       //------------------------------------------------------------
       // Process data
 
-      function setXTickValues(groupData) {
+      function setGroupLabels(groupData) {
         // Get simple array of group labels for ticks
-        xTickValues = groupData.map(function(group) {
+        groupLabels = groupData.map(function(group) {
             return group.label;
           });
-        xTickCount = xTickValues.length;
-        hasGroupLabels = xTickCount > 0;
+        groupCount = groupLabels.length;
+        hasGroupLabels = groupCount > 0;
       }
 
       // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
         series.seriesIndex = s;
-
+        series.key = series.key || strings.noLabel;
         series.total = d3.sum(series.values, function(value, v) {
           return value.y;
         });
@@ -12403,8 +12513,6 @@ function lineChart() {
           group.total = 0;
         });
 
-        setXTickValues(groupData);
-
         // Calculate group totals and height
         // based on enabled data series
         groupData.forEach(function(group, g) {
@@ -12412,7 +12520,7 @@ function lineChart() {
           // update group data with values
           modelData
             .forEach(function(series, s) {
-              //TODO: there is a better way
+            //TODO: there is a better way with map reduce?
               series.values
                 .filter(function(value, v) {
                   return value.group === g;
@@ -12423,13 +12531,15 @@ function lineChart() {
             });
         });
 
+        setGroupLabels(groupData);
+
         totalAmount = d3.sum(groupData, function(group) {
           return group.total;
         });
 
       } else {
 
-        xTickValues = d3
+        groupLabels = d3
           .merge(modelData.map(function(series) {
             return series.values;
           }))
@@ -12443,7 +12553,7 @@ function lineChart() {
             return xIsDatetime ? new Date(value) : value;
           });
 
-        xTickCount = Math.min(Math.ceil(innerWidth / 100), xTickValues.length);
+        groupCount = Math.min(Math.ceil(innerWidth / 100), groupLabels.length);
 
         totalAmount = d3.sum(modelData, function(series) {
           return series.total;
@@ -12453,11 +12563,11 @@ function lineChart() {
 
       // Configure axis format functions
       if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(xTickValues);
+        xDateFormat = utility.getDateFormat(groupLabels);
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {
-        var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
+        var group = hasGroupLabels ? groupLabels[i] : d;
         var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
         return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
@@ -12493,7 +12603,7 @@ function lineChart() {
         // .padData(singlePoint ? false : true)
         // .padDataOuter(-1)
         // set x-scale as time instead of linear
-        // .xScale(xIsDatetime && !xTickValues.length ? d3.scaleTime() : d3.scaleLinear()) //TODO: why && !xTickValues.length?
+        // .xScale(xIsDatetime && !groupLabels.length ? d3.scaleTime() : d3.scaleLinear()) //TODO: why && !groupLabels.length?
         // .xScale(hasGroupData ? d3.scaleBand() : xIsDatetime ? d3.scaleTime() : d3.scaleLinear())
         .xScale(xIsDatetime ? d3.scaleTime() : d3.scaleLinear())
         .singlePoint(singlePoint)
@@ -12515,7 +12625,7 @@ function lineChart() {
                 return a - b;
               });
         var xExtents = d3.extent(xValues);
-        var xOffset = 1 * (xIsDatetime && !xTickValues.length ? 86400000 : 1);
+        var xOffset = 1 * (xIsDatetime && !groupLabels.length ? 86400000 : 1);
 
         var yValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
@@ -12558,8 +12668,8 @@ function lineChart() {
           //NOTE: be careful of this. If the x value is ordinal, then the values
           // should be [1...n]. If the x value is numeric, then the values are
           // zero indexed as [0..n-1]
-          .tickValues(xIsOrdinal ? d3.range(1, xTickValues.length + 1) : null)
-          .ticks(xIsOrdinal ? xTickValues.length : null)
+          .tickValues(hasGroupLabels ? d3.range(1, groupLabels.length + 1) : null)
+          .ticks(hasGroupLabels ? groupLabels.length : null)
           .showMaxMin(xIsDatetime)
           .highlightZero(false);
 
@@ -12591,10 +12701,10 @@ function lineChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
+      wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
       var title_wrap = wrap.select('.sc-title-wrap');
@@ -12611,6 +12721,14 @@ function lineChart() {
       var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
       var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap_entr.select('.sc-background-wrap')
+        .append('rect')
+          .attr('class', 'sc-background')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('fill', 'rgba(215, 235, 255, 0.1)');
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -12641,6 +12759,7 @@ function lineChart() {
         wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
 
         //------------------------------------------------------------
         // Title & Legend & Controls
@@ -12757,6 +12876,7 @@ function lineChart() {
           .datum(modelData)
           .call(model);
 
+
         //------------------------------------------------------------
         // Axes
 
@@ -12793,7 +12913,7 @@ function lineChart() {
         // X-Axis
         // resize ticks based on new dimensions
         xAxis
-          .ticks(xTickCount)
+          .ticks(groupCount)
           .tickSize(padding - innerHeight, 0)
           .margin(innerMargin);
         xAxis_wrap
@@ -12829,6 +12949,7 @@ function lineChart() {
         //   .transition().duration(duration)
         //     .call(model);
 
+
         //------------------------------------------------------------
         // Final repositioning
 
@@ -12860,16 +12981,25 @@ function lineChart() {
 
       legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
-        series.active = 'inactive';
-
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.forEach(function(d) {
             d.disabled = false;
           });
         }
-
         state.disabled = data.map(function(d) { return !!d.disabled; });
+
+        // on legend click, clear active cell state
+        series.active = 'inactive';
+        series.values.forEach(function(d) {
+          d.active = 'inactive';
+        });
+        // if there are no active data series, unset active state
+        if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          chart.clearActive();
+        }
+        state.active = data.map(function(d) { return !!d.active; });
+
         chart.update();
         dispatch.call('stateChange', this, state);
       });
@@ -12916,7 +13046,7 @@ function lineChart() {
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          if (xIsOrdinal && hasGroupLabels) {
+          if (hasGroupLabels) {
             eo.groupIndex = eo.pointIndex;
             eo.group = groupData[eo.groupIndex];
           }
@@ -12968,6 +13098,19 @@ function lineChart() {
         }
       });
 
+      model.dispatch.on('elementClick', function(eo) {
+        if (hasGroupLabels) {
+          eo.groupIndex = eo.pointIndex;
+          eo.group = groupData[eo.groupIndex];
+        }
+        dispatch.call('chartClick', this);
+        seriesClick(data, eo, chart, groupLabels);
+      });
+
+      container.on('click', function() {
+        d3.event.stopPropagation();
+        dispatch.call('chartClick', this);
+      });
     });
 
     return chart;
@@ -13169,6 +13312,12 @@ function lineChart() {
     return chart;
   };
 
+  chart.seriesClick = function(_) {
+    if (!arguments.length) { return seriesClick; }
+    seriesClick = _;
+    return chart;
+  };
+
   chart.pointRadius = function(_) {
     if (!arguments.length) { return pointRadius; }
     pointRadius = _;
@@ -13196,9 +13345,7 @@ function multibarChart() {
       delay = 0,
       duration = 0,
       tooltips = true,
-      state = {
-        stacked: true
-      },
+      state = {},
       x,
       y,
       strings = {
@@ -13269,11 +13416,13 @@ function multibarChart() {
         var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
 
         var percent;
+        var content = '';
 
-        var content = '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
-            content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
-            content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
-        if (typeof eo.group._height !== 'undefined') {
+        content += '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
+        content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
+        content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+
+        if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
           percent = utility.numberFormatRound(percent, 2, false, chart.locality());
           content += '<p>Percentage: <b>' + percent + '%</b></p>';
@@ -13294,7 +13443,6 @@ function multibarChart() {
         return;
       };
 
-var timer = new Date();
 
   //============================================================
 
@@ -13307,33 +13455,31 @@ var timer = new Date();
           modelClass = vertical ? 'multibar' : 'multibar-horizontal';
 
       var properties = chartData ? chartData.properties || {} : {},
-          data = chartData ? chartData.data || [] : [];
+          data = chartData ? chartData.data || null : null;
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
       var availableWidth = width,
           availableHeight = height;
-      var baseDimension = model.stacked() ? vertical ? 72 : 32 : 32;
 
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
-          hasGroupLabels = hasGroupData ? groupData.filter(function(group) {
-            return typeof group.label !== 'undefined';
-          }).length !== 0 : false;
+          groupLabels = [],
+          groupCount = 0,
+          hasGroupLabels = false;
 
-      var xIsOrdinal = properties.xDataType === 'ordinal' || hasGroupLabels || false,
-          xIsDatetime = properties.xDataType === 'datetime' || false,
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
           seriesCount = 0,
           totalAmount = 0;
 
+      var baseDimension = model.stacked() ? vertical ? 72 : 32 : 32;
+
+      var xTickMaxWidth = 75,
           //TODO: allow formatter to be set by data
-      var xTickValues = [],
-          xTickCount = 0,
-          xTickMaxWidth = 75,
           xDateFormat = null,
           xAxisFormat = null,
           yAxisFormat = null;
@@ -13347,58 +13493,81 @@ var timer = new Date();
         container.transition().duration(duration).call(chart);
       };
 
+      chart.setActiveState = function(series, state) {
+        series.active = state;
+        series.values.forEach(function(v) {
+          v.active = state;
+        });
+      };
+
       chart.clearActive = function() {
-        data.forEach(function(d) {
-          d.active = '';
-          d.values.map(function(d) {
-            d.active = '';
-          });
+        data.forEach(function(s) {
+          chart.setActiveState(s, '');
         });
         delete state.active;
       };
 
+      chart.seriesActivate = function(series) {
+        // inactivate all series
+        data.forEach(function(s) {
+          chart.setActiveState(s, 'inactive');
+        });
+        // then activate the selected series
+        chart.setActiveState(series, 'active');
+        // set the state to a truthy map
+        state.active = data.map(function(s) {
+          return s.active === 'active';
+        });
+      };
+
       chart.cellActivate = function(eo) {
-        data[eo.seriesIndex].values[eo.groupIndex].active = 'active';
+        var cell = data[eo.seriesIndex].values[eo.groupIndex];
+        var activeState;
+
+        if (!cell) {
+          return;
+        }
+
+        // toggle active state
+        activeState = (
+            typeof cell.active === 'undefined' ||
+            cell.active === 'inactive' ||
+            cell.active === ''
+          ) ? 'active' : 'inactive';
+
+        if (activeState === 'active') {
+          cell.active = 'active';
+        } else {
+          // if there are no active data series, unset entire active state
+          chart.clearActive();
+        }
+
         chart.render();
       };
 
-      chart.seriesActivate = function(eo) {
-        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
-      };
-
       chart.dataSeriesActivate = function(eo) {
-        var series = eo.series;
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+
+        if (!series) {
+          return;
+        }
+
         // toggle active state
-        var activeState = (
+        activeState = (
             typeof series.active === 'undefined' ||
             series.active === 'inactive' ||
             series.active === ''
           ) ? 'active' : 'inactive';
 
-        function setActiveState(series, state) {
-          series.active = state;
-          series.values.forEach(function(value) {
-            value.active = state;
-          });
-        }
-
-        // if you have activated a data series,
         if (activeState === 'active') {
-          // inactivate all series
-          data.forEach(setActiveState, 'inactive');
-          // then activate the selected series
-          setActiveState(series, activeState);
-          // set the state to a truthy map
-          state.active = data.map(function(d) {
-            return d.active === 'active';
-          });
-        }
-        // if there are no active data series, unset entire active state
-        else {
+          // if you have activated a data series,
+          chart.seriesActivate(series);
+        } else {
+          // if there are no active data series, unset entire active state
           chart.clearActive();
         }
 
-        // container.call(chart);
         chart.render();
       };
 
@@ -13425,15 +13594,14 @@ var timer = new Date();
 
       //------------------------------------------------------------
       // Process data
-timer = (new Date()).valueOf();
 
-      function setXTickValues(groupData) {
+      function setGroupLabels(groupData) {
         // Get simple array of group labels for ticks
-        xTickValues = groupData.map(function(group) {
+        groupLabels = groupData.map(function(group) {
             return group.label;
           });
-        xTickCount = xTickValues.length;
-        hasGroupLabels = xTickCount > 0;
+        groupCount = groupLabels.length;
+        hasGroupLabels = groupCount > 0;
       }
 
       // add series index to each data point for reference
@@ -13452,7 +13620,7 @@ timer = (new Date()).valueOf();
         }
 
         series.seriesIndex = s;
-
+        series.key = series.key || strings.noLabel;
         series.total = d3.sum(series._values, function(value, v) {
           return value.y;
         });
@@ -13481,7 +13649,7 @@ timer = (new Date()).valueOf();
                 'x': value.x,
                 'y': value.y,
                 'y0': value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0),
-                'active': typeof series.active !== 'undefined' ? series.active : ''
+                'active': typeof value.active !== 'undefined' ? value.active : ''
               };
             });
 
@@ -13494,13 +13662,11 @@ timer = (new Date()).valueOf();
       if (displayNoData(modelData)) {
         return chart;
       }
-console.log((new Date()).valueOf() - timer);
-timer = (new Date()).valueOf();
 
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (xIsOrdinal) {
+      if (hasGroupData) {
 
         groupData.forEach(function(group, g) {
           var label = typeof group.label === 'undefined' || group.label === '' ?
@@ -13556,11 +13722,11 @@ timer = (new Date()).valueOf();
           });
       });
 
-      setXTickValues(groupData);
+      setGroupLabels(groupData);
 
       if (hideEmptyGroups) {
         // build a trimmed array for active group only labels
-        setXTickValues(groupData.filter(function(group, g) {
+        setGroupLabels(groupData.filter(function(group, g) {
             return group._height !== 0;
         }));
 
@@ -13594,13 +13760,13 @@ timer = (new Date()).valueOf();
 
       // Configure axis format functions
       if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(xTickValues);
+        xDateFormat = utility.getDateFormat(groupLabels);
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {
-        //TODO: isn't there always xTickValues?
-        // var group = xIsOrdinal && hasGroupLabels ? xTickValues[i] : d;
-        var group = xTickValues[i];
+        //TODO: isn't there always groupLabels?
+        // var group = hasGroupLabels ? groupLabels[i] : d;
+        var group = groupLabels[i];
         var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
         return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
@@ -13658,8 +13824,8 @@ timer = (new Date()).valueOf();
 
       wrap_entr.append('defs');
 
-      /* Container for scroll elements */
-      wrap_entr.append('g').attr('class', 'sc-scroll-background');
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
       var title_wrap = wrap.select('.sc-title-wrap');
@@ -13684,7 +13850,15 @@ timer = (new Date()).valueOf();
 
       if (scrollEnabled) {
         scroll(wrap, wrap_entr, scroll_wrap, xAxis);
+      } else {
+        wrap_entr.select('.sc-background-wrap')
+          .append('rect')
+            .attr('class', 'sc-background')
+            .attr('x', -margin.left)
+            .attr('y', -margin.top)
+            .attr('fill', 'rgba(215, 235, 255, 0.1)');
       }
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -13716,9 +13890,13 @@ timer = (new Date()).valueOf();
         // for grouped, baseDimension is width of bar plus width of one bar for gap
         var boundsWidth = state.stacked ? baseDimension : baseDimension * seriesCount + baseDimension,
             gap = baseDimension * (state.stacked ? 0.25 : 1),
-            minDimension = xTickCount * boundsWidth + gap;
+            minDimension = groupCount * boundsWidth + gap;
 
         wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
 
         //------------------------------------------------------------
         // Title & Legend & Controls
@@ -13852,6 +14030,7 @@ timer = (new Date()).valueOf();
           .data([modelData])
           .call(model);
 
+
         //------------------------------------------------------------
         // Axes
 
@@ -13886,7 +14065,7 @@ timer = (new Date()).valueOf();
         // X-Axis
         xAxis
           .margin(innerMargin)
-          .ticks(xTickCount);
+          .ticks(groupCount);
         trans = innerMargin.left + ',';
         trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
@@ -13923,9 +14102,9 @@ timer = (new Date()).valueOf();
           .transition()
             .call(model);
 
+
         //------------------------------------------------------------
         // Final repositioning
-
 
         trans = (vertical || xAxis.orient() === 'left' ? 0 : innerWidth) + ',';
         trans += (vertical && xAxis.orient() === 'bottom' ? innerHeight + 2 : -2);
@@ -13939,6 +14118,7 @@ timer = (new Date()).valueOf();
 
         scroll_wrap
           .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+
 
         //------------------------------------------------------------
         // Enable scrolling
@@ -13971,14 +14151,13 @@ timer = (new Date()).valueOf();
           // initial call to zoom in case of scrolled bars on window resize
           scroll.panHandler()();
         }
+
       };
 
       //============================================================
-timer = (new Date()).valueOf();
 
       chart.render();
-console.log((new Date()).valueOf() - timer);
-timer = (new Date()).valueOf();
+
       //============================================================
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
@@ -13986,32 +14165,24 @@ timer = (new Date()).valueOf();
       //TODO: change legendClick to menuClick
       legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
-
-        // on legend click, clear active cell state
-        series.active = 'inactive';
-        series.values.forEach(function(d) {
-          d.active = 'inactive';
-        });
-
-        // if (hideEmptyGroups) {
-        //   data.forEach(function(m, j) {
-        //     m._values.forEach(function(v, k) {
-        //       v.disabled = (k === i ? series.disabled : v.disabled);
-        //     });
-        //   });
-        // }
-
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.forEach(function(d) {
             d.disabled = false;
           });
         }
+        state.disabled = data.map(function(d) { return !!d.disabled; });
 
+        // on legend click, clear active cell state
+        series.active = 'inactive';
+        series.values.forEach(function(d) {
+          d.active = 'inactive';
+        });
         // if there are no active data series, unset active state
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
           chart.clearActive();
         }
+        state.active = data.map(function(d) { return !!d.active; });
 
         chart.update();
         dispatch.call('stateChange', this, state);
@@ -14039,8 +14210,10 @@ timer = (new Date()).valueOf();
 
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
-          // set the group rather than pass entire groupData
-          eo.group = groupData[eo.groupIndex];
+          if (hasGroupLabels) {
+            // set the group rather than pass entire groupData
+            eo.group = groupData[eo.groupIndex];
+          }
           tt = showTooltip(eo, that.parentNode, properties);
         }
       });
@@ -14069,13 +14242,13 @@ timer = (new Date()).valueOf();
         if (typeof eo.active !== 'undefined') {
           data.forEach(function(series, i) {
             series.active = eo.active[i] ? 'active' : 'inactive';
-            series.values.forEach(function(d) {
-              d.active = series.active;
+            series.values.forEach(function(value) {
+              value.active = series.active;
             });
           });
           state.active = eo.active;
           // if there are no active data series, unset active state
-          if (!data.filter(function(d) { return d.active === 'active'; }).length) {
+          if (!data.filter(function(series) { return series.active === 'active'; }).length) {
             chart.clearActive();
           }
         }
@@ -14089,7 +14262,6 @@ timer = (new Date()).valueOf();
       });
 
       dispatch.on('chartClick', function() {
-        console.log('chartClick');
         //dispatch.call('tooltipHide', this);
         if (controls.enabled()) {
           controls.dispatch.call('closeMenu', this);
@@ -14100,11 +14272,17 @@ timer = (new Date()).valueOf();
       });
 
       model.dispatch.on('elementClick', function(eo) {
-        eo.group = groupData[eo.groupIndex];
+        if (hasGroupLabels) {
+          eo.group = groupData[eo.groupIndex];
+        }
         dispatch.call('chartClick', this);
-        seriesClick(data, eo, chart, xTickValues);
+        seriesClick(data, eo, chart, groupLabels);
       });
 
+      container.on('click', function() {
+        d3.event.stopPropagation();
+        dispatch.call('chartClick', this);
+      });
     });
 
     return chart;
