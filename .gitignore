@@ -3,12 +3,12 @@
 node_modules
 npm-debug.log
 devdocs
-d3.*
-d3v4.*
+d3-sugar.*
 d3fc-rebind.*
 topojson.*
 examples/css/sucrose.*
 examples/data/geo/natural_earth
+examples/js/d3.*
 examples/js/jquery.*
 examples/js/jquerymy.*
 examples/js/less.*

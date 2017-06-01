@@ -9,12 +9,12 @@ export default {
   format: 'umd',
   // node
   external: [
-    'd3v4',
+    'd3-sugar',
     'd3fc-rebind',
   ],
   // browser
   globals: {
-    'd3v4': 'd3v4',
+    'd3-sugar': 'd3-sugar',
     'd3fc-rebind': 'fc',
   },
   // sourceMap: 'inline',
@@ -25,7 +25,7 @@ export default {
       values: {
         ENV_DEV: (process.env.DEV || true),
         ENV_BUILD: 'sgr',
-        '\'d3\'': '\'d3v4\'',
+        '\'d3\'': '\'d3-sugar\'',
       },
     }),
     eslint(),

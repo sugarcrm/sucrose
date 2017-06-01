@@ -31,7 +31,6 @@ data/gauge_data_color.json
 data/globe_data.json
 data/line_data.json
 data/line_data_bar.json
-data/line_data_color.json
 data/line_raw_data.json
 data/line_single_bar.json
 data/line_single_data.json

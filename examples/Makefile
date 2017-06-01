@@ -75,18 +75,18 @@ HEADER = $(shell cat ../src/header)
 # - install sucrose example application [main]
 prod: npm-prod
 
-# - copy sucrose and dependency files and generate index
-install-post: all index-prod
-
 # - install production npm packages
 npm-prod:
-	npm i --production
+	npm install --production
+
+# - copy sucrose and dependency files and generate index
+install-post: all index-prod
 
 # - copy sucrose and dependency files
 all: sucrose dependencies
 
 # - remove sucrose and dependency files
-clean: clean-sucrose clean-dependencies
+clean: clean-sucrose clean-dependencies clean-dev clean-examples
 
 # - [*] copy sucrose js and css files
 sucrose: clean-sucrose
@@ -133,7 +133,7 @@ dev: npm-dev examples index-dev
 
 # - install development npm packages and copy files
 npm-dev:
-	npm i
+	npm install
 	cp ../node_modules/less/dist/less.min.js js/less.min.js
 
 # - remove development environment
@@ -141,9 +141,7 @@ clean-dev: index-prod
 	rm -f js/less.min.js
 
 # - build all js, css and library files
-examples: clean-examples js css lib
-	# cd .. && make scr css
-	make lib
+examples: js css lib
 
 # - remove all built js, css and library files
 clean-examples: clean-js clean-css clean-lib

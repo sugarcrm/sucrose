@@ -21,7 +21,7 @@
       <svg class="sucrose sc-chart"></svg>
     </div>
 
-    <script src="d3v4.min.js"></script>
+    <script src="d3.min.js"></script>
     <script src="d3fc-rebind.min.js"></script>
     <!-- {{TopoJSON}} -->
     <script src="sucrose.min.js"></script>
@@ -42,9 +42,6 @@ var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 window.onload = function () {
 
     // remap d3v4 to d3
-    if (typeof d3v4 !== 'undefined' && typeof d3 === 'undefined') {
-      var d3 = d3v4;
-    }
 
     // apply configuration
     configure();

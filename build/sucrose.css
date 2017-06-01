@@ -536,6 +536,7 @@ text.sc-pie-hole-label {
 .sc-line.hover path {
   stroke-width: 6px;
 }
+.sc-scatter .sc-series .sc-point.sc-active,
 .sc-scatter .sc-series .sc-point.hover,
 .sc-series .sc-point.hover {
   stroke-opacity: .3 !important;
@@ -557,8 +558,11 @@ text.sc-pie-hole-label {
   pointer-events: none;
 }
 .sc-series .sc-point.hover {
-  stroke-width: 12px;
+  stroke-width: 10px;
   stroke-opacity: 0.3;
+}
+.sc-series .sc-point.sc-active {
+  stroke-width: 6px;
 }
 .sc-scatter .sc-point.hover {
   fill-opacity: 1;

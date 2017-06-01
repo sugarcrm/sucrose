@@ -31,7 +31,7 @@ HEADER = $(shell cat src/header)
 
 # - install sucrose & production npm packages [main]
 prod:
-	npm i --production
+	npm install --production
 
 #------------
 # DEVELOPMENT
@@ -41,7 +41,7 @@ dev: npm-dev all
 
 # - install development npm packages
 npm-dev:
-	npm i
+	npm install
 
 # - compile sucrose javascript and css files
 all: scr css
@@ -80,7 +80,7 @@ sucrose.min.js: sucrose.js
 clean-js:
 	rm -f ./build/sucrose.js ./build/sucrose.min.js
 	rm -f ./build/d3.js ./build/d3.min.js
-	rm -f ./build/d3v4.js ./build/d3v4.min.js
+	rm -f ./build/d3-sugar.js ./build/d3-sugar.min.js
 
 
 # D3 BUILD TARGETS
@@ -91,9 +91,20 @@ D3 = d3
 d3-scr: D3 = d3
 
 # - build custom D3 bundle with just required components for Sugar
-d3-sgr: D3 = d3v4
+d3-sgr: D3 = d3-sugar
 
-d3-scr d3-sgr: d3-minify
+d3-scr d3-sgr:
+	@if [ $(D3) = d3 ]; then make d3-sucrose; else make d3-sugar; fi
+	npm install
+	make d3-minify
+
+d3-sucrose:
+	sed -i '' -e 's/"@sugarcrm\/sucrose"/"sucrose"/g' ./package.json
+	sed -i '' -e 's/"@sugarcrm\/d3-sugar"/"d3"/g' ./package.json
+
+d3-sugar:
+	sed -i '' -e 's/"sucrose"/"@sugarcrm\/sucrose"/g' ./package.json
+	sed -i '' -e 's/"d3"/"@sugarcrm\/d3-sugar"/g' ./package.json
 
 # - [*] build the D3 library js file with components for target
 d3-bundle:
@@ -119,7 +130,7 @@ d3-all:
 # STYLESHEETS
 
 # - [*] compile and compress sucrose library LESS source files into CSS
-css: clean-css sucrose.min.css
+css: sucrose.min.css
 
 # - compile LESS files with lessc
 sucrose.css: $(CSS_FILES)
@@ -139,21 +150,18 @@ clean-css:
 #---------
 # EXAMPLES
 
+# - build and copy the sucrose js and css files to the example application
+examples: scr css
+	cd examples && make sucrose && make dependencies
+
 # - install production package dependencies for sucrose library and generate production examples application
-examples-prod: npm-prod
-	cd examples && make install-prod
+examples-prod: prod
+	cd examples && make prod
 
 # - install development package dependencies for sucrose library and generate development examples application
 examples-dev: npm-dev
-	cd examples && make install-dev
+	cd examples && make dev
 
-# - build and copy the sucrose library to the example application
-es examples-scr: scr
-	cd examples && make sucrose
-
-# - build and copy the sucrose js and css files to the example application
-examples-sucrose: scr css scr-d3
-	cd examples && make sucrose && make dependencies
 
 #----
 # RUN

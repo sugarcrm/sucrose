@@ -23,7 +23,7 @@ function generatePackage(e) {
 
   var includes = [
     $.get({url: 'tpl/index.html', dataType: 'text'}),
-    $.get({url: 'js/d3v4.min.js', dataType: 'text'}),
+    $.get({url: 'js/d3.min.js', dataType: 'text'}),
     $.get({url: 'js/d3fc-rebind.min.js', dataType: 'text'}),
     $.get({url: 'js/sucrose.min.js', dataType: 'text'}),
     $.get({url: 'css/sucrose.min.css', dataType: 'text'})
@@ -63,7 +63,7 @@ function generatePackage(e) {
 
       // add files to zip
       zip.file('index.html', indexTemplate);
-      zip.file('d3v4.min.js', files[1]);
+      zip.file('d3.min.js', files[1]);
       zip.file('d3fc-rebind.min.js', files[2]);
       zip.file('sucrose.min.js', files[3]);
       zip.file('sucrose.min.css', files[4]);
