@@ -8,7 +8,7 @@
 d3 = 'default' in d3 ? d3['default'] : d3;
 fc = 'default' in fc ? fc['default'] : fc;
 
-var version = "0.6.0";
+var version = "0.6.1";
 
 /*-------------------
       UTILITIES
