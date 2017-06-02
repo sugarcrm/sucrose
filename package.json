@@ -36,7 +36,7 @@
     "lintcss": "stylelint \"src/less/**/*.less\" --syntax less"
   },
   "dependencies": {
-    "d3": "^4.9.1",
+    "d3": "4.9.1",
     "d3fc-rebind": "4.1.1",
     "topojson": "^1.6.26"
   },

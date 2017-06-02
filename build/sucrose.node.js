@@ -4,7 +4,14 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 var sucrose = require('./sucrose.js');
 
-exports.version = sucrose.version;
+var version = "0.6.0";
+
+//INFO: why doesn't require('sucrose') work?
+//  index.js is declared as module (jsnext:main) in package.json
+//  for module aware bundlers. The UMD main entry point for require
+//  and node is build/sucrose.node.js
+
+exports.version = version;
 exports.development = sucrose.development;
 exports.utility = sucrose.utility;
 exports.tooltip = sucrose.tooltip;

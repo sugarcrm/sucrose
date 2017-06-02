@@ -6,6 +6,7 @@ devdocs
 d3-sugar.*
 d3fc-rebind.*
 topojson.*
+package.backup.json
 examples/css/sucrose.*
 examples/data/geo/natural_earth
 examples/js/d3.*

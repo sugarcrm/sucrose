@@ -94,17 +94,9 @@ d3-scr: D3 = d3
 d3-sgr: D3 = d3-sugar
 
 d3-scr d3-sgr:
-	@if [ $(D3) = d3 ]; then make d3-sucrose; else make d3-sugar; fi
+	@if [ $(D3) = d3 ]; then node pack.scr.js; else node pack.sgr.js; fi
 	npm install
 	make d3-minify
-
-d3-sucrose:
-	sed -i '' -e 's/"@sugarcrm\/sucrose"/"sucrose"/g' ./package.json
-	sed -i '' -e 's/"@sugarcrm\/d3-sugar"/"d3"/g' ./package.json
-
-d3-sugar:
-	sed -i '' -e 's/"sucrose"/"@sugarcrm\/sucrose"/g' ./package.json
-	sed -i '' -e 's/"d3"/"@sugarcrm\/d3-sugar"/g' ./package.json
 
 # - [*] build the D3 library js file with components for target
 d3-bundle:
