@@ -14,7 +14,7 @@ export default {
   ],
   // browser
   globals: {
-    '@sugarcrm/d3-sugar': 'd3-sugar',
+    '@sugarcrm/d3-sugar': 'd3sugar',
     'd3fc-rebind': 'fc',
   },
   // sourceMap: 'inline',

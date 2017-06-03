@@ -22,8 +22,8 @@ HEADER = $(shell cat src/header)
 
 .PHONY: prod dev npm-dev all scr sgr sucrose css \
 	clean clean-js clean-css \
-	d3-scr d3-sgr d3-bundle d3-minify d3-all \
-	examples-prod examples-dev examples-sucrose es \
+	d3-scr d3-sgr d3-package d3-bundle d3-minify d3-all \
+	examples examples-prod examples-dev \
 	pack nodes grade help list md
 
 #-----------
@@ -65,7 +65,6 @@ scr sgr: sucrose
 
 sucrose: sucrose.min.js
 
-
 # - [*] build the main sucrose library js file with components for target
 sucrose.js:
 	rm -f ./build/$@
@@ -93,15 +92,16 @@ d3-scr: D3 = d3
 # - build custom D3 bundle with just required components for Sugar
 d3-sgr: D3 = d3-sugar
 
-d3-scr d3-sgr:
+d3-scr d3-sgr: d3-minify
+
+d3-package:
 	@if [ $(D3) = d3 ]; then node pack.scr.js; else node pack.sgr.js; fi
 	npm install
-	make d3-minify
 
 # - [*] build the D3 library js file with components for target
-d3-bundle:
+d3-bundle: d3-package
 	rm -f ./build/$(D3).js
-	rollup -c ./node_modules/d3/rollup.config.js -f umd -n $(D3) \
+	rollup -c ./node_modules/d3/rollup.config.js -f umd -n $(subst -,,$(D3)) \
 		-i ./src/d3-rebundle/index_$(D3).js -o ./build/$(D3).js \
 		--banner ";$(shell cd ./node_modules/d3 && preamble)"
 
