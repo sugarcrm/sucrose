@@ -9,11 +9,10 @@ fs.access(backupName, fs.constants.F_OK, function(err) {
     if (err) {
         fs.writeFileSync(backupName, JSON.stringify(package, null, '  '));
     }
-    package.name = "@sugarcrm/sucrose-sugar";
+    package.name = '@sugarcrm/sucrose-sugar';
     package.dependencies['@sugarcrm/d3-sugar'] = package.dependencies.d3;
     delete package.dependencies.d3;
     delete package.dependencies.topojson;
     fs.writeFileSync(packageName, JSON.stringify(package, null, '  '));
     console.log('Created package backup');
 });
-

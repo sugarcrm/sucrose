@@ -24,7 +24,7 @@ HEADER = $(shell cat src/header)
 	clean clean-js clean-css \
 	d3-scr d3-sgr d3-package d3-bundle d3-minify d3-all \
 	examples examples-prod examples-dev \
-	pack nodes grade help list md
+	pack sugar help list md
 
 #-----------
 # PRODUCTION
@@ -43,10 +43,10 @@ dev: npm-dev all
 npm-dev:
 	npm install
 
-# - compile sucrose javascript and css files
+# - compile sucrose Js and Css files
 all: scr css
 
-# - remove sucrose javascript and css files
+# - remove sucrose Js and Css files
 clean: clean-js clean-css
 
 
@@ -54,28 +54,28 @@ clean: clean-js clean-css
 
 TAR = scr
 
-# - build full sucrose library and D3 custom bundle
+# - [*] build full sucrose library and D3 custom bundle
 scr: TAR = scr
 
-# - build selected sucrose modules and D3 custom bundle for Sugar
+# - [*] build selected sucrose modules and D3 custom bundle for Sugar
 sgr: TAR = sgr
 
-scr sgr: sucrose
-	make d3-$(TAR)
+scr sgr: pack sucrose d3
 
+# - [*] build default sucrose Js library
 sucrose: sucrose.min.js
 
-# - [*] build the main sucrose library js file with components for target
+# - build the sucrose Js library with components for target
 sucrose.js:
 	rm -f ./build/$@
 	rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false --banner "$(HEADER)"
 
-# - [*] minify the main library js file
+# - build then minify the sucrose Js library
 sucrose.min.js: sucrose.js
 	rm -f ./build/$@
 	uglifyjs --preamble "$(HEADER)" build/$^ -c negate_iife=false -m -o build/$@
 
-# - remove the main library js files
+# - remove all sucrose and D3 Js files
 clean-js:
 	rm -f ./build/sucrose.js ./build/sucrose.min.js
 	rm -f ./build/d3.js ./build/d3.min.js
@@ -86,6 +86,10 @@ clean-js:
 
 D3 = d3
 
+# - [*] build default D3 bundle
+d3:
+	make d3-$(TAR)
+
 # - build custom D3 bundle with just required components for Sucrose
 d3-scr: D3 = d3
 
@@ -94,18 +98,14 @@ d3-sgr: D3 = d3-sugar
 
 d3-scr d3-sgr: d3-minify
 
-d3-package:
-	@if [ $(D3) = d3 ]; then node pack.scr.js; else node pack.sgr.js; fi
-	npm install
-
-# - [*] build the D3 library js file with components for target
-d3-bundle: d3-package
+# - build the D3 library Js file with components for target
+d3-bundle:
 	rm -f ./build/$(D3).js
 	rollup -c ./node_modules/d3/rollup.config.js -f umd -n $(subst -,,$(D3)) \
 		-i ./src/d3-rebundle/index_$(D3).js -o ./build/$(D3).js \
 		--banner ";$(shell cd ./node_modules/d3 && preamble)"
 
-# - [*] build the D3 library js file with components for target
+# - build then minify the D3 custom bundle
 d3-minify: d3-bundle
 	rm -f ./build/$(D3).min.js
 	uglifyjs --preamble ";$(shell cd ./node_modules/d3 && preamble)" \
@@ -121,7 +121,7 @@ d3-all:
 
 # STYLESHEETS
 
-# - [*] compile and compress sucrose library LESS source files into CSS
+# - [*] compile and compress sucrose library LESS source files into Css
 css: sucrose.min.css
 
 # - compile LESS files with lessc
@@ -129,12 +129,12 @@ sucrose.css: $(CSS_FILES)
 	rm -f ./build/$@
 	@node $(CSS_COMPILER) $(CSS_FILES) --autoprefix | cat ./src/header - > ./build/$@
 
-# - minify CSS file with clean-css
+# - compile and then minify Css file
 sucrose.min.css: sucrose.css
 	rm -f ./build/$@
 	node $(CSS_MINIFIER) ./build/$^ | cat ./src/header - > ./build/$@
 
-# - remove the library CSS files
+# - remove sucrose Css files
 clean-css:
 	rm -f ./build/sucrose.css ./build/sucrose.min.css
 
@@ -142,15 +142,15 @@ clean-css:
 #---------
 # EXAMPLES
 
-# - build and copy the sucrose js and css files to the example application
+# - [*] build and copy the sucrose Js and Css files to the example application
 examples: scr css
 	cd examples && make sucrose && make dependencies
 
-# - install production package dependencies for sucrose library and generate production examples application
+# - install production package dependencies for sucrose library and generate examples application
 examples-prod: prod
 	cd examples && make prod
 
-# - install development package dependencies for sucrose library and generate development examples application
+# - install development package dependencies for sucrose library and generate examples application
 examples-dev: npm-dev
 	cd examples && make dev
 
@@ -158,17 +158,22 @@ examples-dev: npm-dev
 #----
 # RUN
 
-# - create a js version of json package
-packs:
+# - compile a Node compliant entry file and create a js version of json package for sucrose
+pack:
+	node pack.$(TAR).js
 	npm run-script package
-
-# - compile a Node compliant entry file for sucrose
-nodes: packs
 	node rollup.node
+	npm install
 
-# - [*] run tape tests
-grade:
-	npm test
+# - publish the custom sugar build of sucrose
+sucrose-sugar:
+	git branch -D sugar
+	git checkout -b sugar
+	make sgr
+	git add --all
+	git commit -m "compile @sugarcrm/sucrose to $(VER)"
+	git push origin sugar -f
+	npm publish ./ --tag sugar
 
 
 #-----
