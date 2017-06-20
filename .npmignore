@@ -11,5 +11,4 @@ d3fc-rebind.*
 topojson.*
 dist/
 examples/
-src/
 test/
