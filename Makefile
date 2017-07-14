@@ -68,12 +68,14 @@ sucrose: sucrose.min.js
 # - build the sucrose Js library with components for target
 sucrose.js:
 	rm -f ./build/$@
-	rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false --banner "$(HEADER)"
+	# rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false --banner "$(HEADER)"
+	rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false | cat ./src/header - > ./build/$@
 
 # - build then minify the sucrose Js library
 sucrose.min.js: sucrose.js
 	rm -f ./build/$@
-	uglifyjs --preamble "$(HEADER)" build/$^ -c negate_iife=false -m -o build/$@
+	# uglifyjs --preamble "$(HEADER)" build/$^ -c negate_iife=false -m -o build/$@
+	uglifyjs build/$^ -c negate_iife=false -m | cat ./src/header - > ./build/$@
 
 # - remove all sucrose and D3 Js files
 clean-js:

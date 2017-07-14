@@ -5,7 +5,7 @@ import eslint from 'rollup-plugin-eslint';
 export default {
   moduleName: 'sucrose',
   entry: './src/main.js',
-  dest: './build/sucrose.js',
+  // dest: './build/sucrose.js',
   format: 'umd',
   // node
   external: [
