@@ -22,7 +22,7 @@ limitations under the License.
 d3 = 'default' in d3 ? d3['default'] : d3;
 fc = 'default' in fc ? fc['default'] : fc;
 
-var version = "0.6.4";
+var version = "0.6.5";
 
 /*-------------------
       UTILITIES
