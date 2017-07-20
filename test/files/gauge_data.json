@@ -1,0 +1,31 @@
+{
+  "properties": {
+    "title": "Test gauge chart",
+    "value": 6,
+    "values": [
+      {
+        "key": "Count",
+        "group": 1,
+        "value": 6
+      }
+    ]
+  },
+  "data": [
+    {
+      "key": "Range 1",
+      "y": 3
+    },
+    {
+      "key": "Range 2",
+      "y": 5
+    },
+    {
+      "key": "Range 3",
+      "y": 7
+    },
+    {
+      "key": "Range 4",
+      "y": 9
+    }
+  ]
+}
