@@ -20,7 +20,7 @@ export default function treeChart() {
       width = null,
       height = null,
       r = 6,
-      duration = 300,
+      duration = 0,
       zoomExtents = {'min': 0.25, 'max': 2},
       nodeSize = {'width': 100, 'height': 50},
       nodeImgPath = '../img/',
@@ -53,8 +53,7 @@ export default function treeChart() {
 
   //============================================================
 
-  function chart(selection)
-  {
+  function chart(selection) {
     selection.each(function(data) {
 
       var container = d3.select(this);
@@ -108,7 +107,7 @@ export default function treeChart() {
         .attr('class', 'sc-chart-background')
         .attr('width', availableSize.width)
         .attr('height', availableSize.height)
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+        .attr('transform', utility.translation(margin.left, margin.top))
         .style('fill', 'transparent');
       var backg = wrap.select('.sc-chart-background');
 
@@ -533,20 +532,17 @@ export default function treeChart() {
   //------------------------------------------------------------
 
   chart.dispatch = dispatch;
+  chart.options = utility.optionsFunc.bind(chart);
 
-  chart.color = function(_) {
-    if (!arguments.length) { return color; }
-    color = _;
+  chart.id = function(_) {
+    if (!arguments.length) { return id; }
+    id = _;
     return chart;
   };
-  chart.fill = function(_) {
-    if (!arguments.length) { return fill; }
-    fill = _;
-    return chart;
-  };
-  chart.useClass = function(_) {
-    if (!arguments.length) { return useClass; }
-    useClass = _;
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    margin = _;
     return chart;
   };
 
@@ -580,9 +576,19 @@ export default function treeChart() {
     return chart;
   };
 
-  chart.id = function(_) {
-    if (!arguments.length) { return id; }
-    id = _;
+  chart.color = function(_) {
+    if (!arguments.length) { return color; }
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) { return fill; }
+    fill = _;
+    return chart;
+  };
+  chart.useClass = function(_) {
+    if (!arguments.length) { return useClass; }
+    useClass = _;
     return chart;
   };
 
@@ -609,12 +615,6 @@ export default function treeChart() {
   chart.zoomCallback = function(_) {
     if (!arguments.length) { return zoomCallback; }
     zoomCallback = _;
-    return chart;
-  };
-
-  chart.margin = function(_) {
-    if (!arguments.length) { return margin; }
-    margin = _;
     return chart;
   };
 

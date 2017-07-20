@@ -23,7 +23,7 @@ export default function line() {
       interpolate = 'linear', // controls the line interpolation
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
-      duration = 300, // transition
+      duration = 0, // transition
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
       fill = color,
@@ -100,7 +100,7 @@ export default function line() {
       wrap_entr.append('g').attr('class', 'sc-scatter-wrap');
       var scatter_wrap = wrap.select('.sc-scatter-wrap');
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
 

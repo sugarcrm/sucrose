@@ -49,7 +49,7 @@ export default function scatter() {
       direction = 'ltr',
       clipEdge = false, // if true, masks points within x and y scale
       delay = 0,
-      duration = 300,
+      duration = 0,
       useVoronoi = true,
       clipVoronoi = true, // if true, masks each point with a circle... can turn off to slightly increase performance
       singlePoint = false,
@@ -193,7 +193,7 @@ export default function scatter() {
       var defs_entr = wrap_entr.append('defs');
 
       //set up the gradient constructor function
-      gradient = function(d, i) {
+      gradient = gradient || function(d, i) {
         return utility.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
@@ -205,7 +205,7 @@ export default function scatter() {
 
       wrap
         .classed('sc-single-point', singlePoint)
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        .attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
 
@@ -735,6 +735,12 @@ export default function scatter() {
   model.singlePoint = function(_) {
     if (!arguments.length) { return singlePoint; }
     singlePoint = _;
+    return model;
+  };
+
+  model.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
     return model;
   };
 

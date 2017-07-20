@@ -11,7 +11,7 @@ import paretoChart from './paretoChart.js';
 import pieChart from './pieChart.js';
 import treeChart from './treeChart.js';
 
-const charts = {
+var charts = {
     bubbleChart: bubbleChart,
     funnelChart: funnelChart,
     gaugeChart: gaugeChart,

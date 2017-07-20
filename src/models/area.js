@@ -2,7 +2,7 @@ import d3 from 'd3';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 
-export default function stackearea() {
+export default function area() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -18,7 +18,7 @@ export default function stackearea() {
       y = d3.scaleLinear(), //can be accessed via model.yScale()
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
-      duration = 300, // transition
+      duration = 0, // transition
       locality = utility.buildLocality(),
       direction = 'ltr',
       style = 'stack',
@@ -72,7 +72,7 @@ export default function stackearea() {
       var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut][stackOrderIndex];
 
       // gradient constructor function
-      gradient = function(d, i, p) {
+      gradient = gradient || function(d, i, p) {
         return utility.colorLinearGradient(d, model.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
@@ -122,6 +122,8 @@ export default function stackearea() {
         s.key = chartData[i].key;
         s.seriesIndex = chartData[i].seriesIndex;
         s.total = chartData[i].total;
+        s.color = chartData[i].color;
+        s.class = chartData[i].classes;
         s.forEach(function(p, j) {
           p.seriesIndex = chartData[i].seriesIndex;
           p.si0 = i - 1;
@@ -179,16 +181,16 @@ export default function stackearea() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-stackedarea');
-      var wrap = container.select('.sc-wrap.sc-stackedarea').merge(wrap_entr);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-area').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-area');
+      var wrap = container.select('.sc-wrap.sc-area').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
 
@@ -212,10 +214,10 @@ export default function stackearea() {
       var series = group_wrap.selectAll('.sc-series').merge(series_entr);
 
       series
-        .classed('hover', function(d) { return d.hover; })
+        .attr('fill', fill)
+        .attr('stroke', color)
         .attr('class', classes)
-        .attr('fill', color)
-        .attr('stroke', color);
+        .classed('hover', function(d) { return d.hover; });
       series
         .transition(tran)
           .style('stroke-opacity', 1)

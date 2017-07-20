@@ -11,12 +11,12 @@ export default function funnel() {
       width = 960,
       height = 500,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getKey = function(d) { return d.key; },
-      getValue = function(d, i) { return d.value; },
-      getCount = function(d, i) { return d.count; },
-      fmtKey = function(d) { return getKey(d.series || d); },
-      fmtValue = function(d) { return getValue(d.series || d); },
-      fmtCount = function(d) { return (' (' + getCount(d.series || d) + ')').replace(' ()', ''); },
+      getKey = function(d) { return d.series ? d.series.key : d.key; },
+      getValue = function(d, i) { return d.series ? d.series.value : d.value; },
+      getCount = function(d, i) { return d.series ? d.series.count : d.count; },
+      fmtKey = function(d) { return getKey(d); },
+      fmtValue = function(d) { return getValue(d); },
+      fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -29,7 +29,7 @@ export default function funnel() {
 
   var r = 0.3, // ratio of width to height (or slope)
       y = d3.scaleLinear(),
-      yDomain,
+      yDomain = null,
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
       wrapLabels = true,
       minLabelWidth = 75,
@@ -142,7 +142,7 @@ export default function funnel() {
 
       var defs_entr = wrap_entr.append('defs');
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
       // Definitions
@@ -526,8 +526,7 @@ export default function funnel() {
         while ((word = words.pop())) {
           line.push(word);
           lbl.text(line.join(' '));
-
-          if (lbl.node().getComputedTextLength() > maxWidth && line.length > 1) {
+          if (lbl.node().getBoundingClientRect().width > maxWidth && line.length > 1) {
             line.pop();
             lbl.text(line.join(' '));
             line = [word];
@@ -763,9 +762,7 @@ export default function funnel() {
       }
 
       function fmtDirection(d) {
-        var m = utility.isRTLChar(d.slice(-1)),
-            dir = m ? 'rtl' : 'ltr';
-        return 'ltr';
+        return utility.isRTLChar(d.slice(-1)) ? 'rtl' : 'ltr';
       }
 
       function fmtLabel(txt, classes, dy, anchor, fill) {
@@ -775,7 +772,9 @@ export default function funnel() {
           .attr('dy', dy + 'em')
           .attr('class', classes)
           .attr('direction', function() {
-            return fmtDirection(txt.text());
+            return 'ltr';
+            //TODO: should labels change sides in RTL?
+            // return fmtDirection(txt.text());
           })
           .style('pointer-events', 'none')
           .style('text-anchor', anchor)

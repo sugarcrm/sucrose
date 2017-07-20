@@ -1,6 +1,6 @@
 import d3 from 'd3';
 
-const transform = function(json, chartType, barType) {
+var transform = function(json, chartType, barType) {
   var data = [],
       seriesData,
       properties = json.properties ? Array.isArray(json.properties) ? json.properties[0] : json.properties : {},

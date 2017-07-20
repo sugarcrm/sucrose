@@ -23,7 +23,7 @@ export default function gauge() {
       direction = 'ltr',
       clipEdge = true,
       delay = 0,
-      duration = 720,
+      duration = 0,
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
       fill = color,
@@ -50,7 +50,6 @@ export default function gauge() {
   // Update model
 
   function model(selection) {
-
     selection.each(function(data) {
 
       var availableWidth = width - margin.left - margin.right,
@@ -58,7 +57,7 @@ export default function gauge() {
           container = d3.select(this);
 
       //set up the gradient constructor function
-      gradient = function(d, i) {
+      gradient = gradient || function(d, i) {
         var params = {x: 0, y: 0, r: radius, s: ringWidth / 100, u: 'userSpaceOnUse'};
         return utility.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
       };

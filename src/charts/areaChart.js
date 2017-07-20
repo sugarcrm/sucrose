@@ -2,10 +2,10 @@ import d3 from 'd3';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import headers from '../models/headers.js';
 import area from '../models/area.js';
 import line from '../models/line.js';
 import axis from '../models/axis.js';
-import menu from '../models/menu.js';
 
 export default function areaChart() {
 
@@ -16,25 +16,28 @@ export default function areaChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showControls = false,
-      showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
 
   var pointRadius = 3;
+
+  var dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  var tooltipContent = function(eo, properties) {
+        var key = eo.seriesKey;
+        var yIsCurrency = properties.yDataType === 'currency';
+        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
+        return '<p>' + key + ': ' + y + '</p>';
+      };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
@@ -58,23 +61,23 @@ export default function areaChart() {
   //------------------------------------------------------------
 
   // Chart components
-  var model = area().clipEdge(true);
+  var model = area();
+  var header = headers();
   var xAxis = axis();
   var yAxis = axis();
-  var controls = menu();
-  var legend = menu();
-  var guide = line().duration(0);
+  var guide = line();
 
   var tt = null,
       guidetips = null;
 
-  var tooltipContent = function(eo, properties) {
-        var key = eo.seriesKey;
-        var yIsCurrency = properties.yDataType === 'currency';
-        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
-        return '<p>' + key + ': ' + y + '</p>';
-      };
-
+  model
+    .clipEdge(true);
+  header
+    .showTitle(true)
+    .showControls(false)
+    .showLegend(true);
+  guide
+    .duration(0);
 
   //============================================================
 
@@ -95,14 +98,14 @@ export default function areaChart() {
       var availableWidth = width,
           availableHeight = height;
 
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
+
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
-
-      var xIsDatetime = properties.xDataType === 'datetime' || false,
-          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
           seriesCount = 0,
@@ -123,6 +126,9 @@ export default function areaChart() {
         {key: 'Stream', disabled: model.offset() !== 'wiggle'},
         {key: 'Expanded', disabled: model.offset() !== 'expand'}
       ];
+
+      var x,
+          y;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -272,9 +278,6 @@ export default function areaChart() {
         return yValueFormat(d, i, null, yIsCurrency, 2);
       };
 
-      // Set title display option
-      showTitle = showTitle && properties.title;
-
 
       //------------------------------------------------------------
       // State persistence model
@@ -285,6 +288,12 @@ export default function areaChart() {
 
       //------------------------------------------------------------
       // Setup Scales and Axes
+
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
 
       model
         .xDomain(null)  //?why null?
@@ -334,7 +343,6 @@ export default function areaChart() {
       var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
       var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
@@ -345,19 +353,17 @@ export default function areaChart() {
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-guide-wrap');
       var guide_wrap = wrap.select('.sc-guide-wrap');
 
-      wrap_entr.select('.sc-background-wrap')
-        .append('rect')
-          .attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', 'rgba(215, 235, 255, 0.1)');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
 
 
       //------------------------------------------------------------
@@ -368,7 +374,11 @@ export default function areaChart() {
         // Chart layout variables
         var renderWidth, renderHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
+
+        var xpos = 0,
+            ypos = 0;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -383,118 +393,27 @@ export default function areaChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        xTickMaxWidth = Math.max(availableWidth * 0.2, 75);
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
+        xTickMaxWidth = Math.max(availableWidth * 0.2, 75);
 
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
-            widthRatio = 0,
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
-            legendHeight = 0,
-            trans = '',
-            xpos = 0,
-            ypos = 0;
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        title_wrap.select('.sc-title').remove();
+        container.call(header);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
+        innerMargin.top += headerHeight;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showControls) {
-          controls
-            .id('controls_' + model.id())
-            .strings(strings.controls)
-            .color(['#444'])
-            .align('left')
-            .height(availableHeight - headerHeight);
-          controls_wrap
-            .datum(controlsData)
-            .call(controls);
-
-          maxControlsWidth = controls.calcMaxWidth();
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + model.id())
-            .strings(strings.legend)
-            .align('right')
-            .height(availableHeight - headerHeight);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-
-          maxLegendWidth = legend.calcMaxWidth();
-        }
-
-        // calculate proportional available space
-        widthRatio = availableWidth / (maxControlsWidth + maxLegendWidth);
-        maxControlsWidth = Math.floor(maxControlsWidth * widthRatio);
-        maxLegendWidth = Math.floor(maxLegendWidth * widthRatio);
-
-        if (showControls) {
-          controls
-            .arrange(maxControlsWidth);
-          maxLegendWidth = availableWidth - controls.width();
-        }
-
-        if (showLegend) {
-          legend
-            .arrange(maxLegendWidth);
-          maxControlsWidth = availableWidth - legend.width();
-        }
-
-        if (showControls) {
-          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
-          ypos = showTitle ? titleBBox.height : - controls.margin().top;
-          controls_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          controlsHeight = controls.height();
-        }
-
-        if (showLegend) {
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
-          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
-          ypos = titleBBox.height;
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = 0 - legend.margin().top;
-          }
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          legendHeight = legendTop ? 12 : legend.height();
-        }
-
-        // Recalc inner margins based on legend and control height
-        headerHeight += Math.max(controlsHeight, legendHeight);
-        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -660,21 +579,20 @@ export default function areaChart() {
 
         innerMargin.top += headerHeight;
 
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xpos = innerMargin.left;
+        ypos = innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
-        trans += innerMargin.top;
+        xpos = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth);
+        ypos = innerMargin.top;
         yAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + ',' + innerMargin.top;
         model_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top));
         guide_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top));
 
       };
 
@@ -686,9 +604,8 @@ export default function areaChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(series, i) {
+      header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
-        series.active = 'inactive';
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
@@ -698,11 +615,14 @@ export default function areaChart() {
         }
         state.disabled = data.map(function(d) { return !!d.disabled; });
 
+        // on legend click, clear active cell state
+        series.active = 'inactive';
+
         chart.update();
         dispatch.call('stateChange', this, state);
       });
 
-      controls.dispatch.on('legendClick', function(control, i) {
+      header.controls.dispatch.on('legendClick', function(control, i) {
         //if the option is currently enabled (i.e., selected)
         if (!control.disabled) {
           return;
@@ -791,11 +711,11 @@ export default function areaChart() {
       });
 
       dispatch.on('chartClick', function() {
-        if (controls.enabled()) {
-          controls.dispatch.call('closeMenu', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
         }
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -803,6 +723,7 @@ export default function areaChart() {
         d3.event.stopPropagation();
         dispatch.call('chartClick', this);
       });
+
     });
 
     return chart;
@@ -832,13 +753,15 @@ export default function areaChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.area = model;
-  chart.legend = legend;
-  chart.controls = controls;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.options = utility.optionsFunc.bind(chart);
 
-  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'offset', 'order', 'style');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -889,8 +812,8 @@ export default function areaChart() {
     // don't enable this since controls get a custom function
     // controls.color(color);
     // controls.classes(classes);
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -914,24 +837,6 @@ export default function areaChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showControls = function(_) {
-    if (!arguments.length) { return showControls; }
-    showControls = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -961,6 +866,7 @@ export default function areaChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -970,8 +876,7 @@ export default function areaChart() {
     model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
-    legend.direction(_);
-    controls.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -989,6 +894,12 @@ export default function areaChart() {
     return chart;
   };
 
+  chart.pointRadius = function(_) {
+    if (!arguments.length) { return pointRadius; }
+    pointRadius = _;
+    return chart;
+  };
+
   chart.xValueFormat = function(_) {
     if (!arguments.length) {
       return xValueFormat;
@@ -1002,12 +913,6 @@ export default function areaChart() {
       return yValueFormat;
     }
     yValueFormat = _;
-    return chart;
-  };
-
-  chart.pointRadius = function(_) {
-    if (!arguments.length) { return pointRadius; }
-    pointRadius = _;
     return chart;
   };
 

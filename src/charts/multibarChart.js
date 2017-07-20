@@ -2,9 +2,9 @@ import d3 from 'd3';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import headers from '../models/headers.js';
 import multibar from '../models/multibar.js';
 import axis from '../models/axis.js';
-import menu from '../models/menu.js';
 import scroller from '../models/scroller.js';
 
 export default function multibarChart() {
@@ -16,28 +16,24 @@ export default function multibarChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showControls = false,
-      showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
+
+  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   var vertical = true,
       scrollEnabled = true,
-      overflowHandler = function(d) { return; },
-      hideEmptyGroups = true;
+      hideEmptyGroups = true,
+      overflowHandler = function(d) { return; };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
@@ -62,10 +58,9 @@ export default function multibarChart() {
 
   // Chart components
   var model = multibar();
+  var header = headers();
   var xAxis = axis();
   var yAxis = axis();
-  var controls = menu();
-  var legend = menu();
 
   // Scroll variables
   var useScroll = false;
@@ -121,6 +116,11 @@ export default function multibarChart() {
         return;
       };
 
+  header
+    .showTitle(true)
+    .showControls(true)
+    .showLegend(true);
+
 
   //============================================================
 
@@ -141,14 +141,14 @@ export default function multibarChart() {
       var availableWidth = width,
           availableHeight = height;
 
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
+
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
-
-      var xIsDatetime = properties.xDataType === 'datetime' || false,
-          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
           seriesCount = 0,
@@ -156,8 +156,8 @@ export default function multibarChart() {
 
       var baseDimension = model.stacked() ? vertical ? 72 : 32 : 32;
 
-      var xTickMaxWidth = 75,
           //TODO: allow formatter to be set by data
+      var xTickMaxWidth = 75,
           xDateFormat = null,
           xAxisFormat = null,
           yAxisFormat = null;
@@ -453,9 +453,6 @@ export default function multibarChart() {
         return yValueFormat(d, i, null, yIsCurrency, 2);
       };
 
-      // Set title display option
-      showTitle = showTitle && properties.title;
-
 
       //------------------------------------------------------------
       // State persistence model
@@ -468,17 +465,20 @@ export default function multibarChart() {
       //------------------------------------------------------------
       // Setup Scales and Axes
 
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
+
       // we want the bar value label to have the same formatting as y-axis
       model.valueFormat(function(d, i) {
         return yValueFormat(d, i, null, yIsCurrency, 2);
       });
 
-      x = model.xScale();
-      y = model.yScale();
-
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
-        .scale(x)
+        .scale(model.xScale())
         .valueFormat(xAxisFormat)
         .tickSize(0)
         .tickPadding(4)
@@ -487,7 +487,7 @@ export default function multibarChart() {
 
       yAxis
         .orient(vertical ? 'left' : 'bottom')
-        .scale(y)
+        .scale(model.yScale())
         .valueFormat(yAxisFormat)
         .tickPadding(4)
         .showMaxMin(true);
@@ -506,7 +506,6 @@ export default function multibarChart() {
       var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
       var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
@@ -522,19 +521,17 @@ export default function multibarChart() {
       var model_wrap = wrap.select('.sc-bars-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
 
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
       if (scrollEnabled) {
         scroll(wrap, wrap_entr, scroll_wrap, xAxis);
       } else {
-        wrap_entr.select('.sc-background-wrap')
-          .append('rect')
-            .attr('class', 'sc-background')
-            .attr('x', -margin.left)
-            .attr('y', -margin.top)
-            .attr('fill', 'rgba(215, 235, 255, 0.1)');
+        wrap_entr.select('.sc-background-wrap').append('rect')
+          .attr('class', 'sc-background')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('fill', '#FFF');
       }
 
 
@@ -546,7 +543,11 @@ export default function multibarChart() {
         // Chart layout variables
         var renderWidth, renderHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
+
+        var xpos = 0,
+            ypos = 0;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -561,6 +562,10 @@ export default function multibarChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
+        back_wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
         xTickMaxWidth = Math.max(vertical ? baseDimension * 2 : availableWidth * 0.2, 75);
 
         // Scroll variables
@@ -570,118 +575,21 @@ export default function multibarChart() {
             gap = baseDimension * (state.stacked ? 0.25 : 1),
             minDimension = groupCount * boundsWidth + gap;
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
-          .attr('width', renderWidth)
-          .attr('height', renderHeight);
-
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
-            widthRatio = 0,
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
-            legendHeight = 0,
-            trans = '',
-            xpos = 0,
-            ypos = 0;
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        title_wrap.select('.sc-title').remove();
+        container.call(header);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
-
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showControls) {
-          controls
-            .id('controls_' + model.id())
-            .strings(strings.controls)
-            .color(['#444'])
-            .align('left')
-            .height(availableHeight - headerHeight);
-          controls_wrap
-            .datum(controlsData)
-            .call(controls);
-
-          maxControlsWidth = controls.calcMaxWidth();
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + model.id())
-            .strings(strings.legend)
-            .align('right')
-            .height(availableHeight - headerHeight);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-
-          maxLegendWidth = legend.calcMaxWidth();
-        }
-
-        // calculate proportional available space
-        widthRatio = availableWidth / (maxControlsWidth + maxLegendWidth);
-        maxControlsWidth = Math.floor(maxControlsWidth * widthRatio);
-        maxLegendWidth = Math.floor(maxLegendWidth * widthRatio);
-
-        if (showControls) {
-          controls
-            .arrange(maxControlsWidth);
-          maxLegendWidth = availableWidth - controls.width();
-        }
-
-        if (showLegend) {
-          legend
-            .arrange(maxLegendWidth);
-          maxControlsWidth = availableWidth - legend.width();
-        }
-
-        if (showControls) {
-          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
-          ypos = showTitle ? titleBBox.height : - controls.margin().top;
-          controls_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
-        }
-
-        if (showLegend) {
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
-          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
-          ypos = titleBBox.height;
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = 0 - legend.margin().top;
-          }
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
-        }
-
-        // Recalc inner margins based on legend and control height
-        headerHeight += Math.max(controlsHeight, legendHeight);
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
         innerMargin.top += headerHeight;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -744,10 +652,10 @@ export default function multibarChart() {
         xAxis
           .margin(innerMargin)
           .ticks(groupCount);
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xpos = innerMargin.left;
+        ypos = innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')')
+          .attr('transform', utility.translation(xpos, ypos))
             .call(xAxis);
         // reset inner dimensions
         xAxisMargin = xAxis.margin();
@@ -784,18 +692,18 @@ export default function multibarChart() {
         //------------------------------------------------------------
         // Final repositioning
 
-        trans = (vertical || xAxis.orient() === 'left' ? 0 : innerWidth) + ',';
-        trans += (vertical && xAxis.orient() === 'bottom' ? innerHeight + 2 : -2);
+        xpos = (vertical || xAxis.orient() === 'left' ? 0 : innerWidth);
+        ypos = (vertical && xAxis.orient() === 'bottom' ? innerHeight + 2 : -2);
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + (vertical || yAxis.orient() === 'bottom' ? 0 : innerWidth) + ',';
-        trans += innerMargin.top + (vertical || yAxis.orient() === 'left' ? 0 : innerHeight);
+        xpos = innerMargin.left + (vertical || yAxis.orient() === 'bottom' ? 0 : innerWidth);
+        ypos = innerMargin.top + (vertical || yAxis.orient() === 'left' ? 0 : innerHeight);
         yAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
         scroll_wrap
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top));
 
 
         //------------------------------------------------------------
@@ -841,8 +749,9 @@ export default function multibarChart() {
       //------------------------------------------------------------
 
       //TODO: change legendClick to menuClick
-      legend.dispatch.on('legendClick', function(series, i) {
+      header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
+
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.forEach(function(d) {
@@ -866,7 +775,7 @@ export default function multibarChart() {
         dispatch.call('stateChange', this, state);
       });
 
-      controls.dispatch.on('legendClick', function(control, i) {
+      header.controls.dispatch.on('legendClick', function(control, i) {
         //if the option is currently enabled (i.e., selected)
         if (!control.disabled) {
           return;
@@ -879,6 +788,7 @@ export default function multibarChart() {
         //activate the the selected control option
         control.disabled = false;
 
+        //TODO: update model through stateChange
         model.stacked(control.key === 'Grouped' ? false : true);
         state.stacked = model.stacked();
 
@@ -941,11 +851,11 @@ export default function multibarChart() {
 
       dispatch.on('chartClick', function() {
         //dispatch.call('tooltipHide', this);
-        if (controls.enabled()) {
-          controls.dispatch.call('closeMenu', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
         }
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -961,6 +871,7 @@ export default function multibarChart() {
         d3.event.stopPropagation();
         dispatch.call('chartClick', this);
       });
+
     });
 
     return chart;
@@ -990,13 +901,15 @@ export default function multibarChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.multibar = model;
-  chart.legend = legend;
-  chart.controls = controls;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -1022,7 +935,7 @@ export default function multibarChart() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
@@ -1047,8 +960,8 @@ export default function multibarChart() {
     // don't enable this since controls get a custom function
     // controls.color(color);
     // controls.classes(classes);
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -1072,24 +985,6 @@ export default function multibarChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showControls = function(_) {
-    if (!arguments.length) { return showControls; }
-    showControls = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -1119,6 +1014,7 @@ export default function multibarChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -1128,8 +1024,7 @@ export default function multibarChart() {
     model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
-    legend.direction(_);
-    controls.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -1144,6 +1039,24 @@ export default function multibarChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.vertical = function(_) {
+    if (!arguments.length) { return vertical; }
+    vertical = _;
+    return chart;
+  };
+
+  chart.allowScroll = function(_) {
+    if (!arguments.length) { return scrollEnabled; }
+    scrollEnabled = _;
+    return chart;
+  };
+
+  chart.hideEmptyGroups = function(_) {
+    if (!arguments.length) { return hideEmptyGroups; }
+    hideEmptyGroups = _;
     return chart;
   };
 
@@ -1169,27 +1082,9 @@ export default function multibarChart() {
     return chart;
   };
 
-  chart.vertical = function(_) {
-    if (!arguments.length) { return vertical; }
-    vertical = _;
-    return chart;
-  };
-
-  chart.allowScroll = function(_) {
-    if (!arguments.length) { return scrollEnabled; }
-    scrollEnabled = _;
-    return chart;
-  };
-
   chart.overflowHandler = function(_) {
     if (!arguments.length) { return overflowHandler; }
     overflowHandler = utility.functor(_);
-    return chart;
-  };
-
-  chart.hideEmptyGroups = function(_) {
-    if (!arguments.length) { return hideEmptyGroups; }
-    hideEmptyGroups = _;
     return chart;
   };
 

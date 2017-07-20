@@ -2,8 +2,8 @@ import d3 from 'd3';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import headers from '../models/headers.js';
 import gauge from '../models/gauge.js';
-import menu from '../models/menu.js';
 
 export default function gaugeChart() {
 
@@ -14,8 +14,6 @@ export default function gaugeChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
@@ -23,17 +21,22 @@ export default function gaugeChart() {
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
+
+  var dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var model = gauge(),
-      legend = menu().align('center');
+  // Chart components
+  var model = gauge();
+  var header = headers();
+
+  var controlsData = [];
 
   var tt = null;
 
@@ -49,6 +52,13 @@ export default function gaugeChart() {
         var content = tooltipContent(eo, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
+
+  header
+    .showTitle(true)
+    .showControls(false)
+    .showLegend(true)
+    .alignLegend('center');
+
 
   //============================================================
 
@@ -75,6 +85,7 @@ export default function gaugeChart() {
 
       chart.container = this;
 
+
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
@@ -82,7 +93,7 @@ export default function gaugeChart() {
         var hasData = d && d.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -90,14 +101,16 @@ export default function gaugeChart() {
         return chart;
       }
 
+
       //------------------------------------------------------------
       // Process data
 
-      //add series index to each data point for reference
+      // add series index to each data point for reference
       data.forEach(function(s, i) {
         var y = model.y();
         s.seriesIndex = i;
         s.value = y(s);
+
         if (!s.value && !s.values) {
           s.values = [];
         } else if (!isNaN(s.value)) {
@@ -127,9 +140,6 @@ export default function gaugeChart() {
 
       properties.total = d3.sum(modelData, function(d) { return d.value; });
 
-      // set title display option
-      showTitle = showTitle && properties.title.length;
-
       //set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
 
@@ -141,6 +151,12 @@ export default function gaugeChart() {
         return chart;
       }
 
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
+
       //------------------------------------------------------------
       // Main chart wrappers
 
@@ -148,19 +164,26 @@ export default function gaugeChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
+      wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -171,7 +194,8 @@ export default function gaugeChart() {
         var renderWidth, renderHeight,
             availableWidth, availableHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -186,72 +210,25 @@ export default function gaugeChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        // Header variables
-        var headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            legendHeight = 0;
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        title_wrap.select('.sc-title').remove();
+        container.call(header);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
-
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + chart.id())
-            .strings(chart.strings().legend)
-            .align('center')
-            .height(availableHeight - innerMargin.top);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-          legend
-            .arrange(availableWidth);
-
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
-
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = - legend.margin().top;
-          }
-
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-
-          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
-        }
-
-        // Recalc inner margins based on title and legend height
-        headerHeight += legendHeight;
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
         innerMargin.top += headerHeight;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -262,7 +239,7 @@ export default function gaugeChart() {
 
         model_wrap
           .datum(modelData)
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top))
           .transition().duration(duration)
             .call(model);
 
@@ -304,12 +281,16 @@ export default function gaugeChart() {
           state.disabled = eo.disabled;
         }
 
-        container.transition().duration(duration).call(chart);
+        chart.update();
       });
 
       dispatch.on('chartClick', function() {
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        //dispatch.call('tooltipHide', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
+        }
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -341,11 +322,14 @@ export default function gaugeChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.gauge = model;
-  chart.legend = legend;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -370,12 +354,12 @@ export default function gaugeChart() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -391,8 +375,8 @@ export default function gaugeChart() {
     model.fill(fill);
     model.classes(classes);
 
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -416,18 +400,6 @@ export default function gaugeChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -456,6 +428,7 @@ export default function gaugeChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -463,7 +436,7 @@ export default function gaugeChart() {
     if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
-    legend.direction(_);
+    header.direction(_);
     return chart;
   };
 
