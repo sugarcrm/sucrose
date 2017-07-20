@@ -12,3 +12,5 @@ topojson.*
 dist/
 examples/
 test/
+.coverage
+coverage/
