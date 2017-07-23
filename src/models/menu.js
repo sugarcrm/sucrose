@@ -125,12 +125,12 @@ export default function menu() {
               dispatch.call('legendClick', this, d);
             });
       var series = g.selectAll('.sc-series').merge(series_entr);
-
       series
           .attr('class', classes)
           .attr('fill', color)
           .attr('stroke', color);
-      series_entr
+
+      var rects_entr = series_entr
         .append('rect')
           .attr('x', (diameter + textGap) / -2)
           .attr('y', (diameter + lineSpacing) / -2)
@@ -139,6 +139,7 @@ export default function menu() {
           .style('fill', '#FFE')
           .style('stroke-width', 0)
           .style('opacity', 0.1);
+      var rects = series.selectAll('rects').merge(rects_entr);
 
       var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
       circles_bind.exit().remove();
@@ -158,8 +159,9 @@ export default function menu() {
           .style('stroke-width', '4px');
       var lines = series.selectAll('line').merge(lines_entr);
 
-      var texts_entr = series_entr.append('text')
-        .attr('dx', 0);
+      var texts_entr = series_entr
+        .append('text')
+          .attr('dx', 0);
       var texts = series.selectAll('text').merge(texts_entr);
 
       texts
@@ -403,7 +405,7 @@ export default function menu() {
               return 'translate(' + pos.x + ',' + pos.y + ')';
             });
 
-          series.select('rect')
+          rects
             .attr('x', function(d) {
               var xpos = 0;
               if (inline) {
@@ -509,7 +511,7 @@ export default function menu() {
               return 'translate(0,' + ypos + ')';
             });
 
-          series.select('rect')
+          rects
             .attr('x', function(d) {
               var w = (diameter + gutter) / 2 * sign(rtl);
               w -= rtl ? keyWidth(d.seriesIndex) : 0;

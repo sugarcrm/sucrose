@@ -1,0 +1,59 @@
+{
+  "properties": {
+    "title": "Test funnel chart",
+    "total": 40,
+    "yDataType": "currency",
+    "seriesLabel": "Stage"
+  },
+  "data": [
+    {
+      "key": "Series-0",
+      "count": 1,
+      "values": [
+        {"x": 0, "y": 10}
+      ]
+    },
+    {
+      "key": "Series-1",
+      "count": 1,
+      "values": [
+        {"x": 0, "y": 10}
+      ]
+    },
+    {
+      "key": "Series-2",
+      "count": 1,
+      "values": [
+        {"x": 0, "y": 10}
+      ]
+    },
+    {
+      "key": "Series-3",
+      "count": 1,
+      "values": [
+        {"x": 0, "y": 10}
+      ]
+    },
+    {
+      "key": "Series-4",
+      "count": 1,
+      "values": [
+        {"x": 0, "y": 10}
+      ]
+    },
+    {
+      "key": "Series-5",
+      "count": 1,
+      "values": [
+        {"x": 0, "y": 10}
+      ]
+    },
+    {
+      "key": "Series-6",
+      "count": 1,
+      "values": [
+        {"x": 0, "y": 10}
+      ]
+    }
+  ]
+}

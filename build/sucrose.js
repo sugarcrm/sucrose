@@ -27,11 +27,7 @@ var version = "0.6.5";
 /*-------------------
       UTILITIES
 -------------------*/
-const utility = {};
-
-utility.strip = function(s) {
-  return s.replace(/(\s|&)/g,'');
-};
+var utility = {};
 
 utility.identity = function(d) {
   return d;
@@ -43,10 +39,28 @@ utility.functor = function functor(v) {
   };
 };
 
-utility.daysInMonth = function(month, year) {
-  return (new Date(year, month+1, 0)).getDate();
+/*
+Snippet of code you can insert into each utility.models.* to give you the ability to
+do things like:
+chart.options({
+  showXAxis: true,
+  tooltips: true
+});
+To enable in the chart:
+chart.options = utility.optionsFunc.bind(chart);
+*/
+utility.optionsFunc = function(args) {
+  if (args) {
+    d3.map(args).each((function(value, key) {
+      if (typeof this[key] === 'function') {
+        this[key](value);
+      }
+    }).bind(this));
+  }
+  return this;
 };
 
+// Window functions
 utility.windowSize = function () {
   // Sane defaults
   var size = {width: 640, height: 480};
@@ -141,6 +155,8 @@ utility.unResizeOnPrint = function (fn) {
   }
 };
 
+// Color functions
+
 // Backwards compatible way to implement more d3-like coloring of graphs.
 // If passed an array, wrap it in a function which implements the old default
 // behavior
@@ -173,6 +189,21 @@ utility.defaultColor = function () {
   };
 };
 
+utility.getTextContrast = function(c, i, callback) {
+  var back = c,
+      backLab = d3.lab(back),
+      backLumen = backLab.l,
+      textLumen = backLumen > 60 ?
+        backLab.darker(4 + (backLumen - 75) / 25).l : // (50..100)[1 to 3.5]
+        backLab.brighter(4 + (18 - backLumen) / 25).l, // (0..50)[3.5..1]
+      textLab = d3.lab(textLumen, 0, 0),
+      text = textLab.toString();
+  if (callback) {
+    callback(backLab, textLab);
+  }
+  return text;
+};
+
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
 utility.customTheme = function (dictionary, getKey, defaultColors) {
@@ -194,63 +225,8 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
   };
 };
 
-// From the PJAX example on d3js.org, while this is not really directly needed
-// it's a very cool method for doing pjax, I may expand upon it a little bit,
-// open to suggestions on anything that may be useful
-utility.pjax = function (links, content) {
-  d3.selectAll(links).on('click', function () {
-    history.pushState(this.href, this.textContent, this.href);
-    load(this.href);
-    d3.event.preventDefault();
-  });
+// Gradient functions
 
-  function load(href) {
-    d3.html(href, function (fragment) {
-      var target = d3.select(content).node();
-      target.parentNode.replaceChild(d3.select(fragment).select(content).node(), target);
-      utility.pjax(links, content);
-    });
-  }
-
-  d3.select(window).on('popstate', function () {
-    if (d3.event.state) { load(d3.event.state); }
-  });
-};
-
-/* Numbers that are undefined, null or NaN, convert them to zeros.
-*/
-utility.NaNtoZero = function(n) {
-  if (typeof n !== 'number'
-      || isNaN(n)
-      || n === null
-      || n === Infinity) return 0;
-
-  return n;
-};
-
-/*
-Snippet of code you can insert into each utility.models.* to give you the ability to
-do things like:
-chart.options({
-  showXAxis: true,
-  tooltips: true
-});
-
-To enable in the chart:
-chart.options = utility.optionsFunc.bind(chart);
-*/
-utility.optionsFunc = function(args) {
-  if (args) {
-    d3.map(args).forEach((function(key,value) {
-      if (typeof this[key] === 'function') {
-         this[key](value);
-      }
-    }).bind(this));
-  }
-  return this;
-};
-
-//gradient color
 utility.colorLinearGradient = function (d, i, p, c, defs) {
   var id = 'lg_gradient_' + i;
   var grad = defs.select('#' + id);
@@ -294,13 +270,11 @@ utility.createLinearGradient = function (id, params, defs, stops) {
         .attr('y2', y2 )
         //.attr('gradientUnits', 'userSpaceOnUse')objectBoundingBox
         .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1)
-  {
+  for (var i=0; i<stops.length; i+=1) {
     attrs = stops[i];
     stop = grad.append('stop');
-    for (var a in attrs)
-    {
-      if ( attrs.hasOwnProperty(a) ) {
+    for (var a in attrs) {
+      if (attrs.hasOwnProperty(a)) {
         stop.attr(a, attrs[a]);
       }
     }
@@ -310,8 +284,7 @@ utility.createLinearGradient = function (id, params, defs, stops) {
 utility.colorRadialGradient = function (d, i, p, c, defs) {
   var id = 'rg_gradient_' + i;
   var grad = defs.select('#' + id);
-  if ( grad.empty() )
-  {
+  if ( grad.empty() ) {
     utility.createRadialGradient( id, p, defs, [
       { 'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
       { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1 }
@@ -329,28 +302,15 @@ utility.createRadialGradient = function (id, params, defs, stops) {
         .attr('cy', params.y)
         .attr('gradientUnits', params.u)
         .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1)
-  {
+  for (var i=0; i<stops.length; i+=1) {
     attrs = stops[i];
     stop = grad.append('stop');
-    for (var a in attrs)
-    {
+    for (var a in attrs) {
       if ( attrs.hasOwnProperty(a) ) {
         stop.attr(a, attrs[a]);
       }
     }
   }
-};
-
-utility.getAbsoluteXY = function (element) {
-  var viewportElement = document.documentElement;
-  var box = element.getBoundingClientRect();
-  var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
-  var scrollTop = viewportElement.scrollTop + document.body.scrollTop;
-  var x = box.left + scrollLeft;
-  var y = box.top + scrollTop;
-
-  return {'left': x, 'top': y};
 };
 
 // Creates a rectangle with rounded corners
@@ -415,112 +375,6 @@ utility.dropShadow = function (id, defs, options) {
   //   <rect width="90" height="90" stroke="green" stroke-width="3" fill="yellow" filter="url(#f1)" />
 // </svg>
 
-utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
-  var lengths = [],
-      txt = _container.select('.tmp-text-strings').select('text');
-  if (txt.empty()) {
-    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
-  }
-  txt.classed(classes, true);
-  txt.style('display', 'inline');
-  _data.forEach(function(d, i) {
-      txt.text(_format(d, i));
-      lengths.push(txt.node().getBoundingClientRect().width);
-    });
-  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
-  return lengths;
-};
-
-utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
-  var thicknesses = [],
-      txt = _container.select('.tmp-text-strings').select('text');
-  if (txt.empty()) {
-    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
-  }
-  txt.classed(classes, true);
-  txt.style('display', 'inline');
-  _data.forEach(function(d, i) {
-      txt.text(_format(d, i));
-      thicknesses.push(txt.node().getBoundingClientRect().height);
-    });
-  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
-  return thicknesses;
-};
-
-utility.maxStringSetLength = function(_data, _container, _format) {
-  var lengths = utility.stringSetLengths(_data, _container, _format);
-  return d3.max(lengths);
-};
-
-utility.stringEllipsify = function(_string, _container, _length) {
-  var txt = _container.select('.tmp-text-strings').select('text'),
-      str = _string,
-      len = 0,
-      ell = 0,
-      strLen = 0;
-  if (txt.empty()) {
-    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
-  }
-  txt.style('display', 'inline');
-  txt.text('...');
-  ell = txt.node().getBoundingClientRect().width;
-  txt.text(str);
-  len = txt.node().getBoundingClientRect().width;
-  strLen = len;
-  while (len > _length && len > 30) {
-    str = str.slice(0, -1);
-    txt.text(str);
-    len = txt.node().getBoundingClientRect().width + ell;
-  }
-  txt.text('');
-  return str + (strLen > _length ? '...' : '');
-};
-
-utility.getTextBBox = function(text, floats) {
-  var bbox = text.node().getBoundingClientRect(),
-      size = {
-        width: floats ? bbox.width : parseInt(bbox.width, 10),
-        height: floats ? bbox.height : parseInt(bbox.height, 10)
-      };
-  return size;
-};
-
-utility.getTextContrast = function(c, i, callback) {
-  var back = c,
-      backLab = d3.lab(back),
-      backLumen = backLab.l,
-      textLumen = backLumen > 60 ?
-        backLab.darker(4 + (backLumen - 75) / 25).l : // (50..100)[1 to 3.5]
-        backLab.brighter(4 + (18 - backLumen) / 25).l, // (0..50)[3.5..1]
-      textLab = d3.lab(textLumen, 0, 0),
-      text = textLab.toString();
-  if (callback) {
-    callback(backLab, textLab);
-  }
-  return text;
-};
-
-utility.isRTLChar = function(c) {
-  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
-      rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
-  return rtlCharReg_.test(c);
-};
-
-utility.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
-  var angleInRadians = utility.angleToRadians(angleInDegrees);
-  var x = centerX + radius * Math.cos(angleInRadians);
-  var y = centerY + radius * Math.sin(angleInRadians);
-  return [x, y];
-};
-
-utility.angleToRadians = function(angleInDegrees) {
-  return angleInDegrees * Math.PI / 180.0;
-};
-
-utility.angleToDegrees = function(angleInRadians) {
-  return angleInRadians * 180.0 / Math.PI;
-};
-
 utility.createTexture = function(defs, id, x, y) {
   var texture = '#sc-diagonalHatch-' + id,
       mask = '#sc-textureMask-' + id;
@@ -556,6 +410,130 @@ utility.createTexture = function(defs, id, x, y) {
   return mask;
 };
 
+// String functions
+
+utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
+  var lengths = [],
+      txt = _container.select('.tmp-text-strings').select('text');
+  if (txt.empty()) {
+    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
+  }
+  txt.classed(classes, true);
+  txt.style('display', 'inline');
+  _data.forEach(function(d, i) {
+      txt.text(_format(d, i));
+      lengths.push(txt.node().getBoundingClientRect().width);
+    });
+  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
+  return lengths;
+};
+
+utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
+  var thicknesses = [],
+      txt = _container.select('.tmp-text-strings').select('text');
+  if (txt.empty()) {
+    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
+  }
+  txt.classed(classes, true);
+  txt.style('display', 'inline');
+  _data.forEach(function(d, i) {
+      txt.text(_format(d, i));
+      thicknesses.push(txt.node().getBoundingClientRect().height);
+    });
+  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
+  return thicknesses;
+};
+
+utility.maxStringSetLength = function(_data, _container, _format, classes) {
+  var lengths = utility.stringSetLengths(_data, _container, _format, classes);
+  return d3.max(lengths);
+};
+
+utility.stringEllipsify = function(_string, _container, _length) {
+  var txt = _container.select('.tmp-text-strings').select('text'),
+      str = _string,
+      len = 0,
+      ell = 0,
+      strLen = 0;
+  if (txt.empty()) {
+    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
+  }
+  txt.style('display', 'inline');
+  txt.text('...');
+  ell = txt.node().getBoundingClientRect().width;
+  txt.text(str);
+  len = txt.node().getBoundingClientRect().width;
+  strLen = len;
+  while (len > _length && len > 30) {
+    str = str.slice(0, -1);
+    txt.text(str);
+    len = txt.node().getBoundingClientRect().width + ell;
+  }
+  txt.text('');
+  return str + (strLen > _length ? '...' : '');
+};
+
+utility.getTextBBox = function(text, floats) {
+  var bbox = text.node().getBoundingClientRect(),
+      size = {
+        width: floats ? bbox.width : parseInt(bbox.width, 10),
+        height: floats ? bbox.height : parseInt(bbox.height, 10),
+        top: floats ? bbox.top : parseInt(bbox.top, 10),
+        left: floats ? bbox.left : parseInt(bbox.left, 10)
+      };
+  return size;
+};
+
+utility.strip = function(s) {
+  return s.replace(/(\s|&)/g,'');
+};
+
+utility.isRTLChar = function(c) {
+  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
+      rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
+  return rtlCharReg_.test(c);
+};
+
+// Numeric functions
+
+// Numbers that are undefined, null or NaN, convert them to zeros.
+utility.NaNtoZero = function(n) {
+  if (typeof n !== 'number'
+      || isNaN(n)
+      || n === null
+      || n === Infinity) return 0;
+
+  return n;
+};
+
+utility.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
+  var angleInRadians = utility.angleToRadians(angleInDegrees);
+  var x = centerX + radius * Math.cos(angleInRadians);
+  var y = centerY + radius * Math.sin(angleInRadians);
+  return [x, y];
+};
+
+utility.angleToRadians = function(angleInDegrees) {
+  return angleInDegrees * Math.PI / 180.0;
+};
+
+utility.angleToDegrees = function(angleInRadians) {
+  return angleInRadians * 180.0 / Math.PI;
+};
+
+utility.getAbsoluteXY = function (element) {
+  var viewportElement = document.documentElement;
+  var box = element.getBoundingClientRect();
+  var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
+  var scrollTop = viewportElement.scrollTop + document.body.scrollTop;
+  var x = box.left + scrollLeft;
+  var y = box.top + scrollTop;
+
+  return {'left': x, 'top': y};
+};
+utility.translation = function(x, y) {
+  return 'translate(' + x + ',' + y + ')';
+};
 // utility.numberFormatSI = function(d, p, c, l) {
   //     var fmtr, spec, si;
   //     if (isNaN(d)) {
@@ -586,7 +564,7 @@ utility.numberFormatSI = function(d, p, c, l) {
   spec = c ? '$,' : ',';
   // spec += '.' + 2 + 'r';
   if (c && d < 1000 && d !== parseInt(d, 10)) {
-    spec += '.2s';
+    spec += '.2f';
   } else if (Math.abs(d) > 1 && Math.abs(d) <= 1000) {
     d = p === 0 ? Math.round(d) : Math.round(d * 10 * p) / (10 * p);
   } else {
@@ -600,7 +578,7 @@ utility.numberFormatSI = function(d, p, c, l) {
 
 utility.round = function(x, n) {
   // Sigh...
-  var ten_n = Math.pow(10,n);
+  var ten_n = Math.pow(10, n);
   return Math.round(x * ten_n) / ten_n;
 };
 
@@ -612,8 +590,13 @@ utility.numberFormatRound = function(d, p, c, l) {
   c = typeof c === 'boolean' ? c : false;
   p = Number.isFinite(p) ? p : c ? 2 : 0;
   fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  spec = c ? '$,.' + p + 'f' : ',';
+  spec = (c ? '$' : '') + ',.' + p + 'f';
   return fmtr(spec)(d);
+};
+
+// Date functions
+utility.daysInMonth = function(month, year) {
+  return (new Date(year, month+1, 0)).getDate();
 };
 
 utility.isValidDate = function(d) {
@@ -629,56 +612,129 @@ utility.getDateFormat = function(values) {
   var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
   var formatIndex = 0;
 
-  formatIndex = values.length ? d3.min(values, function(d) {
-      var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
-      var format;
-      if (d3.timeSecond(date) < d) {
-        format = 1;
-      } else if (d3.timeMinute(date) < d) {
-        format = 2;
-      } else if (d3.timeHour(date) < d) {
-        format = 3;
-      } else if (d3.timeDay(date) < d) {
-        format = 4;
-      } else if (d3.timeMonth(date) < d) {
-        format = 5;
-        // format = (d3.timeWeek(date) < date ? 4 : 5);
-      } else if (d3.timeYear(date) < d) {
-        format = 7;
-      } else {
-        format = 8;
-      }
-      return format;
-    }) : 0;
+  formatIndex = values.length ? d3.min(values, function(date) {
+    var format;
+
+    // if round to second is less than date
+    if (d3.timeSecond(date) < date) {
+      // use millisecond format - .%L
+      format = 1;
+    }
+    else
+    // if round to minute is less than date
+    if (d3.timeMinute(date) < date) {
+      // use second format - :%S
+      format = 2;
+    }
+    else
+    // if round to hour is less than date
+    if (d3.timeHour(date) < date) {
+      // use minute format - %I:%M
+      format = 3;
+    }
+    else
+    // if round to day is less than date
+    if (d3.timeDay(date) < date) {
+      // use hour format - %I %p
+      format = 4;
+    }
+    else
+    // if round to month is less than date
+    if (d3.timeMonth(date) < date) {
+      // use day format - %x
+      format = 5; // format = (d3.timeWeek(date) < date ? 4 : 5);
+    }
+    else
+    // if round to year is less than date
+    if (d3.timeYear(date) < date) {
+      // use month format - %B
+      format = 7;
+    }
+    else
+    // as last resort
+    {
+      // use year format - %Y
+      format = 8;
+    }
+    return format;
+  }) : 0;
+
+  return dateFormats[formatIndex];
+};
+
+utility.getUTCDateFormat = function(values) {
+  var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
+  var formatIndex = 0;
+
+  formatIndex = values.length ? d3.min(values, function(date) {
+    var format;
+    date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
+
+    // if round to second is less than date
+    if (d3.utcSecond(date) < date) {
+      // use millisecond format - .%L
+      format = 1;
+    }
+    else
+    // if round to minute is less than date
+    if (d3.utcMinute(date) < date) {
+      // use second format - :%S
+      format = 2;
+    }
+    else
+    // if round to hour is less than date
+    if (d3.utcHour(date) < date) {
+      // use minute format - %I:%M
+      format = 3;
+    }
+    else
+    // if round to day is less than date
+    if (d3.utcDay(date) < date) {
+      // use hour format - %I %p
+      format = 4;
+    }
+    else
+    // if round to month is less than date
+    if (d3.utcMonth(date) < date) {
+      // use day format - %x
+      format = 5; // format = (d3.utcWeek(date) < date ? 4 : 5);
+    }
+    else
+    // if round to year is less than date
+    if (d3.utcYear(date) < date) {
+      // use month format - %B
+      format = 7;
+    }
+    else
+    // as last resort
+    {
+      // use year format - %Y
+      format = 8;
+    }
+    return format;
+  }) : 0;
+
   return dateFormats[formatIndex];
 };
 
 utility.multiFormat = function(d) {
-  var formatMillisecond = '.%L',
-      formatSecond = ':%S',
-      formatMinute = '%I:%M',
-      formatHour = '%I %p',
-      formatDay = '%x',
-      // formatWeek = '%b %d',
-      formatMonth = '%B',
-      formatYear = '%Y';
   var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
   var format;
   if (d3.timeSecond(date) < d) {
-    format = formatMillisecond;
+    format = '.%L'; //millisecond
   } else if (d3.timeMinute(date) < d) {
-    format = formatSecond;
+    format = ':%S'; //second
   } else if (d3.timeHour(date) < d) {
-    format = formatMinute;
+    format = '%I:%M'; //minute
   } else if (d3.timeDay(date) < d) {
-    format = formatHour;
+    format = '%I %p'; //hour
   } else if (d3.timeMonth(date) < d) {
-    format = formatDay;
+    format = '%x'; //day
     // format = (d3.timeWeek(date) < date ? formatDay : formatWeek);
   } else if (d3.timeYear(date) < d) {
-    format = formatMonth;
+    format = '%B'; //month
   } else {
-    format = formatYear;
+    format = '%Y'; //year
   }
   return format;
 };
@@ -690,12 +746,11 @@ utility.dateFormat = function(d, p, l) {
   dateString = d.toString();
   if (!isNaN(parseInt(dateString, 10)) && dateString.length === 4) {
     // append day and month parts to get correct UTC offset
-    dateString = dateString + '-1-1';
-    // dateString = '1/1/' + dateString;
-    date = new Date(dateString);
+    date = new Date(dateString + '-1-1'); // '1/1/' + dateString;
   } else {
     date = new Date(d);
   }
+  date.setMilliseconds(date.getMilliseconds() - date.getTimezoneOffset() * 60000);
 
   if (!(date instanceof Date) || isNaN(date.valueOf())) {
     return d;
@@ -713,6 +768,7 @@ utility.dateFormat = function(d, p, l) {
     spec = p && p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date);
     // TODO: if not explicit pattern provided, we should use .multi()
   }
+
   return fmtr(spec)(date);
 };
 
@@ -729,18 +785,18 @@ utility.buildLocality = function(l, d) {
         'thousands': ',',
         'grouping': [3],
         'currency': ['$', ''],
-        'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
-        'date': '%b %-d, %Y', //%x
-        'time': '%-I:%M:%S', //%X
         'periods': ['AM', 'PM'],
         'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
         'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
         'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
         'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        'date': '%b %-d, %Y', //%x
+        'time': '%-I:%M:%S %p', //%X
+        'dateTime': '%B %-d, %Y at %X GMT%Z', //%c
         // Custom patterns
         'full': '%A, %c',
         'long': '%c',
-        'medium': '%x, %X %p',
+        'medium': '%x, %X',
         'short': '%-m/%-d/%y, %-I:%M %p',
         'yMMMEd': '%a, %x',
         'yMEd': '%a, %-m/%-d/%Y',
@@ -791,7 +847,7 @@ utility.displayNoData = function (hasData, container, label, x, y) {
        TOOLTIP
 -------------------*/
 
-const tooltip = {};
+var tooltip = {};
 
 tooltip.show = function(evt, content, gravity, dist, container, classes) {
 
@@ -942,7 +998,7 @@ tooltip.position = function(container, wrapper, evt, gravity, dist) {
   wrapper.className = class_name;
 };
 
-function stackearea() {
+function area() {
 
   //============================================================
   // Public Variables with Default Settings
@@ -958,7 +1014,7 @@ function stackearea() {
       y = d3.scaleLinear(), //can be accessed via model.yScale()
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
-      duration = 300, // transition
+      duration = 0, // transition
       locality = utility.buildLocality(),
       direction = 'ltr',
       style = 'stack',
@@ -1012,7 +1068,7 @@ function stackearea() {
       var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut][stackOrderIndex];
 
       // gradient constructor function
-      gradient = function(d, i, p) {
+      gradient = gradient || function(d, i, p) {
         return utility.colorLinearGradient(d, model.id() + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
@@ -1062,6 +1118,8 @@ function stackearea() {
         s.key = chartData[i].key;
         s.seriesIndex = chartData[i].seriesIndex;
         s.total = chartData[i].total;
+        s.color = chartData[i].color;
+        s.class = chartData[i].classes;
         s.forEach(function(p, j) {
           p.seriesIndex = chartData[i].seriesIndex;
           p.si0 = i - 1;
@@ -1119,16 +1177,16 @@ function stackearea() {
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
-      var wrap_bind = container.selectAll('g.sc-wrap.sc-stackedarea').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-stackedarea');
-      var wrap = container.select('.sc-wrap.sc-stackedarea').merge(wrap_entr);
+      var wrap_bind = container.selectAll('g.sc-wrap.sc-area').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-area');
+      var wrap = container.select('.sc-wrap.sc-area').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
 
@@ -1152,10 +1210,10 @@ function stackearea() {
       var series = group_wrap.selectAll('.sc-series').merge(series_entr);
 
       series
-        .classed('hover', function(d) { return d.hover; })
+        .attr('fill', fill)
+        .attr('stroke', color)
         .attr('class', classes)
-        .attr('fill', color)
-        .attr('stroke', color);
+        .classed('hover', function(d) { return d.hover; });
       series
         .transition(tran)
           .style('stroke-opacity', 1)
@@ -2231,12 +2289,12 @@ function funnel() {
       width = 960,
       height = 500,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getKey = function(d) { return d.key; },
-      getValue = function(d, i) { return d.value; },
-      getCount = function(d, i) { return d.count; },
-      fmtKey = function(d) { return getKey(d.series || d); },
-      fmtValue = function(d) { return getValue(d.series || d); },
-      fmtCount = function(d) { return (' (' + getCount(d.series || d) + ')').replace(' ()', ''); },
+      getKey = function(d) { return d.series ? d.series.key : d.key; },
+      getValue = function(d, i) { return d.series ? d.series.value : d.value; },
+      getCount = function(d, i) { return d.series ? d.series.count : d.count; },
+      fmtKey = function(d) { return getKey(d); },
+      fmtValue = function(d) { return getValue(d); },
+      fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -2249,7 +2307,7 @@ function funnel() {
 
   var r = 0.3, // ratio of width to height (or slope)
       y = d3.scaleLinear(),
-      yDomain,
+      yDomain = null,
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
       wrapLabels = true,
       minLabelWidth = 75,
@@ -2362,7 +2420,7 @@ function funnel() {
 
       var defs_entr = wrap_entr.append('defs');
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
       // Definitions
@@ -2746,8 +2804,7 @@ function funnel() {
         while ((word = words.pop())) {
           line.push(word);
           lbl.text(line.join(' '));
-
-          if (lbl.node().getComputedTextLength() > maxWidth && line.length > 1) {
+          if (lbl.node().getBoundingClientRect().width > maxWidth && line.length > 1) {
             line.pop();
             lbl.text(line.join(' '));
             line = [word];
@@ -2982,12 +3039,6 @@ function funnel() {
         return utility.getTextContrast(backColor, i);
       }
 
-      function fmtDirection(d) {
-        var m = utility.isRTLChar(d.slice(-1)),
-            dir = m ? 'rtl' : 'ltr';
-        return 'ltr';
-      }
-
       function fmtLabel(txt, classes, dy, anchor, fill) {
         txt
           .attr('x', 0)
@@ -2995,7 +3046,9 @@ function funnel() {
           .attr('dy', dy + 'em')
           .attr('class', classes)
           .attr('direction', function() {
-            return fmtDirection(txt.text());
+            return 'ltr';
+            //TODO: should labels change sides in RTL?
+            // return fmtDirection(txt.text());
           })
           .style('pointer-events', 'none')
           .style('text-anchor', anchor)
@@ -3210,7 +3263,7 @@ function gauge() {
       direction = 'ltr',
       clipEdge = true,
       delay = 0,
-      duration = 720,
+      duration = 0,
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
       fill = color,
@@ -3237,7 +3290,6 @@ function gauge() {
   // Update model
 
   function model(selection) {
-
     selection.each(function(data) {
 
       var availableWidth = width - margin.left - margin.right,
@@ -3245,7 +3297,7 @@ function gauge() {
           container = d3.select(this);
 
       //set up the gradient constructor function
-      gradient = function(d, i) {
+      gradient = gradient || function(d, i) {
         var params = {x: 0, y: 0, r: radius, s: ringWidth / 100, u: 'userSpaceOnUse'};
         return utility.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
       };
@@ -3717,6 +3769,1082 @@ function gauge() {
   return model;
 }
 
+function menu() {
+
+  //============================================================
+  // Public Variables with Default Settings
+  //------------------------------------------------------------
+
+  var margin = {top: 10, right: 10, bottom: 15, left: 10},
+      width = 0,
+      height = 0,
+      align = 'right',
+      direction = 'ltr',
+      position = 'start',
+      radius = 6, // size of dot
+      diameter = radius * 2, // diamter of dot plus stroke
+      gutter = 10, // horizontal gap between keys
+      spacing = 12, // vertical gap between keys
+      textGap = 5, // gap between dot and label accounting for dot stroke
+      equalColumns = true,
+      showAll = false,
+      showMenu = false,
+      collapsed = false,
+      rowsCount = 3, //number of rows to display if showAll = false
+      enabled = false,
+      strings = {
+        close: 'Hide legend',
+        type: 'Show legend',
+        noLabel: 'undefined'
+      },
+      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
+      getKey = function(d) {
+        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
+      },
+      color = function(d) {
+        return utility.defaultColor()(d, d.seriesIndex);
+      },
+      classes = function(d) {
+        return 'sc-series sc-series-' + d.seriesIndex;
+      },
+      dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout', 'toggleMenu', 'closeMenu');
+
+  // Private Variables
+  //------------------------------------------------------------
+
+  var legendOpen = 0;
+
+  var useScroll = false,
+      scrollEnabled = true,
+      scrollOffset = 0,
+      overflowHandler = function(d) { return; };
+
+  //============================================================
+
+  function legend(selection) {
+
+    selection.each(function(data) {
+
+      var container = d3.select(this),
+          keyWidths = [],
+          legendHeight = 0,
+          dropdownHeight = 0,
+          type = '',
+          inline = position === 'start' ? true : false,
+          rtl = direction === 'rtl' ? true : false,
+          lineSpacing = spacing * (inline ? 1 : 0.6),
+          padding = gutter + (inline ? diameter + textGap : 0);
+
+      if (!data || !data.length || !data.filter(function(d) { return !d.values || d.values.length; }).length) {
+        return legend;
+      }
+
+      // enforce existence of series for static legend keys
+      var iSeries = data.filter(function(d) { return d.hasOwnProperty('seriesIndex'); }).length;
+      data.filter(function(d) { return !d.hasOwnProperty('seriesIndex'); }).map(function(d, i) {
+        d.seriesIndex = iSeries;
+        iSeries += 1;
+      });
+
+      enabled = true;
+
+      type = !data[0].type || data[0].type === 'bar' ? 'bar' : 'line';
+      align = rtl && align !== 'center' ? align === 'left' ? 'right' : 'left' : align;
+
+      //------------------------------------------------------------
+      // Setup containers and skeleton of legend
+
+      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-menu');
+      var wrap = container.select('g.sc-wrap').merge(wrap_entr);
+      wrap.attr('transform', 'translate(0,0)');
+
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
+
+      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
+      var clip = wrap.select('#sc-edge-clip-' + id + ' rect');
+
+      wrap_entr.append('rect').attr('class', 'sc-menu-background');
+      var back = wrap.select('.sc-menu-background');
+      var backFilter = utility.dropShadow('menu_back_' + id, defs, {blur: 2});
+
+      wrap_entr.append('text').attr('class', 'sc-menu-link');
+      var link = wrap.select('.sc-menu-link');
+
+      var mask_entr = wrap_entr.append('g').attr('class', 'sc-menu-mask');
+      var mask = wrap.select('.sc-menu-mask');
+
+      mask_entr.append('g').attr('class', 'sc-group');
+      var g = wrap.select('.sc-group');
+
+      var series_bind = g.selectAll('.sc-series').data(utility.identity, function(d) { return d.seriesIndex; });
+      series_bind.exit().remove();
+      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
+            .on('mouseover', function(d, i) {
+              dispatch.call('legendMouseover', this, d);
+            })
+            .on('mouseout', function(d, i) {
+              dispatch.call('legendMouseout', this, d);
+            })
+            .on('click', function(d, i) {
+              d3.event.preventDefault();
+              d3.event.stopPropagation();
+              dispatch.call('legendClick', this, d);
+            });
+      var series = g.selectAll('.sc-series').merge(series_entr);
+      series
+          .attr('class', classes)
+          .attr('fill', color)
+          .attr('stroke', color);
+
+      var rects_entr = series_entr
+        .append('rect')
+          .attr('x', (diameter + textGap) / -2)
+          .attr('y', (diameter + lineSpacing) / -2)
+          .attr('width', diameter + textGap)
+          .attr('height', diameter + lineSpacing)
+          .style('fill', '#FFE')
+          .style('stroke-width', 0)
+          .style('opacity', 0.1);
+      var rects = series.selectAll('rects').merge(rects_entr);
+
+      var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
+      circles_bind.exit().remove();
+      var circles_entr = circles_bind.enter()
+        .append('circle')
+          .attr('r', radius)
+          .style('stroke-width', '2px');
+      var circles = series.selectAll('circle').merge(circles_entr);
+
+      var line_bind = series_entr.selectAll('line').data(type === 'line' ? function(d) { return [d]; } : []);
+      line_bind.exit().remove();
+      var lines_entr = line_bind.enter()
+        .append('line')
+          .attr('x0', 0)
+          .attr('y0', 0)
+          .attr('y1', 0)
+          .style('stroke-width', '4px');
+      var lines = series.selectAll('line').merge(lines_entr);
+
+      var texts_entr = series_entr
+        .append('text')
+          .attr('dx', 0);
+      var texts = series.selectAll('text').merge(texts_entr);
+
+      texts
+        .attr('dy', inline ? '.36em' : '.71em')
+        .text(getKey);
+
+      //------------------------------------------------------------
+      // Update legend attributes
+
+      clip
+        .attr('x', 0.5)
+        .attr('y', 0.5)
+        .attr('width', 0)
+        .attr('height', 0);
+
+      back
+        .attr('x', 0.5)
+        .attr('y', 0.5)
+        .attr('width', 0)
+        .attr('height', 0)
+        .style('opacity', 0)
+        .style('pointer-events', 'all')
+        .on('click', function(d, i) {
+          d3.event.stopPropagation();
+        });
+
+      link
+        .text(legendOpen === 1 ? legend.strings().close : legend.strings().open)
+        .attr('text-anchor', align === 'left' ? rtl ? 'end' : 'start' : rtl ? 'start' : 'end')
+        .attr('dy', '.36em')
+        .attr('dx', 0)
+        .style('opacity', 0)
+        .on('click', function(d, i) {
+          d3.event.preventDefault();
+          d3.event.stopPropagation();
+          dispatch.call('toggleMenu', this, d, i);
+        });
+
+      series.classed('disabled', function(d) {
+        return d.disabled;
+      });
+
+      //------------------------------------------------------------
+
+      //TODO: add ability to add key to legend
+      //TODO: have series display values on hover
+      //var label = g.append('text').text('Probability:').attr('class','sc-series-label').attr('transform','translate(0,0)');
+
+      // store legend label widths
+      legend.calcMaxWidth = function() {
+        keyWidths = [];
+
+        g.style('display', 'inline');
+
+        texts.each(function(d, i) {
+          var textWidth = d3.select(this).node().getBoundingClientRect().width;
+          keyWidths.push(Math.max(Math.floor(textWidth), (type === 'line' ? 50 : 20)));
+        });
+
+        legend.width(d3.sum(keyWidths) + keyWidths.length * padding - gutter);
+
+        return legend.width();
+      };
+
+      legend.getLineHeight = function() {
+        g.style('display', 'inline');
+        var lineHeightBB = Math.floor(texts.node().getBoundingClientRect().height);
+        return lineHeightBB;
+      };
+
+      legend.arrange = function(containerWidth) {
+
+        if (keyWidths.length === 0) {
+          this.calcMaxWidth();
+        }
+
+        function keyWidth(i) {
+          return keyWidths[i] + padding;
+        }
+        function keyWidthNoGutter(i) {
+          return keyWidths[i] + padding - gutter;
+        }
+        function sign(bool) {
+          return bool ? 1 : -1;
+        }
+
+        var keys = keyWidths.length,
+            rows = 1,
+            cols = keys,
+            columnWidths = [],
+            keyPositions = [],
+            maxWidth = containerWidth - margin.left - margin.right,
+            maxHeight = height,
+            maxRowWidth = 0,
+            textHeight = this.getLineHeight(),
+            lineHeight = diameter + (inline ? 0 : textHeight) + lineSpacing,
+            menuMargin = {top: 7, right: 7, bottom: 7, left: 7}, // account for stroke width
+            xpos = 0,
+            ypos = 0,
+            i,
+            mod,
+            shift;
+
+        if (equalColumns) {
+
+          //keep decreasing the number of keys per row until
+          //legend width is less than the available width
+          while (cols > 0) {
+            columnWidths = [];
+
+            for (i = 0; i < keys; i += 1) {
+              if (keyWidth(i) > (columnWidths[i % cols] || 0)) {
+                columnWidths[i % cols] = keyWidth(i);
+              }
+            }
+
+            if (d3.sum(columnWidths) - gutter < maxWidth) {
+              break;
+            }
+            cols -= 1;
+          }
+          cols = cols || 1;
+
+          rows = Math.ceil(keys / cols);
+          maxRowWidth = d3.sum(columnWidths) - gutter;
+
+          for (i = 0; i < keys; i += 1) {
+            mod = i % cols;
+
+            if (inline) {
+              if (mod === 0) {
+                xpos = rtl ? maxRowWidth : 0;
+              } else {
+                xpos += columnWidths[mod - 1] * sign(!rtl);
+              }
+            } else {
+              if (mod === 0) {
+                xpos = (rtl ? maxRowWidth : 0) + (columnWidths[mod] - gutter) / 2 * sign(!rtl);
+              } else {
+                xpos += (columnWidths[mod - 1] + columnWidths[mod]) / 2 * sign(!rtl);
+              }
+            }
+
+            ypos = Math.floor(i / cols) * lineHeight;
+            keyPositions[i] = {x: xpos, y: ypos};
+          }
+
+        } else {
+
+          if (rtl) {
+
+            xpos = maxWidth;
+
+            for (i = 0; i < keys; i += 1) {
+              if (xpos - keyWidthNoGutter(i) < 0) {
+                maxRowWidth = Math.max(maxRowWidth, keyWidthNoGutter(i));
+                xpos = maxWidth;
+                if (i) {
+                  rows += 1;
+                }
+              }
+              if (xpos - keyWidthNoGutter(i) > maxRowWidth) {
+                maxRowWidth = xpos - keyWidthNoGutter(i);
+              }
+              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
+              xpos -= keyWidth(i);
+            }
+
+          } else {
+
+            xpos = 0;
+
+            for (i = 0; i < keys; i += 1) {
+              if (i && xpos + keyWidthNoGutter(i) > maxWidth) {
+                xpos = 0;
+                rows += 1;
+              }
+              if (xpos + keyWidthNoGutter(i) > maxRowWidth) {
+                maxRowWidth = xpos + keyWidthNoGutter(i);
+              }
+              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
+              xpos += keyWidth(i);
+            }
+
+          }
+
+        }
+
+        if (!showMenu && (showAll || rows <= rowsCount)) {
+
+          legendOpen = 0;
+          collapsed = false;
+          useScroll = false;
+
+          legend
+            .width(margin.left + maxRowWidth + margin.right)
+            .height(margin.top + rows * lineHeight - lineSpacing + margin.bottom);
+
+          switch (align) {
+            case 'left':
+              shift = 0;
+              break;
+            case 'center':
+              shift = (containerWidth - legend.width()) / 2;
+              break;
+            case 'right':
+              shift = 0;
+              break;
+          }
+
+          clip
+            .attr('y', 0)
+            .attr('width', legend.width())
+            .attr('height', legend.height());
+
+          back
+            .attr('x', shift)
+            .attr('width', legend.width())
+            .attr('height', legend.height())
+            .attr('rx', 0)
+            .attr('ry', 0)
+            .attr('filter', 'none')
+            .style('display', 'inline')
+            .style('opacity', 0);
+
+          mask
+            .attr('clip-path', 'none')
+            .attr('transform', function(d, i) {
+              var xpos = shift + margin.left + (inline ? radius * sign(!rtl) : 0),
+                  ypos = margin.top + menuMargin.top;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            });
+
+          g
+            .style('opacity', 1)
+            .style('display', 'inline');
+
+          series
+            .attr('transform', function(d) {
+              var pos = keyPositions[d.seriesIndex];
+              return 'translate(' + pos.x + ',' + pos.y + ')';
+            });
+
+          rects
+            .attr('x', function(d) {
+              var xpos = 0;
+              if (inline) {
+                xpos = (diameter + gutter) / 2 * sign(rtl);
+                xpos -= rtl ? keyWidth(d.seriesIndex) : 0;
+              } else {
+                xpos = keyWidth(d.seriesIndex) / -2;
+              }
+              return xpos;
+            })
+            .attr('width', function(d) {
+              return keyWidth(d.seriesIndex);
+            })
+            .attr('height', lineHeight);
+
+          circles
+            .attr('r', function(d) {
+              return d.type === 'dash' ? 0 : radius;
+            })
+            .attr('transform', function(d, i) {
+              var xpos = inline || type === 'bar' ? 0 : radius * 3 * sign(i);
+              return 'translate(' + xpos + ',0)';
+            });
+
+          lines
+            .attr('x1', function(d) {
+              return d.type === 'dash' ? radius * 8 : radius * 4;
+            })
+            .attr('transform', function(d) {
+              var xpos = radius * (d.type === 'dash' ? -4 : -2);
+              return 'translate(' + xpos + ',0)';
+            })
+            .style('stroke-dasharray', function(d) {
+              return d.type === 'dash' ? '8, 8' : 'none';
+            })
+            .style('stroke-dashoffset', -4);
+
+          texts
+            .attr('dy', inline ? '.36em' : '.71em')
+            .attr('text-anchor', position)
+            .attr('transform', function(d) {
+              var xpos = inline ? (radius + textGap) * sign(!rtl) : 0,
+                  ypos = inline ? 0 : (diameter + lineSpacing) / 2;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            });
+
+        } else {
+
+          collapsed = true;
+          useScroll = true;
+
+          legend
+            .width(menuMargin.left + d3.max(keyWidths) + diameter + textGap + menuMargin.right)
+            .height(margin.top + diameter + margin.top); //don't use bottom here because we want vertical centering
+
+          legendHeight = menuMargin.top + diameter * keys + spacing * (keys - 1) + menuMargin.bottom;
+          dropdownHeight = Math.min(maxHeight - legend.height(), legendHeight);
+
+          clip
+            .attr('x', 0.5 - menuMargin.top - radius)
+            .attr('y', 0.5 - menuMargin.top - radius)
+            .attr('width', legend.width())
+            .attr('height', dropdownHeight);
+
+          back
+            .attr('x', 0.5)
+            .attr('y', 0.5 + legend.height())
+            .attr('width', legend.width())
+            .attr('height', dropdownHeight)
+            .attr('rx', 2)
+            .attr('ry', 2)
+            .attr('filter', backFilter)
+            .style('opacity', legendOpen * 0.9)
+            .style('display', legendOpen ? 'inline' : 'none');
+
+          link
+            .attr('transform', function(d, i) {
+              var xpos = align === 'left' ? 0.5 : 0.5 + legend.width(),
+                  ypos = margin.top + radius;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            })
+            .style('opacity', 1);
+
+          mask
+            .attr('clip-path', 'url(#sc-edge-clip-' + id + ')')
+            .attr('transform', function(d, i) {
+              var xpos = menuMargin.left + radius,
+                  ypos = legend.height() + menuMargin.top + radius;
+              return 'translate(' + xpos + ',' + ypos + ')';
+            });
+
+          g
+            .style('opacity', legendOpen)
+            .style('display', legendOpen ? 'inline' : 'none')
+            .attr('transform', function(d, i) {
+              var xpos = rtl ? d3.max(keyWidths) + radius : 0;
+              return 'translate(' + xpos + ',0)';
+            });
+
+          series
+            .attr('transform', function(d, i) {
+              var ypos = i * (diameter + spacing);
+              return 'translate(0,' + ypos + ')';
+            });
+
+          rects
+            .attr('x', function(d) {
+              var w = (diameter + gutter) / 2 * sign(rtl);
+              w -= rtl ? keyWidth(d.seriesIndex) : 0;
+              return w;
+            })
+            .attr('width', function(d) {
+              return keyWidth(d.seriesIndex);
+            })
+            .attr('height', diameter + lineSpacing);
+
+          circles
+            .attr('r', function(d) {
+              return d.type === 'dash' ? 0 : d.type === 'line' ? radius - 2 : radius;
+            })
+            .attr('transform', '');
+
+          lines
+            .attr('x1', 16)
+            .attr('transform', 'translate(-8,0)')
+            .style('stroke-dasharray', function(d) {
+              return d.type === 'dash' ? '6, 4, 6' : 'none';
+            })
+            .style('stroke-dashoffset', 0);
+
+          texts
+            .attr('text-anchor', 'start')
+            .attr('dy', '.36em')
+            .attr('transform', function(d) {
+              var xpos = (radius + textGap) * sign(!rtl);
+              return 'translate(' + xpos + ',0)';
+            });
+
+        }
+
+        //------------------------------------------------------------
+        // Enable scrolling
+        if (scrollEnabled) {
+          var diff = dropdownHeight - legendHeight;
+
+          var assignScrollEvents = function(enable) {
+            if (enable) {
+
+              var zoom = d3.zoom()
+                    .on('zoom', panLegend);
+              var drag = d3.drag()
+                    .subject(utility.identity)
+                    .on('drag', panLegend);
+
+              back.call(zoom);
+              g.call(zoom);
+
+              back.call(drag);
+              g.call(drag);
+
+            } else {
+              back.on('.zoom', null);
+              g.on('.zoom', null);
+
+              back.on('.drag', null);
+              g.on('.drag', null);
+            }
+          };
+
+          var panLegend = function() {
+            var distance = 0,
+                overflowDistance = 0,
+                translate = '',
+                x = 0,
+                y = 0;
+
+            // don't fire on events other than zoom and drag
+            // we need click for handling legend toggle
+            if (d3.event) {
+              if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
+                x = d3.event.sourceEvent.deltaX || 0;
+                y = d3.event.sourceEvent.deltaY || 0;
+                distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
+              } else if (d3.event.type === 'drag') {
+                x = d3.event.dx || 0;
+                y = d3.event.dy || 0;
+                distance = y;
+              } else if (d3.event.type !== 'click') {
+                return 0;
+              }
+              overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
+            }
+
+            // reset value defined in panMultibar();
+            scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), 0);
+            translate = 'translate(' + (rtl ? d3.max(keyWidths) + radius : 0) + ',' + scrollOffset + ')';
+
+            if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
+              overflowHandler(overflowDistance);
+            }
+
+            g.attr('transform', translate);
+          };
+
+          assignScrollEvents(useScroll);
+        }
+
+      };
+
+      //============================================================
+      // Event Handling/Dispatching (in legend's scope)
+      //------------------------------------------------------------
+
+      function displayMenu() {
+        back
+          .style('opacity', legendOpen * 0.9)
+          .style('display', legendOpen ? 'inline' : 'none');
+        g
+          .style('opacity', legendOpen)
+          .style('display', legendOpen ? 'inline' : 'none');
+        link
+          .text(legendOpen === 1 ? legend.strings().close : legend.strings().open);
+      }
+
+      dispatch.on('toggleMenu', function(d) {
+        d3.event.stopPropagation();
+        legendOpen = 1 - legendOpen;
+        displayMenu();
+      });
+
+      dispatch.on('closeMenu', function(d) {
+        if (legendOpen === 1) {
+          legendOpen = 0;
+          displayMenu();
+        }
+      });
+
+    });
+
+    return legend;
+  }
+
+
+  //============================================================
+  // Expose Public Variables
+  //------------------------------------------------------------
+
+  legend.dispatch = dispatch;
+
+  legend.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
+    margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
+    margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
+    margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
+    return legend;
+  };
+
+  legend.width = function(_) {
+    if (!arguments.length) {
+      return width;
+    }
+    width = Math.round(_);
+    return legend;
+  };
+
+  legend.height = function(_) {
+    if (!arguments.length) {
+      return height;
+    }
+    height = Math.round(_);
+    return legend;
+  };
+
+  legend.id = function(_) {
+    if (!arguments.length) {
+      return id;
+    }
+    id = _;
+    return legend;
+  };
+
+  legend.key = function(_) {
+    if (!arguments.length) {
+      return getKey;
+    }
+    getKey = _;
+    return legend;
+  };
+
+  legend.color = function(_) {
+    if (!arguments.length) {
+      return color;
+    }
+    color = utility.getColor(_);
+    return legend;
+  };
+
+  legend.classes = function(_) {
+    if (!arguments.length) {
+      return classes;
+    }
+    classes = _;
+    return legend;
+  };
+
+  legend.align = function(_) {
+    if (!arguments.length) {
+      return align;
+    }
+    align = _;
+    return legend;
+  };
+
+  legend.position = function(_) {
+    if (!arguments.length) {
+      return position;
+    }
+    position = _;
+    return legend;
+  };
+
+  legend.showAll = function(_) {
+    if (!arguments.length) { return showAll; }
+    showAll = _;
+    return legend;
+  };
+
+  legend.showMenu = function(_) {
+    if (!arguments.length) { return showMenu; }
+    showMenu = _;
+    return legend;
+  };
+
+  legend.collapsed = function(_) {
+    return collapsed;
+  };
+
+  legend.rowsCount = function(_) {
+    if (!arguments.length) {
+      return rowsCount;
+    }
+    rowsCount = _;
+    return legend;
+  };
+
+  legend.spacing = function(_) {
+    if (!arguments.length) {
+      return spacing;
+    }
+    spacing = _;
+    return legend;
+  };
+
+  legend.gutter = function(_) {
+    if (!arguments.length) {
+      return gutter;
+    }
+    gutter = _;
+    return legend;
+  };
+
+  legend.radius = function(_) {
+    if (!arguments.length) {
+      return radius;
+    }
+    radius = _;
+    return legend;
+  };
+
+  legend.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    strings = _;
+    return legend;
+  };
+
+  legend.equalColumns = function(_) {
+    if (!arguments.length) {
+      return equalColumns;
+    }
+    equalColumns = _;
+    return legend;
+  };
+
+  legend.enabled = function(_) {
+    if (!arguments.length) {
+      return enabled;
+    }
+    enabled = _;
+    return legend;
+  };
+
+  legend.direction = function(_) {
+    if (!arguments.length) {
+      return direction;
+    }
+    direction = _;
+    return legend;
+  };
+
+  //============================================================
+
+
+  return legend;
+}
+
+function headers() {
+  var width = 960;
+  var height = 500;
+
+  var chart = null;
+  var controls = menu();
+  var legend = menu();
+
+  var title = '';
+  var controlsData = [];
+  var legendData = [];
+
+  var showTitle = false;
+  var showControls = false;
+  var showLegend = false;  // var clipEdge = false; // if true, masks lines within x and y scale
+
+  var alignControls = 'left';
+  var alignLegend = 'right';
+
+  var direction = 'ltr';
+  var strings = {
+        legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
+      };
+
+
+  function model(selection) {
+    selection.each(function(chartData) {
+
+      var container = d3.select(this);
+      var wrap = container.select('.sc-chart-wrap');
+      var title_wrap = wrap.select('.sc-title-wrap');
+      var controls_wrap = wrap.select('.sc-controls-wrap');
+      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      var margin = chart.margin();
+
+      var xpos = 0,
+          ypos = 0;
+
+      // Header variables
+      var maxControlsWidth = 0,
+          maxLegendWidth = 0,
+          widthRatio = 0,
+          titleBBox = {width: 0, height: 0, top: 0, left: 0},
+          titleHeight = 0,
+          controlsHeight = 0,
+          legendHeight = 0;
+
+
+
+      // set title display option
+      showTitle = showTitle && title && title.length > 0;
+
+      title_wrap.select('.sc-title').remove();
+
+      if (showTitle) {
+        title_wrap
+          .append('text')
+            .attr('class', 'sc-title')
+            .attr('x', direction === 'rtl' ? width : 0)
+            .attr('y', 0)
+            .attr('dy', '.75em')
+            .attr('text-anchor', 'start')
+            .attr('stroke', 'none')
+            .attr('fill', 'black')
+            .text(title);
+
+        titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'), true);
+        // getBoundingClientRect is relative to viewport
+        // we need relative to container
+        titleBBox.top -= container.node().getBoundingClientRect().top;
+
+        titleHeight = titleBBox.height;
+      }
+
+      if (showControls) {
+        controls
+          .id('controls_' + chart.id())
+          .strings(strings.controls)
+          .color(['#444'])
+          .align(alignControls)
+          .height(height - titleHeight);
+        controls_wrap
+          .datum(controlsData)
+          .call(controls);
+
+        maxControlsWidth = controls.calcMaxWidth();
+      }
+
+      if (showLegend) {
+        legend
+          .id('legend_' + chart.id())
+          .strings(strings.legend)
+          .align(alignLegend)
+          .height(height - titleHeight);
+        legend_wrap
+          .datum(legendData)
+          .call(legend);
+
+        maxLegendWidth = legend.calcMaxWidth();
+      }
+
+      // calculate proportional available space
+      widthRatio = width / (maxControlsWidth + maxLegendWidth);
+      maxControlsWidth = Math.floor(maxControlsWidth * widthRatio);
+      maxLegendWidth = Math.floor(maxLegendWidth * widthRatio);
+
+      if (showControls) {
+        controls
+          .arrange(maxControlsWidth);
+        maxLegendWidth = width - controls.width();
+      }
+
+      if (showLegend) {
+        legend
+          .arrange(maxLegendWidth);
+        maxControlsWidth = width - legend.width();
+      }
+
+      if (showControls) {
+        xpos = direction === 'rtl' ? width - controls.width() : 0;
+        if (showTitle) {
+          // align top of legend space at bottom of title
+          ypos = titleBBox.height - margin.top + titleBBox.top;
+        } else {
+          // align top of legend keys at top margin
+          ypos = 0 - controls.margin().top;
+        }
+        controls_wrap
+          .attr('transform', utility.translation(xpos, ypos));
+
+        controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
+      }
+
+      if (showLegend) {
+        var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
+            legendSpace = width - titleBBox.width - 6,
+            legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
+
+        xpos = direction === 'rtl' || (!legend.collapsed() && alignLegend === 'center') ? 0 : width - legend.width();
+
+        if (legendTop) {
+          // center legend link at middle of legend space
+          ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
+          // shift up by title baseline offset
+          ypos -= margin.top - titleBBox.top;
+        } else if (showTitle) {
+          // align top of legend space at bottom of title
+          ypos = titleBBox.height - margin.top + titleBBox.top;
+        } else {
+          // align top of legend keys at top margin
+          ypos = 0 - legend.margin().top;
+        }
+        legend_wrap
+          .attr('transform', utility.translation(xpos, ypos));
+
+        legendHeight = legendTop ? legend.margin().bottom : legend.height() - (showTitle ? 0 : legend.margin().top);
+      }
+
+      model.getHeight = function() {
+        var headerHeight = titleHeight + Math.max(controlsHeight, legendHeight, 10);
+        return headerHeight;
+      };
+
+    });
+
+    return model;
+  }
+
+  model.controls = controls;
+  model.legend = legend;
+
+  model.chart = function(_) {
+    if (!arguments.length) { return chart; }
+    chart = _;
+    return model;
+  };
+
+  model.width = function(_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return model;
+  };
+
+  model.height = function(_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return model;
+  };
+
+  model.title = function(_) {
+    if (!arguments.length) { return title; }
+    title = _;
+    return model;
+  };
+  model.controlsData = function(_) {
+    if (!arguments.length) { return controlsData; }
+    controlsData = _;
+    return model;
+  };
+
+  model.legendData = function(_) {
+    if (!arguments.length) { return legendData; }
+    legendData = _;
+    return model;
+  };
+
+  model.showTitle = function(_) {
+    if (!arguments.length) { return showTitle; }
+    showTitle = _;
+    return model;
+  };
+
+  model.showControls = function(_) {
+    if (!arguments.length) { return showControls; }
+    showControls = _;
+    return model;
+  };
+
+  model.showLegend = function(_) {
+    if (!arguments.length) { return showLegend; }
+    showLegend = _;
+    return model;
+  };
+
+  model.alignControls = function(_) {
+    if (!arguments.length) { return alignControls; }
+    alignControls = _;
+    return model;
+  };
+
+  model.alignLegend = function(_) {
+    if (!arguments.length) { return alignLegend; }
+    alignLegend = _;
+    return model;
+  };
+
+  model.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    legend.direction(_);
+    controls.direction(_);
+    return model;
+  };
+
+  model.strings = function(_) {
+    if (!arguments.length) { return strings; }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    legend.strings(strings.legend);
+    controls.strings(strings.controls);
+    return model;
+  };
+
+  return model;
+}
+
 function scatter() {
 
   //============================================================
@@ -3765,7 +4893,7 @@ function scatter() {
       direction = 'ltr',
       clipEdge = false, // if true, masks points within x and y scale
       delay = 0,
-      duration = 300,
+      duration = 0,
       useVoronoi = true,
       clipVoronoi = true, // if true, masks each point with a circle... can turn off to slightly increase performance
       singlePoint = false,
@@ -3909,7 +5037,7 @@ function scatter() {
       var defs_entr = wrap_entr.append('defs');
 
       //set up the gradient constructor function
-      gradient = function(d, i) {
+      gradient = gradient || function(d, i) {
         return utility.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
       };
 
@@ -3921,7 +5049,7 @@ function scatter() {
 
       wrap
         .classed('sc-single-point', singlePoint)
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        .attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
 
@@ -4454,6 +5582,12 @@ function scatter() {
     return model;
   };
 
+  model.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    return model;
+  };
+
   model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
@@ -4503,7 +5637,7 @@ function line() {
       interpolate = 'linear', // controls the line interpolation
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
-      duration = 300, // transition
+      duration = 0, // transition
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
       fill = color,
@@ -4580,7 +5714,7 @@ function line() {
       wrap_entr.append('g').attr('class', 'sc-scatter-wrap');
       var scatter_wrap = wrap.select('.sc-scatter-wrap');
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
 
@@ -4848,817 +5982,6 @@ function line() {
   return model;
 }
 
-function menu() {
-
-  //============================================================
-  // Public Variables with Default Settings
-  //------------------------------------------------------------
-
-  var margin = {top: 10, right: 10, bottom: 15, left: 10},
-      width = 0,
-      height = 0,
-      align = 'right',
-      direction = 'ltr',
-      position = 'start',
-      radius = 6, // size of dot
-      diameter = radius * 2, // diamter of dot plus stroke
-      gutter = 10, // horizontal gap between keys
-      spacing = 12, // vertical gap between keys
-      textGap = 5, // gap between dot and label accounting for dot stroke
-      equalColumns = true,
-      showAll = false,
-      showMenu = false,
-      collapsed = false,
-      rowsCount = 3, //number of rows to display if showAll = false
-      enabled = false,
-      strings = {
-        close: 'Hide legend',
-        type: 'Show legend',
-        noLabel: 'undefined'
-      },
-      id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getKey = function(d) {
-        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
-      },
-      color = function(d) {
-        return utility.defaultColor()(d, d.seriesIndex);
-      },
-      classes = function(d) {
-        return 'sc-series sc-series-' + d.seriesIndex;
-      },
-      dispatch = d3.dispatch('legendClick', 'legendMouseover', 'legendMouseout', 'toggleMenu', 'closeMenu');
-
-  // Private Variables
-  //------------------------------------------------------------
-
-  var legendOpen = 0;
-
-  var useScroll = false,
-      scrollEnabled = true,
-      scrollOffset = 0,
-      overflowHandler = function(d) { return; };
-
-  //============================================================
-
-  function legend(selection) {
-
-    selection.each(function(data) {
-
-      var container = d3.select(this),
-          keyWidths = [],
-          legendHeight = 0,
-          dropdownHeight = 0,
-          type = '',
-          inline = position === 'start' ? true : false,
-          rtl = direction === 'rtl' ? true : false,
-          lineSpacing = spacing * (inline ? 1 : 0.6),
-          padding = gutter + (inline ? diameter + textGap : 0);
-
-      if (!data || !data.length || !data.filter(function(d) { return !d.values || d.values.length; }).length) {
-        return legend;
-      }
-
-      // enforce existence of series for static legend keys
-      var iSeries = data.filter(function(d) { return d.hasOwnProperty('seriesIndex'); }).length;
-      data.filter(function(d) { return !d.hasOwnProperty('seriesIndex'); }).map(function(d, i) {
-        d.seriesIndex = iSeries;
-        iSeries += 1;
-      });
-
-      enabled = true;
-
-      type = !data[0].type || data[0].type === 'bar' ? 'bar' : 'line';
-      align = rtl && align !== 'center' ? align === 'left' ? 'right' : 'left' : align;
-
-      //------------------------------------------------------------
-      // Setup containers and skeleton of legend
-
-      var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-menu');
-      var wrap = container.select('g.sc-wrap').merge(wrap_entr);
-      wrap.attr('transform', 'translate(0,0)');
-
-      var defs_entr = wrap_entr.append('defs');
-      var defs = wrap.select('defs');
-
-      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id).append('rect');
-      var clip = wrap.select('#sc-edge-clip-' + id + ' rect');
-
-      wrap_entr.append('rect').attr('class', 'sc-menu-background');
-      var back = wrap.select('.sc-menu-background');
-      var backFilter = utility.dropShadow('menu_back_' + id, defs, {blur: 2});
-
-      wrap_entr.append('text').attr('class', 'sc-menu-link');
-      var link = wrap.select('.sc-menu-link');
-
-      var mask_entr = wrap_entr.append('g').attr('class', 'sc-menu-mask');
-      var mask = wrap.select('.sc-menu-mask');
-
-      mask_entr.append('g').attr('class', 'sc-group');
-      var g = wrap.select('.sc-group');
-
-      var series_bind = g.selectAll('.sc-series').data(utility.identity, function(d) { return d.seriesIndex; });
-      series_bind.exit().remove();
-      var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
-            .on('mouseover', function(d, i) {
-              dispatch.call('legendMouseover', this, d);
-            })
-            .on('mouseout', function(d, i) {
-              dispatch.call('legendMouseout', this, d);
-            })
-            .on('click', function(d, i) {
-              d3.event.preventDefault();
-              d3.event.stopPropagation();
-              dispatch.call('legendClick', this, d);
-            });
-      var series = g.selectAll('.sc-series').merge(series_entr);
-
-      series
-          .attr('class', classes)
-          .attr('fill', color)
-          .attr('stroke', color);
-      series_entr
-        .append('rect')
-          .attr('x', (diameter + textGap) / -2)
-          .attr('y', (diameter + lineSpacing) / -2)
-          .attr('width', diameter + textGap)
-          .attr('height', diameter + lineSpacing)
-          .style('fill', '#FFE')
-          .style('stroke-width', 0)
-          .style('opacity', 0.1);
-
-      var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
-      circles_bind.exit().remove();
-      var circles_entr = circles_bind.enter()
-        .append('circle')
-          .attr('r', radius)
-          .style('stroke-width', '2px');
-      var circles = series.selectAll('circle').merge(circles_entr);
-
-      var line_bind = series_entr.selectAll('line').data(type === 'line' ? function(d) { return [d]; } : []);
-      line_bind.exit().remove();
-      var lines_entr = line_bind.enter()
-        .append('line')
-          .attr('x0', 0)
-          .attr('y0', 0)
-          .attr('y1', 0)
-          .style('stroke-width', '4px');
-      var lines = series.selectAll('line').merge(lines_entr);
-
-      var texts_entr = series_entr.append('text')
-        .attr('dx', 0);
-      var texts = series.selectAll('text').merge(texts_entr);
-
-      texts
-        .attr('dy', inline ? '.36em' : '.71em')
-        .text(getKey);
-
-      //------------------------------------------------------------
-      // Update legend attributes
-
-      clip
-        .attr('x', 0.5)
-        .attr('y', 0.5)
-        .attr('width', 0)
-        .attr('height', 0);
-
-      back
-        .attr('x', 0.5)
-        .attr('y', 0.5)
-        .attr('width', 0)
-        .attr('height', 0)
-        .style('opacity', 0)
-        .style('pointer-events', 'all')
-        .on('click', function(d, i) {
-          d3.event.stopPropagation();
-        });
-
-      link
-        .text(legendOpen === 1 ? legend.strings().close : legend.strings().open)
-        .attr('text-anchor', align === 'left' ? rtl ? 'end' : 'start' : rtl ? 'start' : 'end')
-        .attr('dy', '.36em')
-        .attr('dx', 0)
-        .style('opacity', 0)
-        .on('click', function(d, i) {
-          d3.event.preventDefault();
-          d3.event.stopPropagation();
-          dispatch.call('toggleMenu', this, d, i);
-        });
-
-      series.classed('disabled', function(d) {
-        return d.disabled;
-      });
-
-      //------------------------------------------------------------
-
-      //TODO: add ability to add key to legend
-      //TODO: have series display values on hover
-      //var label = g.append('text').text('Probability:').attr('class','sc-series-label').attr('transform','translate(0,0)');
-
-      // store legend label widths
-      legend.calcMaxWidth = function() {
-        keyWidths = [];
-
-        g.style('display', 'inline');
-
-        texts.each(function(d, i) {
-          var textWidth = d3.select(this).node().getBoundingClientRect().width;
-          keyWidths.push(Math.max(Math.floor(textWidth), (type === 'line' ? 50 : 20)));
-        });
-
-        legend.width(d3.sum(keyWidths) + keyWidths.length * padding - gutter);
-
-        return legend.width();
-      };
-
-      legend.getLineHeight = function() {
-        g.style('display', 'inline');
-        var lineHeightBB = Math.floor(texts.node().getBoundingClientRect().height);
-        return lineHeightBB;
-      };
-
-      legend.arrange = function(containerWidth) {
-
-        if (keyWidths.length === 0) {
-          this.calcMaxWidth();
-        }
-
-        function keyWidth(i) {
-          return keyWidths[i] + padding;
-        }
-        function keyWidthNoGutter(i) {
-          return keyWidths[i] + padding - gutter;
-        }
-        function sign(bool) {
-          return bool ? 1 : -1;
-        }
-
-        var keys = keyWidths.length,
-            rows = 1,
-            cols = keys,
-            columnWidths = [],
-            keyPositions = [],
-            maxWidth = containerWidth - margin.left - margin.right,
-            maxHeight = height,
-            maxRowWidth = 0,
-            textHeight = this.getLineHeight(),
-            lineHeight = diameter + (inline ? 0 : textHeight) + lineSpacing,
-            menuMargin = {top: 7, right: 7, bottom: 7, left: 7}, // account for stroke width
-            xpos = 0,
-            ypos = 0,
-            i,
-            mod,
-            shift;
-
-        if (equalColumns) {
-
-          //keep decreasing the number of keys per row until
-          //legend width is less than the available width
-          while (cols > 0) {
-            columnWidths = [];
-
-            for (i = 0; i < keys; i += 1) {
-              if (keyWidth(i) > (columnWidths[i % cols] || 0)) {
-                columnWidths[i % cols] = keyWidth(i);
-              }
-            }
-
-            if (d3.sum(columnWidths) - gutter < maxWidth) {
-              break;
-            }
-            cols -= 1;
-          }
-          cols = cols || 1;
-
-          rows = Math.ceil(keys / cols);
-          maxRowWidth = d3.sum(columnWidths) - gutter;
-
-          for (i = 0; i < keys; i += 1) {
-            mod = i % cols;
-
-            if (inline) {
-              if (mod === 0) {
-                xpos = rtl ? maxRowWidth : 0;
-              } else {
-                xpos += columnWidths[mod - 1] * sign(!rtl);
-              }
-            } else {
-              if (mod === 0) {
-                xpos = (rtl ? maxRowWidth : 0) + (columnWidths[mod] - gutter) / 2 * sign(!rtl);
-              } else {
-                xpos += (columnWidths[mod - 1] + columnWidths[mod]) / 2 * sign(!rtl);
-              }
-            }
-
-            ypos = Math.floor(i / cols) * lineHeight;
-            keyPositions[i] = {x: xpos, y: ypos};
-          }
-
-        } else {
-
-          if (rtl) {
-
-            xpos = maxWidth;
-
-            for (i = 0; i < keys; i += 1) {
-              if (xpos - keyWidthNoGutter(i) < 0) {
-                maxRowWidth = Math.max(maxRowWidth, keyWidthNoGutter(i));
-                xpos = maxWidth;
-                if (i) {
-                  rows += 1;
-                }
-              }
-              if (xpos - keyWidthNoGutter(i) > maxRowWidth) {
-                maxRowWidth = xpos - keyWidthNoGutter(i);
-              }
-              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
-              xpos -= keyWidth(i);
-            }
-
-          } else {
-
-            xpos = 0;
-
-            for (i = 0; i < keys; i += 1) {
-              if (i && xpos + keyWidthNoGutter(i) > maxWidth) {
-                xpos = 0;
-                rows += 1;
-              }
-              if (xpos + keyWidthNoGutter(i) > maxRowWidth) {
-                maxRowWidth = xpos + keyWidthNoGutter(i);
-              }
-              keyPositions[i] = {x: xpos, y: (rows - 1) * (lineSpacing + diameter)};
-              xpos += keyWidth(i);
-            }
-
-          }
-
-        }
-
-        if (!showMenu && (showAll || rows <= rowsCount)) {
-
-          legendOpen = 0;
-          collapsed = false;
-          useScroll = false;
-
-          legend
-            .width(margin.left + maxRowWidth + margin.right)
-            .height(margin.top + rows * lineHeight - lineSpacing + margin.bottom);
-
-          switch (align) {
-            case 'left':
-              shift = 0;
-              break;
-            case 'center':
-              shift = (containerWidth - legend.width()) / 2;
-              break;
-            case 'right':
-              shift = 0;
-              break;
-          }
-
-          clip
-            .attr('y', 0)
-            .attr('width', legend.width())
-            .attr('height', legend.height());
-
-          back
-            .attr('x', shift)
-            .attr('width', legend.width())
-            .attr('height', legend.height())
-            .attr('rx', 0)
-            .attr('ry', 0)
-            .attr('filter', 'none')
-            .style('display', 'inline')
-            .style('opacity', 0);
-
-          mask
-            .attr('clip-path', 'none')
-            .attr('transform', function(d, i) {
-              var xpos = shift + margin.left + (inline ? radius * sign(!rtl) : 0),
-                  ypos = margin.top + menuMargin.top;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            });
-
-          g
-            .style('opacity', 1)
-            .style('display', 'inline');
-
-          series
-            .attr('transform', function(d) {
-              var pos = keyPositions[d.seriesIndex];
-              return 'translate(' + pos.x + ',' + pos.y + ')';
-            });
-
-          series.select('rect')
-            .attr('x', function(d) {
-              var xpos = 0;
-              if (inline) {
-                xpos = (diameter + gutter) / 2 * sign(rtl);
-                xpos -= rtl ? keyWidth(d.seriesIndex) : 0;
-              } else {
-                xpos = keyWidth(d.seriesIndex) / -2;
-              }
-              return xpos;
-            })
-            .attr('width', function(d) {
-              return keyWidth(d.seriesIndex);
-            })
-            .attr('height', lineHeight);
-
-          circles
-            .attr('r', function(d) {
-              return d.type === 'dash' ? 0 : radius;
-            })
-            .attr('transform', function(d, i) {
-              var xpos = inline || type === 'bar' ? 0 : radius * 3 * sign(i);
-              return 'translate(' + xpos + ',0)';
-            });
-
-          lines
-            .attr('x1', function(d) {
-              return d.type === 'dash' ? radius * 8 : radius * 4;
-            })
-            .attr('transform', function(d) {
-              var xpos = radius * (d.type === 'dash' ? -4 : -2);
-              return 'translate(' + xpos + ',0)';
-            })
-            .style('stroke-dasharray', function(d) {
-              return d.type === 'dash' ? '8, 8' : 'none';
-            })
-            .style('stroke-dashoffset', -4);
-
-          texts
-            .attr('dy', inline ? '.36em' : '.71em')
-            .attr('text-anchor', position)
-            .attr('transform', function(d) {
-              var xpos = inline ? (radius + textGap) * sign(!rtl) : 0,
-                  ypos = inline ? 0 : (diameter + lineSpacing) / 2;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            });
-
-        } else {
-
-          collapsed = true;
-          useScroll = true;
-
-          legend
-            .width(menuMargin.left + d3.max(keyWidths) + diameter + textGap + menuMargin.right)
-            .height(margin.top + diameter + margin.top); //don't use bottom here because we want vertical centering
-
-          legendHeight = menuMargin.top + diameter * keys + spacing * (keys - 1) + menuMargin.bottom;
-          dropdownHeight = Math.min(maxHeight - legend.height(), legendHeight);
-
-          clip
-            .attr('x', 0.5 - menuMargin.top - radius)
-            .attr('y', 0.5 - menuMargin.top - radius)
-            .attr('width', legend.width())
-            .attr('height', dropdownHeight);
-
-          back
-            .attr('x', 0.5)
-            .attr('y', 0.5 + legend.height())
-            .attr('width', legend.width())
-            .attr('height', dropdownHeight)
-            .attr('rx', 2)
-            .attr('ry', 2)
-            .attr('filter', backFilter)
-            .style('opacity', legendOpen * 0.9)
-            .style('display', legendOpen ? 'inline' : 'none');
-
-          link
-            .attr('transform', function(d, i) {
-              var xpos = align === 'left' ? 0.5 : 0.5 + legend.width(),
-                  ypos = margin.top + radius;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            })
-            .style('opacity', 1);
-
-          mask
-            .attr('clip-path', 'url(#sc-edge-clip-' + id + ')')
-            .attr('transform', function(d, i) {
-              var xpos = menuMargin.left + radius,
-                  ypos = legend.height() + menuMargin.top + radius;
-              return 'translate(' + xpos + ',' + ypos + ')';
-            });
-
-          g
-            .style('opacity', legendOpen)
-            .style('display', legendOpen ? 'inline' : 'none')
-            .attr('transform', function(d, i) {
-              var xpos = rtl ? d3.max(keyWidths) + radius : 0;
-              return 'translate(' + xpos + ',0)';
-            });
-
-          series
-            .attr('transform', function(d, i) {
-              var ypos = i * (diameter + spacing);
-              return 'translate(0,' + ypos + ')';
-            });
-
-          series.select('rect')
-            .attr('x', function(d) {
-              var w = (diameter + gutter) / 2 * sign(rtl);
-              w -= rtl ? keyWidth(d.seriesIndex) : 0;
-              return w;
-            })
-            .attr('width', function(d) {
-              return keyWidth(d.seriesIndex);
-            })
-            .attr('height', diameter + lineSpacing);
-
-          circles
-            .attr('r', function(d) {
-              return d.type === 'dash' ? 0 : d.type === 'line' ? radius - 2 : radius;
-            })
-            .attr('transform', '');
-
-          lines
-            .attr('x1', 16)
-            .attr('transform', 'translate(-8,0)')
-            .style('stroke-dasharray', function(d) {
-              return d.type === 'dash' ? '6, 4, 6' : 'none';
-            })
-            .style('stroke-dashoffset', 0);
-
-          texts
-            .attr('text-anchor', 'start')
-            .attr('dy', '.36em')
-            .attr('transform', function(d) {
-              var xpos = (radius + textGap) * sign(!rtl);
-              return 'translate(' + xpos + ',0)';
-            });
-
-        }
-
-        //------------------------------------------------------------
-        // Enable scrolling
-        if (scrollEnabled) {
-          var diff = dropdownHeight - legendHeight;
-
-          var assignScrollEvents = function(enable) {
-            if (enable) {
-
-              var zoom = d3.zoom()
-                    .on('zoom', panLegend);
-              var drag = d3.drag()
-                    .subject(utility.identity)
-                    .on('drag', panLegend);
-
-              back.call(zoom);
-              g.call(zoom);
-
-              back.call(drag);
-              g.call(drag);
-
-            } else {
-              back.on('.zoom', null);
-              g.on('.zoom', null);
-
-              back.on('.drag', null);
-              g.on('.drag', null);
-            }
-          };
-
-          var panLegend = function() {
-            var distance = 0,
-                overflowDistance = 0,
-                translate = '',
-                x = 0,
-                y = 0;
-
-            // don't fire on events other than zoom and drag
-            // we need click for handling legend toggle
-            if (d3.event) {
-              if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
-                x = d3.event.sourceEvent.deltaX || 0;
-                y = d3.event.sourceEvent.deltaY || 0;
-                distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
-              } else if (d3.event.type === 'drag') {
-                x = d3.event.dx || 0;
-                y = d3.event.dy || 0;
-                distance = y;
-              } else if (d3.event.type !== 'click') {
-                return 0;
-              }
-              overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
-            }
-
-            // reset value defined in panMultibar();
-            scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), 0);
-            translate = 'translate(' + (rtl ? d3.max(keyWidths) + radius : 0) + ',' + scrollOffset + ')';
-
-            if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
-              overflowHandler(overflowDistance);
-            }
-
-            g.attr('transform', translate);
-          };
-
-          assignScrollEvents(useScroll);
-        }
-
-      };
-
-      //============================================================
-      // Event Handling/Dispatching (in legend's scope)
-      //------------------------------------------------------------
-
-      function displayMenu() {
-        back
-          .style('opacity', legendOpen * 0.9)
-          .style('display', legendOpen ? 'inline' : 'none');
-        g
-          .style('opacity', legendOpen)
-          .style('display', legendOpen ? 'inline' : 'none');
-        link
-          .text(legendOpen === 1 ? legend.strings().close : legend.strings().open);
-      }
-
-      dispatch.on('toggleMenu', function(d) {
-        d3.event.stopPropagation();
-        legendOpen = 1 - legendOpen;
-        displayMenu();
-      });
-
-      dispatch.on('closeMenu', function(d) {
-        if (legendOpen === 1) {
-          legendOpen = 0;
-          displayMenu();
-        }
-      });
-
-    });
-
-    return legend;
-  }
-
-
-  //============================================================
-  // Expose Public Variables
-  //------------------------------------------------------------
-
-  legend.dispatch = dispatch;
-
-  legend.margin = function(_) {
-    if (!arguments.length) { return margin; }
-    margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
-    return legend;
-  };
-
-  legend.width = function(_) {
-    if (!arguments.length) {
-      return width;
-    }
-    width = Math.round(_);
-    return legend;
-  };
-
-  legend.height = function(_) {
-    if (!arguments.length) {
-      return height;
-    }
-    height = Math.round(_);
-    return legend;
-  };
-
-  legend.id = function(_) {
-    if (!arguments.length) {
-      return id;
-    }
-    id = _;
-    return legend;
-  };
-
-  legend.key = function(_) {
-    if (!arguments.length) {
-      return getKey;
-    }
-    getKey = _;
-    return legend;
-  };
-
-  legend.color = function(_) {
-    if (!arguments.length) {
-      return color;
-    }
-    color = utility.getColor(_);
-    return legend;
-  };
-
-  legend.classes = function(_) {
-    if (!arguments.length) {
-      return classes;
-    }
-    classes = _;
-    return legend;
-  };
-
-  legend.align = function(_) {
-    if (!arguments.length) {
-      return align;
-    }
-    align = _;
-    return legend;
-  };
-
-  legend.position = function(_) {
-    if (!arguments.length) {
-      return position;
-    }
-    position = _;
-    return legend;
-  };
-
-  legend.showAll = function(_) {
-    if (!arguments.length) { return showAll; }
-    showAll = _;
-    return legend;
-  };
-
-  legend.showMenu = function(_) {
-    if (!arguments.length) { return showMenu; }
-    showMenu = _;
-    return legend;
-  };
-
-  legend.collapsed = function(_) {
-    return collapsed;
-  };
-
-  legend.rowsCount = function(_) {
-    if (!arguments.length) {
-      return rowsCount;
-    }
-    rowsCount = _;
-    return legend;
-  };
-
-  legend.spacing = function(_) {
-    if (!arguments.length) {
-      return spacing;
-    }
-    spacing = _;
-    return legend;
-  };
-
-  legend.gutter = function(_) {
-    if (!arguments.length) {
-      return gutter;
-    }
-    gutter = _;
-    return legend;
-  };
-
-  legend.radius = function(_) {
-    if (!arguments.length) {
-      return radius;
-    }
-    radius = _;
-    return legend;
-  };
-
-  legend.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
-    strings = _;
-    return legend;
-  };
-
-  legend.equalColumns = function(_) {
-    if (!arguments.length) {
-      return equalColumns;
-    }
-    equalColumns = _;
-    return legend;
-  };
-
-  legend.enabled = function(_) {
-    if (!arguments.length) {
-      return enabled;
-    }
-    enabled = _;
-    return legend;
-  };
-
-  legend.direction = function(_) {
-    if (!arguments.length) {
-      return direction;
-    }
-    direction = _;
-    return legend;
-  };
-
-  //============================================================
-
-
-  return legend;
-}
-
 function multibar() {
 
   //============================================================
@@ -5685,9 +6008,9 @@ function multibar() {
       direction = 'ltr',
       clipEdge = false, // if true, masks bars within x and y scale
       delay = 0, // transition
-      duration = 300, // transition
-      xDomain,
-      yDomain,
+      duration = 0, // transition
+      xDomain = null,
+      yDomain = null,
       nice = false,
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
@@ -5926,10 +6249,10 @@ function multibar() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
       var wrap = container.select('.sc-wrap.sc-multibar').merge(wrap_entr);
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //set up the gradient constructor function
-      gradient = function(d, i, p) {
+      gradient = gradient || function(d, i, p) {
         return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
@@ -5975,7 +6298,7 @@ function multibar() {
 
       series
         .attr('fill', fill)
-        .attr('class', function(d,i) { return classes(d,i); })
+        .attr('class', classes)
         .classed('hover', function(d) { return d.hover; })
         .classed('sc-active', function(d) { return d.active === 'active'; })
         .classed('sc-inactive', function(d) { return d.active === 'inactive'; })
@@ -6626,7 +6949,7 @@ function pie() {
           container = d3.select(this);
 
       //set up the gradient constructor function
-      gradient = function(d, i) {
+      gradient = gradient || function(d, i) {
         var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
         return utility.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
@@ -6661,7 +6984,7 @@ function pie() {
       wrap_entr.append('g').attr('class', 'sc-hole-wrap');
       var hole_wrap = wrap.select('.sc-hole-wrap');
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
       // Definitions
@@ -8137,7 +8460,8 @@ function treemap() {
       getKey = function(d) { return d.name; }, // accessor to get the name value from a data point
       groupBy = function(d) { return getKey(d); }, // accessor to get the name value from a data point
       clipEdge = true, // if true, masks lines within x and y scale
-      duration = 500,
+      duration = 0,
+      delay = 0,
       leafClick = function() { return false; },
       // color = function(d, i) { return utility.defaultColor()(d, i); },
       color = d3.scaleOrdinal().range(
@@ -8241,7 +8565,7 @@ function treemap() {
 
       var defs_entr = wrap_entr.append('defs');
 
-      // wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      // wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
       // Clip Path
@@ -8288,7 +8612,7 @@ function treemap() {
         // grandparent.exit().remove();
 
         grandparent
-          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+          .attr('transform', utility.translation(margin.left, margin.top))
           .lower();
 
         // Parent group
@@ -8588,6 +8912,12 @@ function treemap() {
     return model;
   };
 
+  model.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    return model;
+  };
+
   model.id = function(_) {
     if (!arguments.length) { return id; }
     id = _;
@@ -8612,11 +8942,12 @@ function treemap() {
        MODELS
 -------------------*/
 
-const models = {
-    area: stackearea,
+var models = {
+    area: area,
     axis: axis,
     funnel: funnel,
     gauge: gauge,
+    headers: headers,
     line: line,
     menu: menu,
     multibar: multibar,
@@ -8636,25 +8967,28 @@ function areaChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showControls = false,
-      showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
 
   var pointRadius = 3;
+
+  var dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  var tooltipContent = function(eo, properties) {
+        var key = eo.seriesKey;
+        var yIsCurrency = properties.yDataType === 'currency';
+        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
+        return '<p>' + key + ': ' + y + '</p>';
+      };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
@@ -8678,23 +9012,23 @@ function areaChart() {
   //------------------------------------------------------------
 
   // Chart components
-  var model = stackearea().clipEdge(true);
+  var model = area();
+  var header = headers();
   var xAxis = axis();
   var yAxis = axis();
-  var controls = menu();
-  var legend = menu();
-  var guide = line().duration(0);
+  var guide = line();
 
   var tt = null,
       guidetips = null;
 
-  var tooltipContent = function(eo, properties) {
-        var key = eo.seriesKey;
-        var yIsCurrency = properties.yDataType === 'currency';
-        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
-        return '<p>' + key + ': ' + y + '</p>';
-      };
-
+  model
+    .clipEdge(true);
+  header
+    .showTitle(true)
+    .showControls(false)
+    .showLegend(true);
+  guide
+    .duration(0);
 
   //============================================================
 
@@ -8715,14 +9049,14 @@ function areaChart() {
       var availableWidth = width,
           availableHeight = height;
 
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
+
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
-
-      var xIsDatetime = properties.xDataType === 'datetime' || false,
-          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
           seriesCount = 0,
@@ -8743,6 +9077,9 @@ function areaChart() {
         {key: 'Stream', disabled: model.offset() !== 'wiggle'},
         {key: 'Expanded', disabled: model.offset() !== 'expand'}
       ];
+
+      var x,
+          y;
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
@@ -8892,9 +9229,6 @@ function areaChart() {
         return yValueFormat(d, i, null, yIsCurrency, 2);
       };
 
-      // Set title display option
-      showTitle = showTitle && properties.title;
-
 
       //------------------------------------------------------------
       // State persistence model
@@ -8905,6 +9239,12 @@ function areaChart() {
 
       //------------------------------------------------------------
       // Setup Scales and Axes
+
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
 
       model
         .xDomain(null)  //?why null?
@@ -8954,7 +9294,6 @@ function areaChart() {
       var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
       var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
@@ -8965,19 +9304,17 @@ function areaChart() {
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-guide-wrap');
       var guide_wrap = wrap.select('.sc-guide-wrap');
 
-      wrap_entr.select('.sc-background-wrap')
-        .append('rect')
-          .attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', 'rgba(215, 235, 255, 0.1)');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
 
 
       //------------------------------------------------------------
@@ -8988,7 +9325,11 @@ function areaChart() {
         // Chart layout variables
         var renderWidth, renderHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
+
+        var xpos = 0,
+            ypos = 0;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -9003,118 +9344,27 @@ function areaChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        xTickMaxWidth = Math.max(availableWidth * 0.2, 75);
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
+        xTickMaxWidth = Math.max(availableWidth * 0.2, 75);
 
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
-            widthRatio = 0,
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
-            legendHeight = 0,
-            trans = '',
-            xpos = 0,
-            ypos = 0;
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        title_wrap.select('.sc-title').remove();
+        container.call(header);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
+        innerMargin.top += headerHeight;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showControls) {
-          controls
-            .id('controls_' + model.id())
-            .strings(strings.controls)
-            .color(['#444'])
-            .align('left')
-            .height(availableHeight - headerHeight);
-          controls_wrap
-            .datum(controlsData)
-            .call(controls);
-
-          maxControlsWidth = controls.calcMaxWidth();
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + model.id())
-            .strings(strings.legend)
-            .align('right')
-            .height(availableHeight - headerHeight);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-
-          maxLegendWidth = legend.calcMaxWidth();
-        }
-
-        // calculate proportional available space
-        widthRatio = availableWidth / (maxControlsWidth + maxLegendWidth);
-        maxControlsWidth = Math.floor(maxControlsWidth * widthRatio);
-        maxLegendWidth = Math.floor(maxLegendWidth * widthRatio);
-
-        if (showControls) {
-          controls
-            .arrange(maxControlsWidth);
-          maxLegendWidth = availableWidth - controls.width();
-        }
-
-        if (showLegend) {
-          legend
-            .arrange(maxLegendWidth);
-          maxControlsWidth = availableWidth - legend.width();
-        }
-
-        if (showControls) {
-          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
-          ypos = showTitle ? titleBBox.height : - controls.margin().top;
-          controls_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          controlsHeight = controls.height();
-        }
-
-        if (showLegend) {
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
-          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
-          ypos = titleBBox.height;
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = 0 - legend.margin().top;
-          }
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          legendHeight = legendTop ? 12 : legend.height();
-        }
-
-        // Recalc inner margins based on legend and control height
-        headerHeight += Math.max(controlsHeight, legendHeight);
-        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -9280,21 +9530,20 @@ function areaChart() {
 
         innerMargin.top += headerHeight;
 
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xpos = innerMargin.left;
+        ypos = innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
-        trans += innerMargin.top;
+        xpos = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth);
+        ypos = innerMargin.top;
         yAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + ',' + innerMargin.top;
         model_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top));
         guide_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top));
 
       };
 
@@ -9306,9 +9555,8 @@ function areaChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(series, i) {
+      header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
-        series.active = 'inactive';
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
@@ -9318,11 +9566,14 @@ function areaChart() {
         }
         state.disabled = data.map(function(d) { return !!d.disabled; });
 
+        // on legend click, clear active cell state
+        series.active = 'inactive';
+
         chart.update();
         dispatch.call('stateChange', this, state);
       });
 
-      controls.dispatch.on('legendClick', function(control, i) {
+      header.controls.dispatch.on('legendClick', function(control, i) {
         //if the option is currently enabled (i.e., selected)
         if (!control.disabled) {
           return;
@@ -9411,11 +9662,11 @@ function areaChart() {
       });
 
       dispatch.on('chartClick', function() {
-        if (controls.enabled()) {
-          controls.dispatch.call('closeMenu', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
         }
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -9423,6 +9674,7 @@ function areaChart() {
         d3.event.stopPropagation();
         dispatch.call('chartClick', this);
       });
+
     });
 
     return chart;
@@ -9452,13 +9704,15 @@ function areaChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.area = model;
-  chart.legend = legend;
-  chart.controls = controls;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.options = utility.optionsFunc.bind(chart);
 
-  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'delay', 'color', 'fill', 'classes', 'gradient', 'locality');
+  fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'offset', 'order', 'style');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -9509,8 +9763,8 @@ function areaChart() {
     // don't enable this since controls get a custom function
     // controls.color(color);
     // controls.classes(classes);
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -9534,24 +9788,6 @@ function areaChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showControls = function(_) {
-    if (!arguments.length) { return showControls; }
-    showControls = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -9581,6 +9817,7 @@ function areaChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -9590,8 +9827,7 @@ function areaChart() {
     model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
-    legend.direction(_);
-    controls.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -9606,6 +9842,12 @@ function areaChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.pointRadius = function(_) {
+    if (!arguments.length) { return pointRadius; }
+    pointRadius = _;
     return chart;
   };
 
@@ -9625,12 +9867,6 @@ function areaChart() {
     return chart;
   };
 
-  chart.pointRadius = function(_) {
-    if (!arguments.length) { return pointRadius; }
-    pointRadius = _;
-    return chart;
-  };
-
   //============================================================
 
   return chart;
@@ -9645,25 +9881,23 @@ function bubbleChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showLegend = true,
       direction = 'ltr',
-      getX = function(d) { return d.x; },
-      getY = function(d) { return d.y; },
-      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
-      delay = 200,
+      delay = 0,
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
+
+  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  var getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      forceY = [0]; // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
 
   var groupBy = function(d) { return d.y; },
       filterBy = function(d) { return d.y; },
@@ -9692,16 +9926,11 @@ function bubbleChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var model = scatter()
-        .padData(true)
-        .padDataOuter(-1)
-        .size(function(d) { return d.y; })
-        .sizeRange([256, 1024])
-        .singlePoint(true);
+  // Chart components
+  var model = scatter();
+  var header = headers();
   var xAxis = axis();
   var yAxis = axis();
-  var legend = menu()
-        .key(function(d) { return d.key + '%'; });
 
   var tt = null;
 
@@ -9719,9 +9948,22 @@ function bubbleChart() {
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart, labels) {
+  var seriesClick = function(data, eo, chart, labels) {
         return;
       };
+
+  model
+    .padData(true)
+    .padDataOuter(-1)
+    .size(function(d) { return d.y; })
+    .sizeRange([256, 1024])
+    .singlePoint(true);
+  header
+    .showTitle(true)
+    .showControls(false)
+    .showLegend(true)
+    .alignLegend('center');
+
 
   //============================================================
 
@@ -9765,11 +10007,14 @@ function bubbleChart() {
               yValueFormat(d, i, label, yIsCurrency);
           };
 
+      var controlsData = [];
+
       chart.update = function() {
         container.transition().duration(duration).call(chart);
       };
 
       chart.container = this;
+
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -9778,7 +10023,7 @@ function bubbleChart() {
         var hasData = data && data.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -9789,9 +10034,6 @@ function bubbleChart() {
 
       //------------------------------------------------------------
       // Process data
-
-      // set title display option
-      showTitle = showTitle && properties.title;
 
       function getTimeDomain(data) {
         var timeExtent =
@@ -9909,6 +10151,17 @@ function bubbleChart() {
           return d;
         });
 
+      //------------------------------------------------------------
+      // Setup Scales and Axes
+
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(modelData);
+      header.legend
+        .key(function(d) { return d.key + '%'; });
+
       xDomain = getTimeDomain(modelData);
 
       yValues = getGroupTicks(data);
@@ -9923,15 +10176,13 @@ function bubbleChart() {
             ).concat(forceY)
           );
 
+
       //------------------------------------------------------------
       // Setup Scales and Axes
 
-      x = model.xScale();
-      y = model.yScale();
-
       xAxis
         .orient('bottom')
-        .scale(x)
+        .scale(model.xScale())
         .valueFormat(xAxisFormat)
         .ticks(d3.timeMonths, 1)
         .tickValues(getTimeTicks(xDomain))
@@ -9942,7 +10193,7 @@ function bubbleChart() {
 
       yAxis
         .orient('left')
-        .scale(y)
+        .scale(model.yScale())
         .valueFormat(yAxisFormat)
         .ticks(yValues.length)
         .tickValues(yValues.map(function(d, i) {
@@ -9960,25 +10211,31 @@ function bubbleChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
+      wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
-
-      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
-      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
 
       wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
       var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
 
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -9988,7 +10245,11 @@ function bubbleChart() {
         // Chart layout variables
         var renderWidth, renderHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
+
+        var xpos = 0,
+            ypos = 0;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -10003,74 +10264,31 @@ function bubbleChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        // Header variables
-        var maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI),
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            trans = '';
-
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        var maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI);
+
 
         //------------------------------------------------------------
-        // Title & Legend
+        // Title & Legend & Controls
 
-        title_wrap.select('.sc-title').remove();
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
+        container.call(header);
 
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
+        innerMargin.top += headerHeight;
+        innerMargin.top += maxBubbleSize;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        if (showLegend) {
-          legend
-            .id('legend_' + model.id())
-            .strings(chart.strings().legend)
-            .align('center')
-            .height(availableHeight - headerHeight);
-          legend_wrap
-            .datum(modelData)
-            .call(legend);
-          legend
-            .arrange(availableWidth);
-
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
-
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = - legend.margin().top;
-          }
-
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-
-          headerHeight += legendTop ? 12 : legend.height();
-        }
-
-        // Recalc inner margins based on legend and control height
-        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
 
         //------------------------------------------------------------
-        // Main Chart Components
+        // Main Chart Component(s)
 
         model
           .width(innerWidth)
@@ -10086,10 +10304,9 @@ function bubbleChart() {
           .transition().duration(duration)
             .call(model);
 
-        innerMargin.top += maxBubbleSize;
 
         //------------------------------------------------------------
-        // Setup Axes
+        // Axes
 
         var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
@@ -10130,7 +10347,7 @@ function bubbleChart() {
         setInnerMargins();
         setInnerDimensions();
 
-        // recall y-axis to set final size based on new dimensions
+        // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
@@ -10147,18 +10364,18 @@ function bubbleChart() {
         //------------------------------------------------------------
         // Final repositioning
 
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xpos = innerMargin.left;
+        ypos = innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
-        trans += innerMargin.top;
+        xpos = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth);
+        ypos = innerMargin.top;
         yAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
         model_wrap
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top));
 
       };
 
@@ -10170,21 +10387,20 @@ function bubbleChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
+      header.legend.dispatch.on('legendClick', function(series, i) {
+        series.disabled = !series.disabled;
 
         if (!modelData.filter(function(d) { return !d.disabled; }).length) {
-          modelData.map(function(d) {
+          modelData.forEach(function(d) {
             d.disabled = false;
             container.selectAll('.sc-series').classed('disabled', false);
-            return d;
           });
         }
 
         state.disabled = modelData.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
-        container.transition().call(chart.render);
+        chart.update();
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -10214,19 +10430,27 @@ function bubbleChart() {
           state.disabled = eo.disabled;
         }
 
-        container.transition().call(chart);
+        chart.update();
       });
 
       dispatch.on('chartClick', function() {
         dispatch.call('tooltipHide', this);
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
+        }
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
       model.dispatch.on('elementClick', function(eo) {
         dispatch.call('chartClick', this);
         seriesClick(data, eo, chart);
+      });
+
+      container.on('click', function() {
+        d3.event.stopPropagation();
+        dispatch.call('chartClick', this);
       });
 
     });
@@ -10257,12 +10481,15 @@ function bubbleChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.scatter = model;
-  chart.legend = legend;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -10288,7 +10515,7 @@ function bubbleChart() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
@@ -10309,8 +10536,8 @@ function bubbleChart() {
     model.fill(fill);
     model.classes(classes);
 
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -10334,18 +10561,6 @@ function bubbleChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -10375,16 +10590,17 @@ function bubbleChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
   chart.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
-    // model.direction(_);
+    model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
-    legend.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -10424,10 +10640,6 @@ function bubbleChart() {
     return chart;
   };
 
-  chart.colorFill = function(_) {
-    return chart;
-  };
-
   chart.groupBy = function(_) {
     if (!arguments.length) {
       return groupBy;
@@ -10458,9 +10670,6 @@ function funnelChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showControls = false,
-      showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
@@ -10471,20 +10680,7 @@ function funnelChart() {
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
-
-  //============================================================
-  // Private Variables
-  //------------------------------------------------------------
-
-  var model = funnel();
-  var controls = menu();
-  var legend = menu();
-
-  var controlsData = [];
-
-  var tt = null;
+      };
 
   var tooltipContent = function(eo, properties) {
         var key = model.fmtKey()(eo);
@@ -10499,17 +10695,37 @@ function funnelChart() {
                '<p>Percent: <b>' + percent + '%</b></p>';
       };
 
+  var seriesClick = function(data, e, chart) { return; };
+
+  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  // Chart components
+  var model = funnel();
+  var header = headers();
+
+  var controlsData = [];
+
+  var tt = null;
+
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart) { return; };
+  header
+    .showTitle(true)
+    .showControls(false)
+    .showLegend(true)
+    .alignLegend('center');
+
 
   //============================================================
 
   function chart(selection) {
-
     selection.each(function(chartData) {
 
       var that = this,
@@ -10531,6 +10747,7 @@ function funnelChart() {
 
       chart.container = this;
 
+
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
@@ -10538,13 +10755,14 @@ function funnelChart() {
         var hasData = d && d.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
       if (displayNoData(data)) {
         return chart;
       }
+
 
       //------------------------------------------------------------
       // Process data
@@ -10603,13 +10821,14 @@ function funnelChart() {
           }
         });
 
+        s.key = s.key || strings.noLabel;
         s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
         s.count = s.count || s.values.length;
         s.disabled = s.disabled || s.value === 0;
       });
 
       // only sum enabled series
-      var modelData = data.filter(function(d, i) { return !d.disabled; });
+      var modelData = data.filter(function(d) { return !d.disabled; });
 
       if (!modelData.length) {
         modelData = [{values: []}]; // safety array
@@ -10618,9 +10837,6 @@ function funnelChart() {
       properties.count = d3.sum(modelData, function(d) { return d.count; });
 
       properties.total = d3.sum(modelData, function(d) { return d.value; });
-
-      // set title display option
-      showTitle = showTitle && properties.title.length;
 
       //set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
@@ -10633,6 +10849,12 @@ function funnelChart() {
         return chart;
       }
 
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
+
       //------------------------------------------------------------
       // Main chart wrappers
 
@@ -10642,21 +10864,24 @@ function funnelChart() {
 
       wrap_entr.append('defs');
 
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -10667,7 +10892,8 @@ function funnelChart() {
         var renderWidth, renderHeight,
             availableWidth, availableHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -10682,72 +10908,25 @@ function funnelChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        // Header variables
-        var headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            legendHeight = 0;
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        title_wrap.select('.sc-title').remove();
+        container.call(header);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
-
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + chart.id())
-            .strings(chart.strings().legend)
-            .align('center')
-            .height(availableHeight - innerMargin.top);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-          legend
-            .arrange(availableWidth);
-
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
-
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = - legend.margin().top;
-          }
-
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-
-          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
-        }
-
-        // Recalc inner margins based on title and legend height
-        headerHeight += legendHeight;
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
         innerMargin.top += headerHeight;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -10758,7 +10937,7 @@ function funnelChart() {
 
         model_wrap
           .datum(modelData)
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top))
           .transition().duration(duration)
             .call(model);
 
@@ -10772,23 +10951,21 @@ function funnelChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
-        d.active = false;
+      header.legend.dispatch.on('legendClick', function(series, i) {
+        series.disabled = !series.disabled;
+        series.active = false;
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
-          data.map(function(d) {
+          data.forEach(function(d) {
             d.disabled = false;
-            return d;
           });
         }
 
         // if there are no active data series, activate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
+          data.forEach(function(d) {
             d.active = '';
-            return d;
           });
         }
 
@@ -10830,11 +11007,11 @@ function funnelChart() {
 
       dispatch.on('chartClick', function() {
         //dispatch.call('tooltipHide', this);
-        if (controls.enabled()) {
-          controls.dispatch.call('closeMenu', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
         }
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -10847,6 +11024,7 @@ function funnelChart() {
 
     return chart;
   }
+
 
   //============================================================
   // Event Handling/Dispatching (out of chart's scope)
@@ -10871,12 +11049,14 @@ function funnelChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.funnel = model;
-  chart.legend = legend;
-  chart.controls = controls;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'yScale', 'yDomain', 'forceY', 'wrapLabels', 'minLabelWidth');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -10901,7 +11081,7 @@ function funnelChart() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
@@ -10923,8 +11103,11 @@ function funnelChart() {
     model.fill(fill);
     model.classes(classes);
 
-    legend.color(color);
-    legend.classes(classes);
+    // don't enable this since controls get a custom function
+    // controls.color(color);
+    // controls.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -10948,24 +11131,6 @@ function funnelChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showControls = function(_) {
-    if (!arguments.length) { return showControls; }
-    showControls = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -10995,6 +11160,7 @@ function funnelChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -11002,8 +11168,7 @@ function funnelChart() {
     if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
-    legend.direction(_);
-    controls.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -11029,10 +11194,6 @@ function funnelChart() {
     return chart;
   };
 
-  chart.colorFill = function(_) {
-    return chart;
-  };
-
   //============================================================
 
   return chart;
@@ -11047,8 +11208,6 @@ function gaugeChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
@@ -11056,17 +11215,22 @@ function gaugeChart() {
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
+        controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
+
+  var dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var model = gauge(),
-      legend = menu().align('center');
+  // Chart components
+  var model = gauge();
+  var header = headers();
+
+  var controlsData = [];
 
   var tt = null;
 
@@ -11082,6 +11246,13 @@ function gaugeChart() {
         var content = tooltipContent(eo, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
+
+  header
+    .showTitle(true)
+    .showControls(false)
+    .showLegend(true)
+    .alignLegend('center');
+
 
   //============================================================
 
@@ -11108,6 +11279,7 @@ function gaugeChart() {
 
       chart.container = this;
 
+
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
@@ -11115,7 +11287,7 @@ function gaugeChart() {
         var hasData = d && d.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -11123,14 +11295,16 @@ function gaugeChart() {
         return chart;
       }
 
+
       //------------------------------------------------------------
       // Process data
 
-      //add series index to each data point for reference
+      // add series index to each data point for reference
       data.forEach(function(s, i) {
         var y = model.y();
         s.seriesIndex = i;
         s.value = y(s);
+
         if (!s.value && !s.values) {
           s.values = [];
         } else if (!isNaN(s.value)) {
@@ -11160,9 +11334,6 @@ function gaugeChart() {
 
       properties.total = d3.sum(modelData, function(d) { return d.value; });
 
-      // set title display option
-      showTitle = showTitle && properties.title.length;
-
       //set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
 
@@ -11174,6 +11345,12 @@ function gaugeChart() {
         return chart;
       }
 
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
+
       //------------------------------------------------------------
       // Main chart wrappers
 
@@ -11181,19 +11358,26 @@ function gaugeChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
+      wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -11204,7 +11388,8 @@ function gaugeChart() {
         var renderWidth, renderHeight,
             availableWidth, availableHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -11219,72 +11404,25 @@ function gaugeChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        // Header variables
-        var headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            legendHeight = 0;
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        title_wrap.select('.sc-title').remove();
+        container.call(header);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
-
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + chart.id())
-            .strings(chart.strings().legend)
-            .align('center')
-            .height(availableHeight - innerMargin.top);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-          legend
-            .arrange(availableWidth);
-
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
-
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = - legend.margin().top;
-          }
-
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-
-          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
-        }
-
-        // Recalc inner margins based on title and legend height
-        headerHeight += legendHeight;
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
         innerMargin.top += headerHeight;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -11295,7 +11433,7 @@ function gaugeChart() {
 
         model_wrap
           .datum(modelData)
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top))
           .transition().duration(duration)
             .call(model);
 
@@ -11337,12 +11475,16 @@ function gaugeChart() {
           state.disabled = eo.disabled;
         }
 
-        container.transition().duration(duration).call(chart);
+        chart.update();
       });
 
       dispatch.on('chartClick', function() {
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        //dispatch.call('tooltipHide', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
+        }
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -11374,11 +11516,14 @@ function gaugeChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.gauge = model;
-  chart.legend = legend;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'showLabels', 'showPointer', 'setPointer', 'ringWidth', 'labelThreshold', 'maxValue', 'minValue');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -11403,12 +11548,12 @@ function gaugeChart() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
         color = function(d, i) {
-          return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
+          return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d, i) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
@@ -11424,8 +11569,8 @@ function gaugeChart() {
     model.fill(fill);
     model.classes(classes);
 
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -11449,18 +11594,6 @@ function gaugeChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -11489,6 +11622,7 @@ function gaugeChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -11496,7 +11630,7 @@ function gaugeChart() {
     if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
-    legend.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -11552,13 +11686,12 @@ function globeChart() {
       tooltips = true,
       initialTilt = 0,
       initialRotate = 100,
-      x,
-      y,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       showLabels = true,
       autoSpin = false,
@@ -11629,7 +11762,7 @@ function globeChart() {
 
       chart.container = this;
 
-      gradient = function(d, i) {
+      gradient = gradient || function(d, i) {
         return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), defs);
       };
 
@@ -11640,7 +11773,7 @@ function globeChart() {
         var hasData = d && d.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -11664,7 +11797,7 @@ function globeChart() {
 
       wrap_entr.append('svg:rect')
         .attr('class', 'sc-chart-background')
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        .attr('transform', utility.translation(margin.left, margin.top));
       var backg = wrap.select('.sc-chart-background');
 
       var globe_entr = wrap_entr.append('g').attr('class', 'sc-globe');
@@ -12023,6 +12156,104 @@ function globeChart() {
   chart.projection = projection;
   chart.path = path;
   chart.graticule = graticule;
+  chart.options = utility.optionsFunc.bind(chart);
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) return width;
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) return height;
+    height = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) {
+      return tooltips;
+    }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) {
+      return tooltipContent;
+    }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) {
+      return state;
+    }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) {
+      return showTitle;
+    }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    return chart;
+  };
+
+  chart.id = function(_) {
+    if (!arguments.length) return id;
+    id = _;
+    return chart;
+  };
+
+  chart.color = function(_) {
+    if (!arguments.length) return color;
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) return fill;
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) return classes;
+    classes = _;
+    return chart;
+  };
+
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -12068,90 +12299,9 @@ function globeChart() {
     return chart;
   };
 
-  chart.color = function(_) {
-    if (!arguments.length) return color;
-    color = _;
-    return chart;
-  };
-  chart.fill = function(_) {
-    if (!arguments.length) return fill;
-    fill = _;
-    return chart;
-  };
-  chart.classes = function(_) {
-    if (!arguments.length) return classes;
-    classes = _;
-    return chart;
-  };
   chart.gradient = function(_) {
     if (!arguments.length) return gradient;
     gradient = _;
-    return chart;
-  };
-
-  chart.width = function(_) {
-    if (!arguments.length) return width;
-    width = _;
-    return chart;
-  };
-
-  chart.height = function(_) {
-    if (!arguments.length) return height;
-    height = _;
-    return chart;
-  };
-
-  chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        margin[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
-    tooltips = _;
-    return chart;
-  };
-
-  chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
-    tooltipContent = _;
-    return chart;
-  };
-
-  chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
-    state = _;
-    return chart;
-  };
-
-  chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.direction = function(_) {
-    if (!arguments.length) { return direction; }
-    direction = _;
     return chart;
   };
 
@@ -12164,20 +12314,6 @@ function globeChart() {
   chart.autoSpin = function(_) {
     if (!arguments.length) return autoSpin;
     autoSpin = _;
-    return chart;
-  };
-
-  chart.id = function(_) {
-    if (!arguments.length) return id;
-    id = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
-    showTitle = _;
     return chart;
   };
 
@@ -12218,55 +12354,21 @@ function lineChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showControls = false,
-      showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
+
+  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   var pointRadius = 3;
-
-  var xValueFormat = function(d, i, label, isDate, dateFormat) {
-        // If ordinal, label is provided so use it.
-        // If date or numeric use d.
-        var value = label || d;
-        if (isDate) {
-          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(value, dateFormat, chart.locality());
-        } else {
-          return value;
-        }
-      };
-
-  var yValueFormat = function(d, i, label, isCurrency, precision) {
-        precision = isNaN(precision) ? 2 : precision;
-        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
-      };
-
-  //============================================================
-  // Private Variables
-  //------------------------------------------------------------
-
-  // Chart components
-  var model = line().clipEdge(true);
-  var xAxis = axis();
-  var yAxis = axis();
-  var controls = menu();
-  var legend = menu();
-
-  var tt = null;
 
   var tooltipContent = function(eo, properties) {
         var seriesLabel = properties.seriesLabel || 'Key';
@@ -12303,6 +12405,35 @@ function lineChart() {
         return content;
       };
 
+  var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
+        if (isDate) {
+          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
+          return utility.dateFormat(value, dateFormat, chart.locality());
+        } else {
+          return value;
+        }
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency, precision) {
+        precision = isNaN(precision) ? 2 : precision;
+        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+      };
+
+  //============================================================
+  // Private Variables
+  //------------------------------------------------------------
+
+  // Chart components
+  var model = line();
+  var header = headers();
+  var xAxis = axis();
+  var yAxis = axis();
+
+  var tt = null;
+
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
         var gravity = eo.value < 0 ? 'n' : 's';
@@ -12312,6 +12443,13 @@ function lineChart() {
   var seriesClick = function(data, eo, chart, labels) {
         return;
       };
+
+  model
+    .clipEdge(true);
+  header
+    .showTitle(true)
+    .showControls(true)
+    .showLegend(true);
 
 
   //============================================================
@@ -12333,21 +12471,21 @@ function lineChart() {
       var availableWidth = width,
           availableHeight = height;
 
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
+
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
 
-      var xIsDatetime = properties.xDataType === 'datetime' || false,
-          yIsCurrency = properties.yDataType === 'currency' || false;
-
       var modelData = [],
           seriesCount = 0,
           totalAmount = 0;
 
-     var padding = (model.padData() ? pointRadius : 0);
-     var singlePoint = false;
+      var padding = (model.padData() ? pointRadius : 0);
+      var singlePoint = false;
 
           //TODO: allow formatter to be set by data
       var xTickMaxWidth = 75,
@@ -12590,9 +12728,6 @@ function lineChart() {
         return yValueFormat(d, i, null, yIsCurrency, 2);
       };
 
-      // Set title display option
-      showTitle = showTitle && properties.title;
-
 
       //------------------------------------------------------------
       // State persistence model
@@ -12604,6 +12739,12 @@ function lineChart() {
 
       //------------------------------------------------------------
       // Setup Scales and Axes
+
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
 
       // Are all data series single points
       singlePoint = d3.max(modelData, function(d) {
@@ -12694,16 +12835,13 @@ function lineChart() {
           .showMaxMin(true);
       }
 
-      x = model.xScale();
-      y = model.yScale();
-
       xAxis
-        .scale(x)
+        .scale(model.xScale())
         .tickPadding(6)
         .valueFormat(xAxisFormat);
 
       yAxis
-        .scale(y)
+        .scale(model.yScale())
         .tickPadding(6)
         .valueFormat(yAxisFormat);
 
@@ -12721,7 +12859,6 @@ function lineChart() {
       var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
       var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
@@ -12732,16 +12869,14 @@ function lineChart() {
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
 
-      wrap_entr.select('.sc-background-wrap')
-        .append('rect')
-          .attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', 'rgba(215, 235, 255, 0.1)');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
 
 
       //------------------------------------------------------------
@@ -12752,7 +12887,11 @@ function lineChart() {
         // Chart layout variables
         var renderWidth, renderHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
+
+        var xpos = 0,
+            ypos = 0;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -12767,118 +12906,27 @@ function lineChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        xTickMaxWidth = Math.max(availableWidth * 0.2, 75);
-
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
+        xTickMaxWidth = Math.max(availableWidth * 0.2, 75);
 
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
-            widthRatio = 0,
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
-            legendHeight = 0,
-            trans = '',
-            xpos = 0,
-            ypos = 0;
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        title_wrap.select('.sc-title').remove();
+        container.call(header);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
+        innerMargin.top += headerHeight;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showControls) {
-          controls
-            .id('controls_' + model.id())
-            .strings(strings.controls)
-            .color(['#444'])
-            .align('left')
-            .height(availableHeight - headerHeight);
-          controls_wrap
-            .datum(controlsData)
-            .call(controls);
-
-          maxControlsWidth = controls.calcMaxWidth();
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + model.id())
-            .strings(strings.legend)
-            .align('right')
-            .height(availableHeight - headerHeight);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-
-          maxLegendWidth = legend.calcMaxWidth();
-        }
-
-        // calculate proportional available space
-        widthRatio = availableWidth / (maxControlsWidth + maxLegendWidth);
-        maxControlsWidth = Math.floor(maxControlsWidth * widthRatio);
-        maxLegendWidth = Math.floor(maxLegendWidth * widthRatio);
-
-        if (showControls) {
-          controls
-            .arrange(maxControlsWidth);
-          maxLegendWidth = availableWidth - controls.width();
-        }
-
-        if (showLegend) {
-          legend
-            .arrange(maxLegendWidth);
-          maxControlsWidth = availableWidth - legend.width();
-        }
-
-        if (showControls) {
-          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
-          ypos = showTitle ? titleBBox.height : - controls.margin().top;
-          controls_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          controlsHeight = controls.height();
-        }
-
-        if (showLegend) {
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
-          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
-          ypos = titleBBox.height;
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = 0 - legend.margin().top;
-          }
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          legendHeight = legendTop ? 12 : legend.height();
-        }
-
-        // Recalc inner margins based on legend and control height
-        headerHeight += Math.max(controlsHeight, legendHeight);
-        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -12969,19 +13017,18 @@ function lineChart() {
 
         innerMargin.top += headerHeight;
 
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xpos = innerMargin.left;
+        ypos = innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
-        trans += innerMargin.top;
+        xpos = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth);
+        ypos = innerMargin.top;
         yAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + ',' + innerMargin.top;
         model_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top));
 
       };
 
@@ -12993,8 +13040,9 @@ function lineChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(series, i) {
+      header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
+
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.forEach(function(d) {
@@ -13018,7 +13066,7 @@ function lineChart() {
         dispatch.call('stateChange', this, state);
       });
 
-      controls.dispatch.on('legendClick', function(control, i) {
+      header.controls.dispatch.on('legendClick', function(control, i) {
         //if the option is currently enabled (i.e., selected)
         if (!control.disabled) {
           return;
@@ -13104,11 +13152,11 @@ function lineChart() {
 
       dispatch.on('chartClick', function() {
         //dispatch.call('tooltipHide', this);
-        if (controls.enabled()) {
-          controls.dispatch.call('closeMenu', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
         }
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -13125,6 +13173,7 @@ function lineChart() {
         d3.event.stopPropagation();
         dispatch.call('chartClick', this);
       });
+
     });
 
     return chart;
@@ -13154,13 +13203,15 @@ function lineChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.lines = model;
-  chart.legend = legend;
-  chart.controls = controls;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -13210,8 +13261,8 @@ function lineChart() {
     // don't enable this since controls get a custom function
     // controls.color(color);
     // controls.classes(classes);
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -13235,24 +13286,6 @@ function lineChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showControls = function(_) {
-    if (!arguments.length) { return showControls; }
-    showControls = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -13282,6 +13315,7 @@ function lineChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -13291,8 +13325,7 @@ function lineChart() {
     model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
-    legend.direction(_);
-    controls.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -13307,6 +13340,12 @@ function lineChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.pointRadius = function(_) {
+    if (!arguments.length) { return pointRadius; }
+    pointRadius = _;
     return chart;
   };
 
@@ -13332,12 +13371,6 @@ function lineChart() {
     return chart;
   };
 
-  chart.pointRadius = function(_) {
-    if (!arguments.length) { return pointRadius; }
-    pointRadius = _;
-    return chart;
-  };
-
   //============================================================
 
   return chart;
@@ -13352,28 +13385,24 @@ function multibarChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showControls = false,
-      showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
+
+  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   var vertical = true,
       scrollEnabled = true,
-      overflowHandler = function(d) { return; },
-      hideEmptyGroups = true;
+      hideEmptyGroups = true,
+      overflowHandler = function(d) { return; };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
@@ -13398,10 +13427,9 @@ function multibarChart() {
 
   // Chart components
   var model = multibar();
+  var header = headers();
   var xAxis = axis();
   var yAxis = axis();
-  var controls = menu();
-  var legend = menu();
 
   // Scroll variables
   var useScroll = false;
@@ -13457,6 +13485,11 @@ function multibarChart() {
         return;
       };
 
+  header
+    .showTitle(true)
+    .showControls(true)
+    .showLegend(true);
+
 
   //============================================================
 
@@ -13477,14 +13510,14 @@ function multibarChart() {
       var availableWidth = width,
           availableHeight = height;
 
+      var xIsDatetime = properties.xDataType === 'datetime' || false,
+          yIsCurrency = properties.yDataType === 'currency' || false;
+
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
-
-      var xIsDatetime = properties.xDataType === 'datetime' || false,
-          yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData = [],
           seriesCount = 0,
@@ -13492,8 +13525,8 @@ function multibarChart() {
 
       var baseDimension = model.stacked() ? vertical ? 72 : 32 : 32;
 
-      var xTickMaxWidth = 75,
           //TODO: allow formatter to be set by data
+      var xTickMaxWidth = 75,
           xDateFormat = null,
           xAxisFormat = null,
           yAxisFormat = null;
@@ -13789,9 +13822,6 @@ function multibarChart() {
         return yValueFormat(d, i, null, yIsCurrency, 2);
       };
 
-      // Set title display option
-      showTitle = showTitle && properties.title;
-
 
       //------------------------------------------------------------
       // State persistence model
@@ -13804,17 +13834,20 @@ function multibarChart() {
       //------------------------------------------------------------
       // Setup Scales and Axes
 
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
+
       // we want the bar value label to have the same formatting as y-axis
       model.valueFormat(function(d, i) {
         return yValueFormat(d, i, null, yIsCurrency, 2);
       });
 
-      x = model.xScale();
-      y = model.yScale();
-
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
-        .scale(x)
+        .scale(model.xScale())
         .valueFormat(xAxisFormat)
         .tickSize(0)
         .tickPadding(4)
@@ -13823,7 +13856,7 @@ function multibarChart() {
 
       yAxis
         .orient(vertical ? 'left' : 'bottom')
-        .scale(y)
+        .scale(model.yScale())
         .valueFormat(yAxisFormat)
         .tickPadding(4)
         .showMaxMin(true);
@@ -13842,7 +13875,6 @@ function multibarChart() {
       var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
       var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
@@ -13858,19 +13890,17 @@ function multibarChart() {
       var model_wrap = wrap.select('.sc-bars-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-controls-wrap');
-      var controls_wrap = wrap.select('.sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
 
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
       if (scrollEnabled) {
         scroll(wrap, wrap_entr, scroll_wrap, xAxis);
       } else {
-        wrap_entr.select('.sc-background-wrap')
-          .append('rect')
-            .attr('class', 'sc-background')
-            .attr('x', -margin.left)
-            .attr('y', -margin.top)
-            .attr('fill', 'rgba(215, 235, 255, 0.1)');
+        wrap_entr.select('.sc-background-wrap').append('rect')
+          .attr('class', 'sc-background')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('fill', '#FFF');
       }
 
 
@@ -13882,7 +13912,11 @@ function multibarChart() {
         // Chart layout variables
         var renderWidth, renderHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
+
+        var xpos = 0,
+            ypos = 0;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -13897,6 +13931,10 @@ function multibarChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
+        back_wrap.select('.sc-background')
+          .attr('width', renderWidth)
+          .attr('height', renderHeight);
+
         xTickMaxWidth = Math.max(vertical ? baseDimension * 2 : availableWidth * 0.2, 75);
 
         // Scroll variables
@@ -13906,118 +13944,21 @@ function multibarChart() {
             gap = baseDimension * (state.stacked ? 0.25 : 1),
             minDimension = groupCount * boundsWidth + gap;
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
-          .attr('width', renderWidth)
-          .attr('height', renderHeight);
-
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        // Header variables
-        var maxControlsWidth = 0,
-            maxLegendWidth = 0,
-            widthRatio = 0,
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            controlsHeight = 0,
-            legendHeight = 0,
-            trans = '',
-            xpos = 0,
-            ypos = 0;
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        title_wrap.select('.sc-title').remove();
+        container.call(header);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
-
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showControls) {
-          controls
-            .id('controls_' + model.id())
-            .strings(strings.controls)
-            .color(['#444'])
-            .align('left')
-            .height(availableHeight - headerHeight);
-          controls_wrap
-            .datum(controlsData)
-            .call(controls);
-
-          maxControlsWidth = controls.calcMaxWidth();
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + model.id())
-            .strings(strings.legend)
-            .align('right')
-            .height(availableHeight - headerHeight);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-
-          maxLegendWidth = legend.calcMaxWidth();
-        }
-
-        // calculate proportional available space
-        widthRatio = availableWidth / (maxControlsWidth + maxLegendWidth);
-        maxControlsWidth = Math.floor(maxControlsWidth * widthRatio);
-        maxLegendWidth = Math.floor(maxLegendWidth * widthRatio);
-
-        if (showControls) {
-          controls
-            .arrange(maxControlsWidth);
-          maxLegendWidth = availableWidth - controls.width();
-        }
-
-        if (showLegend) {
-          legend
-            .arrange(maxLegendWidth);
-          maxControlsWidth = availableWidth - legend.width();
-        }
-
-        if (showControls) {
-          xpos = direction === 'rtl' ? availableWidth - controls.width() : 0;
-          ypos = showTitle ? titleBBox.height : - controls.margin().top;
-          controls_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          controlsHeight = controls.height() - (showTitle ? 0 : controls.margin().top);
-        }
-
-        if (showLegend) {
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && !showControls && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false;
-          xpos = direction === 'rtl' ? 0 : availableWidth - legend.width();
-          ypos = titleBBox.height;
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = 0 - legend.margin().top;
-          }
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
-        }
-
-        // Recalc inner margins based on legend and control height
-        headerHeight += Math.max(controlsHeight, legendHeight);
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
         innerMargin.top += headerHeight;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -14080,10 +14021,10 @@ function multibarChart() {
         xAxis
           .margin(innerMargin)
           .ticks(groupCount);
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xpos = innerMargin.left;
+        ypos = innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')')
+          .attr('transform', utility.translation(xpos, ypos))
             .call(xAxis);
         // reset inner dimensions
         xAxisMargin = xAxis.margin();
@@ -14120,18 +14061,18 @@ function multibarChart() {
         //------------------------------------------------------------
         // Final repositioning
 
-        trans = (vertical || xAxis.orient() === 'left' ? 0 : innerWidth) + ',';
-        trans += (vertical && xAxis.orient() === 'bottom' ? innerHeight + 2 : -2);
+        xpos = (vertical || xAxis.orient() === 'left' ? 0 : innerWidth);
+        ypos = (vertical && xAxis.orient() === 'bottom' ? innerHeight + 2 : -2);
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + (vertical || yAxis.orient() === 'bottom' ? 0 : innerWidth) + ',';
-        trans += innerMargin.top + (vertical || yAxis.orient() === 'left' ? 0 : innerHeight);
+        xpos = innerMargin.left + (vertical || yAxis.orient() === 'bottom' ? 0 : innerWidth);
+        ypos = innerMargin.top + (vertical || yAxis.orient() === 'left' ? 0 : innerHeight);
         yAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
         scroll_wrap
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top));
 
 
         //------------------------------------------------------------
@@ -14177,8 +14118,9 @@ function multibarChart() {
       //------------------------------------------------------------
 
       //TODO: change legendClick to menuClick
-      legend.dispatch.on('legendClick', function(series, i) {
+      header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
+
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
           data.forEach(function(d) {
@@ -14202,7 +14144,7 @@ function multibarChart() {
         dispatch.call('stateChange', this, state);
       });
 
-      controls.dispatch.on('legendClick', function(control, i) {
+      header.controls.dispatch.on('legendClick', function(control, i) {
         //if the option is currently enabled (i.e., selected)
         if (!control.disabled) {
           return;
@@ -14215,6 +14157,7 @@ function multibarChart() {
         //activate the the selected control option
         control.disabled = false;
 
+        //TODO: update model through stateChange
         model.stacked(control.key === 'Grouped' ? false : true);
         state.stacked = model.stacked();
 
@@ -14277,11 +14220,11 @@ function multibarChart() {
 
       dispatch.on('chartClick', function() {
         //dispatch.call('tooltipHide', this);
-        if (controls.enabled()) {
-          controls.dispatch.call('closeMenu', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
         }
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -14297,6 +14240,7 @@ function multibarChart() {
         d3.event.stopPropagation();
         dispatch.call('chartClick', this);
       });
+
     });
 
     return chart;
@@ -14326,13 +14270,15 @@ function multibarChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.multibar = model;
-  chart.legend = legend;
-  chart.controls = controls;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -14358,7 +14304,7 @@ function multibarChart() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
@@ -14383,8 +14329,8 @@ function multibarChart() {
     // don't enable this since controls get a custom function
     // controls.color(color);
     // controls.classes(classes);
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -14408,24 +14354,6 @@ function multibarChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showControls = function(_) {
-    if (!arguments.length) { return showControls; }
-    showControls = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -14455,6 +14383,7 @@ function multibarChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -14464,8 +14393,7 @@ function multibarChart() {
     model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
-    legend.direction(_);
-    controls.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -14480,6 +14408,24 @@ function multibarChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.vertical = function(_) {
+    if (!arguments.length) { return vertical; }
+    vertical = _;
+    return chart;
+  };
+
+  chart.allowScroll = function(_) {
+    if (!arguments.length) { return scrollEnabled; }
+    scrollEnabled = _;
+    return chart;
+  };
+
+  chart.hideEmptyGroups = function(_) {
+    if (!arguments.length) { return hideEmptyGroups; }
+    hideEmptyGroups = _;
     return chart;
   };
 
@@ -14505,27 +14451,9 @@ function multibarChart() {
     return chart;
   };
 
-  chart.vertical = function(_) {
-    if (!arguments.length) { return vertical; }
-    vertical = _;
-    return chart;
-  };
-
-  chart.allowScroll = function(_) {
-    if (!arguments.length) { return scrollEnabled; }
-    scrollEnabled = _;
-    return chart;
-  };
-
   chart.overflowHandler = function(_) {
     if (!arguments.length) { return overflowHandler; }
     overflowHandler = utility.functor(_);
-    return chart;
-  };
-
-  chart.hideEmptyGroups = function(_) {
-    if (!arguments.length) { return hideEmptyGroups; }
-    hideEmptyGroups = _;
     return chart;
   };
 
@@ -14546,11 +14474,9 @@ function paretoChart() {
       showLegend = true,
       direction = 'ltr',
       tooltips = true,
-      x,
-      y,
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
-      duration = 300, // transition
+      duration = 0, // transition
       state = {},
       strings = {
         barlegend: {close: 'Hide bar legend', open: 'Show bar legend'},
@@ -14561,8 +14487,9 @@ function paretoChart() {
       },
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      locality = utility.buildLocality(),
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      locality = utility.buildLocality();
+
+  var dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   var xValueFormat = function(d, i, label, isDate) {
         return isDate ?
@@ -14675,6 +14602,9 @@ function paretoChart() {
             return yValueFormat(d, i, null, yIsCurrency);
           };
 
+      var x,
+          y;
+
       chart.update = function() {
         container.transition().call(chart);
       };
@@ -14688,7 +14618,7 @@ function paretoChart() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -14841,7 +14771,7 @@ function paretoChart() {
 
       var groupData = properties.groupData,
           groupLabels = groupData.map(function(d) {
-            return [].concat(d.l)[0] || chart.strings().noLabel;
+            return [].concat(d.l)[0] || strings.noLabel;
           });
 
       var quotaValue = properties.quota || 0,
@@ -14897,7 +14827,7 @@ function paretoChart() {
             });
 
       // set title display option
-      showTitle = showTitle && properties.title;
+      showTitle = showTitle && properties.title && properties.title.length;
 
       //------------------------------------------------------------
       // Setup Scales
@@ -14957,12 +14887,10 @@ function paretoChart() {
         var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('width', renderWidth)
-          .attr('height', renderHeight)
-          .attr('fill', '#FFF');
+        wrap_entr.append('defs');
+
+        wrap_entr.append('g').attr('class', 'sc-background-wrap');
+        var back_wrap = wrap.select('.sc-background-wrap');
 
         wrap_entr.append('g').attr('class', 'sc-title-wrap');
         var title_wrap = wrap.select('.sc-title-wrap');
@@ -14987,7 +14915,13 @@ function paretoChart() {
         wrap_entr.append('g').attr('class', 'sc-legend-wrap sc-line-legend');
         var lineLegend_wrap = wrap.select('.sc-legend-wrap.sc-line-legend');
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.attr('transform', utility.translation(margin.left, margin.top));
+        wrap_entr.select('.sc-background-wrap').append('rect')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('width', renderWidth)
+          .attr('height', renderHeight)
+          .attr('fill', '#FFF');
 
         //------------------------------------------------------------
         // Title & Legends
@@ -15014,7 +14948,7 @@ function paretoChart() {
           // bar series legend
           barLegend
             .id('barlegend_' + chart.id())
-            .strings(chart.strings().barlegend)
+            .strings(strings.barlegend)
             .align('left')
             .height(availableHeight - innerMargin.top);
           barLegend_wrap
@@ -15026,7 +14960,7 @@ function paretoChart() {
           // line series legend
           lineLegend
             .id('linelegend_' + chart.id())
-            .strings(chart.strings().linelegend)
+            .strings(strings.linelegend)
             .align('right')
             .height(availableHeight - innerMargin.top);
           lineLegend_wrap
@@ -15235,7 +15169,7 @@ function paretoChart() {
         //------------------------------------------------------------
         // Recall Main Chart Components based on final dimensions
 
-        var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
+        var transform = utility.translation(innerMargin.left, innerMargin.top);
 
         bars
           .width(innerWidth)
@@ -15477,10 +15411,11 @@ function paretoChart() {
   chart.lineLegend = lineLegend;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, bars, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'color', 'fill', 'classes', 'gradient');
   fc.rebind(chart, bars, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
-  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'staggerTicks', 'wrapTicks', 'reduceXTicks');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -15655,6 +15590,8 @@ function paretoChart() {
         strings[prop] = _[prop];
       }
     }
+    barLegend.strings(strings.barlegend);
+    lineLegend.strings(strings.linelegend);
     return chart;
   };
 
@@ -15693,6 +15630,7 @@ function paretoChart() {
     return chart;
   };
 
+  // Deprecated as of 0.6.5. Use color instead...
   chart.colorFill = function(_) {
     return chart;
   };
@@ -15742,9 +15680,6 @@ function pieChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showControls = false,
-      showLegend = true,
       direction = 'ltr',
       delay = 0,
       duration = 0,
@@ -15755,16 +15690,19 @@ function pieChart() {
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
+
+  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var model = pie(),
-      controls = menu().align('center'),
-      legend = menu().align('center');
+  // Chart components
+  var model = pie();
+  var header = headers();
+
+  var controlsData = [];
 
   var tt = null;
 
@@ -15788,10 +15726,16 @@ function pieChart() {
 
   var seriesClick = function(data, e, chart) { return; };
 
+  header
+    .showTitle(true)
+    .showControls(false)
+    .showLegend(true)
+    .alignLegend('center');
+
+
   //============================================================
 
   function chart(selection) {
-
     selection.each(function(chartData) {
 
       var that = this,
@@ -15813,6 +15757,7 @@ function pieChart() {
 
       chart.container = this;
 
+
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
@@ -15820,13 +15765,14 @@ function pieChart() {
         var hasData = d && d.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
       if (displayNoData(data)) {
         return chart;
       }
+
 
       //------------------------------------------------------------
       // Process data
@@ -15848,7 +15794,7 @@ function pieChart() {
 
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
 
-        // if you have activated a data series, inactivate the rest
+        // if you have activated a data series, inactivate the other non-active series
         if (series.active === 'active') {
           data
             .filter(function(d) {
@@ -15885,13 +15831,14 @@ function pieChart() {
           }
         });
 
+        s.key = s.key || strings.noLabel;
         s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
         s.count = s.count || s.values.length;
         s.disabled = s.disabled || s.value === 0;
       });
 
       // only sum enabled series
-      var modelData = data.filter(function(d, i) { return !d.disabled; });
+      var modelData = data.filter(function(d) { return !d.disabled; });
 
       if (!modelData.length) {
         modelData = [{values: []}]; // safety array
@@ -15900,9 +15847,6 @@ function pieChart() {
       properties.count = d3.sum(modelData, function(d) { return d.count; });
 
       properties.total = d3.sum(modelData, function(d) { return d.value; });
-
-      // set title display option
-      showTitle = showTitle && properties.title.length;
 
       //set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
@@ -15915,6 +15859,12 @@ function pieChart() {
         return chart;
       }
 
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
+
       //------------------------------------------------------------
       // Main chart wrappers
 
@@ -15922,19 +15872,26 @@ function pieChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
+      wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -15945,7 +15902,8 @@ function pieChart() {
         var renderWidth, renderHeight,
             availableWidth, availableHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -15960,72 +15918,25 @@ function pieChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
+
 
         //------------------------------------------------------------
         // Title & Legend & Controls
 
-        // Header variables
-        var headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            legendHeight = 0;
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        title_wrap.select('.sc-title').remove();
+        container.call(header);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
-
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
-
-        if (showLegend) {
-          legend
-            .id('legend_' + chart.id())
-            .strings(chart.strings().legend)
-            .align('center')
-            .height(availableHeight - innerMargin.top);
-          legend_wrap
-            .datum(data)
-            .call(legend);
-          legend
-            .arrange(availableWidth);
-
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
-
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = - legend.margin().top;
-          }
-
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-
-          legendHeight = legendTop ? 12 : legend.height() - (showTitle ? 0 : legend.margin().top);
-        }
-
-        // Recalc inner margins based on title and legend height
-        headerHeight += legendHeight;
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
         innerMargin.top += headerHeight;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
-        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+
 
         //------------------------------------------------------------
         // Main Chart Component(s)
@@ -16036,7 +15947,7 @@ function pieChart() {
 
         model_wrap
           .datum(modelData)
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')')
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top))
           .transition().duration(duration)
             .call(model);
 
@@ -16050,30 +15961,28 @@ function pieChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
-        d.active = false;
+      header.legend.dispatch.on('legendClick', function(series, i) {
+        series.disabled = !series.disabled;
+        series.active = false;
 
         // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
-          data.map(function(d) {
+          data.forEach(function(d) {
             d.disabled = false;
-            return d;
           });
         }
 
         // if there are no active data series, activate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
-          data.map(function(d) {
+          data.forEach(function(d) {
             d.active = '';
-            return d;
           });
         }
 
         state.disabled = data.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
-        container.transition().duration(duration).call(chart);
+        chart.update();
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -16103,16 +16012,16 @@ function pieChart() {
           state.disabled = eo.disabled;
         }
 
-        container.transition().duration(duration).call(chart);
+        chart.update();
       });
 
       dispatch.on('chartClick', function() {
         //dispatch.call('tooltipHide', this);
-        if (controls.enabled()) {
-          controls.dispatch.call('closeMenu', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
         }
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
@@ -16125,6 +16034,7 @@ function pieChart() {
 
     return chart;
   }
+
 
   //============================================================
   // Event Handling/Dispatching (out of chart's scope)
@@ -16149,13 +16059,15 @@ function pieChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.pie = model;
-  chart.legend = legend;
-  chart.controls = controls;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient', 'locality', 'textureFill');
   fc.rebind(chart, model, 'getKey', 'getValue', 'getCount', 'fmtKey', 'fmtValue', 'fmtCount');
   fc.rebind(chart, model, 'showLabels', 'showLeaders', 'donutLabelsOutside', 'pieLabelsOutside', 'labelThreshold');
   fc.rebind(chart, model, 'arcDegrees', 'rotateDegrees', 'minRadius', 'maxRadius', 'fixedRadius', 'startAngle', 'endAngle', 'donut', 'hole', 'holeFormat', 'donutRatio');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -16180,7 +16092,7 @@ function pieChart() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
@@ -16201,8 +16113,8 @@ function pieChart() {
     model.fill(fill);
     model.classes(classes);
 
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -16226,24 +16138,6 @@ function pieChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showControls = function(_) {
-    if (!arguments.length) { return showControls; }
-    showControls = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -16272,6 +16166,7 @@ function pieChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -16279,8 +16174,7 @@ function pieChart() {
     if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
-    legend.direction(_);
-    controls.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -16303,10 +16197,6 @@ function pieChart() {
       return seriesClick;
     }
     seriesClick = _;
-    return chart;
-  };
-
-  chart.colorFill = function(_) {
     return chart;
   };
 
@@ -16334,7 +16224,7 @@ function treeChart() {
       width = null,
       height = null,
       r = 6,
-      duration = 300,
+      duration = 0,
       zoomExtents = {'min': 0.25, 'max': 2},
       nodeSize = {'width': 100, 'height': 50},
       nodeImgPath = '../img/',
@@ -16367,8 +16257,7 @@ function treeChart() {
 
   //============================================================
 
-  function chart(selection)
-  {
+  function chart(selection) {
     selection.each(function(data) {
 
       var container = d3.select(this);
@@ -16422,7 +16311,7 @@ function treeChart() {
         .attr('class', 'sc-chart-background')
         .attr('width', availableSize.width)
         .attr('height', availableSize.height)
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+        .attr('transform', utility.translation(margin.left, margin.top))
         .style('fill', 'transparent');
       var backg = wrap.select('.sc-chart-background');
 
@@ -16847,20 +16736,17 @@ function treeChart() {
   //------------------------------------------------------------
 
   chart.dispatch = dispatch;
+  chart.options = utility.optionsFunc.bind(chart);
 
-  chart.color = function(_) {
-    if (!arguments.length) { return color; }
-    color = _;
+  chart.id = function(_) {
+    if (!arguments.length) { return id; }
+    id = _;
     return chart;
   };
-  chart.fill = function(_) {
-    if (!arguments.length) { return fill; }
-    fill = _;
-    return chart;
-  };
-  chart.useClass = function(_) {
-    if (!arguments.length) { return useClass; }
-    useClass = _;
+
+  chart.margin = function(_) {
+    if (!arguments.length) { return margin; }
+    margin = _;
     return chart;
   };
 
@@ -16894,9 +16780,19 @@ function treeChart() {
     return chart;
   };
 
-  chart.id = function(_) {
-    if (!arguments.length) { return id; }
-    id = _;
+  chart.color = function(_) {
+    if (!arguments.length) { return color; }
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) { return fill; }
+    fill = _;
+    return chart;
+  };
+  chart.useClass = function(_) {
+    if (!arguments.length) { return useClass; }
+    useClass = _;
     return chart;
   };
 
@@ -16923,12 +16819,6 @@ function treeChart() {
   chart.zoomCallback = function(_) {
     if (!arguments.length) { return zoomCallback; }
     zoomCallback = _;
-    return chart;
-  };
-
-  chart.margin = function(_) {
-    if (!arguments.length) { return margin; }
-    margin = _;
     return chart;
   };
 
@@ -16988,29 +16878,31 @@ function treemapChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showLegend = false,
       direction = 'ltr',
+      delay = 0,
+      duration = 0,
       tooltips = true,
       colorData = 'default',
       //create a clone of the d3 array
       colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utility.identity),
-      x, //can be accessed via chart.xScale()
-      y, //can be accessed via chart.yScale()
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
+      };
+
+  var dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
 
   //============================================================
   // Private Variables
   //------------------------------------------------------------
 
-  var model = treemap(),
-      legend = menu();
+  // Chart components
+  var model = treemap();
+  var header = headers();
+
+  var controlsData = [];
 
   var tt = null;
 
@@ -17025,22 +16917,32 @@ function treemapChart() {
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
 
+  header
+    .showTitle(true)
+    .showControls(false)
+    .showLegend(false);
+
   //============================================================
 
   function chart(selection) {
     selection.each(function(chartData) {
 
       var that = this,
-          container = d3.select(this);
+          container = d3.select(this),
+          modelClass = 'treemap';
 
-      var data = [chartData];
       var properties = {};
+      var data = [chartData];
 
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      chart.update = function() { container.transition().duration(300).call(chart); };
+      chart.update = function() {
+        container.transition().duration(duration).call(chart);
+      };
+
       chart.container = this;
+
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -17049,7 +16951,7 @@ function treemapChart() {
         var hasData = d && d.length && d.filter(function(d) { return d && d.children && d.children.length; }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -17057,7 +16959,12 @@ function treemapChart() {
         return chart;
       }
 
+
       //------------------------------------------------------------
+      // Process data
+
+      // only sum enabled series
+      var modelData = data.filter(function(d) { return !d.disabled; });
 
       //remove existing colors from default color array, if any
       // if (colorData === 'data') {
@@ -17065,131 +16972,126 @@ function treemapChart() {
       // }
 
       //------------------------------------------------------------
+      // Display No Data message if there's nothing to show.
+
+      if (!modelData.length) {
+        displayNoData();
+        return chart;
+      }
+
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(data);
+
+      //------------------------------------------------------------
+      // Main chart wrappers
+
+      var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
+      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
+
+      wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-title-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
+      var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
+
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
+      wrap_entr.append('g').attr('class', 'sc-legend-wrap');
+
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
+
+      //------------------------------------------------------------
       // Main chart draw
 
       chart.render = function() {
 
+        // Chart layout variables
+        var renderWidth, renderHeight,
+            availableWidth, availableHeight,
+            innerMargin,
+            innerWidth, innerHeight,
+            headerHeight;
+
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
 
-        // Chart layout variables
-        var renderWidth, renderHeight,
-            availableWidth, availableHeight;
-
         renderWidth = width || containerWidth || 960;
         renderHeight = height || containerHeight || 400;
+
         availableWidth = renderWidth - margin.left - margin.right;
         availableHeight = renderHeight - margin.top - margin.bottom;
 
-        // Header variables
-        var headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            titleHeight = 0,
-            legendHeight = 0;
+        innerMargin = {top: 0, right: 0, bottom: 0, left: 0};
+        innerWidth = availableWidth - innerMargin.left - innerMargin.right;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        //------------------------------------------------------------
-        // Setup containers and skeleton of chart
-
-        var wrap_bind = container.selectAll('g.sc-chart-wrap').data(data);
-        var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-treemap');
-        var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
-
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('fill', '#FFF');
-
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
         //------------------------------------------------------------
-        // Title & Legend
+        // Title & Legend & Controls
 
-        if (showLegend) {
-          wrap_entr.append('g').attr('class', 'sc-legendWrap');
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-          legend
-            .id('legend_' + chart.id())
-            .strings(chart.strings().legend)
-            .width(availableWidth + margin.left)
-            .height(availableHeight);
+        container.call(header);
 
-          wrap.select('.sc-legendWrap')
-            .datum(data)
-            .call(legend);
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
+        // innerMargin.top += headerHeight;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-          legendHeight = legend.height() + 10;
-
-          if (margin.top !== legendHeight + titleHeight) {
-            margin.top = legendHeight + titleHeight;
-            availableHeight = renderHeight - margin.top - margin.bottom;
-          }
-
-          wrap.select('.sc-legendWrap')
-            .attr('transform', 'translate(' + (-margin.left) + ',' + (-margin.top) + ')');
-        }
-
-        if (showTitle && properties.title) {
-          wrap_entr.append('g').attr('class', 'sc-title-wrap');
-
-          wrap.select('.sc-title').remove();
-
-          wrap.select('.sc-title-wrap')
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', 0)
-              .attr('y', 0)
-              .attr('text-anchor', 'start')
-              .text(properties.title)
-              .attr('stroke', 'none')
-              .attr('fill', 'black');
-
-          titleHeight = parseInt(wrap.select('.sc-title').style('height'), 10) +
-            parseInt(wrap.select('.sc-title').style('margin-top'), 10) +
-            parseInt(wrap.select('.sc-title').style('margin-bottom'), 10);
-
-          if (margin.top !== titleHeight + legendHeight) {
-            margin.top = titleHeight + legendHeight;
-            availableHeight = renderHeight - margin.top - margin.bottom;
-          }
-
-          wrap.select('.sc-title-wrap')
-            .attr('transform', 'translate(0,' + (-margin.top + parseInt(wrap.select('.sc-title').style('height'), 10)) + ')');
-        }
 
         //------------------------------------------------------------
         // Main Chart Component(s)
 
         model
-          .width(availableWidth)
-          .height(availableHeight);
+          .width(innerWidth)
+          .height(innerHeight);
 
-        wrap
-          .datum(data.filter(function(d) { return !d.disabled; }))
-          .transition()
+        model_wrap
+          .datum(modelData)
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top))
+          .transition().duration(duration)
             .call(model);
 
       };
 
       //============================================================
+
+      chart.render();
+
       //============================================================
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
+      header.legend.dispatch.on('legendClick', function(series, i) {
+        series.disabled = !series.disabled;
 
+        // if there are no enabled data series, enable them all
         if (!data.filter(function(d) { return !d.disabled; }).length) {
-          data.map(function(d) {
+          data.forEach(function(d) {
             d.disabled = false;
-            return d;
           });
         }
 
-        container.transition().duration(300).call(chart);
+        chart.update();
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -17209,8 +17111,6 @@ function treemapChart() {
           tooltip.cleanup();
         }
       });
-
-      chart.render();
 
 
       //============================================================
@@ -17238,15 +17138,15 @@ function treemapChart() {
   // Event Handling/Dispatching (out of chart's scope)
   //------------------------------------------------------------
 
-  model.dispatch.on('elementMouseover', function(eo) {
+  model.dispatch.on('elementMouseover.tooltip', function(eo) {
     dispatch.call('tooltipShow', this, eo);
   });
 
-  model.dispatch.on('elementMousemove', function(e) {
+  model.dispatch.on('elementMousemove.tooltip', function(e) {
     dispatch.call('tooltipMove', this, e);
   });
 
-  model.dispatch.on('elementMouseout', function() {
+  model.dispatch.on('elementMouseout.tooltip', function() {
     dispatch.call('tooltipHide', this);
   });
 
@@ -17256,10 +17156,13 @@ function treemapChart() {
 
   // expose chart's sub-components
   chart.dispatch = dispatch;
-  chart.legend = legend;
   chart.treemap = model;
+  chart.legend = header.legend;
+  chart.options = utility.optionsFunc.bind(chart);
 
-  fc.rebind(chart, model, 'id', 'delay', 'leafClick', 'getValue', 'getKey', 'groups', 'duration', 'color', 'fill', 'classes', 'gradient');
+  fc.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient');
+  fc.rebind(chart, model, 'leafClick', 'getValue', 'getKey');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }
@@ -17301,8 +17204,8 @@ function treemapChart() {
     model.fill(fill);
     model.classes(classes);
 
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     colorData = arguments[0];
 
@@ -17311,10 +17214,11 @@ function treemapChart() {
 
   chart.margin = function(_) {
     if (!arguments.length) { return margin; }
-    margin.top    = typeof _.top    !== 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  !== 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom !== 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   !== 'undefined' ? _.left   : margin.left;
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
     return chart;
   };
 
@@ -17327,18 +17231,6 @@ function treemapChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -17355,14 +17247,13 @@ function treemapChart() {
   };
 
   chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return strings; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
@@ -17370,7 +17261,21 @@ function treemapChart() {
     if (!arguments.length) { return direction; }
     direction = _;
     model.direction(_);
-    legend.direction(_);
+    header.direction(_);
+    return chart;
+  };
+
+  chart.duration = function(_) {
+    if (!arguments.length) { return duration; }
+    duration = _;
+    model.duration(_);
+    return chart;
+  };
+
+  chart.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
+    model.delay(_);
     return chart;
   };
 
@@ -17383,7 +17288,7 @@ function treemapChart() {
        CHARTS
 -------------------*/
 
-const charts = {
+var charts = {
     areaChart: areaChart,
     bubbleChart: bubbleChart,
     funnelChart: funnelChart,
@@ -17397,7 +17302,7 @@ const charts = {
     treemapChart: treemapChart,
 };
 
-const transform = function(json, chartType, barType) {
+var transform = function(json, chartType, barType) {
   var data = [],
       seriesData,
       properties = json.properties ? Array.isArray(json.properties) ? json.properties[0] : json.properties : {},
@@ -17835,8 +17740,8 @@ const transform = function(json, chartType, barType) {
 };
 
 // false & scr are substitution variables for rollup
-const dev = false; // set false when in production
-const build = 'scr'; // set scr for sucrose and sgr for Sugar
+var dev = false; // set false when in production
+var build = 'scr'; // set scr for sucrose and sgr for Sugar
 
 exports.development = dev;
 exports.build = build;

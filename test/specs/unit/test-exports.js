@@ -1,5 +1,5 @@
 var tape = require("tape"),
-    sucrose = require("../");
+    sucrose = require("../../../");
 
 module.exports = function(moduleName) {
   var module = require(moduleName);

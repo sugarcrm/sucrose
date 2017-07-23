@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "title": "Test pie chart",
+    "yDataType": "numeric",
+    "seriesLabel": "Series"
+  },
+  "data": [
+    {
+      "key": "A",
+      "value": 100
+    },
+    {
+      "key": "B",
+      "value": 100
+    },
+    {
+      "key": "C",
+      "value": 100
+    },
+    {
+      "key": "D",
+      "value": 100
+    }
+  ]
+}

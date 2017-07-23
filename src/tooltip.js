@@ -2,7 +2,7 @@
        TOOLTIP
 -------------------*/
 
-const tooltip = {};
+var tooltip = {};
 
 tooltip.show = function(evt, content, gravity, dist, container, classes) {
 

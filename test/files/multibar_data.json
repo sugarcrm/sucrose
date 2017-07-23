@@ -1,0 +1,55 @@
+{
+  "properties": {
+    "title": "Test multibar chart",
+    "yDataType": "currency",
+    "groups": [
+      {"label": "Mark Gibson"},
+      {"label": "Terence Li"},
+      {"label": "James Joplin"},
+      {"label": "Amy McCray"},
+      {"label": "My Opps"}
+    ]
+  },
+  "data": [
+    {
+      "key": "Qualified",
+      "values": [
+        {"x": 1, "y": 50},
+        {"x": 2, "y": 80},
+        {"x": 3, "y": 0},
+        {"x": 4, "y": 100},
+        {"x": 5, "y": 100}
+      ]
+    },
+    {
+      "key": "Proposal",
+      "values": [
+        {"x": 1, "y": 50},
+        {"x": 2, "y": 80},
+        {"x": 3, "y": 0},
+        {"x": 4, "y": 100},
+        {"x": 5, "y": 90}
+      ]
+    },
+    {
+      "key": "Negotiation",
+      "values": [
+        {"x": 1, "y": 10},
+        {"x": 2, "y": 50},
+        {"x": 3, "y": 0},
+        {"x": 4, "y": 40},
+        {"x": 5, "y": 40}
+      ]
+    },
+    {
+      "key": "Closed",
+      "values": [
+        {"x": 1, "y": 0},
+        {"x": 2, "y": 0},
+        {"x": 3, "y": 0},
+        {"x": 4, "y": 0},
+        {"x": 5, "y": 0}
+      ]
+    }
+  ]
+}

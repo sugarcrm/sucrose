@@ -67,7 +67,21 @@ var baseUI =
       {value: 'ltr', label: 'Left-to-Right'},
       {value: 'rtl', label: 'Right-to-Left'}
     ]
-  }
+  },
+  '[name=show_title]': {
+    setChartOption: function (v, self) {
+      var showTitle = v == 1;
+      self.Chart
+        .showTitle(showTitle);
+    },
+    check: /1/i,
+    events: 'change.my',
+    title: 'Show Title',
+    type: 'checkbox',
+    values: [
+      {value: '1', label: 'Enable'}
+    ]
+  },
 };
 var cachedManifest = $.my.tojson(baseUI);
 console.log(cachedManifest);

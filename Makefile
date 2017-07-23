@@ -7,41 +7,38 @@
 
 CSS_FILES = src/less/sucrose.less
 
-JS_MINIFIER = node_modules/uglify-js/bin/uglifyjs
+JS_MINIFIER = ./node_modules/uglify-js/bin/uglifyjs
 
-CSS_COMPILER = node_modules/less/bin/lessc
+CSS_COMPILER = ./node_modules/less/bin/lessc
 
-CSS_MINIFIER = node_modules/clean-css/bin/cleancss
+CSS_MINIFIER = ./node_modules/clean-css/bin/cleancss
 
-HELP_MAKER = \
-	./node_modules/make-help/bin/make-help
+HELP_MAKER = ./node_modules/make-help/bin/make-help
 
 HEADER = $(shell cat src/header)
 
 .DEFAULT_GOAL := help
 
-.PHONY: prod dev npm-dev all scr sgr sucrose css \
+.PHONY: prod dev all scr sgr sucrose css \
 	clean clean-js clean-css \
-	d3-scr d3-sgr d3-package d3-bundle d3-minify d3-all \
+	d3-scr d3-sgr d3-bundle d3-minify d3-all \
 	examples examples-prod examples-dev \
-	pack sugar help list md
+	pack npm-sugar cover help list md
 
 #-----------
 # PRODUCTION
 
-# - install sucrose & production npm packages [main]
+# - install production npm packages [main]
 prod:
 	npm install --production
 
 #------------
 # DEVELOPMENT
 
-# - install development environment [main dev]
-dev: npm-dev all
-
-# - install development npm packages
-npm-dev:
+# - install development npm packages and build all [main dev]
+dev:
 	npm install
+	make all
 
 # - compile sucrose Js and Css files
 all: scr css
@@ -158,7 +155,7 @@ examples-dev: npm-dev
 
 
 #----
-# RUN
+# NPM
 
 # - compile a Node compliant entry file and create a js version of json package for sucrose
 pack:
@@ -168,7 +165,7 @@ pack:
 	npm install
 
 # - publish the custom sugar build of sucrose
-sucrose-sugar:
+npm-sugar:
 	git branch -D sugar
 	git checkout -b sugar
 	make sgr
@@ -176,6 +173,10 @@ sucrose-sugar:
 	git commit -m "compile @sugarcrm/sucrose to $(VER)"
 	git push origin sugar -f
 	npm publish ./ --tag sugar
+
+# - create the instrumented build file for code coverage analysis
+cover: sucrose.js
+	npm run instrument
 
 
 #-----

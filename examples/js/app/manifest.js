@@ -37,7 +37,8 @@ var Manifest =
     color_data: 'default',
     gradient: ['0', 'vertical', 'middle'],
     direction: 'ltr',
-    locale: 'en'
+    locale: 'en',
+    show_title: 1
   },
 
   // UI elements

@@ -17,7 +17,8 @@ export default function treemap() {
       getKey = function(d) { return d.name; }, // accessor to get the name value from a data point
       groupBy = function(d) { return getKey(d); }, // accessor to get the name value from a data point
       clipEdge = true, // if true, masks lines within x and y scale
-      duration = 500,
+      duration = 0,
+      delay = 0,
       leafClick = function() { return false; },
       // color = function(d, i) { return utility.defaultColor()(d, i); },
       color = d3.scaleOrdinal().range(
@@ -121,7 +122,7 @@ export default function treemap() {
 
       var defs_entr = wrap_entr.append('defs');
 
-      // wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      // wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
       // Clip Path
@@ -168,7 +169,7 @@ export default function treemap() {
         // grandparent.exit().remove();
 
         grandparent
-          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+          .attr('transform', utility.translation(margin.left, margin.top))
           .lower();
 
         // Parent group
@@ -465,6 +466,12 @@ export default function treemap() {
   model.duration = function(_) {
     if (!arguments.length) { return duration; }
     duration = _;
+    return model;
+  };
+
+  model.delay = function(_) {
+    if (!arguments.length) { return delay; }
+    delay = _;
     return model;
   };
 

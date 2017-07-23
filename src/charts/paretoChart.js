@@ -19,11 +19,9 @@ export default function paretoChart() {
       showLegend = true,
       direction = 'ltr',
       tooltips = true,
-      x,
-      y,
       clipEdge = false, // if true, masks lines within x and y scale
       delay = 0, // transition
-      duration = 300, // transition
+      duration = 0, // transition
       state = {},
       strings = {
         barlegend: {close: 'Hide bar legend', open: 'Show bar legend'},
@@ -34,8 +32,9 @@ export default function paretoChart() {
       },
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      locality = utility.buildLocality(),
-      dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      locality = utility.buildLocality();
+
+  var dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   var xValueFormat = function(d, i, label, isDate) {
         return isDate ?
@@ -148,6 +147,9 @@ export default function paretoChart() {
             return yValueFormat(d, i, null, yIsCurrency);
           };
 
+      var x,
+          y;
+
       chart.update = function() {
         container.transition().call(chart);
       };
@@ -161,7 +163,7 @@ export default function paretoChart() {
         var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -314,7 +316,7 @@ export default function paretoChart() {
 
       var groupData = properties.groupData,
           groupLabels = groupData.map(function(d) {
-            return [].concat(d.l)[0] || chart.strings().noLabel;
+            return [].concat(d.l)[0] || strings.noLabel;
           });
 
       var quotaValue = properties.quota || 0,
@@ -370,7 +372,7 @@ export default function paretoChart() {
             });
 
       // set title display option
-      showTitle = showTitle && properties.title;
+      showTitle = showTitle && properties.title && properties.title.length;
 
       //------------------------------------------------------------
       // Setup Scales
@@ -430,12 +432,10 @@ export default function paretoChart() {
         var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
         var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-        wrap_entr.append('rect').attr('class', 'sc-background')
-          .attr('x', -margin.left)
-          .attr('y', -margin.top)
-          .attr('width', renderWidth)
-          .attr('height', renderHeight)
-          .attr('fill', '#FFF');
+        wrap_entr.append('defs');
+
+        wrap_entr.append('g').attr('class', 'sc-background-wrap');
+        var back_wrap = wrap.select('.sc-background-wrap');
 
         wrap_entr.append('g').attr('class', 'sc-title-wrap');
         var title_wrap = wrap.select('.sc-title-wrap');
@@ -460,7 +460,13 @@ export default function paretoChart() {
         wrap_entr.append('g').attr('class', 'sc-legend-wrap sc-line-legend');
         var lineLegend_wrap = wrap.select('.sc-legend-wrap.sc-line-legend');
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        wrap.attr('transform', utility.translation(margin.left, margin.top));
+        wrap_entr.select('.sc-background-wrap').append('rect')
+          .attr('x', -margin.left)
+          .attr('y', -margin.top)
+          .attr('width', renderWidth)
+          .attr('height', renderHeight)
+          .attr('fill', '#FFF');
 
         //------------------------------------------------------------
         // Title & Legends
@@ -487,7 +493,7 @@ export default function paretoChart() {
           // bar series legend
           barLegend
             .id('barlegend_' + chart.id())
-            .strings(chart.strings().barlegend)
+            .strings(strings.barlegend)
             .align('left')
             .height(availableHeight - innerMargin.top);
           barLegend_wrap
@@ -499,7 +505,7 @@ export default function paretoChart() {
           // line series legend
           lineLegend
             .id('linelegend_' + chart.id())
-            .strings(chart.strings().linelegend)
+            .strings(strings.linelegend)
             .align('right')
             .height(availableHeight - innerMargin.top);
           lineLegend_wrap
@@ -708,7 +714,7 @@ export default function paretoChart() {
         //------------------------------------------------------------
         // Recall Main Chart Components based on final dimensions
 
-        var transform = 'translate(' + innerMargin.left + ',' + innerMargin.top + ')';
+        var transform = utility.translation(innerMargin.left, innerMargin.top);
 
         bars
           .width(innerWidth)
@@ -950,10 +956,11 @@ export default function paretoChart() {
   chart.lineLegend = lineLegend;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, bars, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'color', 'fill', 'classes', 'gradient');
   fc.rebind(chart, bars, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
-  fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
+  fc.rebind(chart, xAxis, 'rotateTicks', 'staggerTicks', 'wrapTicks', 'reduceXTicks');
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -1128,6 +1135,8 @@ export default function paretoChart() {
         strings[prop] = _[prop];
       }
     }
+    barLegend.strings(strings.barlegend);
+    lineLegend.strings(strings.linelegend);
     return chart;
   };
 
@@ -1166,6 +1175,7 @@ export default function paretoChart() {
     return chart;
   };
 
+  // Deprecated as of 0.6.5. Use color instead...
   chart.colorFill = function(_) {
     return chart;
   };

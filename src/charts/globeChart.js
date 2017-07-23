@@ -35,13 +35,12 @@ export default function globeChart() {
       tooltips = true,
       initialTilt = 0,
       initialRotate = 100,
-      x,
-      y,
       state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.'
+        noData: 'No Data Available.',
+        noLabel: 'undefined'
       },
       showLabels = true,
       autoSpin = false,
@@ -112,7 +111,7 @@ export default function globeChart() {
 
       chart.container = this;
 
-      gradient = function(d, i) {
+      gradient = gradient || function(d, i) {
         return utility.colorRadialGradient(d, i, 0, 0, '35%', '35%', color(d, i), defs);
       };
 
@@ -123,7 +122,7 @@ export default function globeChart() {
         var hasData = d && d.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -147,7 +146,7 @@ export default function globeChart() {
 
       wrap_entr.append('svg:rect')
         .attr('class', 'sc-chart-background')
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        .attr('transform', utility.translation(margin.left, margin.top));
       var backg = wrap.select('.sc-chart-background');
 
       var globe_entr = wrap_entr.append('g').attr('class', 'sc-globe');
@@ -506,6 +505,104 @@ export default function globeChart() {
   chart.projection = projection;
   chart.path = path;
   chart.graticule = graticule;
+  chart.options = utility.optionsFunc.bind(chart);
+
+  chart.margin = function(_) {
+    if (!arguments.length) {
+      return margin;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        margin[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.width = function(_) {
+    if (!arguments.length) return width;
+    width = _;
+    return chart;
+  };
+
+  chart.height = function(_) {
+    if (!arguments.length) return height;
+    height = _;
+    return chart;
+  };
+
+  chart.tooltips = function(_) {
+    if (!arguments.length) {
+      return tooltips;
+    }
+    tooltips = _;
+    return chart;
+  };
+
+  chart.tooltipContent = function(_) {
+    if (!arguments.length) {
+      return tooltipContent;
+    }
+    tooltipContent = _;
+    return chart;
+  };
+
+  chart.state = function(_) {
+    if (!arguments.length) {
+      return state;
+    }
+    state = _;
+    return chart;
+  };
+
+  chart.strings = function(_) {
+    if (!arguments.length) {
+      return strings;
+    }
+    for (var prop in _) {
+      if (_.hasOwnProperty(prop)) {
+        strings[prop] = _[prop];
+      }
+    }
+    return chart;
+  };
+
+  chart.showTitle = function(_) {
+    if (!arguments.length) {
+      return showTitle;
+    }
+    showTitle = _;
+    return chart;
+  };
+
+  chart.direction = function(_) {
+    if (!arguments.length) { return direction; }
+    direction = _;
+    return chart;
+  };
+
+  chart.id = function(_) {
+    if (!arguments.length) return id;
+    id = _;
+    return chart;
+  };
+
+  chart.color = function(_) {
+    if (!arguments.length) return color;
+    color = _;
+    return chart;
+  };
+  chart.fill = function(_) {
+    if (!arguments.length) return fill;
+    fill = _;
+    return chart;
+  };
+  chart.classes = function(_) {
+    if (!arguments.length) return classes;
+    classes = _;
+    return chart;
+  };
+
 
   chart.colorData = function(_) {
     var type = arguments[0],
@@ -551,90 +648,9 @@ export default function globeChart() {
     return chart;
   };
 
-  chart.color = function(_) {
-    if (!arguments.length) return color;
-    color = _;
-    return chart;
-  };
-  chart.fill = function(_) {
-    if (!arguments.length) return fill;
-    fill = _;
-    return chart;
-  };
-  chart.classes = function(_) {
-    if (!arguments.length) return classes;
-    classes = _;
-    return chart;
-  };
   chart.gradient = function(_) {
     if (!arguments.length) return gradient;
     gradient = _;
-    return chart;
-  };
-
-  chart.width = function(_) {
-    if (!arguments.length) return width;
-    width = _;
-    return chart;
-  };
-
-  chart.height = function(_) {
-    if (!arguments.length) return height;
-    height = _;
-    return chart;
-  };
-
-  chart.margin = function(_) {
-    if (!arguments.length) {
-      return margin;
-    }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        margin[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.tooltips = function(_) {
-    if (!arguments.length) {
-      return tooltips;
-    }
-    tooltips = _;
-    return chart;
-  };
-
-  chart.tooltipContent = function(_) {
-    if (!arguments.length) {
-      return tooltipContent;
-    }
-    tooltipContent = _;
-    return chart;
-  };
-
-  chart.state = function(_) {
-    if (!arguments.length) {
-      return state;
-    }
-    state = _;
-    return chart;
-  };
-
-  chart.strings = function(_) {
-    if (!arguments.length) {
-      return strings;
-    }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
-    return chart;
-  };
-
-  chart.direction = function(_) {
-    if (!arguments.length) { return direction; }
-    direction = _;
     return chart;
   };
 
@@ -647,20 +663,6 @@ export default function globeChart() {
   chart.autoSpin = function(_) {
     if (!arguments.length) return autoSpin;
     autoSpin = _;
-    return chart;
-  };
-
-  chart.id = function(_) {
-    if (!arguments.length) return id;
-    id = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) {
-      return showTitle;
-    }
-    showTitle = _;
     return chart;
   };
 

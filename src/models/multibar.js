@@ -27,9 +27,9 @@ export default function multibar() {
       direction = 'ltr',
       clipEdge = false, // if true, masks bars within x and y scale
       delay = 0, // transition
-      duration = 300, // transition
-      xDomain,
-      yDomain,
+      duration = 0, // transition
+      xDomain = null,
+      yDomain = null,
       nice = false,
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = null,
@@ -272,10 +272,10 @@ export default function multibar() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
       var wrap = container.select('.sc-wrap.sc-multibar').merge(wrap_entr);
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //set up the gradient constructor function
-      gradient = function(d, i, p) {
+      gradient = gradient || function(d, i, p) {
         return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
       };
 
@@ -321,7 +321,7 @@ export default function multibar() {
 
       series
         .attr('fill', fill)
-        .attr('class', function(d,i) { return classes(d,i); })
+        .attr('class', classes)
         .classed('hover', function(d) { return d.hover; })
         .classed('sc-active', function(d) { return d.active === 'active'; })
         .classed('sc-inactive', function(d) { return d.active === 'inactive'; })

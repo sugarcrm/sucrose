@@ -169,6 +169,7 @@ var sucroseCharts = function() {
         chart
           .x(function(d) { return d3.timeParse('%Y-%m-%d')(d.x); })
           .y(function(d) { return d.y; })
+          .showControls(false)
           .groupBy(function(d) {
               return d.assigned_user_name;
           })
@@ -189,6 +190,7 @@ var sucroseCharts = function() {
     funnel: {
       minLabelWidth: null,
       wrapLabels: null,
+      showControls: false,
       _format: function format(chart, callback) {
         chart
           .fmtValue(function(d) {
@@ -204,6 +206,7 @@ var sucroseCharts = function() {
       ringWidth: 50,
       maxValue: 9,
       transitionMs: 4000,
+      showControls: false,
       _format: function format(chart, callback) {
         callback(chart);
       }
@@ -350,6 +353,7 @@ var sucroseCharts = function() {
       pieLabelsOutside: true,
       maxRadius: 250,
       minRadius: 100,
+      showControls: false,
       // rotateDegrees: 0,
       // arcDegrees: 360,
       // fixedRadius: function(container, chart) {
@@ -431,8 +435,9 @@ var sucroseCharts = function() {
       }
     },
     treemap: {
-      showLegend: false,
       showTitle: false,
+      showLegend: false,
+      showControls: false,
       _format: function format(chart, callback) {
         chart
           .leafClick(function(d) {

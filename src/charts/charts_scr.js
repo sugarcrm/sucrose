@@ -14,7 +14,7 @@ import pieChart from './pieChart.js';
 import treeChart from './treeChart.js';
 import treemapChart from './treemapChart.js';
 
-const charts = {
+var charts = {
     areaChart: areaChart,
     bubbleChart: bubbleChart,
     funnelChart: funnelChart,

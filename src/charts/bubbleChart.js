@@ -2,9 +2,9 @@ import d3 from 'd3';
 import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import headers from '../models/headers.js';
 import scatter from '../models/scatter.js';
 import axis from '../models/axis.js';
-import menu from '../models/menu.js';
 
 export default function bubbleChart() {
 
@@ -15,25 +15,23 @@ export default function bubbleChart() {
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
-      showTitle = false,
-      showLegend = true,
       direction = 'ltr',
-      getX = function(d) { return d.x; },
-      getY = function(d) { return d.y; },
-      forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
-      delay = 200,
+      delay = 0,
       duration = 0,
       tooltips = true,
       state = {},
-      x,
-      y,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
         noData: 'No Data Available.',
         noLabel: 'undefined'
-      },
-      dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+      };
+
+  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+
+  var getX = function(d) { return d.x; },
+      getY = function(d) { return d.y; },
+      forceY = [0]; // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
 
   var groupBy = function(d) { return d.y; },
       filterBy = function(d) { return d.y; },
@@ -62,16 +60,11 @@ export default function bubbleChart() {
   // Private Variables
   //------------------------------------------------------------
 
-  var model = scatter()
-        .padData(true)
-        .padDataOuter(-1)
-        .size(function(d) { return d.y; })
-        .sizeRange([256, 1024])
-        .singlePoint(true);
+  // Chart components
+  var model = scatter();
+  var header = headers();
   var xAxis = axis();
   var yAxis = axis();
-  var legend = menu()
-        .key(function(d) { return d.key + '%'; });
 
   var tt = null;
 
@@ -89,9 +82,22 @@ export default function bubbleChart() {
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
 
-  var seriesClick = function(data, e, chart, labels) {
+  var seriesClick = function(data, eo, chart, labels) {
         return;
       };
+
+  model
+    .padData(true)
+    .padDataOuter(-1)
+    .size(function(d) { return d.y; })
+    .sizeRange([256, 1024])
+    .singlePoint(true);
+  header
+    .showTitle(true)
+    .showControls(false)
+    .showLegend(true)
+    .alignLegend('center');
+
 
   //============================================================
 
@@ -135,11 +141,14 @@ export default function bubbleChart() {
               yValueFormat(d, i, label, yIsCurrency);
           };
 
+      var controlsData = [];
+
       chart.update = function() {
         container.transition().duration(duration).call(chart);
       };
 
       chart.container = this;
+
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -148,7 +157,7 @@ export default function bubbleChart() {
         var hasData = data && data.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, chart.strings().noData, x, y);
+        return utility.displayNoData(hasData, container, strings.noData, x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -159,9 +168,6 @@ export default function bubbleChart() {
 
       //------------------------------------------------------------
       // Process data
-
-      // set title display option
-      showTitle = showTitle && properties.title;
 
       function getTimeDomain(data) {
         var timeExtent =
@@ -279,6 +285,17 @@ export default function bubbleChart() {
           return d;
         });
 
+      //------------------------------------------------------------
+      // Setup Scales and Axes
+
+      header
+        .chart(chart)
+        .title(properties.title)
+        .controlsData(controlsData)
+        .legendData(modelData);
+      header.legend
+        .key(function(d) { return d.key + '%'; });
+
       xDomain = getTimeDomain(modelData);
 
       yValues = getGroupTicks(data);
@@ -293,15 +310,13 @@ export default function bubbleChart() {
             ).concat(forceY)
           );
 
+
       //------------------------------------------------------------
       // Setup Scales and Axes
 
-      x = model.xScale();
-      y = model.yScale();
-
       xAxis
         .orient('bottom')
-        .scale(x)
+        .scale(model.xScale())
         .valueFormat(xAxisFormat)
         .ticks(d3.timeMonths, 1)
         .tickValues(getTimeTicks(xDomain))
@@ -312,7 +327,7 @@ export default function bubbleChart() {
 
       yAxis
         .orient('left')
-        .scale(y)
+        .scale(model.yScale())
         .valueFormat(yAxisFormat)
         .ticks(yValues.length)
         .tickValues(yValues.map(function(d, i) {
@@ -330,25 +345,31 @@ export default function bubbleChart() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
-      wrap_entr.append('rect').attr('class', 'sc-background')
-        .attr('x', -margin.left)
-        .attr('y', -margin.top)
-        .attr('fill', '#FFF');
+      wrap_entr.append('defs');
+
+      wrap_entr.append('g').attr('class', 'sc-background-wrap');
+      var back_wrap = wrap.select('.sc-background-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-title-wrap');
-      var title_wrap = wrap.select('.sc-title-wrap');
-
-      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
-      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
 
       wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-x');
       var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
+      wrap_entr.append('g').attr('class', 'sc-axis-wrap sc-axis-y');
+      var yAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-y');
 
       wrap_entr.append('g').attr('class', 'sc-' + modelClass + '-wrap');
       var model_wrap = wrap.select('.sc-' + modelClass + '-wrap');
 
+      wrap_entr.append('g').attr('class', 'sc-controls-wrap');
       wrap_entr.append('g').attr('class', 'sc-legend-wrap');
-      var legend_wrap = wrap.select('.sc-legend-wrap');
+
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
+      wrap_entr.select('.sc-background-wrap').append('rect')
+        .attr('class', 'sc-background')
+        .attr('x', -margin.left)
+        .attr('y', -margin.top)
+        .attr('fill', '#FFF');
+
 
       //------------------------------------------------------------
       // Main chart draw
@@ -358,7 +379,11 @@ export default function bubbleChart() {
         // Chart layout variables
         var renderWidth, renderHeight,
             innerMargin,
-            innerWidth, innerHeight;
+            innerWidth, innerHeight,
+            headerHeight;
+
+        var xpos = 0,
+            ypos = 0;
 
         containerWidth = parseInt(container.style('width'), 10);
         containerHeight = parseInt(container.style('height'), 10);
@@ -373,74 +398,31 @@ export default function bubbleChart() {
         innerWidth = availableWidth - innerMargin.left - innerMargin.right;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        // Header variables
-        var maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI),
-            headerHeight = 0,
-            titleBBox = {width: 0, height: 0},
-            trans = '';
-
-        wrap.select('.sc-background')
+        back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
 
-        wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        var maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI);
+
 
         //------------------------------------------------------------
-        // Title & Legend
+        // Title & Legend & Controls
 
-        title_wrap.select('.sc-title').remove();
+        header
+          .width(availableWidth)
+          .height(availableHeight);
 
-        if (showTitle) {
-          title_wrap
-            .append('text')
-              .attr('class', 'sc-title')
-              .attr('x', direction === 'rtl' ? availableWidth : 0)
-              .attr('y', 0)
-              .attr('dy', '.75em')
-              .attr('text-anchor', 'start')
-              .attr('stroke', 'none')
-              .attr('fill', 'black')
-              .text(properties.title);
+        container.call(header);
 
-          titleBBox = utility.getTextBBox(title_wrap.select('.sc-title'));
-          headerHeight += titleBBox.height;
-        }
+        // Recalc inner margins based on title, legend and control height
+        headerHeight = header.getHeight();
+        innerMargin.top += headerHeight;
+        innerMargin.top += maxBubbleSize;
+        innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
 
-        if (showLegend) {
-          legend
-            .id('legend_' + model.id())
-            .strings(chart.strings().legend)
-            .align('center')
-            .height(availableHeight - headerHeight);
-          legend_wrap
-            .datum(modelData)
-            .call(legend);
-          legend
-            .arrange(availableWidth);
-
-          var legendLinkBBox = utility.getTextBBox(legend_wrap.select('.sc-menu-link')),
-              legendSpace = availableWidth - titleBBox.width - 6,
-              legendTop = showTitle && legend.collapsed() && legendSpace > legendLinkBBox.width ? true : false,
-              xpos = direction === 'rtl' || !legend.collapsed() ? 0 : availableWidth - legend.width(),
-              ypos = titleBBox.height;
-
-          if (legendTop) {
-            ypos = titleBBox.height - legend.height() / 2 - legendLinkBBox.height / 2;
-          } else if (!showTitle) {
-            ypos = - legend.margin().top;
-          }
-
-          legend_wrap
-            .attr('transform', 'translate(' + xpos + ',' + ypos + ')');
-
-          headerHeight += legendTop ? 12 : legend.height();
-        }
-
-        // Recalc inner margins based on legend and control height
-        innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
 
         //------------------------------------------------------------
-        // Main Chart Components
+        // Main Chart Component(s)
 
         model
           .width(innerWidth)
@@ -456,10 +438,9 @@ export default function bubbleChart() {
           .transition().duration(duration)
             .call(model);
 
-        innerMargin.top += maxBubbleSize;
 
         //------------------------------------------------------------
-        // Setup Axes
+        // Axes
 
         var yAxisMargin = {top: 0, right: 0, bottom: 0, left: 0},
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
@@ -500,7 +481,7 @@ export default function bubbleChart() {
         setInnerMargins();
         setInnerDimensions();
 
-        // recall y-axis to set final size based on new dimensions
+        // recall y-axis, x-axis and lines to set final size based on new dimensions
         yAxis
           .tickSize(-innerWidth, 0)
           .margin(innerMargin);
@@ -517,18 +498,18 @@ export default function bubbleChart() {
         //------------------------------------------------------------
         // Final repositioning
 
-        trans = innerMargin.left + ',';
-        trans += innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
+        xpos = innerMargin.left;
+        ypos = innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
         xAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
-        trans = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth) + ',';
-        trans += innerMargin.top;
+        xpos = innerMargin.left + (yAxis.orient() === 'left' ? 0 : innerWidth);
+        ypos = innerMargin.top;
         yAxis_wrap
-          .attr('transform', 'translate(' + trans + ')');
+          .attr('transform', utility.translation(xpos, ypos));
 
         model_wrap
-          .attr('transform', 'translate(' + innerMargin.left + ',' + innerMargin.top + ')');
+          .attr('transform', utility.translation(innerMargin.left, innerMargin.top));
 
       };
 
@@ -540,21 +521,20 @@ export default function bubbleChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
-      legend.dispatch.on('legendClick', function(d, i) {
-        d.disabled = !d.disabled;
+      header.legend.dispatch.on('legendClick', function(series, i) {
+        series.disabled = !series.disabled;
 
         if (!modelData.filter(function(d) { return !d.disabled; }).length) {
-          modelData.map(function(d) {
+          modelData.forEach(function(d) {
             d.disabled = false;
             container.selectAll('.sc-series').classed('disabled', false);
-            return d;
           });
         }
 
         state.disabled = modelData.map(function(d) { return !!d.disabled; });
         dispatch.call('stateChange', this, state);
 
-        container.transition().call(chart.render);
+        chart.update();
       });
 
       dispatch.on('tooltipShow', function(eo) {
@@ -584,19 +564,27 @@ export default function bubbleChart() {
           state.disabled = eo.disabled;
         }
 
-        container.transition().call(chart);
+        chart.update();
       });
 
       dispatch.on('chartClick', function() {
         dispatch.call('tooltipHide', this);
-        if (legend.enabled()) {
-          legend.dispatch.call('closeMenu', this);
+        if (header.controls.enabled()) {
+          header.controls.dispatch.call('closeMenu', this);
+        }
+        if (header.legend.enabled()) {
+          header.legend.dispatch.call('closeMenu', this);
         }
       });
 
       model.dispatch.on('elementClick', function(eo) {
         dispatch.call('chartClick', this);
         seriesClick(data, eo, chart);
+      });
+
+      container.on('click', function() {
+        d3.event.stopPropagation();
+        dispatch.call('chartClick', this);
       });
 
     });
@@ -627,12 +615,15 @@ export default function bubbleChart() {
   // expose chart's sub-components
   chart.dispatch = dispatch;
   chart.scatter = model;
-  chart.legend = legend;
+  chart.legend = header.legend;
+  chart.controls = header.controls;
   chart.xAxis = xAxis;
   chart.yAxis = yAxis;
+  chart.options = utility.optionsFunc.bind(chart);
 
   fc.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
   fc.rebind(chart, model, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
+  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   fc.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
   chart.colorData = function(_) {
@@ -658,7 +649,7 @@ export default function bubbleChart() {
         classes = function(d, i) {
           var iClass = (d.seriesIndex * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
@@ -679,8 +670,8 @@ export default function bubbleChart() {
     model.fill(fill);
     model.classes(classes);
 
-    legend.color(color);
-    legend.classes(classes);
+    header.legend.color(color);
+    header.legend.classes(classes);
 
     return chart;
   };
@@ -704,18 +695,6 @@ export default function bubbleChart() {
   chart.height = function(_) {
     if (!arguments.length) { return height; }
     height = _;
-    return chart;
-  };
-
-  chart.showTitle = function(_) {
-    if (!arguments.length) { return showTitle; }
-    showTitle = _;
-    return chart;
-  };
-
-  chart.showLegend = function(_) {
-    if (!arguments.length) { return showLegend; }
-    showLegend = _;
     return chart;
   };
 
@@ -745,16 +724,17 @@ export default function bubbleChart() {
         strings[prop] = _[prop];
       }
     }
+    header.strings(strings);
     return chart;
   };
 
   chart.direction = function(_) {
     if (!arguments.length) { return direction; }
     direction = _;
-    // model.direction(_);
+    model.direction(_);
     xAxis.direction(_);
     yAxis.direction(_);
-    legend.direction(_);
+    header.direction(_);
     return chart;
   };
 
@@ -791,10 +771,6 @@ export default function bubbleChart() {
   chart.seriesClick = function(_) {
     if (!arguments.length) { return seriesClick; }
     seriesClick = _;
-    return chart;
-  };
-
-  chart.colorFill = function(_) {
     return chart;
   };
 

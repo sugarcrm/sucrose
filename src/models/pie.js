@@ -86,7 +86,7 @@ export default function pie() {
           container = d3.select(this);
 
       //set up the gradient constructor function
-      gradient = function(d, i) {
+      gradient = gradient || function(d, i) {
         var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
         return utility.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
       };
@@ -121,7 +121,7 @@ export default function pie() {
       wrap_entr.append('g').attr('class', 'sc-hole-wrap');
       var hole_wrap = wrap.select('.sc-hole-wrap');
 
-      wrap.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
       // Definitions

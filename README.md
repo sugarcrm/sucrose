@@ -1,27 +1,44 @@
 # Sucrose
+[![Build Status](https://travis-ci.org/sugarcrm/sucrose.svg?branch=master)](https://travis-ci.org/sugarcrm/sucrose)
+[![codecov](https://codecov.io/gh/sugarcrm/sucrose/branch/master/graph/badge.svg)](https://codecov.io/gh/sugarcrm/sucrose)
 
 SugarCRM's Chart Library: based on [D3](http://d3js.org) and derived from [NVD3](http://nvd3.org/).
 
-## Building
-
-1. Clone this repo
-1. Go to the cloned repo directory (./sucrose)
-1. Run `npm i --save-dev` to install node modules needed for building source code
-1. Run the make commands: `make clean` and then `make all`
-1. Verify that the files sucrose.js, sucrose.min.js, sucrose.css, and sucrose.min.css are still in the repo directory
-
 ## Using
 
-1. Include a link tag to the sucrose.min.css in you document head
-1. Include a script tag to the d3.min.js at the bottom of your document
-1. Include a script tag to the d3fc-rebind.min.js at the bottom of your document
-1. Include a script tag to the sucrose.min.js at the bottom of your document
-
-### Notes
+### Note:
 This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose.
 
-## Developing
-1. Under construction
+1. Include a link tag to the sucrose.min.css in you document head
+1. Include a link to the following script tags at the bottom of your document:
+    - `d3.min.js`
+    - `d3fc-rebind.min.js`
+    - `sucrose.min.js`
+
+## Building
+
+1. Clone this repo: `git clone git@github.com:sugarcrm/sucrose.git`
+1. Go to the cloned repo directory: `cd ./sucrose`
+1. Run `npm i --save-dev` to install node modules needed for building source code
+1. Run the make commands: `make clean` and then `make all`
+1. Verify that the files sucrose.js, sucrose.min.js, sucrose.css, and sucrose.min.css are still in the /build directory
+
+## Testing
+
+Unit and integration tests can be run with and without code coverage reporting, from within the repo root:
+1. for unit tests run: `npm run test-unit`
+1. for DOM (simple integration) tests run: `npm run test-dom`
+1. for integration tests running in a headless browser run: `npm run test-int`
+1. for all tests run: `npm test`
+
+For code coverage analysis first run `npm run instrument` in order to generate the needed instrumented source files, then:
+1. for unit test code coverage run: `npm run cover-unit`
+1. for DOM test code coverage run: `npm run cover-dom`
+1. for integration test code coverage run: `npm run cover-int`
+1. for complete code coverage run: `npm run cover-all`
+
+After running unit or DOm code coverage tests then run `npm run cover-rpt` to generate a coverage report at `/coverage/lcov-report/index.html`. The cover-all or cover-int scripts run the report automatically. The results of all coverage runs are merged automatically by `nyc`.
+
 
 ### Contributing:
 See [CONTRIBUTING](CONTRIBUTING.md) for how you can contribute changes back into this project.

@@ -7,6 +7,8 @@ d3-sugar.*
 d3fc-rebind.*
 topojson.*
 package.backup.json
+.coverage
+coverage/
 examples/css/sucrose.*
 examples/data/geo/natural_earth
 examples/js/d3.*
@@ -14,3 +16,4 @@ examples/js/jquery.*
 examples/js/jquerymy.*
 examples/js/less.*
 examples/js/sucrose.*
+test/fixtures/build

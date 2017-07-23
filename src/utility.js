@@ -3,11 +3,7 @@ import d3 from 'd3';
 /*-------------------
       UTILITIES
 -------------------*/
-const utility = {};
-
-utility.strip = function(s) {
-  return s.replace(/(\s|&)/g,'');
-};
+var utility = {};
 
 utility.identity = function(d) {
   return d;
@@ -19,10 +15,28 @@ utility.functor = function functor(v) {
   };
 };
 
-utility.daysInMonth = function(month, year) {
-  return (new Date(year, month+1, 0)).getDate();
+/*
+Snippet of code you can insert into each utility.models.* to give you the ability to
+do things like:
+chart.options({
+  showXAxis: true,
+  tooltips: true
+});
+To enable in the chart:
+chart.options = utility.optionsFunc.bind(chart);
+*/
+utility.optionsFunc = function(args) {
+  if (args) {
+    d3.map(args).each((function(value, key) {
+      if (typeof this[key] === 'function') {
+        this[key](value);
+      }
+    }).bind(this));
+  }
+  return this;
 };
 
+// Window functions
 utility.windowSize = function () {
   // Sane defaults
   var size = {width: 640, height: 480};
@@ -117,6 +131,8 @@ utility.unResizeOnPrint = function (fn) {
   }
 };
 
+// Color functions
+
 // Backwards compatible way to implement more d3-like coloring of graphs.
 // If passed an array, wrap it in a function which implements the old default
 // behavior
@@ -149,6 +165,21 @@ utility.defaultColor = function () {
   };
 };
 
+utility.getTextContrast = function(c, i, callback) {
+  var back = c,
+      backLab = d3.lab(back),
+      backLumen = backLab.l,
+      textLumen = backLumen > 60 ?
+        backLab.darker(4 + (backLumen - 75) / 25).l : // (50..100)[1 to 3.5]
+        backLab.brighter(4 + (18 - backLumen) / 25).l, // (0..50)[3.5..1]
+      textLab = d3.lab(textLumen, 0, 0),
+      text = textLab.toString();
+  if (callback) {
+    callback(backLab, textLab);
+  }
+  return text;
+};
+
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
 utility.customTheme = function (dictionary, getKey, defaultColors) {
@@ -170,63 +201,8 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
   };
 };
 
-// From the PJAX example on d3js.org, while this is not really directly needed
-// it's a very cool method for doing pjax, I may expand upon it a little bit,
-// open to suggestions on anything that may be useful
-utility.pjax = function (links, content) {
-  d3.selectAll(links).on('click', function () {
-    history.pushState(this.href, this.textContent, this.href);
-    load(this.href);
-    d3.event.preventDefault();
-  });
+// Gradient functions
 
-  function load(href) {
-    d3.html(href, function (fragment) {
-      var target = d3.select(content).node();
-      target.parentNode.replaceChild(d3.select(fragment).select(content).node(), target);
-      utility.pjax(links, content);
-    });
-  }
-
-  d3.select(window).on('popstate', function () {
-    if (d3.event.state) { load(d3.event.state); }
-  });
-};
-
-/* Numbers that are undefined, null or NaN, convert them to zeros.
-*/
-utility.NaNtoZero = function(n) {
-  if (typeof n !== 'number'
-      || isNaN(n)
-      || n === null
-      || n === Infinity) return 0;
-
-  return n;
-};
-
-/*
-Snippet of code you can insert into each utility.models.* to give you the ability to
-do things like:
-chart.options({
-  showXAxis: true,
-  tooltips: true
-});
-
-To enable in the chart:
-chart.options = utility.optionsFunc.bind(chart);
-*/
-utility.optionsFunc = function(args) {
-  if (args) {
-    d3.map(args).forEach((function(key,value) {
-      if (typeof this[key] === 'function') {
-         this[key](value);
-      }
-    }).bind(this));
-  }
-  return this;
-};
-
-//gradient color
 utility.colorLinearGradient = function (d, i, p, c, defs) {
   var id = 'lg_gradient_' + i;
   var grad = defs.select('#' + id);
@@ -270,13 +246,11 @@ utility.createLinearGradient = function (id, params, defs, stops) {
         .attr('y2', y2 )
         //.attr('gradientUnits', 'userSpaceOnUse')objectBoundingBox
         .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1)
-  {
+  for (var i=0; i<stops.length; i+=1) {
     attrs = stops[i];
     stop = grad.append('stop');
-    for (var a in attrs)
-    {
-      if ( attrs.hasOwnProperty(a) ) {
+    for (var a in attrs) {
+      if (attrs.hasOwnProperty(a)) {
         stop.attr(a, attrs[a]);
       }
     }
@@ -286,8 +260,7 @@ utility.createLinearGradient = function (id, params, defs, stops) {
 utility.colorRadialGradient = function (d, i, p, c, defs) {
   var id = 'rg_gradient_' + i;
   var grad = defs.select('#' + id);
-  if ( grad.empty() )
-  {
+  if ( grad.empty() ) {
     utility.createRadialGradient( id, p, defs, [
       { 'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
       { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1 }
@@ -305,28 +278,15 @@ utility.createRadialGradient = function (id, params, defs, stops) {
         .attr('cy', params.y)
         .attr('gradientUnits', params.u)
         .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1)
-  {
+  for (var i=0; i<stops.length; i+=1) {
     attrs = stops[i];
     stop = grad.append('stop');
-    for (var a in attrs)
-    {
+    for (var a in attrs) {
       if ( attrs.hasOwnProperty(a) ) {
         stop.attr(a, attrs[a]);
       }
     }
   }
-};
-
-utility.getAbsoluteXY = function (element) {
-  var viewportElement = document.documentElement;
-  var box = element.getBoundingClientRect();
-  var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
-  var scrollTop = viewportElement.scrollTop + document.body.scrollTop;
-  var x = box.left + scrollLeft;
-  var y = box.top + scrollTop;
-
-  return {'left': x, 'top': y};
 };
 
 // Creates a rectangle with rounded corners
@@ -391,112 +351,6 @@ utility.dropShadow = function (id, defs, options) {
   //   <rect width="90" height="90" stroke="green" stroke-width="3" fill="yellow" filter="url(#f1)" />
 // </svg>
 
-utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
-  var lengths = [],
-      txt = _container.select('.tmp-text-strings').select('text');
-  if (txt.empty()) {
-    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
-  }
-  txt.classed(classes, true);
-  txt.style('display', 'inline');
-  _data.forEach(function(d, i) {
-      txt.text(_format(d, i));
-      lengths.push(txt.node().getBoundingClientRect().width);
-    });
-  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
-  return lengths;
-};
-
-utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
-  var thicknesses = [],
-      txt = _container.select('.tmp-text-strings').select('text');
-  if (txt.empty()) {
-    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
-  }
-  txt.classed(classes, true);
-  txt.style('display', 'inline');
-  _data.forEach(function(d, i) {
-      txt.text(_format(d, i));
-      thicknesses.push(txt.node().getBoundingClientRect().height);
-    });
-  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
-  return thicknesses;
-};
-
-utility.maxStringSetLength = function(_data, _container, _format) {
-  var lengths = utility.stringSetLengths(_data, _container, _format);
-  return d3.max(lengths);
-};
-
-utility.stringEllipsify = function(_string, _container, _length) {
-  var txt = _container.select('.tmp-text-strings').select('text'),
-      str = _string,
-      len = 0,
-      ell = 0,
-      strLen = 0;
-  if (txt.empty()) {
-    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
-  }
-  txt.style('display', 'inline');
-  txt.text('...');
-  ell = txt.node().getBoundingClientRect().width;
-  txt.text(str);
-  len = txt.node().getBoundingClientRect().width;
-  strLen = len;
-  while (len > _length && len > 30) {
-    str = str.slice(0, -1);
-    txt.text(str);
-    len = txt.node().getBoundingClientRect().width + ell;
-  }
-  txt.text('');
-  return str + (strLen > _length ? '...' : '');
-};
-
-utility.getTextBBox = function(text, floats) {
-  var bbox = text.node().getBoundingClientRect(),
-      size = {
-        width: floats ? bbox.width : parseInt(bbox.width, 10),
-        height: floats ? bbox.height : parseInt(bbox.height, 10)
-      };
-  return size;
-};
-
-utility.getTextContrast = function(c, i, callback) {
-  var back = c,
-      backLab = d3.lab(back),
-      backLumen = backLab.l,
-      textLumen = backLumen > 60 ?
-        backLab.darker(4 + (backLumen - 75) / 25).l : // (50..100)[1 to 3.5]
-        backLab.brighter(4 + (18 - backLumen) / 25).l, // (0..50)[3.5..1]
-      textLab = d3.lab(textLumen, 0, 0),
-      text = textLab.toString();
-  if (callback) {
-    callback(backLab, textLab);
-  }
-  return text;
-};
-
-utility.isRTLChar = function(c) {
-  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
-      rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
-  return rtlCharReg_.test(c);
-};
-
-utility.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
-  var angleInRadians = utility.angleToRadians(angleInDegrees);
-  var x = centerX + radius * Math.cos(angleInRadians);
-  var y = centerY + radius * Math.sin(angleInRadians);
-  return [x, y];
-};
-
-utility.angleToRadians = function(angleInDegrees) {
-  return angleInDegrees * Math.PI / 180.0;
-};
-
-utility.angleToDegrees = function(angleInRadians) {
-  return angleInRadians * 180.0 / Math.PI;
-};
-
 utility.createTexture = function(defs, id, x, y) {
   var texture = '#sc-diagonalHatch-' + id,
       mask = '#sc-textureMask-' + id;
@@ -532,6 +386,130 @@ utility.createTexture = function(defs, id, x, y) {
   return mask;
 };
 
+// String functions
+
+utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
+  var lengths = [],
+      txt = _container.select('.tmp-text-strings').select('text');
+  if (txt.empty()) {
+    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
+  }
+  txt.classed(classes, true);
+  txt.style('display', 'inline');
+  _data.forEach(function(d, i) {
+      txt.text(_format(d, i));
+      lengths.push(txt.node().getBoundingClientRect().width);
+    });
+  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
+  return lengths;
+};
+
+utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
+  var thicknesses = [],
+      txt = _container.select('.tmp-text-strings').select('text');
+  if (txt.empty()) {
+    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
+  }
+  txt.classed(classes, true);
+  txt.style('display', 'inline');
+  _data.forEach(function(d, i) {
+      txt.text(_format(d, i));
+      thicknesses.push(txt.node().getBoundingClientRect().height);
+    });
+  txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
+  return thicknesses;
+};
+
+utility.maxStringSetLength = function(_data, _container, _format, classes) {
+  var lengths = utility.stringSetLengths(_data, _container, _format, classes);
+  return d3.max(lengths);
+};
+
+utility.stringEllipsify = function(_string, _container, _length) {
+  var txt = _container.select('.tmp-text-strings').select('text'),
+      str = _string,
+      len = 0,
+      ell = 0,
+      strLen = 0;
+  if (txt.empty()) {
+    txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
+  }
+  txt.style('display', 'inline');
+  txt.text('...');
+  ell = txt.node().getBoundingClientRect().width;
+  txt.text(str);
+  len = txt.node().getBoundingClientRect().width;
+  strLen = len;
+  while (len > _length && len > 30) {
+    str = str.slice(0, -1);
+    txt.text(str);
+    len = txt.node().getBoundingClientRect().width + ell;
+  }
+  txt.text('');
+  return str + (strLen > _length ? '...' : '');
+};
+
+utility.getTextBBox = function(text, floats) {
+  var bbox = text.node().getBoundingClientRect(),
+      size = {
+        width: floats ? bbox.width : parseInt(bbox.width, 10),
+        height: floats ? bbox.height : parseInt(bbox.height, 10),
+        top: floats ? bbox.top : parseInt(bbox.top, 10),
+        left: floats ? bbox.left : parseInt(bbox.left, 10)
+      };
+  return size;
+};
+
+utility.strip = function(s) {
+  return s.replace(/(\s|&)/g,'');
+};
+
+utility.isRTLChar = function(c) {
+  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
+      rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
+  return rtlCharReg_.test(c);
+};
+
+// Numeric functions
+
+// Numbers that are undefined, null or NaN, convert them to zeros.
+utility.NaNtoZero = function(n) {
+  if (typeof n !== 'number'
+      || isNaN(n)
+      || n === null
+      || n === Infinity) return 0;
+
+  return n;
+};
+
+utility.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
+  var angleInRadians = utility.angleToRadians(angleInDegrees);
+  var x = centerX + radius * Math.cos(angleInRadians);
+  var y = centerY + radius * Math.sin(angleInRadians);
+  return [x, y];
+};
+
+utility.angleToRadians = function(angleInDegrees) {
+  return angleInDegrees * Math.PI / 180.0;
+};
+
+utility.angleToDegrees = function(angleInRadians) {
+  return angleInRadians * 180.0 / Math.PI;
+};
+
+utility.getAbsoluteXY = function (element) {
+  var viewportElement = document.documentElement;
+  var box = element.getBoundingClientRect();
+  var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
+  var scrollTop = viewportElement.scrollTop + document.body.scrollTop;
+  var x = box.left + scrollLeft;
+  var y = box.top + scrollTop;
+
+  return {'left': x, 'top': y};
+};
+utility.translation = function(x, y) {
+  return 'translate(' + x + ',' + y + ')';
+};
 // utility.numberFormatSI = function(d, p, c, l) {
   //     var fmtr, spec, si;
   //     if (isNaN(d)) {
@@ -562,7 +540,7 @@ utility.numberFormatSI = function(d, p, c, l) {
   spec = c ? '$,' : ',';
   // spec += '.' + 2 + 'r';
   if (c && d < 1000 && d !== parseInt(d, 10)) {
-    spec += '.2s';
+    spec += '.2f';
   } else if (Math.abs(d) > 1 && Math.abs(d) <= 1000) {
     d = p === 0 ? Math.round(d) : Math.round(d * 10 * p) / (10 * p);
   } else {
@@ -576,7 +554,7 @@ utility.numberFormatSI = function(d, p, c, l) {
 
 utility.round = function(x, n) {
   // Sigh...
-  var ten_n = Math.pow(10,n);
+  var ten_n = Math.pow(10, n);
   return Math.round(x * ten_n) / ten_n;
 };
 
@@ -588,8 +566,13 @@ utility.numberFormatRound = function(d, p, c, l) {
   c = typeof c === 'boolean' ? c : false;
   p = Number.isFinite(p) ? p : c ? 2 : 0;
   fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  spec = c ? '$,.' + p + 'f' : ',';
+  spec = (c ? '$' : '') + ',.' + p + 'f';
   return fmtr(spec)(d);
+};
+
+// Date functions
+utility.daysInMonth = function(month, year) {
+  return (new Date(year, month+1, 0)).getDate();
 };
 
 utility.isValidDate = function(d) {
@@ -605,56 +588,129 @@ utility.getDateFormat = function(values) {
   var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
   var formatIndex = 0;
 
-  formatIndex = values.length ? d3.min(values, function(d) {
-      var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
-      var format;
-      if (d3.timeSecond(date) < d) {
-        format = 1;
-      } else if (d3.timeMinute(date) < d) {
-        format = 2;
-      } else if (d3.timeHour(date) < d) {
-        format = 3;
-      } else if (d3.timeDay(date) < d) {
-        format = 4;
-      } else if (d3.timeMonth(date) < d) {
-        format = 5;
-        // format = (d3.timeWeek(date) < date ? 4 : 5);
-      } else if (d3.timeYear(date) < d) {
-        format = 7;
-      } else {
-        format = 8;
-      }
-      return format;
-    }) : 0;
+  formatIndex = values.length ? d3.min(values, function(date) {
+    var format;
+
+    // if round to second is less than date
+    if (d3.timeSecond(date) < date) {
+      // use millisecond format - .%L
+      format = 1;
+    }
+    else
+    // if round to minute is less than date
+    if (d3.timeMinute(date) < date) {
+      // use second format - :%S
+      format = 2;
+    }
+    else
+    // if round to hour is less than date
+    if (d3.timeHour(date) < date) {
+      // use minute format - %I:%M
+      format = 3;
+    }
+    else
+    // if round to day is less than date
+    if (d3.timeDay(date) < date) {
+      // use hour format - %I %p
+      format = 4;
+    }
+    else
+    // if round to month is less than date
+    if (d3.timeMonth(date) < date) {
+      // use day format - %x
+      format = 5; // format = (d3.timeWeek(date) < date ? 4 : 5);
+    }
+    else
+    // if round to year is less than date
+    if (d3.timeYear(date) < date) {
+      // use month format - %B
+      format = 7;
+    }
+    else
+    // as last resort
+    {
+      // use year format - %Y
+      format = 8;
+    }
+    return format;
+  }) : 0;
+
+  return dateFormats[formatIndex];
+};
+
+utility.getUTCDateFormat = function(values) {
+  var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
+  var formatIndex = 0;
+
+  formatIndex = values.length ? d3.min(values, function(date) {
+    var format;
+    date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
+
+    // if round to second is less than date
+    if (d3.utcSecond(date) < date) {
+      // use millisecond format - .%L
+      format = 1;
+    }
+    else
+    // if round to minute is less than date
+    if (d3.utcMinute(date) < date) {
+      // use second format - :%S
+      format = 2;
+    }
+    else
+    // if round to hour is less than date
+    if (d3.utcHour(date) < date) {
+      // use minute format - %I:%M
+      format = 3;
+    }
+    else
+    // if round to day is less than date
+    if (d3.utcDay(date) < date) {
+      // use hour format - %I %p
+      format = 4;
+    }
+    else
+    // if round to month is less than date
+    if (d3.utcMonth(date) < date) {
+      // use day format - %x
+      format = 5; // format = (d3.utcWeek(date) < date ? 4 : 5);
+    }
+    else
+    // if round to year is less than date
+    if (d3.utcYear(date) < date) {
+      // use month format - %B
+      format = 7;
+    }
+    else
+    // as last resort
+    {
+      // use year format - %Y
+      format = 8;
+    }
+    return format;
+  }) : 0;
+
   return dateFormats[formatIndex];
 };
 
 utility.multiFormat = function(d) {
-  var formatMillisecond = '.%L',
-      formatSecond = ':%S',
-      formatMinute = '%I:%M',
-      formatHour = '%I %p',
-      formatDay = '%x',
-      // formatWeek = '%b %d',
-      formatMonth = '%B',
-      formatYear = '%Y';
   var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
   var format;
   if (d3.timeSecond(date) < d) {
-    format = formatMillisecond;
+    format = '.%L'; //millisecond
   } else if (d3.timeMinute(date) < d) {
-    format = formatSecond;
+    format = ':%S'; //second
   } else if (d3.timeHour(date) < d) {
-    format = formatMinute;
+    format = '%I:%M'; //minute
   } else if (d3.timeDay(date) < d) {
-    format = formatHour;
+    format = '%I %p'; //hour
   } else if (d3.timeMonth(date) < d) {
-    format = formatDay;
+    format = '%x'; //day
     // format = (d3.timeWeek(date) < date ? formatDay : formatWeek);
   } else if (d3.timeYear(date) < d) {
-    format = formatMonth;
+    format = '%B'; //month
   } else {
-    format = formatYear;
+    format = '%Y'; //year
   }
   return format;
 };
@@ -666,12 +722,11 @@ utility.dateFormat = function(d, p, l) {
   dateString = d.toString();
   if (!isNaN(parseInt(dateString, 10)) && dateString.length === 4) {
     // append day and month parts to get correct UTC offset
-    dateString = dateString + '-1-1';
-    // dateString = '1/1/' + dateString;
-    date = new Date(dateString);
+    date = new Date(dateString + '-1-1'); // '1/1/' + dateString;
   } else {
     date = new Date(d);
   }
+  date.setMilliseconds(date.getMilliseconds() - date.getTimezoneOffset() * 60000);
 
   if (!(date instanceof Date) || isNaN(date.valueOf())) {
     return d;
@@ -689,6 +744,7 @@ utility.dateFormat = function(d, p, l) {
     spec = p && p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date);
     // TODO: if not explicit pattern provided, we should use .multi()
   }
+
   return fmtr(spec)(date);
 };
 
@@ -705,18 +761,18 @@ utility.buildLocality = function(l, d) {
         'thousands': ',',
         'grouping': [3],
         'currency': ['$', ''],
-        'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
-        'date': '%b %-d, %Y', //%x
-        'time': '%-I:%M:%S', //%X
         'periods': ['AM', 'PM'],
         'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
         'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
         'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
         'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        'date': '%b %-d, %Y', //%x
+        'time': '%-I:%M:%S %p', //%X
+        'dateTime': '%B %-d, %Y at %X GMT%Z', //%c
         // Custom patterns
         'full': '%A, %c',
         'long': '%c',
-        'medium': '%x, %X %p',
+        'medium': '%x, %X',
         'short': '%-m/%-d/%y, %-I:%M %p',
         'yMMMEd': '%a, %x',
         'yMEd': '%a, %-m/%-d/%Y',
@@ -762,5 +818,6 @@ utility.displayNoData = function (hasData, container, label, x, y) {
     return false;
   }
 };
+
 
 export default utility;
