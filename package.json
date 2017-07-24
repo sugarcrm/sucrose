@@ -63,6 +63,7 @@
   },
   "devDependencies": {
     "clean-css": "^3.4.8",
+    "codecov": "^2.2.0",
     "extend-tape": "^1.2.0",
     "faucet": "0.0.1",
     "istanbul": "^0.4.5",
