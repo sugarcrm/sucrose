@@ -18,11 +18,10 @@ Nightmare
     }, done, options);
   });
 Nightmare
-  .action("config", function(color, done) {
-    this.evaluate_now(function(color) {
-      //TODO: change to config object
-      config(color);
-    }, done, color);
+  .action("config", function(options, done) {
+    this.evaluate_now(function(options) {
+      config(options);
+    }, done, options);
   });
 Nightmare
   .action("render", function(data, done) {

@@ -13,8 +13,12 @@ function model(options) {
   chart = sucrose[options.type][options.name]();
 }
 
-function config(color) {
-  chart.colorData(color);
+function config(options) {
+  if (typeof options === 'string') {
+    chart.colorData(options);
+  } else {
+    chart.options(options);
+  }
 }
 
 function render(d_) {
