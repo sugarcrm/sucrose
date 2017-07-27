@@ -1,8 +1,7 @@
-*.sublime-workspace
+*.sublime-*
 .DS_Store
 node_modules
 npm-debug.log
-devdocs
 d3-sugar.*
 d3fc-rebind.*
 topojson.*
