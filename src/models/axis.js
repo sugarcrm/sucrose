@@ -1,5 +1,4 @@
 import d3 from 'd3';
-import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 
 export default function axis() {
@@ -609,8 +608,8 @@ export default function axis() {
   // expose model's sub-components
   model.axis = axis;
 
-  // fc.rebind(model, axis, 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
-  fc.rebind(model, scale, 'domain', 'range'); //these are also accessible by model.scale(), but added common ones directly for ease of use
+  // utility.rebind(model, axis, 'tickValues', 'tickSubdivide', 'tickSize', 'tickPadding', 'tickFormat');
+  utility.rebind(model, scale, 'domain', 'range'); //these are also accessible by model.scale(), but added common ones directly for ease of use
 
   // read only
   model.width = function(_) {
@@ -760,7 +759,7 @@ export default function axis() {
     scale = _;
     axis.scale(scale);
     hasRangeBand = typeof scale.padding === 'function';
-    fc.rebind(model, scale, 'domain', 'range');
+    utility.rebind(model, scale, 'domain', 'range');
     return model;
   };
   model.valueFormat = function(_) {

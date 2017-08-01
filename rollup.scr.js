@@ -10,12 +10,10 @@ export default {
   // node
   external: [
     'd3',
-    'd3fc-rebind',
   ],
   // browser
   globals: {
     'd3': 'd3',
-    'd3fc-rebind': 'fc',
   },
   // sourceMap: 'inline',
   // treeshake: false,

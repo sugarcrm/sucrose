@@ -10,12 +10,10 @@ export default {
   // node
   external: [
     '@sugarcrm/d3-sugar',
-    'd3fc-rebind',
   ],
   // browser
   globals: {
     '@sugarcrm/d3-sugar': 'd3sugar',
-    'd3fc-rebind': 'fc',
   },
   // sourceMap: 'inline',
   // treeshake: false,
