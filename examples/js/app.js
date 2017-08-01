@@ -209,6 +209,7 @@ var sucroseCharts = function() {
         chart
           .x(function(d) { return d3.timeParse('%Y-%m-%d')(d.x); })
           .y(function(d) { return d.y; })
+          .showControls(false)
           .groupBy(function(d) {
               return d.assigned_user_name;
           })
@@ -229,6 +230,7 @@ var sucroseCharts = function() {
     funnel: {
       minLabelWidth: null,
       wrapLabels: null,
+      showControls: false,
       _format: function format(chart, callback) {
         chart
           .fmtValue(function(d) {
@@ -244,6 +246,7 @@ var sucroseCharts = function() {
       ringWidth: 50,
       maxValue: 9,
       transitionMs: 4000,
+      showControls: false,
       _format: function format(chart, callback) {
         callback(chart);
       }
@@ -390,6 +393,7 @@ var sucroseCharts = function() {
       pieLabelsOutside: true,
       maxRadius: 250,
       minRadius: 100,
+      showControls: false,
       // rotateDegrees: 0,
       // arcDegrees: 360,
       // fixedRadius: function(container, chart) {
@@ -471,8 +475,9 @@ var sucroseCharts = function() {
       }
     },
     treemap: {
-      showLegend: false,
       showTitle: false,
+      showLegend: false,
+      showControls: false,
       _format: function format(chart, callback) {
         chart
           .leafClick(function(d) {
@@ -1031,7 +1036,6 @@ function generatePackage(e) {
   var includes = [
     $.get({url: 'tpl/index.html', dataType: 'text'}),
     $.get({url: 'js/d3.min.js', dataType: 'text'}),
-    $.get({url: 'js/d3fc-rebind.min.js', dataType: 'text'}),
     $.get({url: 'js/sucrose.min.js', dataType: 'text'}),
     $.get({url: 'css/sucrose.min.css', dataType: 'text'})
   ];
@@ -1069,17 +1073,16 @@ function generatePackage(e) {
       }
 
       // add files to zip
-      zip.file('index.html', indexTemplate);
+      zip.file('index-' + chartType + '.html', indexTemplate);
       zip.file('d3.min.js', files[1]);
-      zip.file('d3fc-rebind.min.js', files[2]);
-      zip.file('sucrose.min.js', files[3]);
-      zip.file('sucrose.min.css', files[4]);
+      zip.file('sucrose.min.js', files[2]);
+      zip.file('sucrose.min.css', files[3]);
 
       if (chartType === 'globe') {
-        zip.file('topojson.min.js', files[5]);
-        zip.file('data/geo/world-countries-topo-110.json', files[6]);
-        zip.file('data/geo/usa-states-topo-110.json', files[7]);
-        zip.file('data/geo/cldr_en.json', files[8]);
+        zip.file('topojson.min.js', files[4]);
+        zip.file('data/geo/world-countries-topo-110.json', files[5]);
+        zip.file('data/geo/usa-states-topo-110.json', files[6]);
+        zip.file('data/geo/cldr_en.json', files[7]);
       }
 
       // initiate zip download
@@ -1343,7 +1346,8 @@ var Manifest =
     color_data: 'default',
     gradient: ['0', 'vertical', 'middle'],
     direction: 'ltr',
-    locale: 'en'
+    locale: 'en',
+    show_title: 1
   },
 
   // UI elements
