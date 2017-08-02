@@ -1,5 +1,4 @@
 import d3 from 'd3';
-import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import models from '../models/models.js';
@@ -231,7 +230,7 @@ export default function sparklinePlus() {
   // expose chart's sub-components
   chart.sparkline = sparkline;
 
-  fc.rebind(chart, sparkline, 'x', 'y', 'xScale', 'yScale', 'color');
+  utility.rebind(chart, sparkline, 'x', 'y', 'xScale', 'yScale', 'color');
 
   chart.margin = function(_) {
     if (!arguments.length) return margin;

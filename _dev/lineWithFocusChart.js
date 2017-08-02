@@ -1,4 +1,3 @@
-import fc from 'd3fc-rebind';
 import d3 from 'd3';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
@@ -462,7 +461,7 @@ export default function lineWithFocusChart() {
   chart.x2Axis = x2Axis;
   chart.y2Axis = y2Axis;
 
-  fc.rebind(chart, lines, 'defined', 'isArea', 'size', 'xDomain', 'yDomain', 'forceX', 'forceY', 'interactive', 'clipEdge', 'clipVoronoi', 'id');
+  utility.rebind(chart, lines, 'defined', 'isArea', 'size', 'xDomain', 'yDomain', 'forceX', 'forceY', 'interactive', 'clipEdge', 'clipVoronoi', 'id');
 
   chart.x = function(_) {
     if (!arguments.length) return lines.x;

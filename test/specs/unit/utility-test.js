@@ -41,6 +41,7 @@ tests("UNIT: utility -", function(t) {
         "createTexture", //requires dom
 
         "optionsFunc", //tested in each module
+        "rebind", //tested in each module
     ]);
 
     t.test("identity: returns d", function(assert) {
@@ -57,8 +58,7 @@ tests("UNIT: utility -", function(t) {
     });
 
     t.test("functor: returns function that returns f", function(assert) {
-        let f = sucrose.utility.functor(function(d) { return d;     t.register(assert, type);
-    });
+        let f = sucrose.utility.functor(function(d) {return d;});
         assert.equal(f("d"), "d");
         assert.end();
         t.register(assert, type);

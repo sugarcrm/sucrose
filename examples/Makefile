@@ -24,12 +24,11 @@ LIB_FILES = \
 	node_modules/canvg/canvg.js \
 	node_modules/canvg/rgbcolor.js \
 	node_modules/canvg/StackBlur.js \
-	node_modules/sugar/release/sugar-full.development.js \
+	node_modules/sugar/sugar-full.js \
 	node_modules/store2/dist/store2.min.js
 
 DEP_FILES = \
 	js/d3.min.js \
-	js/d3fc-rebind.min.js \
 	js/topojson.min.js \
 	js/jquery.min.js \
 	js/jquerymy.min.js
@@ -61,7 +60,7 @@ CSS_MINIFIER = \
 HELP_MAKER = \
 	./node_modules/make-help/bin/make-help
 
-HEADER = $(shell cat ../src/header)
+HEADER = $(shell cat js/app/header)
 
 .DEFAULT_GOAL := help
 
@@ -105,7 +104,6 @@ dependencies: clean-dependencies
 	# copy node module files
 	cp ../build/d3.min.js js/d3.min.js
 	cp ../node_modules/topojson/build/topojson.min.js js/topojson.min.js
-	cp ../node_modules/d3fc-rebind/build/d3fc-rebind.min.js js/d3fc-rebind.min.js
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
 	cp node_modules/jquerymy/jquerymy.min.js js/jquerymy.min.js
 
@@ -158,7 +156,7 @@ clean-lib:
 
 # - [*] build the examples app js file
 js: $(APP_FILES) clean-js
-	cat ../src/header $(APP_FILES) >> js/app.js
+	cat js/app/header $(APP_FILES) >> js/app.js
 	cat $(APP_FILES) | $(JS_MINIFIER) --preamble "$(HEADER)" >> js/app.min.js
 
 # - remove the examples app js file

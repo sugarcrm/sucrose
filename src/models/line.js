@@ -1,5 +1,4 @@
 import d3 from 'd3';
-import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import scatter from './scatter.js';
 
@@ -268,7 +267,7 @@ export default function line() {
   model.dispatch = points.dispatch;
   model.scatter = points;
 
-  fc.rebind(model, points, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'direction', 'nice', 'locality');
+  utility.rebind(model, points, 'id', 'interactive', 'size', 'xScale', 'yScale', 'zScale', 'xDomain', 'yDomain', 'sizeDomain', 'sizeRange', 'forceX', 'forceY', 'forceSize', 'useVoronoi', 'clipVoronoi', 'clipRadius', 'padData', 'padDataOuter', 'singlePoint', 'direction', 'nice', 'locality');
 
   model.color = function(_) {
     if (!arguments.length) { return color; }

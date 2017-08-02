@@ -9,7 +9,6 @@
 _dev
 d3.*
 d3-sugar.*
-d3fc-rebind.*
 topojson.*
 package.backup.json
 .coverage

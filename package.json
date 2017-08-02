@@ -1,6 +1,6 @@
 {
   "name": "sucrose",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "description": "Interactive Charts for Business Applications",
   "keywords": [
     "charts",
@@ -58,7 +58,6 @@
   },
   "dependencies": {
     "d3": "4.9.1",
-    "d3fc-rebind": "4.1.1",
     "topojson": "^1.6.26"
   },
   "devDependencies": {

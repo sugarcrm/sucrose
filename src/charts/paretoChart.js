@@ -1,5 +1,4 @@
 import d3 from 'd3';
-import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import multibar from '../models/multibar.js';
@@ -958,9 +957,9 @@ export default function paretoChart() {
   chart.yAxis = yAxis;
   chart.options = utility.optionsFunc.bind(chart);
 
-  fc.rebind(chart, bars, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'color', 'fill', 'classes', 'gradient');
-  fc.rebind(chart, bars, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
-  fc.rebind(chart, xAxis, 'rotateTicks', 'staggerTicks', 'wrapTicks', 'reduceXTicks');
+  utility.rebind(chart, bars, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'color', 'fill', 'classes', 'gradient');
+  utility.rebind(chart, bars, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
+  utility.rebind(chart, xAxis, 'rotateTicks', 'staggerTicks', 'wrapTicks', 'reduceXTicks');
 
   chart.colorData = function(_) {
     var type = arguments[0],

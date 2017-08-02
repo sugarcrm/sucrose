@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-    <title>Sucrose Chart - bubble</title>
+    <title>Sucrose Chart - funnel</title>
     <link rel="stylesheet" href="../build/sucrose.min.css">
     <style>
         .chart {
@@ -26,146 +26,111 @@
     <script src="../build/sucrose.min.js"></script>
 
     <script>
-var type = 'bubble';
+var type = 'funnel';
 var data = {
+  "properties": {
+    "title": "Pipeline total is $675k",
+    "units": "$",
+    "yDataType": "currency",
+    "groups": [
+      {
+        "label": "Opportunities"
+      }
+    ],
+    "seriesLabel": "Stage"
+  },
   "data": [
     {
-      "id": "3a458f54-264e-e8f4-2eed-516f68ef6295",
-      "x": "2013-05-23",
-      "y": 71989,
-      "shape": "circle",
-      "account_name": "Davenport Investing",
-      "assigned_user_name": "Sally Bronsen",
-      "sales_stage": "Id. Decision Makers",
-      "sales_stage_short": "Id. Deciders",
-      "probability": 40,
-      "base_amount": 71989,
-      "currency_symbol": "$"
+      "key": "תחזיות",
+      "count": 3,
+      "values": [
+        {
+          "x": 1,
+          "y": 5
+        }
+      ]
     },
     {
-      "id": "85d9a18a-84e1-59f0-c102-516f6871bce4",
-      "x": "2013-04-23",
-      "y": 70148,
-      "shape": "circle",
-      "account_name": "Max Holdings Ltd",
-      "assigned_user_name": "Chris Olliver",
-      "sales_stage": "Perception Analysis",
-      "sales_stage_short": "Percept. Analysis",
-      "probability": 50,
-      "base_amount": 70148,
-      "currency_symbol": "$"
+      "key": "מגבלות",
+      "count": 3,
+      "values": [
+        {
+          "x": 1,
+          "y": 10
+        }
+      ]
     },
     {
-      "id": "c68234e4-4304-2d6b-0d3d-516f682f0dbc",
-      "x": "2013-05-26",
-      "y": 69667,
-      "shape": "circle",
-      "account_name": "Coolview Net Ltd",
-      "assigned_user_name": "Will Westin",
-      "sales_stage": "Qualification",
-      "sales_stage_short": "Qualification",
-      "probability": 20,
-      "base_amount": 69667,
-      "currency_symbol": "$"
+      "key": "Negotiation",
+      "count": 5,
+      "values": [
+        {
+          "x": 1,
+          "y": 15
+        }
+      ]
     },
     {
-      "id": "1723a261-9c78-0eec-0d7d-516f68fd5c73",
-      "x": "2013-05-19",
-      "y": 68761,
-      "shape": "circle",
-      "account_name": "Super Star Holdings Inc",
-      "assigned_user_name": "Sarah Smith",
-      "sales_stage": "Needs Analysis",
-      "sales_stage_short": "Needs Analysis",
-      "probability": 25,
-      "base_amount": 68761,
-      "currency_symbol": "$"
+      "key": "Proposal/PriceQuote",
+      "count": 5,
+      "values": [
+        {
+          "x": 1,
+          "y": 20
+        }
+      ]
     },
     {
-      "id": "cb2f1f0b-8705-9f12-9dcf-516f68159151",
-      "x": "2013-06-21",
-      "y": 68675,
-      "shape": "circle",
-      "account_name": "Airline Maintenance Co",
-      "assigned_user_name": "Sally Bronsen",
-      "sales_stage": "Perception Analysis",
-      "sales_stage_short": "Percept. Analysis",
-      "probability": 50,
-      "base_amount": 68675,
-      "currency_symbol": "$"
+      "key": "Perception Analysis",
+      "count": 1,
+      "values": [
+        {
+          "x": 1,
+          "y": 25
+        }
+      ]
     },
     {
-      "id": "c0ec30c2-02ea-1cbf-e868-516f686a4577",
-      "x": "2013-04-22",
-      "y": 68611,
-      "shape": "circle",
-      "account_name": "TJ O'Rourke Inc",
-      "assigned_user_name": "Sally Bronsen",
-      "sales_stage": "Qualification",
-      "sales_stage_short": "Qualification",
-      "probability": 20,
-      "base_amount": 68611,
-      "currency_symbol": "$"
+      "key": "זהות מקבל ההחלטות",
+      "count": 6,
+      "values": [
+        {
+          "x": 1,
+          "y": 30
+        }
+      ]
     },
     {
-      "id": "90bed37a-8bf5-e800-fd76-516f68a79e3f",
-      "x": "2013-05-29",
-      "y": 68597,
-      "shape": "circle",
-      "account_name": "B.C. Investing International",
-      "assigned_user_name": "Will Westin",
-      "sales_stage": "Id. Decision Makers",
-      "sales_stage_short": "Id. Deciders",
-      "probability": 40,
-      "base_amount": 68597,
-      "currency_symbol": "$"
+      "key": "Value Proposition",
+      "count": 2,
+      "values": [
+        {
+          "x": 1,
+          "y": 35
+        }
+      ]
     },
     {
-      "id": "58f2d8f0-32c3-8113-4fa8-516f68c99cc2",
-      "x": "2013-04-21",
-      "y": 68427,
-      "shape": "circle",
-      "account_name": "Coolview Net Ltd",
-      "assigned_user_name": "Jim Brennan",
-      "sales_stage": "Perception Analysis",
-      "sales_stage_short": "Percept. Analysis",
-      "probability": 50,
-      "base_amount": 68427,
-      "currency_symbol": "$"
+      "key": "Qualification",
+      "count": 8,
+      "values": [
+        {
+          "x": 1,
+          "y": 40
+        }
+      ]
     },
     {
-      "id": "19045159-b7e1-7ffe-1622-516f6877c47b",
-      "x": "2013-05-23",
-      "y": 68384,
-      "shape": "circle",
-      "account_name": "JJ Resources Inc",
-      "assigned_user_name": "Chris Olliver",
-      "sales_stage": "Qualification",
-      "sales_stage_short": "Qualification",
-      "probability": 20,
-      "base_amount": 68384,
-      "currency_symbol": "$"
-    },
-    {
-      "id": "2072bd6d-73f0-776b-0c84-516f68fcb44f",
-      "x": "2013-05-21",
-      "y": 67795,
-      "shape": "circle",
-      "account_name": "Smith & Sons",
-      "assigned_user_name": "Will Westin",
-      "sales_stage": "Proposal/Price Quote",
-      "sales_stage_short": "Proposal/Quote",
-      "probability": 65,
-      "base_amount": 67795,
-      "currency_symbol": "$"
+      "key": "Prospecting",
+      "count": 10,
+      "values": [
+        {
+          "x": 1,
+          "y": 45
+        }
+      ]
     }
-  ],
-  "properties": {
-    "title": "Bubble Chart Data",
-    "yDataType": "string",
-    "xDataType": "datetime",
-    "colorLength": 10
-  }
+  ]
 };
 var config = {
   "colorData": "default",
@@ -264,7 +229,7 @@ var config = {
   },
   "showTitle": 1,
   "showLegend": true,
-  "showControls": true,
+  "showControls": false,
   "strings": {
     "legend": {
       "close": "Hide legend",
@@ -277,8 +242,11 @@ var config = {
     "noData": "No Data Available.",
     "noLabel": "undefined"
   },
+  "textureFill": true,
   "tooltips": true,
   "width": null,
+  "minLabelWidth": null,
+  "wrapLabels": "1",
   "gradient": [
     "0",
     "vertical",
@@ -298,10 +266,9 @@ var config = {
   "holeLabel": "0",
   "donut": "1",
   "donutRatio": "0.4",
-  "wrapLabels": "1",
   "colorOptions": {}
 };
-var chart = sucrose.charts.bubbleChart();
+var chart = sucrose.charts.funnelChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
@@ -355,25 +322,14 @@ chart[k](v);
 }
 
 function format(callback) {
-  chart
-  .x(function(d) { return d3.timeParse('%Y-%m-%d')(d.x); })
-  .y(function(d) { return d.y; })
-  .showControls(false)
-  .groupBy(function(d) {
-  return d.assigned_user_name;
-  })
-  .filterBy(function(d) {
-  return d.probability;
-  })
-  .tooltipContent(function(eo, properties) {
-  var point = eo.point;
-  return '<p>Assigned: <b>' + point.assigned_user_name + '</b></p>' +
-  '<p>Amount: <b>' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
-  '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(point.x)) + '</b></p>' +
-  '<p>Probability: <b>' + point.probability + '%</b></p>' +
-  '<p>Account: <b>' + point.account_name + '</b></p>';
-  });
-  callback(chart);
+chart
+.fmtValue(function(d) {
+return sucrose.utility.numberFormatSI(chart.getValue()(d), 0, yIsCurrency, chart.locality());
+})
+.fmtCount(function(d) {
+return d.count ? ' (' + sucrose.utility.numberFormatSI(d.count, 0, false, chart.locality()) + ')' : '';
+});
+callback(chart);
 }
 
 window.onload = function () {

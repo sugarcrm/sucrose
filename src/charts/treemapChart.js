@@ -1,5 +1,4 @@
 import d3 from 'd3';
-import fc from 'd3fc-rebind';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
 import headers from '../models/headers.js';
@@ -296,9 +295,9 @@ export default function treemapChart() {
   chart.legend = header.legend;
   chart.options = utility.optionsFunc.bind(chart);
 
-  fc.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient');
-  fc.rebind(chart, model, 'leafClick', 'getValue', 'getKey');
-  fc.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
+  utility.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient');
+  utility.rebind(chart, model, 'leafClick', 'getValue', 'getKey');
+  utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
 
   chart.colorData = function(_) {
     if (!arguments.length) { return colorData; }

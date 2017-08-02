@@ -476,8 +476,7 @@ tests("UNIT: pieChart -", function(t) {
         let val = 10;
         _chart.holeFormat(val);
         assert.equal(_chart.holeFormat()(), val, "returns set value");
-        _chart.holeFormat(function(){return 111;    t.register(assert, type);
-    });
+        _chart.holeFormat(function(){return 111;});
         assert.equal(_chart.holeFormat()(), 111, "returns set value");
         t.register(assert, type);
     });
