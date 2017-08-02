@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-    <title>Sucrose Chart</title>
-    <link rel="stylesheet" href="sucrose.min.css">
+    <title>Sucrose Chart - pareto</title>
+    <link rel="stylesheet" href="../build/sucrose.min.css">
     <style>
         .chart {
             position: absolute;
@@ -18,122 +18,211 @@
   </head>
   <body>
     <div id="chart_" class="chart">
-      <svg></svg>
+      <svg class="sucrose sc-chart"></svg>
     </div>
 
-    <script src="d3.min.js"></script>
-    <script src="d3fc-rebind.min.js"></script>
-
-    <script src="src/core.js"></script>
-    <script src="src/tooltip.js"></script>
-    <script src="src/utils.js"></script>
-    <script src="src/models/axis.js"></script>
-    <script src="src/models/legend.js"></script>
-    <script src="src/models/scatter.js"></script>
-    <script src="src/models/line.js"></script>
-    <script src="src/models/multiBar.js"></script>
-    <script src="src/models/paretoChart.js"></script>
+    <script src="../build/d3.min.js"></script>
+    <!-- {{TopoJSON}} -->
+    <script src="../build/sucrose.min.js"></script>
 
     <script>
 var type = 'pareto';
 var data = {
   "properties": {
-    "name": " for Q3 2013",
-    "quota": 1023353,
-    "quotaLabel": "Quota (Adjusted)",
-    "yDataType": "currency",
-    "xDataType": "string",
+    "name": " for 2014 Q4",
+    "quota": 50,
+    "quotaLabel": "Quota",
     "stacked": false,
+    "yDataType": "currency",
+    "xDataType": "datetime",
     "groupData": [
       {
         "group": 0,
-        "l": "Sarah Smith",
-        "t": 2617156
+        "l": "Jim Brennan",
+        "t": 70
       },
       {
         "group": 1,
         "l": "Will Westin",
-        "t": 357952
+        "t": 50
       },
       {
         "group": 2,
-        "l": "Jim Brennan",
-        "t": 340156
+        "l": "Sarah Smith",
+        "t": 30
       }
-    ],
-    "targetQuota": 724390,
-    "targetQuotaLabel": "Quota"
+    ]
   },
   "data": [
     {
+      "disabled": false,
       "key": "Likely",
+      "series": 0,
       "type": "bar",
       "values": [
         {
+          "series": 0,
           "x": 1,
-          "y": 1308578
+          "y": 40,
+          "y0": 0
         },
         {
+          "series": 0,
           "x": 2,
-          "y": 178976
+          "y": 30,
+          "y0": 0
         },
         {
+          "series": 0,
           "x": 3,
-          "y": 170078
+          "y": 20,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 40,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 30,
+          "y0": 0
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 20,
+          "y0": 0
         }
       ]
     },
     {
+      "disabled": false,
       "key": "Likely (Adjusted)",
+      "series": 1,
       "type": "bar",
       "values": [
         {
+          "series": 1,
           "x": 1,
-          "y": 1308578
+          "y": 30,
+          "y0": 0
         },
         {
+          "series": 1,
           "x": 2,
-          "y": 178976
+          "y": 20,
+          "y0": 0
         },
         {
+          "series": 1,
           "x": 3,
-          "y": 170078
+          "y": 10,
+          "y0": 0
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 30,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 20,
+          "y0": 0
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 10,
+          "y0": 0
         }
       ]
     },
     {
+      "disabled": false,
       "key": "Likely",
+      "series": 0,
       "type": "line",
       "values": [
         {
+          "series": 0,
           "x": 1,
-          "y": 1308578
+          "y": 40
         },
         {
+          "series": 0,
           "x": 2,
-          "y": 1487554
+          "y": 70
         },
         {
+          "series": 0,
           "x": 3,
-          "y": 1657632
+          "y": 90
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 0,
+          "x": 1,
+          "y": 40
+        },
+        {
+          "series": 0,
+          "x": 2,
+          "y": 70
+        },
+        {
+          "series": 0,
+          "x": 3,
+          "y": 90
         }
       ]
     },
     {
+      "disabled": false,
       "key": "Likely (Adjusted)",
+      "series": 1,
       "type": "line",
       "values": [
         {
+          "series": 1,
           "x": 1,
-          "y": 1308578
+          "y": 30
         },
         {
+          "series": 1,
           "x": 2,
-          "y": 1487554
+          "y": 50
         },
         {
+          "series": 1,
           "x": 3,
-          "y": 1657632
+          "y": 60
+        }
+      ],
+      "valuesOrig": [
+        {
+          "series": 1,
+          "x": 1,
+          "y": 30
+        },
+        {
+          "series": 1,
+          "x": 2,
+          "y": 50
+        },
+        {
+          "series": 1,
+          "x": 3,
+          "y": 60
         }
       ]
     }
@@ -234,9 +323,8 @@ var config = {
     "bottom": 10,
     "left": 10
   },
-  "showTitle": true,
+  "showTitle": 1,
   "showLegend": true,
-  "showControls": true,
   "strings": {
     "legend": {
       "close": "Hide legend",
@@ -249,10 +337,10 @@ var config = {
     "noData": "No Data Available.",
     "noLabel": "undefined"
   },
+  "textureFill": true,
   "tooltips": true,
   "width": null,
-  "stacked": false,
-  "duration": 0,
+  "stacked": true,
   "clipEdge": false,
   "gradient": [
     "0",
@@ -260,138 +348,155 @@ var config = {
     "middle"
   ],
   "locale": "en",
+  "showLabels": "1",
+  "vertical": 1,
   "showValues": "0",
+  "allowScroll": 1,
+  "tickDisplay": [
+    "wrap",
+    "stagger",
+    "rotate"
+  ],
+  "mirrorAxis": "lab",
+  "holeLabel": "0",
+  "donut": "1",
+  "donutRatio": "0.4",
+  "wrapLabels": "1",
   "colorOptions": {}
 };
-var chart = sucrose.models.paretoChart();
+var chart = sucrose.charts.paretoChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
-function configure(chart) {
-    var k, v;
-
-    for (k in config)
-    {
-        if (!config.hasOwnProperty(k)) {
-            continue;
-        }
-
-        switch (k)
-        {
-            case 'colorData':
-                if (!chart.colorData) {
-                    continue;
-                }
-                chart.colorData(config.colorData, config.colorOptions);
-                break;
-
-            case 'showLabels':
-                v = !!parseInt(config[k], 10);
-                if (chart.xAxis) {
-                    chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
-                }
-                if (chart.yAxis) {
-                    chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
-                }
-                break;
-
-            case 'tickDisplay':
-                v = config[k];
-                if (chart.wrapTicks) {
-                    chart.wrapTicks(v.indexOf('wrap') !== -1)
-                }
-                if (chart.staggerTicks) {
-                    chart.staggerTicks(v.indexOf('stagger') !== -1)
-                }
-                if (chart.rotateTicks) {
-                    chart.rotateTicks(v.indexOf('rotate') !== -1);
-                }
-                break;
-
-            default:
-                if (!chart[k]) {
-                    continue;
-                }
-                v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
-                chart[k](v);
-        }
-    }
+function configure() {
+var k, v;
+for (k in config)
+{
+if (!config.hasOwnProperty(k)) {
+continue;
+}
+switch (k)
+{
+case 'colorData':
+if (!chart.colorData) {
+continue;
+}
+chart.colorData(config.colorData, config.colorOptions);
+break;
+case 'showLabels':
+v = !!parseInt(config[k], 10);
+if (chart.xAxis) {
+chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
+}
+if (chart.yAxis) {
+chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
+}
+break;
+case 'tickDisplay':
+v = config[k];
+if (chart.wrapTicks) {
+chart.wrapTicks(v.indexOf('wrap') !== -1)
+}
+if (chart.staggerTicks) {
+chart.staggerTicks(v.indexOf('stagger') !== -1)
+}
+if (chart.rotateTicks) {
+chart.rotateTicks(v.indexOf('rotate') !== -1);
+}
+break;
+default:
+if (!chart[k]) {
+continue;
+}
+v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
+if (chart[k]) {
+chart[k](v);
+}
+}
+}
 }
 
-function format(chart) {
-  chart
-    .valueFormat(function (d) {
-      return sucrose.utils.numberFormatSI(d, 0, yIsCurrency, chart.locality());
-    })
-    .tooltipBar(function (key, x, y, e, graph) {
-      var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality()),
-          percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
-      return '<p><b>' + key + '</b></p>' +
-             '<p><b>' + val + '</b></p>' +
-             '<p><b>' + percent + '%</b></p>';
-    })
-    .tooltipLine(function (key, x, y, e, graph) {
-      var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
-      return '<p><p>' + key + ': <b>' + val + '</b></p>';
-    })
-    .tooltipQuota(function (key, x, y, e, graph) {
-      var val = sucrose.utils.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
-      return '<p>' + e.key + ': <b>' + val + '</b></p>';
-    })
-    .seriesClick(function (data, eo, chart, container) {
-        var d = eo.series,
-            selectedSeries = eo.seriesIndex;
-
-        // chart.dispatch.tooltipHide();
-
-        d.disabled = !d.disabled;
-
-        if (!chart.stacked()) {
-            data.filter(function (d) {
-                return d.series === selectedSeries && d.type === 'line';
-            }).map(function (d) {
-                d.disabled = !d.disabled;
-                return d;
-            });
-        }
-
-        // if there are no enabled data series, enable them all
-        if (!data.filter(function (d) {
-            return !d.disabled && d.type === 'bar';
-        }).length) {
-            data.map(function (d) {
-                d.disabled = false;
-                container.selectAll('.sc-series').classed('disabled', false);
-                return d;
-            });
-        }
-
-        container.call(chart);
-    });
-
-
-    // chart.yAxis.valueFormat(function(d) {
-    //   var si = d3.formatPrefix(d, 2);
-    //   return '$' + d3.round(si.scale(d), 2) + si.symbol;
-    // });
-
+function format(callback) {
+chart
+.valueFormat(function(d) {
+return sucrose.utility.numberFormatSI(d, 0, yIsCurrency, chart.locality());
+})
+.tooltipBar(function(key, x, y, e, graph) {
+var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality()),
+percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
+return '<p><b>' + key + '</b></p>' +
+'<p><b>' + val + '</b></p>' +
+'<p><b>' + percent + '%</b></p>';
+})
+.tooltipLine(function(key, x, y, e, graph) {
+var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+return '<p><p>' + key + ': <b>' + val + '</b></p>';
+})
+.tooltipQuota(function(key, x, y, e, graph) {
+var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+return '<p>' + e.key + ': <b>' + val + '</b></p>';
+})
+.seriesClick(function(data, eo, chart, container) {
+var d = eo.series,
+selectedSeries = eo.seriesIndex;
+chart.dispatch.call('tooltipHide', this);
+d.disabled = !d.disabled;
+if (!chart.stacked()) {
+data.filter(function(d) {
+return d.series === selectedSeries && d.type === 'line';
+}).map(function(d) {
+d.disabled = !d.disabled;
+return d;
+});
+}
+// if there are no enabled data series, enable them all
+if (!data.filter(function(d) {
+return !d.disabled && d.type === 'bar';
+}).length) {
+data.map(function(d) {
+d.disabled = false;
+container.selectAll('.sc-series').classed('disabled', false);
+return d;
+});
+}
+container.call(chart);
+});
+callback(chart);
 }
 
 window.onload = function () {
-    configure(chart);
-    format(chart);
 
-    // Bind D3 chart to SVG element
-    d3.select('#chart_ svg')
-        .attr('class', 'sucrose sc-chart')
-        .datum(data).call(chart);
+    // remap d3v4 to d3
 
-    // Dismiss tooltips
-    d3.select('#chart_').on('click', chart.dispatch.chartClick);
+    // apply configuration
+    configure();
 
-    // Rebind window resizer
-    window.addEventListener('resize', chart.render);
+    // format then render chart
+    format(function() {
+        // Bind D3 chart to SVG element
+        d3.select('#chart_ svg')
+            .attr('class', 'sucrose sc-chart sc-chart-' + type)
+            .datum(data)
+                .call(chart);
+
+        // Dismiss tooltips
+        d3.select('#chart_')
+            .on('click', function() {
+                if (chart.dispatch && chart.dispatch.chartClick) {
+                    chart.dispatch.chartClick();
+                }
+            });
+
+        // Rebind window resizer
+        window.addEventListener('resize', function() {
+            if (chart.render) {
+                chart.render();
+            } else if (chart.update) {
+                chart.update();
+            }
+        });
+    });
 };
     </script>
   </body>

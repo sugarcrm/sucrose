@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-    <title>Sucrose Chart</title>
-    <link rel="stylesheet" href="sucrose.min.css">
+    <title>Sucrose Chart - pie</title>
+    <link rel="stylesheet" href="../build/sucrose.min.css">
     <style>
         .chart {
             position: absolute;
@@ -18,47 +18,60 @@
   </head>
   <body>
     <div id="chart_" class="chart">
-      <svg></svg>
+      <svg class="sucrose sc-chart"></svg>
     </div>
 
-    <script src="d3.min.js"></script>
-    <script src="d3fc-rebind.min.js"></script>
-
-    <script src="src/core.js"></script>
-    <script src="src/tooltip.js"></script>
-    <script src="src/utils.js"></script>
-    <script src="src/models/legend.js"></script>
-    <script src="src/models/pie.js"></script>
-    <script src="src/models/pieChart.js"></script>
-
+    <script src="../build/d3.min.js"></script>
+    <!-- {{TopoJSON}} -->
+    <script src="../build/sucrose.min.js"></script>
 
     <script>
 var type = 'pie';
 var data = {
   "properties": {
-    "title": "All Opportunities by Lead Source"
+    "title": "All Opportunities by Lead Source",
+    "yDataType": "currency",
+    "seriesLabel": "Source"
   },
   "data": [
     {
-      "key": "EEEE",
+      "key": "Undefined",
       "value": 100
     },
     {
-      "key": "EEEEEEEE",
+      "key": "Cold Call",
+      "value": 0
+    },
+    {
+      "key": "Existing Customer",
+      "value": 75
+    },
+    {
+      "key": "Self Generated",
+      "value": 140
+    },
+    {
+      "key": "Walk In",
+      "value": 10
+    },
+    {
+      "key": "Employee",
+      "value": 160
+    },
+    {
+      "key": "Partner",
       "value": 100
     },
     {
-      "key": "EEEEEEEEEEEE",
-      "value": 100
+      "key": "Public Relations",
+      "value": 145
     },
     {
-      "key": "EEEEEEEEEEEEEEEE",
-      "value": 100
+      "key": "Other",
+      "value": 9
     }
   ]
 };
-
-
 var config = {
   "colorData": "default",
   "direction": "ltr",
@@ -154,8 +167,9 @@ var config = {
     "bottom": 10,
     "left": 10
   },
-  "showTitle": true,
+  "showTitle": 1,
   "showLegend": true,
+  "showControls": false,
   "strings": {
     "legend": {
       "close": "Hide legend",
@@ -182,96 +196,108 @@ var config = {
     "middle"
   ],
   "locale": "en",
-  "wrapLabels": "1",
   "showLabels": "1",
+  "vertical": 1,
+  "showValues": 0,
+  "allowScroll": 1,
+  "tickDisplay": [
+    "wrap",
+    "stagger",
+    "rotate"
+  ],
+  "mirrorAxis": "lab",
   "holeLabel": "0",
   "colorOptions": {}
 };
-var chart = sucrose.models.pieChart();
+var chart = sucrose.charts.pieChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
-function configure(chart) {
-    var k, v;
-
-    for (k in config)
-    {
-        if (!config.hasOwnProperty(k)) {
-            continue;
-        }
-
-        switch (k)
-        {
-            case 'colorData':
-                if (!chart.colorData) {
-                    continue;
-                }
-                chart.colorData(config.colorData, config.colorOptions);
-                break;
-
-            case 'showLabels':
-                v = !!parseInt(config[k], 10);
-                if (chart.xAxis) {
-                    chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
-                }
-                if (chart.yAxis) {
-                    chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
-                }
-                break;
-
-            case 'tickDisplay':
-                v = config[k];
-                if (chart.wrapTicks) {
-                    chart.wrapTicks(v.indexOf('wrap') !== -1)
-                }
-                if (chart.staggerTicks) {
-                    chart.staggerTicks(v.indexOf('stagger') !== -1)
-                }
-                if (chart.rotateTicks) {
-                    chart.rotateTicks(v.indexOf('rotate') !== -1);
-                }
-                break;
-
-            default:
-                if (!chart[k]) {
-                    continue;
-                }
-                chart[k](config[k]);
-        }
-    }
+function configure() {
+var k, v;
+for (k in config)
+{
+if (!config.hasOwnProperty(k)) {
+continue;
+}
+switch (k)
+{
+case 'colorData':
+if (!chart.colorData) {
+continue;
+}
+chart.colorData(config.colorData, config.colorOptions);
+break;
+case 'showLabels':
+v = !!parseInt(config[k], 10);
+if (chart.xAxis) {
+chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
+}
+if (chart.yAxis) {
+chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
+}
+break;
+case 'tickDisplay':
+v = config[k];
+if (chart.wrapTicks) {
+chart.wrapTicks(v.indexOf('wrap') !== -1)
+}
+if (chart.staggerTicks) {
+chart.staggerTicks(v.indexOf('stagger') !== -1)
+}
+if (chart.rotateTicks) {
+chart.rotateTicks(v.indexOf('rotate') !== -1);
+}
+break;
+default:
+if (!chart[k]) {
+continue;
+}
+v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
+if (chart[k]) {
+chart[k](v);
+}
+}
+}
 }
 
-function format(chart) {
-  chart
-    // .y(function(d, i) { return d.value; })
-    .tooltipContent(function (key, x, y, e, graph) {
-      var val = sucrose.utils.numberFormatRound(y, 2, yIsCurrency, chart.locality()),
-          percent = sucrose.utils.numberFormatRound(x, 2, false, chart.locality());
-      return '<p>Stage: <b>' + key + '</b></p>' +
-             '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-             '<p>Percent: <b>' + percent + '%</b></p>';
-    });
-
-  chart.seriesClick(function(data, eo, graph) {
-    chart.dataSeriesActivate(eo);
-  });
+function format(callback) {
+callback(chart);
 }
 
 window.onload = function () {
-    configure(chart);
-    format(chart);
 
-    // Bind D3 chart to SVG element
-    d3.select('#chart_ svg')
-        .attr('class', 'sucrose sc-chart')
-        .datum(data).call(chart);
+    // remap d3v4 to d3
 
-    // Dismiss tooltips
-    d3.select('#chart_').on('click', chart.dispatch.chartClick);
+    // apply configuration
+    configure();
 
-    // Rebind window resizer
-    window.addEventListener('resize', chart.render);
+    // format then render chart
+    format(function() {
+        // Bind D3 chart to SVG element
+        d3.select('#chart_ svg')
+            .attr('class', 'sucrose sc-chart sc-chart-' + type)
+            .datum(data)
+                .call(chart);
+
+        // Dismiss tooltips
+        d3.select('#chart_')
+            .on('click', function() {
+                if (chart.dispatch && chart.dispatch.chartClick) {
+                    chart.dispatch.chartClick();
+                }
+            });
+
+        // Rebind window resizer
+        window.addEventListener('resize', function() {
+            if (chart.render) {
+                chart.render();
+            } else if (chart.update) {
+                chart.update();
+            }
+        });
+    });
 };
     </script>
   </body>
