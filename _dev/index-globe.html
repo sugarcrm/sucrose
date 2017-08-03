@@ -1,10 +1,9 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
-    <title>Sucrose Chart</title>
+    <title>Sucrose Chart - globe</title>
     <link rel="stylesheet" href="../build/sucrose.min.css">
     <style>
         .chart {
@@ -22,7 +21,7 @@
     </div>
 
     <script src="../build/d3.min.js"></script>
-    <script src="../build/topojson.min.js"></script>
+    <script src="../examples/js/topojson.min.js"></script>
     <script src="../build/sucrose.min.js"></script>
     <!-- <script src="src/models/globe.js"></script> -->
 
@@ -170,8 +169,7 @@ var config = {
   "showTitle": false,
   "auto_spin": 0
 };
-var chart = sucrose.models.globeChart();
-console.log(chart)
+var chart = sucrose.charts.globeChart();
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
@@ -228,9 +226,9 @@ function configure(chart) {
 function format(chart, callback) {
 
   d3.queue()
-    .defer(d3.json, 'examples/data/geo/world-countries-topo-110.json')
-    .defer(d3.json, 'examples/data/geo/usa-states-topo-110.json')
-    .defer(d3.json, 'examples/data/geo/cldr_en.json')
+    .defer(d3.json, '../examples/data/geo/world-countries-topo-110.json')
+    .defer(d3.json, '../examples/data/geo/usa-states-topo-110.json')
+    .defer(d3.json, '../examples/data/geo/cldr_en.json')
     .await(function (error, world, country, labels) {
       if (error) {
         return;
