@@ -1,4 +1,5 @@
-var chartManifest = {
+module.exports =
+{
   id: 'sucrose-pareto',
   type: 'pareto',
   title: 'Pareto Chart',
@@ -35,5 +36,3 @@ var chartManifest = {
     }
   }
 };
-var cachedManifest = $.my.tojson(chartManifest);
-console.log(cachedManifest);

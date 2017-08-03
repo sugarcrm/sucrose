@@ -1,4 +1,5 @@
-var chartManifest = {
+module.exports =
+{
   id: 'sucrose-bubble',
   type: 'bubble',
   title: 'Bubble Chart',
@@ -14,5 +15,3 @@ var chartManifest = {
   filterAssigned: 'group',
   ui: {}
 };
-var cachedManifest = $.my.tojson(chartManifest);
-console.log(cachedManifest);

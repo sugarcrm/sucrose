@@ -1,4 +1,5 @@
-var chartManifest = {
+module.exports =
+{
   id: 'sucrose-area',
   type: 'area',
   title: 'Stacked Area Chart',
@@ -81,5 +82,3 @@ var chartManifest = {
     }
   }
 };
-var cachedManifest = $.my.tojson(chartManifest);
-console.log(cachedManifest);
