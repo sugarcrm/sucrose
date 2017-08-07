@@ -4,7 +4,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 var sucrose = require('./sucrose.js');
 
-var version = "0.6.8";
+var version = "0.6.9";
 
 //INFO: why doesn't require('sucrose') work?
 //  index.js is declared as module (jsnext:main) in package.json
