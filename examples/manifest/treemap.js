@@ -1,4 +1,4 @@
-var chartManifest = {
+module.exports = {
   id: 'sucrose-treemap',
   type: 'treemap',
   title: 'Treemap Chart',
@@ -13,5 +13,3 @@ var chartManifest = {
   optionDefaults: {},
   ui: {}
 };
-var cachedManifest = $.my.tojson(chartManifest);
-console.log(cachedManifest);

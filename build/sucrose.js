@@ -21,7 +21,7 @@ limitations under the License.
 
 d3 = 'default' in d3 ? d3['default'] : d3;
 
-var version = "0.6.8";
+var version = "0.6.9";
 
 /*-------------------
       UTILITIES
@@ -12549,7 +12549,7 @@ function lineChart() {
       };
 
       chart.cellActivate = function(eo) {
-        var cell = data[eo.seriesIndex].values[eo.pointIndex];
+        var cell = data[eo.seriesIndex].values[eo.groupIndex];
         var activeState;
 
         if (!cell) {
@@ -13181,6 +13181,7 @@ function lineChart() {
           eo.group = groupData[eo.groupIndex];
         }
         dispatch.call('chartClick', this);
+        model.dispatch.call('elementMouseout', this, eo);
         seriesClick(data, eo, chart, groupLabels);
       });
 

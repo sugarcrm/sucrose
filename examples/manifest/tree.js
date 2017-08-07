@@ -1,4 +1,4 @@
-var chartManifest = {
+module.exports = {
   id: 'sucrose-tree',
   type: 'tree',
   title: 'Tree Chart',
@@ -35,8 +35,8 @@ var chartManifest = {
           }
         }, this));
       },
-      bind: $.noop,
-      setChartOption: $.noop,
+      bind: function() { return; },
+      setChartOption: function() { return; },
       check: /[a-zA-Z\s]/i,
       title: 'Tree controls',
       type: 'button',
@@ -57,5 +57,3 @@ var chartManifest = {
     }
   }
 };
-var cachedManifest = $.my.tojson(chartManifest);
-console.log(cachedManifest);

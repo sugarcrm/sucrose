@@ -1,4 +1,5 @@
-var chartManifest = {
+module.exports =
+{
   id: 'sucrose-multibar',
   type: 'multibar',
   title: 'Multibar Chart',
@@ -97,5 +98,3 @@ var chartManifest = {
     }
   }
 };
-var cachedManifest = $.my.tojson(chartManifest);
-console.log(cachedManifest);

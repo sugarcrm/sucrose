@@ -1,10 +1,10 @@
-var baseUI =
+module.exports =
 {
   '[name=file]': {
     bind: function (d, v, $o) {
       return this.bindControl(d, v, $o, this.loadData);
     },
-    setChartOption: $.noop,
+    setChartOption: function() { return; },
     check: /[a-z0-9_]+/i,
     title: 'Data File',
     type: 'select',
@@ -14,7 +14,7 @@ var baseUI =
     bind: function (d, v, $o) {
       return this.bindControl(d, v, $o, this.loadLocale);
     },
-    setChartOption: $.noop,
+    setChartOption: function() { return; },
     check: /[a-z0-9_]+/i,
     title: 'Locale',
     type: 'select',
@@ -26,7 +26,7 @@ var baseUI =
     bind: function (d, v, $o) {
       return this.bindControl(d, v, $o, this.loadColor);
     },
-    setChartOption: $.noop,
+    setChartOption: function() { return; },
     check: /default|class|graduated/i,
     events: 'click.my',
     title: 'Color Model',
@@ -42,7 +42,7 @@ var baseUI =
     bind: function (d, v, $o) {
       return this.bindControl(d, v, $o, this.loadColor);
     },
-    setChartOption: $.noop,
+    setChartOption: function() { return; },
     recalc: '[name=color_data]',
     check: /[0|1|default|vertical|horizontal|middle|base]+/ig,
     events: 'click.my',
@@ -57,7 +57,9 @@ var baseUI =
   '[name=direction]': {
     setChartOption: function (v, self) {
       $('html').css('direction', v).attr('class', v);
-      self.Chart.direction(v);
+      if (self.Chart.direction) {
+        self.Chart.direction(v);
+      }
     },
     check: /ltr|rtl/i,
     events: 'change.my',
@@ -71,8 +73,9 @@ var baseUI =
   '[name=show_title]': {
     setChartOption: function (v, self) {
       var showTitle = v == 1;
-      self.Chart
-        .showTitle(showTitle);
+      if (self.Chart.showTitle) {
+        self.Chart.showTitle(showTitle);
+      }
     },
     check: /1/i,
     events: 'change.my',
@@ -83,5 +86,3 @@ var baseUI =
     ]
   },
 };
-var cachedManifest = $.my.tojson(baseUI);
-console.log(cachedManifest);

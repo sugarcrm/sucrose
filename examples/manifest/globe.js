@@ -1,4 +1,5 @@
-var chartManifest = {
+module.exports =
+{
   id: 'sucrose-globe',
   type: 'globe',
   title: 'Globe Chart',
@@ -36,8 +37,8 @@ var chartManifest = {
       ]
     },
     '[name=gradient]': {
-      bind: $.noop,
-      setChartOption: $.noop,
+      bind: function() { return; },
+      setChartOption: function() { return; },
       hidden: true
     },
     '[name=auto_spin]': {
@@ -59,5 +60,3 @@ var chartManifest = {
     }
   }
 };
-var cachedManifest = $.my.tojson(chartManifest);
-console.log(cachedManifest);
