@@ -194,7 +194,7 @@ export default function lineChart() {
       };
 
       chart.cellActivate = function(eo) {
-        var cell = data[eo.seriesIndex].values[eo.pointIndex];
+        var cell = data[eo.seriesIndex].values[eo.groupIndex];
         var activeState;
 
         if (!cell) {
@@ -826,6 +826,7 @@ export default function lineChart() {
           eo.group = groupData[eo.groupIndex];
         }
         dispatch.call('chartClick', this);
+        model.dispatch.call('elementMouseout', this, eo);
         seriesClick(data, eo, chart, groupLabels);
       });
 
