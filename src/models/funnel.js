@@ -16,7 +16,7 @@ export default function funnel() {
       getCount = function(d, i) { return d.series ? d.series.count : d.count; },
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
-      fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
+      fmtCount = function(d) { return !isNaN(getCount(d)) ? (' (' + getCount(d) + ')') : ''; },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,

@@ -151,11 +151,14 @@ export default function funnelChart() {
       data.forEach(function(s, i) {
         s.seriesIndex = i;
 
-        if (!s.value && !s.values) {
-          s.values = [];
-        } else if (!isNaN(s.value)) {
-          s.values = [{x: 0, y: parseInt(s.value, 10)}];
+        if (!s.values) {
+          if (!s.value) {
+            s.values = [];
+          } else if (!isNaN(s.value)) {
+            s.values = [{x: 0, y: parseInt(s.value, 10)}];
+          }
         }
+
         s.values.forEach(function(p, j) {
           p.index = j;
           p.series = s;

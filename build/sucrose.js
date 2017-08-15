@@ -2309,7 +2309,7 @@ function funnel() {
       getCount = function(d, i) { return d.series ? d.series.count : d.count; },
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
-      fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
+      fmtCount = function(d) { return !isNaN(getCount(d)) ? (' (' + getCount(d) + ')') : ''; },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -10823,11 +10823,14 @@ function funnelChart() {
       data.forEach(function(s, i) {
         s.seriesIndex = i;
 
-        if (!s.value && !s.values) {
-          s.values = [];
-        } else if (!isNaN(s.value)) {
-          s.values = [{x: 0, y: parseInt(s.value, 10)}];
+        if (!s.values) {
+          if (!s.value) {
+            s.values = [];
+          } else if (!isNaN(s.value)) {
+            s.values = [{x: 0, y: parseInt(s.value, 10)}];
+          }
         }
+
         s.values.forEach(function(p, j) {
           p.index = j;
           p.series = s;
