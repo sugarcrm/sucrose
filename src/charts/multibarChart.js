@@ -289,10 +289,14 @@ export default function multibarChart() {
         // x & y are the only attributes allowed in values (TODO: array?)
         if (!series._values) {
           series._values = series.values.map(function(value, v) {
-            return {
+            var d = {
               'x': value.x,
               'y': value.y
             };
+            if (value.label) {
+              d.label = value.label;
+            }
+            return d;
           });
         }
 
@@ -319,15 +323,12 @@ export default function multibarChart() {
           // reconstruct values referencing series attributes
           // and stack
           series.values = series._values.map(function(value, v) {
-              return {
-                'seriesIndex': series.seriesIndex,
-                'group': v,
-                'color': series.color || '',
-                'x': value.x,
-                'y': value.y,
-                'y0': value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0),
-                'active': typeof value.active !== 'undefined' ? value.active : ''
-              };
+              value.seriesIndex = series.seriesIndex;
+              value.group = v;
+              value.color = series.color || '';
+              value.y0 = value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0);
+              value.active = typeof value.active !== 'undefined' ? value.active : '';
+              return value;
             });
 
           return series;

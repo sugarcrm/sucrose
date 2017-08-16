@@ -11,12 +11,12 @@ export default function funnel() {
       width = 960,
       height = 500,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getKey = function(d) { return d.series ? d.series.key : d.key; },
-      getValue = function(d, i) { return d.series ? d.series.value : d.value; },
-      getCount = function(d, i) { return d.series ? d.series.count : d.count; },
+      getKey = function(d) { return (d.series || d).key; },
+      getValue = function(d, i) { return (d.series || d).value; },
+      getCount = function(d, i) { return (d.series || d).count; },
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
-      fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
+      fmtCount = function(d) { return !isNaN(getCount(d)) ? (' (' + getCount(d) + ')') : ''; },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -502,7 +502,7 @@ export default function funnel() {
       function buildEventObject(e, d, i) {
         return {
           id: id,
-          key: getKey(d),
+          key: fmtKey(d),
           value: getValue(d),
           count: getCount(d),
           data: d,
@@ -920,17 +920,19 @@ export default function funnel() {
     return model;
   };
 
+  model.locality = function(_) {
+    if (!arguments.length) { return locality; }
+    locality = utility.buildLocality(_);
+    return model;
+  };
+
   model.textureFill = function(_) {
     if (!arguments.length) { return textureFill; }
     textureFill = _;
     return model;
   };
 
-  model.locality = function(_) {
-    if (!arguments.length) { return locality; }
-    locality = utility.buildLocality(_);
-    return model;
-  };
+  // FUNNEL
 
   model.yScale = function(_) {
     if (!arguments.length) { return y; }

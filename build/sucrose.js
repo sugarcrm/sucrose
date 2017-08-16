@@ -2304,12 +2304,12 @@ function funnel() {
       width = 960,
       height = 500,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getKey = function(d) { return d.series ? d.series.key : d.key; },
-      getValue = function(d, i) { return d.series ? d.series.value : d.value; },
-      getCount = function(d, i) { return d.series ? d.series.count : d.count; },
+      getKey = function(d) { return (d.series || d).key; },
+      getValue = function(d, i) { return (d.series || d).value; },
+      getCount = function(d, i) { return (d.series || d).count; },
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
-      fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
+      fmtCount = function(d) { return !isNaN(getCount(d)) ? (' (' + getCount(d) + ')') : ''; },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -2795,7 +2795,7 @@ function funnel() {
       function buildEventObject(e, d, i) {
         return {
           id: id,
-          key: getKey(d),
+          key: fmtKey(d),
           value: getValue(d),
           count: getCount(d),
           data: d,
@@ -3209,17 +3209,19 @@ function funnel() {
     return model;
   };
 
+  model.locality = function(_) {
+    if (!arguments.length) { return locality; }
+    locality = utility.buildLocality(_);
+    return model;
+  };
+
   model.textureFill = function(_) {
     if (!arguments.length) { return textureFill; }
     textureFill = _;
     return model;
   };
 
-  model.locality = function(_) {
-    if (!arguments.length) { return locality; }
-    locality = utility.buildLocality(_);
-    return model;
-  };
+  // FUNNEL
 
   model.yScale = function(_) {
     if (!arguments.length) { return y; }
@@ -6386,6 +6388,9 @@ function multibar() {
                 y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
               };
           return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
+        })
+        .style('display', function(d, i) {
+          return barLength(d, i) !== 0 ? 'inline' : 'none';
         });
 
       bars
@@ -6889,12 +6894,12 @@ function pie() {
       width = 500,
       height = 500,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
-      getKey = function(d) { return d.key; },
-      getValue = function(d, i) { return d.value; },
-      getCount = function(d, i) { return d.count; },
-      fmtKey = function(d) { return getKey(d.series || d); },
-      fmtValue = function(d) { return getValue(d.series || d); },
-      fmtCount = function(d) { return (' (' + getCount(d.series || d) + ')').replace(' ()', ''); },
+      getKey = function(d) { return (d.series || d).key; },
+      getValue = function(d, i) { return (d.series || d).value; },
+      getCount = function(d, i) { return (d.series || d).count; },
+      fmtKey = function(d) { return getKey(d); },
+      fmtValue = function(d) { return getValue(d); },
+      fmtCount = function(d) { return !isNaN(getCount(d)) ? (' (' + getCount(d) + ')') : ''; },
       locality = utility.buildLocality(),
       direction = 'ltr',
       delay = 0,
@@ -7323,8 +7328,8 @@ function pie() {
         return {
           id: id,
           key: fmtKey(d),
-          value: fmtValue(d),
-          count: fmtCount(d),
+          value: getValue(d),
+          count: getCount(d),
           data: d,
           series: d.series,
           e: e
@@ -10697,21 +10702,6 @@ function funnelChart() {
         noLabel: 'undefined'
       };
 
-  var tooltipContent = function(eo, properties) {
-        var key = model.fmtKey()(eo);
-        var label = properties.seriesLabel || 'Key';
-        var y = model.getValue()(eo);
-        var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
-        var yIsCurrency = properties.yDataType === 'currency';
-        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
-        return '<p>' + label + ': <b>' + key + '</b></p>' +
-               '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-               '<p>Percent: <b>' + percent + '%</b></p>';
-      };
-
-  var seriesClick = function(data, e, chart) { return; };
-
   var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
@@ -10726,10 +10716,25 @@ function funnelChart() {
 
   var tt = null;
 
+  var tooltipContent = function(eo, properties) {
+        var key = model.fmtKey()(eo);
+        var label = properties.seriesLabel || 'Key';
+        var y = model.getValue()(eo);
+        var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
+        var yIsCurrency = properties.yDataType === 'currency';
+        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
+        return '<p>' + label + ': <b>' + key + '</b></p>' +
+               '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+               '<p>Percent: <b>' + percent + '%</b></p>';
+      };
+
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
+
+  var seriesClick = function(data, e, chart) { return; };
 
   header
     .showTitle(true)
@@ -10823,11 +10828,14 @@ function funnelChart() {
       data.forEach(function(s, i) {
         s.seriesIndex = i;
 
-        if (!s.value && !s.values) {
-          s.values = [];
-        } else if (!isNaN(s.value)) {
-          s.values = [{x: 0, y: parseInt(s.value, 10)}];
+        if (!s.values) {
+          if (!s.value) {
+            s.values = [];
+          } else if (!isNaN(s.value)) {
+            s.values = [{x: 0, y: parseInt(s.value, 10)}];
+          }
         }
+
         s.values.forEach(function(p, j) {
           p.index = j;
           p.series = s;
@@ -13675,10 +13683,14 @@ function multibarChart() {
         // x & y are the only attributes allowed in values (TODO: array?)
         if (!series._values) {
           series._values = series.values.map(function(value, v) {
-            return {
+            var d = {
               'x': value.x,
               'y': value.y
             };
+            if (value.label) {
+              d.label = value.label;
+            }
+            return d;
           });
         }
 
@@ -13705,15 +13717,12 @@ function multibarChart() {
           // reconstruct values referencing series attributes
           // and stack
           series.values = series._values.map(function(value, v) {
-              return {
-                'seriesIndex': series.seriesIndex,
-                'group': v,
-                'color': series.color || '',
-                'x': value.x,
-                'y': value.y,
-                'y0': value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0),
-                'active': typeof value.active !== 'undefined' ? value.active : ''
-              };
+              value.seriesIndex = series.seriesIndex;
+              value.group = v;
+              value.color = series.color || '';
+              value.y0 = value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0);
+              value.active = typeof value.active !== 'undefined' ? value.active : '';
+              return value;
             });
 
           return series;
@@ -15834,11 +15843,14 @@ function pieChart() {
       data.forEach(function(s, i) {
         s.seriesIndex = i;
 
-        if (!s.value && !s.values) {
-          s.values = [];
-        } else if (!isNaN(s.value)) {
-          s.values = [{x: 0, y: parseInt(s.value, 10)}];
+        if (!s.values) {
+          if (!s.value) {
+            s.values = [];
+          } else if (!isNaN(s.value)) {
+            s.values = [{x: 0, y: parseInt(s.value, 10)}];
+          }
         }
+
         s.values.forEach(function(p, j) {
           p.index = j;
           p.series = s;
