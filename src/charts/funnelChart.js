@@ -25,21 +25,6 @@ export default function funnelChart() {
         noLabel: 'undefined'
       };
 
-  var tooltipContent = function(eo, properties) {
-        var key = model.fmtKey()(eo);
-        var label = properties.seriesLabel || 'Key';
-        var y = model.getValue()(eo);
-        var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
-        var yIsCurrency = properties.yDataType === 'currency';
-        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
-        return '<p>' + label + ': <b>' + key + '</b></p>' +
-               '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-               '<p>Percent: <b>' + percent + '%</b></p>';
-      };
-
-  var seriesClick = function(data, e, chart) { return; };
-
   var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
   //============================================================
@@ -54,10 +39,25 @@ export default function funnelChart() {
 
   var tt = null;
 
+  var tooltipContent = function(eo, properties) {
+        var key = model.fmtKey()(eo);
+        var label = properties.seriesLabel || 'Key';
+        var y = model.getValue()(eo);
+        var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
+        var yIsCurrency = properties.yDataType === 'currency';
+        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
+        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
+        return '<p>' + label + ': <b>' + key + '</b></p>' +
+               '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
+               '<p>Percent: <b>' + percent + '%</b></p>';
+      };
+
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
         return tooltip.show(eo.e, content, null, null, offsetElement);
       };
+
+  var seriesClick = function(data, e, chart) { return; };
 
   header
     .showTitle(true)

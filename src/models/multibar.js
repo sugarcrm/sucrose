@@ -394,6 +394,9 @@ export default function multibar() {
                 y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
               };
           return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
+        })
+        .style('display', function(d, i) {
+          return barLength(d, i) !== 0 ? 'inline' : 'none';
         });
 
       bars
