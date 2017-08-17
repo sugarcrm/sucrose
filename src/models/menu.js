@@ -553,51 +553,36 @@ export default function menu() {
 
           var assignScrollEvents = function(enable) {
             if (enable) {
-
-              var zoom = d3.zoom()
-                    .on('zoom', panLegend);
-              var drag = d3.drag()
-                    .subject(utility.identity)
-                    .on('drag', panLegend);
-
+              var zoom = d3.zoom().on('zoom', panLegend);
               back.call(zoom);
               g.call(zoom);
-
-              back.call(drag);
-              g.call(drag);
-
             } else {
               back.on('.zoom', null);
               g.on('.zoom', null);
-
-              back.on('.drag', null);
-              g.on('.drag', null);
             }
           };
 
           var panLegend = function() {
-            var distance = 0,
-                overflowDistance = 0,
-                translate = '',
-                x = 0,
-                y = 0;
+            var distance = 0;
+            var overflowDistance = 0;
+            var translate = '';
+            var x = 0;
+            var y = 0;
+            var evt = d3.event;
+
+            if (!evt || (evt.type !== 'click' && evt.type !== 'zoom')) {
+              return;
+            }
 
             // don't fire on events other than zoom and drag
             // we need click for handling legend toggle
-            if (d3.event) {
-              if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
-                x = d3.event.sourceEvent.deltaX || 0;
-                y = d3.event.sourceEvent.deltaY || 0;
-                distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
-              } else if (d3.event.type === 'drag') {
-                x = d3.event.dx || 0;
-                y = d3.event.dy || 0;
-                distance = y;
-              } else if (d3.event.type !== 'click') {
-                return 0;
-              }
-              overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
+            if (evt.type === 'zoom' && evt.sourceEvent) {
+              x = -evt.sourceEvent.deltaX || evt.sourceEvent.movementX || 0;
+              y = -evt.sourceEvent.deltaY || evt.sourceEvent.movementY || 0;
+              distance = (Math.abs(x) > Math.abs(y) ? x : y);
             }
+
+            overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
 
             // reset value defined in panMultibar();
             scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), 0);

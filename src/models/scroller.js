@@ -85,28 +85,26 @@ export default function scroller() {
     // typically called by panHandler
     // returns scrollOffset
     scroll.pan = function(diff) {
-      var distance = 0,
-          overflowDistance = 0,
-          translate = '',
-          x = 0,
-          y = 0;
+      var distance = 0;
+      var overflowDistance = 0;
+      var translate = '';
+      var x = 0;
+      var y = 0;
+      var evt = d3.event;
+
+      if (!evt || (evt.type !== 'click' && evt.type !== 'zoom')) {
+        return 0;
+      }
 
       // don't fire on events other than zoom and drag
       // we need click for handling legend toggle
-      if (d3.event) {
-        if (d3.event.type === 'zoom' && d3.event.sourceEvent) {
-          x = d3.event.sourceEvent.deltaX || 0;
-          y = d3.event.sourceEvent.deltaY || 0;
-          distance = (Math.abs(x) > Math.abs(y) ? x : y) * -1;
-        } else if (d3.event.type === 'drag') {
-          x = d3.event.dx || 0;
-          y = d3.event.dy || 0;
-          distance = vertical ? x : y;
-        } else if (d3.event.type !== 'click') {
-          return 0;
-        }
-        overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
+      if (evt.type === 'zoom' && evt.sourceEvent) {
+        x = -evt.sourceEvent.deltaX || evt.sourceEvent.movementX || 0;
+        y = -evt.sourceEvent.deltaY || evt.sourceEvent.movementY || 0;
+        distance = (Math.abs(x) > Math.abs(y) ? x : y);
       }
+
+      overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
 
       // reset value defined in panMultibar();
       scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), -1);
@@ -131,72 +129,14 @@ export default function scroller() {
 
     function assignEvents() {
       if (enable) {
-
-        var zoom = d3.zoom()
-              .on('zoom', panHandler);
-        var drag = d3.drag()
-              .subject(function(d) { return d; })
-              .on('drag', panHandler);
-
+        var zoom = d3.zoom().on('zoom', panHandler);
         scroll_wrap
           .call(zoom);
         scrollTarget
           .call(zoom);
-
-        scroll_wrap
-          .call(drag);
-        scrollTarget
-          .call(drag);
-
       } else {
-
         scroll_wrap.on('.zoom', null);
         scrollTarget.on('.zoom', null);
-
-        scroll_wrap.on('.drag', null);
-        scrollTarget.on('.drag', null);
-
-        // scroll_wrap
-        //     .on('mousedown.zoom', null)
-        //     .on('mousewheel.zoom', null)
-        //     .on('mousemove.zoom', null)
-        //     .on('DOMMouseScroll.zoom', null)
-        //     .on('dblclick.zoom', null)
-        //     .on('touchstart.zoom', null)
-        //     .on('touchmove.zoom', null)
-        //     .on('touchend.zoom', null)
-        //     .on('wheel.zoom', null);
-        // scrollTarget
-        //     .on('mousedown.zoom', null)
-        //     .on('mousewheel.zoom', null)
-        //     .on('mousemove.zoom', null)
-        //     .on('DOMMouseScroll.zoom', null)
-        //     .on('dblclick.zoom', null)
-        //     .on('touchstart.zoom', null)
-        //     .on('touchmove.zoom', null)
-        //     .on('touchend.zoom', null)
-        //     .on('wheel.zoom', null);
-
-        // scroll_wrap
-        //     .on('mousedown.drag', null)
-        //     .on('mousewheel.drag', null)
-        //     .on('mousemove.drag', null)
-        //     .on('DOMMouseScroll.drag', null)
-        //     .on('dblclick.drag', null)
-        //     .on('touchstart.drag', null)
-        //     .on('touchmove.drag', null)
-        //     .on('touchend.drag', null)
-        //     .on('wheel.drag', null);
-        // scrollTarget
-        //     .on('mousedown.drag', null)
-        //     .on('mousewheel.drag', null)
-        //     .on('mousemove.drag', null)
-        //     .on('DOMMouseScroll.drag', null)
-        //     .on('dblclick.drag', null)
-        //     .on('touchstart.drag', null)
-        //     .on('touchmove.drag', null)
-        //     .on('touchend.drag', null)
-        //     .on('wheel.drag', null);
       }
     }
 
