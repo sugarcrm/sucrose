@@ -31,8 +31,8 @@
   },
   "dependencies": {
     "cldr-data": "^29.0.1",
-    "jquery": "^2.1.4",
-    "jquerymy": "1.2.8",
+    "jquery": "^3.2.1",
+    "jquerymy": "1.2.10",
     "jszip": "^3.0.0"
   },
   "devDependencies": {
@@ -40,11 +40,10 @@
     "cldr-data": "^29.0.1",
     "cldrjs": "^0.4.4",
     "codemirror": "^5.11.0",
-    "jQuery": "^1.7.4",
     "jsonlint": "^1.6.2",
     "make-help": "^1.0.1",
     "store2": "^2.3.2",
-    "sugar": "^1.5.0"
+    "sugar": "^1.4.1"
   },
   "license": "Apache-2.0"
 }
