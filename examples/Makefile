@@ -10,6 +10,7 @@ LIB_FILES = \
 	js/lib/jquery-ui.min.js \
 	js/lib/micro-query.js \
 	js/lib/mindmup-editabletable.js \
+	js/lib/sugar.js \
 	node_modules/jsonlint/lib/jsonlint.js \
 	node_modules/codemirror/lib/codemirror.js \
 	node_modules/codemirror/mode/javascript/javascript.js \
@@ -21,10 +22,7 @@ LIB_FILES = \
 	node_modules/codemirror/addon/fold/foldgutter.js \
 	node_modules/jszip/dist/jszip.js \
 	node_modules/jszip/vendor/FileSaver.js \
-	node_modules/canvg/canvg.js \
 	node_modules/canvg/rgbcolor.js \
-	node_modules/canvg/StackBlur.js \
-	node_modules/sugar/sugar-full.js \
 	node_modules/store2/dist/store2.min.js
 
 DEP_FILES = \
@@ -65,7 +63,7 @@ HEADER = $(shell cat js/app/header)
 .DEFAULT_GOAL := help
 
 .PHONY: prod dev npm-prod npm-dev index-prod index-dev \
-	clean-sucrose clean-lib clean-dependencies clean-js clean-css list help md
+	clean-sucrose clean-lib clean-dependencies clean-app clean-css list help md
 
 
 #-----------
@@ -144,6 +142,9 @@ examples: js css lib
 # - remove all built js, css and library files
 clean-examples: clean-js clean-css clean-lib
 
+# - [*] build all javascript files
+js: app lib
+
 # - concatenate, compress and copy all development library files
 lib: $(LIB_FILES) clean-lib
 	# build lib js files
@@ -155,12 +156,12 @@ clean-lib:
 	rm -f js/lib.js js/lib.min.js
 
 # - [*] build the examples app js file
-js: $(APP_FILES) clean-js
+app: $(APP_FILES) clean-app
 	cat js/app/header $(APP_FILES) >> js/app.js
 	cat $(APP_FILES) | $(JS_MINIFIER) --preamble "$(HEADER)" >> js/app.min.js
 
 # - remove the examples app js file
-clean-js:
+clean-app:
 	rm -f js/app.js js/app.min.js
 
 # - [*] compile and compress LESS source into css files
