@@ -2,20 +2,18 @@
 *  Scatter
 */
 
-.sc-series .sc-point {
+// makes the outer ring effect
+.sc-scatter .sc-point {
   pointer-events: none;
-}
 
-.sc-series .sc-point.hover {
-  stroke-width: 10px;
-  stroke-opacity: 0.3;
-  stroke: inherit;
-}
+  &.sc-active,
+  &.hover {
+    stroke: ~"inherit !important";
+    stroke-opacity: ~"0.3 !important";
+    stroke-width: 9px;
+  }
 
-.sc-series .sc-point.sc-active {
-  stroke-width: 6px;
-}
-
-.sc-scatter .sc-point.hover {
-  fill-opacity: 1;
+  &.hover {
+    stroke-width: 12px;
+  }
 }

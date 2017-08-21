@@ -15,26 +15,9 @@
   shape-rendering: geometricPrecision;
 }
 
-.sc-line .sc-scatter .sc-series .sc-point {
-  stroke-opacity: 1;
-  stroke: #fff;
-  fill-opacity: 1;
-}
-
-.sc-scatter.sc-single-point .sc-series .sc-point {
-  stroke-width: 2px;
-}
-
 // still needed?
 .sc-line.hover path {
   stroke-width: 6px;
-}
-
-// makes the outer ring effect
-.sc-scatter .sc-series .sc-point.sc-active,
-.sc-scatter .sc-series .sc-point.hover {
-  stroke-opacity: ~"0.3 !important";
-  stroke: inherit;
 }
 
 .sc-point-paths path {
@@ -46,4 +29,23 @@
 
 .sc-indexLine {
   cursor: ew-resize;
+}
+
+.sc-line .sc-scatter .sc-point {
+  stroke: #fff;
+  stroke-opacity: 1;
+  stroke-width: 1px;
+  fill-opacity: 1;
+}
+
+.sc-line .sc-scatter.sc-single-point .sc-point {
+  stroke-width: 2px;
+
+  &.sc-active {
+    stroke-width: 9px;
+  }
+
+  &.hover {
+    stroke-width: 12px;
+  }
 }
