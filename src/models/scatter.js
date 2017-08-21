@@ -324,7 +324,9 @@ export default function scatter() {
             .on('end', function(d) {
               d3.select(this)
                 .classed('sc-enter', false)
-                .classed('active', function(d) { return d.active === 'active'; });
+                .classed('active', function(d) {
+                  return d.active === 'active';
+                });
             });
 
         series_bind.exit()
@@ -336,15 +338,17 @@ export default function scatter() {
 
       }
 
-      function buildEventObject(e, d, i, s) {
-        return {
+      function buildEventObject(e, p, i, s) {
+        var eo = {
             pointIndex: i,
-            point: s.values[i],
+            point: p,
             seriesIndex: s.seriesIndex,
             series: s,
+            groupIndex: p.group,
             id: id,
             e: e
           };
+        return eo;
       }
 
       function updateInteractiveLayer() {
@@ -353,11 +357,11 @@ export default function scatter() {
           return false;
         }
 
-        //inject series and point index for reference into voronoi
+        //inject series, group and point index for reference into voronoi
         if (useVoronoi === true) {
 
-          var vertices = d3.merge(data.map(function(group, groupIndex) {
-              return group.values
+          var vertices = d3.merge(data.map(function(series, seriesIndex) {
+              return series.values
                 .map(function(point, pointIndex) {
                   // *Adding noise to make duplicates very unlikely
                   // *Injecting series and point index for reference
@@ -365,13 +369,15 @@ export default function scatter() {
                    */
                   var pX = getX(point, pointIndex);
                   var pY = getY(point, pointIndex);
+                  var groupIndex = point.group;
 
                   return [
                       x(pX) + Math.random() * 1e-4,
                       y(pY) + Math.random() * 1e-4,
+                      point,
+                      seriesIndex,
                       groupIndex,
-                      pointIndex,
-                      point
+                      pointIndex
                     ]; //temp hack to add noise until I think of a better way so there are no duplicates
                 })
                 .filter(function(pointArray, pointIndex) {
@@ -389,7 +395,7 @@ export default function scatter() {
               .attr('cx', function(d) { return d[0]; })
               .attr('cy', function(d) { return d[1]; })
               .attr('r', function(d, i) {
-                return circleRadius(d[4], i);
+                return circleRadius(d[2], i);
               });
             clips_bind.exit().remove();
 
@@ -399,10 +405,10 @@ export default function scatter() {
 
           if (vertices.length <= 3) {
             // Issue #283 - Adding 2 dummy points to the voronoi b/c voronoi requires min 3 points to work
-            vertices.push([x.range()[0] - 20, y.range()[0] - 20, null, null]);
-            vertices.push([x.range()[1] + 20, y.range()[1] + 20, null, null]);
-            vertices.push([x.range()[0] - 20, y.range()[0] + 20, null, null]);
-            vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null]);
+            vertices.push([x.range()[0] - 20, y.range()[0] - 20, null, null, null, null]);
+            vertices.push([x.range()[1] + 20, y.range()[1] + 20, null, null, null, null]);
+            vertices.push([x.range()[0] - 20, y.range()[0] + 20, null, null, null, null]);
+            vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null, null, null]);
           }
 
           var voronoi = d3.voronoi()
@@ -411,8 +417,9 @@ export default function scatter() {
                 .map(function(d, i) {
                   return {
                     'data': d,
-                    'seriesIndex': vertices[i][2],
-                    'pointIndex': vertices[i][3]
+                    'seriesIndex': vertices[i][3],
+                    'groupIndex': vertices[i][4],
+                    'pointIndex': vertices[i][5]
                   };
                 })
                 .filter(function(d) { return d.seriesIndex !== null; });
@@ -427,22 +434,31 @@ export default function scatter() {
 
           paths
             .on('mouseover', function(d) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0;
-              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              var s = data[d.seriesIndex];
+              var i = d.pointIndex;
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0;
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementMouseover', this, eo);
             })
-            .on('mousemove', function(d, i) {
+            .on('mousemove', function(d) {
               var e = d3.event;
               dispatch.call('elementMousemove', this, e);
             })
-            .on('mouseout', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0;
-              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+            .on('mouseout', function(d) {
+              var s = data[d.seriesIndex];
+              var i = d.pointIndex;
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0;
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementMouseout', this, eo);
             })
             .on('click', function(d) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0;
-              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              var s = data[d.seriesIndex];
+              var i = d.pointIndex;
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0;
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementClick', this, eo);
             });
 
@@ -453,10 +469,10 @@ export default function scatter() {
             //.data(dataWithPoints)
             .style('pointer-events', 'auto') // recaptivate events, disabled by css
             .on('mouseover', function(d, i) {
-              var series, eo;
-              series = d3.select(this.parentNode).datum();
-              if (needsUpdate || !series) return 0; //check if this is a dummy point
-              eo = buildEventObject(d3.event, d, i, series);
+              var s = d3.select(this.parentNode).datum();
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementMouseover', this, eo);
             })
             .on('mousemove', function(d, i) {
@@ -464,17 +480,17 @@ export default function scatter() {
               dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
-              var series, eo;
-              series = d3.select(this.parentNode).datum();
-              if (needsUpdate || !series) return 0; //check if this is a dummy point
-              eo = buildEventObject(d3.event, d, i, series);
+              var s = d3.select(this.parentNode).datum();
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementMouseout', this, eo);
             })
             .on('click', function(d, i) {
-              var series, eo;
-              series = d3.select(this.parentNode).datum();
-              if (needsUpdate || !series) return 0; //check if this is a dummy point
-              eo = buildEventObject(d3.event, d, i, series);
+              var s = d3.select(this.parentNode).datum();
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementClick', this, eo);
             });
 

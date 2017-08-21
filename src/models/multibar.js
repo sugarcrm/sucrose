@@ -427,7 +427,7 @@ export default function multibar() {
             point: d,
             seriesIndex: d.seriesIndex,
             series: data[d.seri],
-            groupIndex: d.group,
+            groupIndex: d.groupIndex,
             id: id,
             e: e
           };
