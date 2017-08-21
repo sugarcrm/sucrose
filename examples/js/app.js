@@ -175,8 +175,10 @@ var sucroseCharts = function() {
       seriesClick: function(data, eo, chart, labels) {
         if (chart.cellActivate) {
           chart.cellActivate(eo);
-        } else {
-        chart.dataSeriesActivate(eo);
+        } else if (chart.seriesActivate) {
+          chart.seriesActivate(eo);
+        } else if (chart.dataSeriesActivate) {
+          chart.dataSeriesActivate(eo);
         }
       },
       showTitle: true,
