@@ -1,6 +1,6 @@
 {
   "name": "sucrose",
-  "version": "0.6.11",
+  "version": "0.6.12",
   "description": "Interactive Charts for Business Applications",
   "keywords": [
     "charts",
@@ -13,7 +13,7 @@
   "homepage": "http://sucrose.io/",
   "license": "Apache-2.0",
   "author": {
-    "name": "Henry Rogers",
+    "name": "Henry Rogersx",
     "url": "https://github.com/hhrogersii"
   },
   "main": "build/sucrose.node.js",
