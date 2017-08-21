@@ -8,8 +8,8 @@
       {"label": "01 Feb 2016 00:00:00 GMT"},
       {"label": "01 Mar 2016 00:00:00 GMT"}
     ],
-    "seriesLabel": "Fruit",
-    "groupLabel": "Harvested"
+    "seriesName": "Fruit",
+    "groupName": "Harvested"
   },
   "data": [
     {

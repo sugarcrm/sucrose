@@ -1,0 +1,181 @@
+{
+  "properties": {
+    "title": "Total is 50",
+    "groups": [
+      {
+        "group": 1,
+        "label": "Undefined"
+      },
+      {
+        "group": 2,
+        "label": "Apparel"
+      },
+      {
+        "group": 3,
+        "label": "Banking"
+      },
+      {
+        "group": 4,
+        "label": "Biotechnology"
+      },
+      {
+        "group": 5,
+        "label": "Chemicals"
+      },
+      {
+        "group": 6,
+        "label": "Communications"
+      },
+      {
+        "group": 7,
+        "label": "Construction"
+      },
+      {
+        "group": 8,
+        "label": "Consulting"
+      },
+      {
+        "group": 9,
+        "label": "Education"
+      },
+      {
+        "group": 10,
+        "label": "Electronics"
+      }
+    ],
+    "values": [
+      {
+        "group": 1,
+        "total": 5
+      },
+      {
+        "group": 2,
+        "total": 5
+      },
+      {
+        "group": 3,
+        "total": 5
+      },
+      {
+        "group": 4,
+        "total": 5
+      },
+      {
+        "group": 5,
+        "total": 5
+      },
+      {
+        "group": 6,
+        "total": 5
+      },
+      {
+        "group": 7,
+        "total": 5
+      },
+      {
+        "group": 8,
+        "total": 5
+      },
+      {
+        "group": 9,
+        "total": 5
+      },
+      {
+        "group": 10,
+        "total": 5
+      }
+    ]
+  },
+  "data": [
+    {
+      "key": "Undefined",
+      "values": [
+        {
+          "x": 1,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "key": "Apparel",
+      "values": [
+        {
+          "x": 2,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "key": "Banking",
+      "values": [
+        {
+          "x": 3,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "key": "Biotechnology",
+      "values": [
+        {
+          "x": 4,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "key": "Chemicals",
+      "values": [
+        {
+          "x": 5,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "key": "Communications",
+      "values": [
+        {
+          "x": 6,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "key": "Construction",
+      "values": [
+        {
+          "x": 7,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "key": "Consulting",
+      "values": [
+        {
+          "x": 8,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "key": "Education",
+      "values": [
+        {
+          "x": 9,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "key": "Electronics",
+      "values": [
+        {
+          "x": 10,
+          "y": 5
+        }
+      ]
+    }
+  ]
+}
