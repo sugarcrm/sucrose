@@ -31,30 +31,30 @@ export default function lineChart() {
   var pointRadius = 3;
 
   var tooltipContent = function(eo, properties) {
-        var seriesLabel = properties.seriesLabel || 'Key';
-        var key = eo.series.key;
+        var seriesName = properties.seriesLabel || 'Key';
+        var seriesLabel = eo.series.key;
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupName = properties.groupName || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group || {};
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var groupLabel = xValueFormat(x, eo.pointIndex, group.label, xIsDatetime, '%x');
 
         var yIsCurrency = properties.yDataType === 'currency';
-        var valueLabel = yIsCurrency ? 'Amount' : 'Count';
+        var valueName = yIsCurrency ? 'Amount' : 'Count';
         var y = eo.point.y;
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units
         // for tooltip, we want the full value
-        var value = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
-
-        var xIsDatetime = properties.xDataType === 'datetime';
-        var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
-        // the event object group is set by event dispatcher if x is ordinal
-        var group = eo.group && eo.group.label ? eo.group.label : null;
-        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
-        var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
+        var valueLabel = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
 
         var percent;
         var content = '';
 
-        content += '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
-        content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
-        content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        content += '<p>' + seriesName + ': <b>' + seriesLabel + '</b></p>';
+        content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
+        content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
 
         if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
@@ -135,7 +135,7 @@ export default function lineChart() {
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var groupData = properties.groups,
-          hasGroupData = Array.isArray(groupData) && groupData.length,
+          hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
@@ -194,26 +194,26 @@ export default function lineChart() {
       };
 
       chart.cellActivate = function(eo) {
-        var cell = data[eo.seriesIndex].values[eo.groupIndex];
+        // seriesClick is defined outside chart scope, so when it calls
+        // cellActivate, it only has access to (data, eo, chart, labels)
+        var cell = data[eo.seriesIndex].values[eo.pointIndex];
         var activeState;
 
         if (!cell) {
           return;
         }
 
-        // toggle active state
+        // store toggle active state
         activeState = (
             typeof cell.active === 'undefined' ||
             cell.active === 'inactive' ||
             cell.active === ''
-          ) ? 'active' : 'inactive';
+          ) ? 'active' : '';
 
-        if (activeState === 'active') {
-          cell.active = 'active';
-        } else {
-          // if there are no active data series, unset entire active state
-          chart.clearActive();
-        }
+        // unset entire active state
+        chart.clearActive();
+
+        cell.active = activeState;
 
         chart.render();
       };
@@ -268,21 +268,14 @@ export default function lineChart() {
       //------------------------------------------------------------
       // Process data
 
-      function setGroupLabels(groupData) {
-        // Get simple array of group labels for ticks
-        groupLabels = groupData.map(function(group) {
-            return group.label;
-          });
-        groupCount = groupLabels.length;
-        hasGroupLabels = groupCount > 0;
-      }
-
       // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
         series.seriesIndex = s;
         series.key = series.key || strings.noLabel;
         series.total = d3.sum(series.values, function(value, v) {
+          // if data is ordinal, add group based on x not index
+          value.group = hasGroupData ? value.x - 1 : v;
           return value.y;
         });
 
@@ -312,36 +305,44 @@ export default function lineChart() {
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (hasGroupData) {
+      function setGroupLabels(groupData) {
+        // Get simple array of group labels for ticks
+        groupLabels = groupData.map(function(group) {
+            return group.label;
+          });
+        groupCount = groupLabels.length;
+        hasGroupLabels = groupCount > 0;
+      }
 
-        groupData.forEach(function(group, g) {
-          var label = typeof group.label === 'undefined' || group.label === '' ?
-            strings.noLabel :
-              xIsDatetime ?
-                new Date(group.label) :
-                group.label;
-          group.group = g,
-          group.label = label;
-          group.total = 0;
-        });
+      if (hasGroupData) {
 
         // Calculate group totals and height
         // based on enabled data series
-        groupData.forEach(function(group, g) {
-          //TODO: only sum enabled series
-          // update group data with values
-          modelData
-            .forEach(function(series, s) {
-            //TODO: there is a better way with map reduce?
-              series.values
-                .filter(function(value, v) {
-                  return value.group === g;
-                })
-                .forEach(function(value, v) {
-                  group.total += value.y;
-                });
-            });
-        });
+        groupData
+          .forEach(function(group, g) {
+            var label = typeof group.label === 'undefined' || group.label === '' ?
+              strings.noLabel :
+                xIsDatetime ?
+                  new Date(group.label) :
+                  group.label;
+            group.group = g,
+            group.label = label;
+            group.total = 0;
+
+            //TODO: only sum enabled series
+            // update group data with values
+            modelData
+              .forEach(function(series, s) {
+              //TODO: there is a better way with map reduce?
+                series.values
+                  .filter(function(value, v) {
+                    return value.group === g;
+                  })
+                  .forEach(function(value, v) {
+                    group.total += value.y;
+                  });
+              });
+          });
 
         setGroupLabels(groupData);
 
@@ -769,7 +770,7 @@ export default function lineChart() {
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
           if (hasGroupLabels) {
-            eo.groupIndex = eo.pointIndex;
+            // set the group rather than pass entire groupData
             eo.group = groupData[eo.groupIndex];
           }
           tt = showTooltip(eo, that.parentNode, properties);
@@ -821,8 +822,8 @@ export default function lineChart() {
       });
 
       model.dispatch.on('elementClick', function(eo) {
-        if (hasGroupLabels) {
-          eo.groupIndex = eo.pointIndex;
+        if (hasGroupLabels && eo.groupIndex) {
+          // set the group rather than pass entire groupData
           eo.group = groupData[eo.groupIndex];
         }
         dispatch.call('chartClick', this);

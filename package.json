@@ -31,7 +31,7 @@
     "url": "https://github.com/sugarcrm/sucrose.git"
   },
   "scripts": {
-    "instrument": "rimraf ./tests/fixtures/build && nyc instrument ./build/sucrose.js ./test/fixtures/ && cp ./node_modules/d3fc-rebind/build/d3fc-rebind.min.js ./test/fixtures/build/d3fc-rebind.min.js && cp ./build/d3.min.js ./test/fixtures/build/d3.min.js && cp ./build/sucrose.min.css ./test/fixtures/build/sucrose.min.css",
+    "instrument": "rimraf ./tests/fixtures/build && nyc instrument ./build/sucrose.js ./test/fixtures/ && cp ./build/d3.min.js ./test/fixtures/build/d3.min.js && cp ./build/sucrose.min.css ./test/fixtures/build/sucrose.min.css",
     "cover-all": "nyc tape ./test/specs/**/*-test.js --cover",
     "cover-unit": "nyc tape ./test/specs/unit/*-test.js",
     "cover-dom": "nyc tape ./test/specs/dom/*-test.js",

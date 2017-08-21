@@ -69,30 +69,30 @@ export default function multibarChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
-        var seriesLabel = properties.seriesLabel || 'Key';
-        var key = eo.series.key;
+        var seriesName = properties.seriesLabel || 'Key';
+        var seriesLabel = eo.series.key;
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupName = properties.groupName || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group || {};
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var groupLabel = xValueFormat(x, eo.pointIndex, group.label, xIsDatetime, '%x');
 
         var yIsCurrency = properties.yDataType === 'currency';
-        var valueLabel = yIsCurrency ? 'Amount' : 'Count';
+        var valueName = yIsCurrency ? 'Amount' : 'Count';
         var y = eo.point.y;
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units
         // for tooltip, we want the full value
-        var value = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
-
-        var xIsDatetime = properties.xDataType === 'datetime';
-        var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
-        // the event object group is set by event dispatcher if x is ordinal
-        var group = eo.group && eo.group.label ? eo.group.label : null;
-        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
-        var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
+        var valueLabel = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
 
         var percent;
         var content = '';
 
-        content += '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
-        content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
-        content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        content += '<p>' + seriesName + ': <b>' + seriesLabel + '</b></p>';
+        content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
+        content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
 
         if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
@@ -198,7 +198,9 @@ export default function multibarChart() {
       };
 
       chart.cellActivate = function(eo) {
-        var cell = data[eo.seriesIndex].values[eo.groupIndex];
+        // seriesClick is defined outside chart scope, so when it calls
+        // cellActivate, it only has access to (data, eo, chart, labels)
+        var cell = data[eo.seriesIndex].values[eo.pointIndex];
         var activeState;
 
         if (!cell) {
@@ -210,14 +212,12 @@ export default function multibarChart() {
             typeof cell.active === 'undefined' ||
             cell.active === 'inactive' ||
             cell.active === ''
-          ) ? 'active' : 'inactive';
+          ) ? 'active' : '';
 
-        if (activeState === 'active') {
-          cell.active = 'active';
-        } else {
-          // if there are no active data series, unset entire active state
-          chart.clearActive();
-        }
+        // unset entire active state first
+        chart.clearActive();
+
+        cell.active = activeState;
 
         chart.render();
       };
@@ -290,11 +290,14 @@ export default function multibarChart() {
         if (!series._values) {
           series._values = series.values.map(function(value, v) {
             var d = {
-              'x': value.x,
-              'y': value.y
+              x: value.x,
+              y: value.y
             };
             if (value.label) {
-              d.label = value.label;
+              d.label = value.label; //formated valuedLabel, not group label
+            }
+            if (value.active) {
+              d.active = value.active;
             }
             return d;
           });
@@ -323,12 +326,20 @@ export default function multibarChart() {
           // reconstruct values referencing series attributes
           // and stack
           series.values = series._values.map(function(value, v) {
-              value.seriesIndex = series.seriesIndex;
-              value.group = v;
-              value.color = series.color || '';
-              value.y0 = value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0);
-              value.active = typeof value.active !== 'undefined' ? value.active : '';
-              return value;
+              var d = {
+                x: value.x,
+                y: value.y,
+                active: value.active || '',
+              };
+              if (typeof value.label !== 'undefined') {
+                d.label = value.label;
+              }
+              d.groupIndex = v;
+              d.seriesIndex = series.seriesIndex;
+              d.seri = series.seri;
+              d.color = series.color || '';
+              d.y0 = value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0);
+              return d;
             });
 
           return series;
@@ -391,7 +402,7 @@ export default function multibarChart() {
             //TODO: there is a better way with map reduce?
             series.values
               .filter(function(value, v) {
-                return value.group === g;
+                return value.groupIndex === g;
               })
               .forEach(function(value, v) {
                 group.total += value.y;
@@ -420,7 +431,7 @@ export default function multibarChart() {
             })
             .map(function(value, v) {
               // this is the new iterative index, not the data index
-              value.seri = series.seri;
+              // value.seri = series.seri;
               return value;
             });
           return series;
@@ -860,7 +871,9 @@ export default function multibarChart() {
       });
 
       model.dispatch.on('elementClick', function(eo) {
+
         if (hasGroupLabels) {
+          // set the group rather than pass entire groupData
           eo.group = groupData[eo.groupIndex];
         }
         dispatch.call('chartClick', this);

@@ -5170,7 +5170,9 @@ function scatter() {
             .on('end', function(d) {
               d3.select(this)
                 .classed('sc-enter', false)
-                .classed('active', function(d) { return d.active === 'active'; });
+                .classed('active', function(d) {
+                  return d.active === 'active';
+                });
             });
 
         series_bind.exit()
@@ -5182,15 +5184,17 @@ function scatter() {
 
       }
 
-      function buildEventObject(e, d, i, s) {
-        return {
+      function buildEventObject(e, p, i, s) {
+        var eo = {
             pointIndex: i,
-            point: s.values[i],
+            point: p,
             seriesIndex: s.seriesIndex,
             series: s,
+            groupIndex: p.group,
             id: id,
             e: e
           };
+        return eo;
       }
 
       function updateInteractiveLayer() {
@@ -5199,11 +5203,11 @@ function scatter() {
           return false;
         }
 
-        //inject series and point index for reference into voronoi
+        //inject series, group and point index for reference into voronoi
         if (useVoronoi === true) {
 
-          var vertices = d3.merge(data.map(function(group, groupIndex) {
-              return group.values
+          var vertices = d3.merge(data.map(function(series, seriesIndex) {
+              return series.values
                 .map(function(point, pointIndex) {
                   // *Adding noise to make duplicates very unlikely
                   // *Injecting series and point index for reference
@@ -5211,13 +5215,15 @@ function scatter() {
                    */
                   var pX = getX(point, pointIndex);
                   var pY = getY(point, pointIndex);
+                  var groupIndex = point.group;
 
                   return [
                       x(pX) + Math.random() * 1e-4,
                       y(pY) + Math.random() * 1e-4,
+                      point,
+                      seriesIndex,
                       groupIndex,
-                      pointIndex,
-                      point
+                      pointIndex
                     ]; //temp hack to add noise until I think of a better way so there are no duplicates
                 })
                 .filter(function(pointArray, pointIndex) {
@@ -5235,7 +5241,7 @@ function scatter() {
               .attr('cx', function(d) { return d[0]; })
               .attr('cy', function(d) { return d[1]; })
               .attr('r', function(d, i) {
-                return circleRadius(d[4], i);
+                return circleRadius(d[2], i);
               });
             clips_bind.exit().remove();
 
@@ -5245,10 +5251,10 @@ function scatter() {
 
           if (vertices.length <= 3) {
             // Issue #283 - Adding 2 dummy points to the voronoi b/c voronoi requires min 3 points to work
-            vertices.push([x.range()[0] - 20, y.range()[0] - 20, null, null]);
-            vertices.push([x.range()[1] + 20, y.range()[1] + 20, null, null]);
-            vertices.push([x.range()[0] - 20, y.range()[0] + 20, null, null]);
-            vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null]);
+            vertices.push([x.range()[0] - 20, y.range()[0] - 20, null, null, null, null]);
+            vertices.push([x.range()[1] + 20, y.range()[1] + 20, null, null, null, null]);
+            vertices.push([x.range()[0] - 20, y.range()[0] + 20, null, null, null, null]);
+            vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null, null, null]);
           }
 
           var voronoi = d3.voronoi()
@@ -5257,8 +5263,9 @@ function scatter() {
                 .map(function(d, i) {
                   return {
                     'data': d,
-                    'seriesIndex': vertices[i][2],
-                    'pointIndex': vertices[i][3]
+                    'seriesIndex': vertices[i][3],
+                    'groupIndex': vertices[i][4],
+                    'pointIndex': vertices[i][5]
                   };
                 })
                 .filter(function(d) { return d.seriesIndex !== null; });
@@ -5273,22 +5280,31 @@ function scatter() {
 
           paths
             .on('mouseover', function(d) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0;
-              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              var s = data[d.seriesIndex];
+              var i = d.pointIndex;
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0;
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementMouseover', this, eo);
             })
-            .on('mousemove', function(d, i) {
+            .on('mousemove', function(d) {
               var e = d3.event;
               dispatch.call('elementMousemove', this, e);
             })
-            .on('mouseout', function(d, i) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0;
-              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+            .on('mouseout', function(d) {
+              var s = data[d.seriesIndex];
+              var i = d.pointIndex;
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0;
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementMouseout', this, eo);
             })
             .on('click', function(d) {
-              if (needsUpdate || !data[d.seriesIndex]) return 0;
-              var eo = buildEventObject(d3.event, d, d.pointIndex, data[d.seriesIndex]);
+              var s = data[d.seriesIndex];
+              var i = d.pointIndex;
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0;
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementClick', this, eo);
             });
 
@@ -5299,10 +5315,10 @@ function scatter() {
             //.data(dataWithPoints)
             .style('pointer-events', 'auto') // recaptivate events, disabled by css
             .on('mouseover', function(d, i) {
-              var series, eo;
-              series = d3.select(this.parentNode).datum();
-              if (needsUpdate || !series) return 0; //check if this is a dummy point
-              eo = buildEventObject(d3.event, d, i, series);
+              var s = d3.select(this.parentNode).datum();
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementMouseover', this, eo);
             })
             .on('mousemove', function(d, i) {
@@ -5310,17 +5326,17 @@ function scatter() {
               dispatch.call('elementMousemove', this, e);
             })
             .on('mouseout', function(d, i) {
-              var series, eo;
-              series = d3.select(this.parentNode).datum();
-              if (needsUpdate || !series) return 0; //check if this is a dummy point
-              eo = buildEventObject(d3.event, d, i, series);
+              var s = d3.select(this.parentNode).datum();
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementMouseout', this, eo);
             })
             .on('click', function(d, i) {
-              var series, eo;
-              series = d3.select(this.parentNode).datum();
-              if (needsUpdate || !series) return 0; //check if this is a dummy point
-              eo = buildEventObject(d3.event, d, i, series);
+              var s = d3.select(this.parentNode).datum();
+              var p = s.values[i];
+              if (needsUpdate || !s) return 0; //check if this is a dummy point
+              var eo = buildEventObject(d3.event, p, i, s);
               dispatch.call('elementClick', this, eo);
             });
 
@@ -6406,7 +6422,7 @@ function multibar() {
             point: d,
             seriesIndex: d.seriesIndex,
             series: data[d.seri],
-            groupIndex: d.group,
+            groupIndex: d.groupIndex,
             id: id,
             e: e
           };
@@ -12319,30 +12335,30 @@ function lineChart() {
   var pointRadius = 3;
 
   var tooltipContent = function(eo, properties) {
-        var seriesLabel = properties.seriesLabel || 'Key';
-        var key = eo.series.key;
+        var seriesName = properties.seriesLabel || 'Key';
+        var seriesLabel = eo.series.key;
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupName = properties.groupName || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group || {};
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var groupLabel = xValueFormat(x, eo.pointIndex, group.label, xIsDatetime, '%x');
 
         var yIsCurrency = properties.yDataType === 'currency';
-        var valueLabel = yIsCurrency ? 'Amount' : 'Count';
+        var valueName = yIsCurrency ? 'Amount' : 'Count';
         var y = eo.point.y;
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units
         // for tooltip, we want the full value
-        var value = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
-
-        var xIsDatetime = properties.xDataType === 'datetime';
-        var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
-        // the event object group is set by event dispatcher if x is ordinal
-        var group = eo.group && eo.group.label ? eo.group.label : null;
-        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
-        var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
+        var valueLabel = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
 
         var percent;
         var content = '';
 
-        content += '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
-        content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
-        content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        content += '<p>' + seriesName + ': <b>' + seriesLabel + '</b></p>';
+        content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
+        content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
 
         if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
@@ -12423,7 +12439,7 @@ function lineChart() {
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var groupData = properties.groups,
-          hasGroupData = Array.isArray(groupData) && groupData.length,
+          hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
@@ -12482,26 +12498,26 @@ function lineChart() {
       };
 
       chart.cellActivate = function(eo) {
-        var cell = data[eo.seriesIndex].values[eo.groupIndex];
+        // seriesClick is defined outside chart scope, so when it calls
+        // cellActivate, it only has access to (data, eo, chart, labels)
+        var cell = data[eo.seriesIndex].values[eo.pointIndex];
         var activeState;
 
         if (!cell) {
           return;
         }
 
-        // toggle active state
+        // store toggle active state
         activeState = (
             typeof cell.active === 'undefined' ||
             cell.active === 'inactive' ||
             cell.active === ''
-          ) ? 'active' : 'inactive';
+          ) ? 'active' : '';
 
-        if (activeState === 'active') {
-          cell.active = 'active';
-        } else {
-          // if there are no active data series, unset entire active state
-          chart.clearActive();
-        }
+        // unset entire active state
+        chart.clearActive();
+
+        cell.active = activeState;
 
         chart.render();
       };
@@ -12556,21 +12572,14 @@ function lineChart() {
       //------------------------------------------------------------
       // Process data
 
-      function setGroupLabels(groupData) {
-        // Get simple array of group labels for ticks
-        groupLabels = groupData.map(function(group) {
-            return group.label;
-          });
-        groupCount = groupLabels.length;
-        hasGroupLabels = groupCount > 0;
-      }
-
       // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
         series.seriesIndex = s;
         series.key = series.key || strings.noLabel;
         series.total = d3.sum(series.values, function(value, v) {
+          // if data is ordinal, add group based on x not index
+          value.group = hasGroupData ? value.x - 1 : v;
           return value.y;
         });
 
@@ -12600,36 +12609,44 @@ function lineChart() {
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (hasGroupData) {
+      function setGroupLabels(groupData) {
+        // Get simple array of group labels for ticks
+        groupLabels = groupData.map(function(group) {
+            return group.label;
+          });
+        groupCount = groupLabels.length;
+        hasGroupLabels = groupCount > 0;
+      }
 
-        groupData.forEach(function(group, g) {
-          var label = typeof group.label === 'undefined' || group.label === '' ?
-            strings.noLabel :
-              xIsDatetime ?
-                new Date(group.label) :
-                group.label;
-          group.group = g,
-          group.label = label;
-          group.total = 0;
-        });
+      if (hasGroupData) {
 
         // Calculate group totals and height
         // based on enabled data series
-        groupData.forEach(function(group, g) {
-          //TODO: only sum enabled series
-          // update group data with values
-          modelData
-            .forEach(function(series, s) {
-            //TODO: there is a better way with map reduce?
-              series.values
-                .filter(function(value, v) {
-                  return value.group === g;
-                })
-                .forEach(function(value, v) {
-                  group.total += value.y;
-                });
-            });
-        });
+        groupData
+          .forEach(function(group, g) {
+            var label = typeof group.label === 'undefined' || group.label === '' ?
+              strings.noLabel :
+                xIsDatetime ?
+                  new Date(group.label) :
+                  group.label;
+            group.group = g,
+            group.label = label;
+            group.total = 0;
+
+            //TODO: only sum enabled series
+            // update group data with values
+            modelData
+              .forEach(function(series, s) {
+              //TODO: there is a better way with map reduce?
+                series.values
+                  .filter(function(value, v) {
+                    return value.group === g;
+                  })
+                  .forEach(function(value, v) {
+                    group.total += value.y;
+                  });
+              });
+          });
 
         setGroupLabels(groupData);
 
@@ -13057,7 +13074,7 @@ function lineChart() {
       dispatch.on('tooltipShow', function(eo) {
         if (tooltips) {
           if (hasGroupLabels) {
-            eo.groupIndex = eo.pointIndex;
+            // set the group rather than pass entire groupData
             eo.group = groupData[eo.groupIndex];
           }
           tt = showTooltip(eo, that.parentNode, properties);
@@ -13109,8 +13126,8 @@ function lineChart() {
       });
 
       model.dispatch.on('elementClick', function(eo) {
-        if (hasGroupLabels) {
-          eo.groupIndex = eo.pointIndex;
+        if (hasGroupLabels && eo.groupIndex) {
+          // set the group rather than pass entire groupData
           eo.group = groupData[eo.groupIndex];
         }
         dispatch.call('chartClick', this);
@@ -13388,30 +13405,30 @@ function multibarChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
-        var seriesLabel = properties.seriesLabel || 'Key';
-        var key = eo.series.key;
+        var seriesName = properties.seriesLabel || 'Key';
+        var seriesLabel = eo.series.key;
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupName = properties.groupName || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group || {};
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var groupLabel = xValueFormat(x, eo.pointIndex, group.label, xIsDatetime, '%x');
 
         var yIsCurrency = properties.yDataType === 'currency';
-        var valueLabel = yIsCurrency ? 'Amount' : 'Count';
+        var valueName = yIsCurrency ? 'Amount' : 'Count';
         var y = eo.point.y;
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units
         // for tooltip, we want the full value
-        var value = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
-
-        var xIsDatetime = properties.xDataType === 'datetime';
-        var groupLabel = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
-        // the event object group is set by event dispatcher if x is ordinal
-        var group = eo.group && eo.group.label ? eo.group.label : null;
-        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
-        var label = xValueFormat(x, eo.pointIndex, group, xIsDatetime, '%x');
+        var valueLabel = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
 
         var percent;
         var content = '';
 
-        content += '<p>' + seriesLabel + ': <b>' + key + '</b></p>';
-        content += '<p>' + groupLabel + ': <b>' + label + '</b></p>';
-        content += '<p>' + valueLabel + ': <b>' + value + '</b></p>';
+        content += '<p>' + seriesName + ': <b>' + seriesLabel + '</b></p>';
+        content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
+        content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
 
         if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
@@ -13517,7 +13534,9 @@ function multibarChart() {
       };
 
       chart.cellActivate = function(eo) {
-        var cell = data[eo.seriesIndex].values[eo.groupIndex];
+        // seriesClick is defined outside chart scope, so when it calls
+        // cellActivate, it only has access to (data, eo, chart, labels)
+        var cell = data[eo.seriesIndex].values[eo.pointIndex];
         var activeState;
 
         if (!cell) {
@@ -13529,14 +13548,12 @@ function multibarChart() {
             typeof cell.active === 'undefined' ||
             cell.active === 'inactive' ||
             cell.active === ''
-          ) ? 'active' : 'inactive';
+          ) ? 'active' : '';
 
-        if (activeState === 'active') {
-          cell.active = 'active';
-        } else {
-          // if there are no active data series, unset entire active state
-          chart.clearActive();
-        }
+        // unset entire active state first
+        chart.clearActive();
+
+        cell.active = activeState;
 
         chart.render();
       };
@@ -13609,11 +13626,14 @@ function multibarChart() {
         if (!series._values) {
           series._values = series.values.map(function(value, v) {
             var d = {
-              'x': value.x,
-              'y': value.y
+              x: value.x,
+              y: value.y
             };
             if (value.label) {
-              d.label = value.label;
+              d.label = value.label; //formated valuedLabel, not group label
+            }
+            if (value.active) {
+              d.active = value.active;
             }
             return d;
           });
@@ -13642,12 +13662,20 @@ function multibarChart() {
           // reconstruct values referencing series attributes
           // and stack
           series.values = series._values.map(function(value, v) {
-              value.seriesIndex = series.seriesIndex;
-              value.group = v;
-              value.color = series.color || '';
-              value.y0 = value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0);
-              value.active = typeof value.active !== 'undefined' ? value.active : '';
-              return value;
+              var d = {
+                x: value.x,
+                y: value.y,
+                active: value.active || '',
+              };
+              if (typeof value.label !== 'undefined') {
+                d.label = value.label;
+              }
+              d.groupIndex = v;
+              d.seriesIndex = series.seriesIndex;
+              d.seri = series.seri;
+              d.color = series.color || '';
+              d.y0 = value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0);
+              return d;
             });
 
           return series;
@@ -13710,7 +13738,7 @@ function multibarChart() {
             //TODO: there is a better way with map reduce?
             series.values
               .filter(function(value, v) {
-                return value.group === g;
+                return value.groupIndex === g;
               })
               .forEach(function(value, v) {
                 group.total += value.y;
@@ -13739,7 +13767,7 @@ function multibarChart() {
             })
             .map(function(value, v) {
               // this is the new iterative index, not the data index
-              value.seri = series.seri;
+              // value.seri = series.seri;
               return value;
             });
           return series;
@@ -14179,7 +14207,9 @@ function multibarChart() {
       });
 
       model.dispatch.on('elementClick', function(eo) {
+
         if (hasGroupLabels) {
+          // set the group rather than pass entire groupData
           eo.group = groupData[eo.groupIndex];
         }
         dispatch.call('chartClick', this);
