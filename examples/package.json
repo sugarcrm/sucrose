@@ -30,15 +30,12 @@
     "postinstall": "make install-post"
   },
   "dependencies": {
-    "cldr-data": "^29.0.1",
     "jquery": "^3.2.1",
     "jquerymy": "1.2.10",
     "jszip": "^3.0.0"
   },
   "devDependencies": {
     "canvg": "git://github.com/gabelerner/canvg.git",
-    "cldr-data": "^29.0.1",
-    "cldrjs": "^0.4.4",
     "codemirror": "^5.11.0",
     "jsonlint": "^1.6.2",
     "make-help": "^1.0.1",

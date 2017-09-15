@@ -37,7 +37,7 @@ var Manifest =
     color_data: 'default',
     gradient: ['0', 'vertical', 'middle'],
     direction: 'ltr',
-    locale: 'en',
+    locale: 'en_US',
     show_title: 1
   },
 

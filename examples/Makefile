@@ -91,11 +91,13 @@ sucrose: clean-sucrose
 	cp ../build/sucrose.min.js js/sucrose.min.js
 	cp ../build/sucrose.css css/sucrose.css
 	cp ../build/sucrose.min.css css/sucrose.min.css
+	cp ../build/locales.json data/locales/locales.json
 
 # - remove sucrose js and css files
 clean-sucrose:
 	rm -f js/sucrose.js js/sucrose.min.js \
-		css/sucrose.css css/sucrose.min.css
+		css/sucrose.css css/sucrose.min.css \
+		data/locales/locales.json
 
 # - copy dependency js files (D3, jQuery, jQueryMy)
 dependencies: clean-dependencies
