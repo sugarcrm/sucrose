@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <title>Number Format Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../../examples/css/examples.css">
+  <link rel="stylesheet" href="visual-tests.css">
+
+  <script src="../../examples/js/jquery.min.js"></script>
+  <script src="../../build/d3.min.js"></script>
+  <script src="../../build/sucrose.js"></script>
+</head>
+<body>
+  <div class="sc-demo sc-demo-locale">
+    <div class="page-header">
+      <h2>Number Format Test</h2>
+    <input id="currency" type="checkbox" value="1" onchange="toggle('en_US')"> Currency&nbsp;&nbsp;
+    <select id="precision" onchange="toggle('en_US')">
+      <option value="0">0 Precision</option>
+      <option value="1">1 Precision</option>
+      <option value="2" selected="selected">2 Precision</option>
+      <option value="3">3 Precision</option>
+    </select>&nbsp;&nbsp;
+    <select id="si_unit" onchange="toggle('en_US')">
+      <option value="micro">SI micro</option>
+      <option value="m">SI milli</option>
+      <option value="0">none</option>
+      <option value="k" selected="selected">SI kilo</option>
+      <option value="M">SI mega</option>
+    </select>
+    </div>
+    <table>
+      <thead>
+          <tr>
+            <th></th>
+            <th colspan="2">Rounded w/ Fixed P (axis)<br>numberFormatFixed(d, 2, c, l)</th>
+            <th colspan="2">Multi w/ Max P (tooltip)<br>numberFormat(d, 2, c, l)</th>
+            <th colspan="2">SI Rounded w/ Fixed P (axis)<br>numberFormatSIFixed(d, 2, c, l, k)</th>
+            <th colspan="2">SI Multi w/ Max P (label)<br>numberFormatSI(d, p, c, l)</th>
+          </tr>
+          <tr>
+            <th>data</th>
+            <th>expected</th><th>actual</th>
+            <th>expected</th><th>actual</th>
+            <th>expected</th><th>actual</th>
+            <th>expected</th><th>actual</th>
+          </tr>
+      </thead>
+      <tbody id="results"></tbody>
+    </table>
+  </div>
+
+<script type="text/javascript">
+  function toggle(locale) {
+    var precision = parseInt(document.getElementById('precision').value, 10);
+    var isCurrency = document.getElementById('currency').checked;
+    var si = document.getElementById('si_unit').value;
+    test(en_US, precision, isCurrency, si);
+  }
+
+  // spec for standard format
+  var en_US = [
+    [ 0.0003,
+      ["0.00", "$0.00"],         ["0.00", "$0.00"],         ["0.00k", "$0.00k"],
+      ["300µ", "$0"],
+      ["300µ", "$0"],
+      ["300µ", "$0"],
+      ["300µ", "$0"]
+    ],
+    [ 0.029,
+      ["0.03", "$0.03"],         ["0.03", "$0.03"],         ["0.00k", "$0.00k"],
+      ["30m", "$0"],
+      ["30m", "$0"],
+      ["0.03", "$0.03"],
+      ["0.029", "$0.029"]
+    ],
+    [ 0.03,
+      ["0.03", "$0.03"],         ["0.03", "$0.03"],         ["0.00k", "$0.00k"],
+      ["30m", "$0"],
+      ["30m", "$0"],
+      ["0.03", "$0.03"],
+      ["0.03", "$0.03"]
+    ],
+    [ 0.3,
+      ["0.30", "$0.30"],         ["0.3", "$0.30"],          ["0.00k", "$0.00k"],
+      ["300m", "$0"],
+      ["0.3", "$0.30"],
+      ["0.3", "$0.30"],
+      ["0.3", "$0.30"]
+    ],
+    [ 0,
+      ["0.00", "$0.00"],         ["0", "$0"],               ["0.00k", "$0.00k"],
+      ["0", "$0"],
+      ["0", "$0"],
+      ["0", "$0"],
+      ["0", "$0"]
+    ],
+    [ 3,
+      ["3.00", "$3.00"],         ["3", "$3"],               ["0.00k", "$0.00k"],
+      ["3", "$3"],
+      ["3", "$3"],
+      ["3", "$3"],
+      ["3", "$3"]
+    ],
+    [ 3.3,
+      ["3.30", "$3.30"],         ["3.3", "$3.30"],          ["0.00k", "$0.00k"],
+      ["3", "$3"],
+      ["3.3", "$3.30"],
+      ["3.3", "$3.30"],
+      ["3.3", "$3.30"]
+    ],
+    [ 3.33,
+      ["3.33", "$3.33"],         ["3.33", "$3.33"],         ["0.00k", "$0.00k"],
+      ["3", "$3"],
+      ["3.3", "$3.30"],
+      ["3.33", "$3.33"],
+      ["3.33", "$3.33"]
+    ],
+    [ 30,
+      ["30.00", "$30.00"],       ["30", "$30"],             ["0.03k", "$0.03k"],
+      ["30", "$30"],
+      ["30", "$30"],
+      ["30", "$30"],
+      ["30", "$30"]
+    ],
+    [ 30.3333,
+      ["30.33", "$30.33"],       ["30.33", "$30.33"],       ["0.03k", "$0.03k"],
+      ["30", "$30"],
+      ["30.3", "$30.30"],
+      ["30.33", "$30.33"],
+      ["30.333", "$30.333"]
+    ],
+    [ 300,
+      ["300.00", "$300.00"],     ["300", "$300"],           ["0.30k", "$0.30k"],
+      ["300", "$300"],
+      ["300", "$300"],
+      ["300", "$300"],
+      ["300", "$300"]
+    ],
+    [ 300.333,
+      ["300.33", "$300.33"],     ["300.33", "$300.33"],     ["0.30k", "$0.30k"],
+      ["300", "$300"],
+      ["300.3", "$300.30"],
+      ["300.33", "$300.33"],
+      ["300.333", "$300.333"]
+    ],
+    [ 3000,
+      ["3,000.00", "$3,000.00"], ["3,000", "$3,000"],       ["3.00k", "$3.00k"],
+      ["3k", "$3k"],
+      ["3k", "$3k"],
+      ["3k", "$3k"],
+      ["3k", "$3k"]
+    ],
+    [ 3000.333,
+      ["3,000.33", "$3,000.33"], ["3,000.33", "$3,000.33"], ["3.00k", "$3.00k"],
+      ["3k", "$3k"],
+      ["3k", "$3k"],
+      ["3k", "$3k"],
+      ["3k", "$3k"]
+    ],
+    [ 3300,
+      ["3,300.00", "$3,300.00"], ["3,300", "$3,300"],       ["3.30k", "$3.30k"],
+      ["3k", "$3k"],
+      ["3.3k", "$3.3k"],
+      ["3.3k", "$3.3k"],
+      ["3.3k", "$3.3k"]
+    ],
+    [ 3330,
+      ["3,330.00", "$3,330.00"], ["3,330", "$3,330"],       ["3.33k", "$3.33k"],
+      ["3k", "$3k"],
+      ["3.3k", "$3.3k"],
+      ["3.33k", "$3.33k"],
+      ["3.33k", "$3.33k"]
+    ],
+    [ 3333,
+      ["3,333.00", "$3,333.00"], ["3,333", "$3,333"],       ["3.33k", "$3.33k"],
+      ["3k", "$3k"],
+      ["3.3k", "$3.3k"],
+      ["3.33k", "$3.33k"],
+      ["3.333k", "$3.333k"]
+    ],
+    [ 33333,
+      ["33,333.00", "$33,333.00"], ["33,333", "$33,333"],   ["33.33k", "$33.33k"],
+      ["33k", "$33k"],
+      ["33.3k", "$33.3k"],
+      ["33.33k", "$33.33k"],
+      ["33.333k", "$33.333k"]
+    ],
+    [ 330003,
+      ["330,003.00", "$330,003.00"], ["330,003", "$330,003"], ["330.00k", "$330.00k"],
+      ["330k", "$330k"],
+      ["330k", "$330k"],
+      ["330k", "$330k"],
+      ["330.003k", "$330.003k"]
+    ]
+  ];
+
+  var locale;
+
+  test(en_US, 2, false, 'k');
+
+  // runner
+  function test(data, precision, isCurrency, si) {
+    d3.select('#results').selectAll('tr').remove();
+    var c = isCurrency ? 1 : 0;
+    var trows = d3.select('#results').selectAll('tr').data(data);
+
+    trows.enter().append('tr').html(function(d) {
+      var html = '';
+          //fixed
+      var f1 = sucrose.utility.numberFormatFixed(d[0], 2, isCurrency, locale),
+          //max
+          f2 = sucrose.utility.numberFormat(d[0], 2, isCurrency, locale),
+          //si fixed
+          f3 = sucrose.utility.numberFormatSIFixed(d[0], 2, isCurrency, locale, si),
+          //si multi
+          f4 = sucrose.utility.numberFormatSI(d[0], precision, isCurrency, locale);
+      var d1 = d[1][c],
+          d2 = d[2][c],
+          d3 = d[3][c],
+          d4 = d[4 + precision][c];
+      var c1 = d1 == f1 ? 'pass' : 'fail',
+          c2 = d2 == f2 ? 'pass' : 'fail',
+          c3 = d3 == f3 ? 'pass' : 'fail';
+          c4 = d4 == f4 ? 'pass' : 'fail',
+
+      html += '<th><b>' + d[0] + '</b></th>';
+      html += '<td>' + d1 + '</td><td class="' + c1 + '">' + f1 + '</td>';
+      html += '<td>' + d2 + '</td><td class="' + c2 + '">' + f2 + '</td>';
+      html += '<td>' + d3 + '</td><td class="' + c3 + '">' + f3 + '</td>';
+      html += '<td>' + d4 + '</td><td class="' + c4 + '">' + f4 + '</td>';
+
+      return html;
+    });
+  }
+</script>
+</body>
+</html>

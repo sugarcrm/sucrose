@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=320" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Date Ranges</title>
+  <link rel="stylesheet" href="../../examples/css/examples.css">
+  <link rel="stylesheet" href="visual-tests.css">
+  <script src="../../build/d3.min.js"></script>
+  <script src="../../build/sucrose.js"></script>
+  <style>
+  body {
+    font-family: monospace;
+  }
+  </style>
+</head>
+<body>
+  <div class="sc-demo sc-demo-locale">
+    <table id="results">
+      <tr><th>Label</th><th>Value</th><th>Date</th><th>Spec</th>
+        <!-- <th>df</th><th>mf</th> -->
+        <th>gdf</th><th>gdfutc</th></tr>
+    </table>
+  </div>
+<script>
+var gdf = sucrose.utility.getDateFormat;
+var gdfutc = sucrose.utility.getDateFormatUTC;
+// var df = sucrose.utility.dateFormat;
+// var mf = sucrose.utility.multiFormat;
+var date;
+var spec;
+var utc = true;
+
+spec = '%x, %I:%M:%S %p';
+date = '1991-2-3, 4:05:06 AM';
+printf('second', date, spec);
+date = 'Sun, 03 Feb 1991 04:05:06 GMT';
+printf('second toUTCString', date, spec, utc);
+
+spec = '%x, %I:%M %p';
+date = '1991-2-3, 4:05:00 AM';
+printf('minute', date, spec);
+date = 'Sun, 03 Feb 1991 04:05:00 GMT';
+printf('minute toUTCString', date, spec, utc);
+
+spec = '%x, %I %p';
+date = '1991-2-3, 4:00:00 AM';
+printf('hour', date, spec);
+date = 'Sun, 03 Feb 1991 04:00:00 GMT';
+printf('hour toUTCString', date, spec, utc);
+
+spec = '%x';
+date = '1991-2-3, 00:00:00 AM';
+printf('day', date, spec);
+date = 'Sun, 03 Feb 1991 00:00:00 GMT';
+printf('day toUTCString', date, spec, utc);
+
+spec = '%B %Y';
+date = '1991-2-1, 00:00:00 AM';
+printf('month', date, spec);
+date = 'Sun, 01 Feb 1991 00:00:00 GMT';
+printf('month toUTCString', date, spec, utc);
+
+spec = '%Y';
+date = '1991-1-1, 00:00:00 AM';
+printf('year', date, spec);
+date = 'Sun, 01 Jan 1991 00:00:00 GMT';
+printf('year toUTCString', date, spec, utc);
+
+date = '1991-1-1';
+printf('year', date, spec);
+date = '1991';
+printf('year', date, spec, utc);
+date = '1/1/1991';
+printf('year', date, spec);
+date = '1/1/1991 GMT';
+printf('year GMT', date, spec, utc);
+date = 'Thu Dec 31 1990 19:00:00 GMT-0500 (EST)';
+printf('year toString()', date, spec, utc);
+
+function printf(label, value, spec, utc) {
+  var date = new Date(value);
+  var v;
+  var c;
+  var html = '<tr>';
+  html += '<td>' + label + '</td>';
+  html += '<td>' + value + '</td>';
+  html += '<td>' + date.toUTCString() + '</td>';
+  html += '<td>' + spec + '</td>';
+
+  v = gdf([new Date(value)], utc);
+  c = (v === spec) ? 'green' : 'red';
+  html += '<td style="color:' + c + '">' + v + '</td>';
+
+  v = gdfutc([new Date(value)], utc);
+  c = (v === spec) ? 'green' : 'red';
+  html += '<td style="color:' + c + '">' + v + '</td>';
+
+  html += '</tr>';
+  document.querySelector('#results').innerHTML += html;
+}
+
+</script>
+</body>
+</html>

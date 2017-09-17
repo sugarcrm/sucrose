@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <title>Number Format Test - Locale</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../../examples/css/examples.css">
+  <link rel="stylesheet" href="visual-tests.css">
+
+  <script src="../../examples/js/jquery.min.js"></script>
+  <script src="../../build/d3.min.js"></script>
+  <script src="../../build/sucrose.js"></script>
+</head>
+<body>
+  <div class="sc-demo sc-demo-locale">
+    <div class="page-header">
+      <h2>Number Format Test - Locale</h2>
+    </div>
+    <button id="en_US" class="active" onclick="test(en_US, precision);this.className='active';document.getElementById('fr_CA').className='';">en_US</button>
+    <button id="fr_CA" onclick="test(fr_CA, precision, fr_Locale);this.className='active';document.getElementById('en_US').className='';">fr_CA</button>
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th colspan="2">Multiformat (tooltip)<br>numberFormat(d, 2, false, l)</th>
+                <th colspan="2">SI Multi (label)<br>numberFormatSI(d, 2, false, l)</th>
+                <th colspan="2">Multiformat w/ $ (tooltip)<br>numberFormat(d, 2, $, l)</th>
+                <th colspan="2">SI Multi w/ $ (label)<br>numberFormatSI(d, 2, $, l)</th>
+            </tr>
+            <tr><th>data</th><th>expected</th><th>data</th><th>expected</th><th>actual</th><th>expected</th><th>actual</th><th>expected</th><th>actual</th></tr>
+        </thead>
+        <tbody id="results"></tbody>
+    </table>
+  </div>
+
+<script type="text/javascript">
+  var precision = 2;
+
+  // spec for en_US locale
+  var en_US = [
+    [  -1.234,    '-1.23',      '-1.23',   '-$1.23',   '-$1.23'       ],
+    [  -0.439,    '-0.44',      '-0.44',   '-$0.44',   '-$0.44'       ],
+    [  0.043,     '0.04',       '0.04',    '$0.04',    '$0.04'        ],
+    [  0.439,     '0.44',       '0.44',    '$0.44',    '$0.44'        ],
+    [  0.432,     '0.43',       '0.43',    '$0.43',    '$0.43'        ],
+    [  0.43,      '0.43',       '0.43',    '$0.43',    '$0.43'        ],
+    [  0.4,       '0.4',        '0.4',     '$0.40',    '$0.40'        ],
+    [  0,         '0',          '0',       '$0',       '$0'           ],
+    [  1.2,       '1.2',        '1.2',     '$1.20',    '$1.20'        ],
+    [  1.23,      '1.23',       '1.23',    '$1.23',    '$1.23'        ],
+    [  1.234,     '1.23',       '1.23',    '$1.23',    '$1.23'        ],
+    [  1.239,     '1.24',       '1.24',    '$1.24',    '$1.24'        ],
+    [  12,        '12',         '12',      '$12',      '$12'          ],
+    [  123,       '123',        '123',     '$123',     '$123'         ],
+    [  123.4,     '123.4',      '123.4',   '$123.40',  '$123.40'      ],
+    [  123.45,    '123.45',     '123.45',  '$123.45',  '$123.45'      ],
+    [  1234,      '1,234',      '1.23k',   '$1.23k',   '$1,234'       ],
+    [  12345,     '12,345',     '12.35k',  '$12.35k',  '$12,345'      ],
+    [  10000,     '10,000',     '10k',     '$10k',     '$10,000'      ],
+    [  12345.67,  '12,345.67',  '12.35k',  '$12.35k',  '$12,345.67'   ],
+    [  12345.678, '12,345.68',  '12.35k',  '$12.35k',  '$12,345.68'   ],
+    [  123456,    '123,456',    '123.46k', '$123.46k', '$123,456'     ],
+    [  1234567,   '1,234,567',  '1.23M',   '$1.23M',   '$1,234,567'   ],
+    [  10000000,  '10,000,000', '10M',     '$10M',     '$10,000,000'  ]
+  ];
+
+  // spec for fr_CA locale
+  var fr_CA = [
+    [  -1.234,    '-1,23',      '-1,23',   '-$1,23',   '-$1,23'       ],
+    [  -0.439,    '-0,44',      '-0,44',   '-$0,44',   '-$0,44'       ],
+    [  0.439,     '0,44',       '0,44',    '$0,44',    '$0,44'        ],
+    [  0.432,     '0,43',       '0,43',    '$0,43',    '$0,43'        ],
+    [  0.43,      '0,43',       '0,43',    '$0,43',    '$0,43'        ],
+    [  0.4,       '0,4',        '0,4',     '$0,40',    '$0,40'        ],
+    [  0,         '0',          '0',       '$0',       '$0'           ],
+    [  1.2,       '1,2',        '1,2',     '$1,20',    '$1,20'        ],
+    [  1.23,      '1,23',       '1,23',    '$1,23',    '$1,23'        ],
+    [  1.234,     '1,23',       '1,23',    '$1,23',    '$1,23'        ],
+    [  1.239,     '1,24',       '1,24',    '$1,24',    '$1,24'        ],
+    [  12,        '12',         '12',      '$12',      '$12'          ],
+    [  123,       '123',        '123',     '$123',     '$123'         ],
+    [  123.4,     '123,4',      '123,4',   '$123,40',  '$123,40'      ],
+    [  123.45,    '123,45',     '123,45',  '$123,45',  '$123,45'      ],
+    [  1234,      '1 234',      '1,23k',   '$1,23k',   '$1 234'       ],
+    [  12345,     '12 345',     '12,35k',  '$12,35k',  '$12 345'      ],
+    [  10000,     '10 000',     '10k',     '$10k',     '$10 000'      ],
+    [  12345.67,  '12 345,67',  '12,35k',  '$12,35k',  '$12 345,67'   ],
+    [  12345.678, '12 345,68',  '12,35k',  '$12,35k',  '$12 345,68'   ],
+    [  123456,    '123 456',    '123,46k', '$123,46k', '$123 456'     ],
+    [  1234567,   '1 234 567',  '1,23M',   '$1,23M',   '$1 234 567'   ],
+    [  10000000,  '10 000 000', '10M',     '$10M',     '$10 000 000'  ]
+  ];
+
+  var fr_Locale = {
+    'decimal': ',',
+    'thousands': ' ',
+    'grouping': [3],
+    'currency': ['$', ''],
+    'dateTime': '%a %b %e %X %Y',
+    'date': '%m/%d/%Y',
+    'time': '%H:%M:%S',
+    'periods': ['AM', 'PM'],
+    'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  };
+
+  test(en_US, precision);
+
+  // runner
+  function test(data, precision, locale) {
+    d3.select('#results').selectAll('tr').remove();
+    var trows = d3.select('#results').selectAll('tr').data(data);
+
+    trows.enter().append('tr').html(function(d) {
+      var html = '',
+          f1 = sucrose.utility.numberFormat(d[0], precision, false, locale), //numeric
+          f2 = sucrose.utility.numberFormatSI(d[0], precision, false, locale), //numeric SI
+
+          f4 = sucrose.utility.numberFormat(d[0], precision, true, locale), //curreny
+          f3 = sucrose.utility.numberFormatSI(d[0], precision, true, locale), //currency SI
+
+          c1 = d[1] == f1 ? 'pass' : 'fail',
+          c2 = d[2] == f2 ? 'pass' : 'fail',
+          c4 = d[4] == f4 ? 'pass' : 'fail',
+          c3 = d[3] == f3 ? 'pass' : 'fail';
+
+      html += '<td><b>' + d[0] + '</b></td>';
+      html += '<td>' + d[1] + '</td><td class="' + c1 + '">' + f1 + '</td>';
+      html += '<td>' + d[2] + '</td><td class="' + c2 + '">' + f2 + '</td>';
+      html += '<td>' + d[4] + '</td><td class="' + c4 + '">' + f4 + '</td>';
+      html += '<td>' + d[3] + '</td><td class="' + c3 + '">' + f3 + '</td>';
+
+      return html;
+    });
+  }
+</script>
+</body>
+</html>

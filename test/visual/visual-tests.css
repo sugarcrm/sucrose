@@ -1,0 +1,36 @@
+.sc-demo {
+  padding: 20px;
+}
+
+.sc-demo table {
+  border: 2px solid #abc;
+  margin-top: 8px;
+}
+
+.sc-demo th {
+  text-align: center;
+}
+
+.sc-demo td.pass {
+  color: black;
+  background-color: #dfd;
+}
+
+.sc-demo td.fail {
+  color: red;
+  background-color: #fdd;
+}
+
+.sc-demo button {
+  background-color: white;
+  color: gray;
+}
+
+.sc-demo button.active {
+  background-color: gray;
+  color: white;
+}
+
+#lang_header {
+  font-weight: bold;
+}
