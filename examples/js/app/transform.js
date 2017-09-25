@@ -128,18 +128,18 @@ function transformDataToD3(json, chartType, barType) {
       yDataType: json.properties[0].yDataType,
       xDataType: json.properties[0].xDataType,
       // bar group data (x-axis)
-      labels: chartType === 'line' && json.label ?
+      groups: chartType === 'line' && json.label ?
         json.label.map(function(d, i) {
           return {
             group: i + 1,
-            l: pickLabel(d)
+            label: pickLabel(d)
           };
         }) :
         json.values.filter(function(d) { return d.values.length; }).length ?
           json.values.map(function(d, i) {
             return {
               group: i + 1,
-              l: pickLabel(d.label)
+              label: pickLabel(d.label)
             };
           }) :
           [],
