@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -6,13 +6,13 @@
     <title>Sucrose Chart - pie</title>
     <link rel="stylesheet" href="../build/sucrose.min.css">
     <style>
-        .chart {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-        }
+      .chart {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
     </style>
   </head>
   <body>
@@ -20,11 +20,11 @@
       <svg class="sucrose sc-chart"></svg>
     </div>
 
-    <script src="../build/d3.min.js"></script>
-    <!-- {{TopoJSON}} -->
-    <script src="../build/sucrose.min.js"></script>
+<script src="../build/d3.min.js"></script>
 
-    <script>
+<script src="../build/sucrose.min.js"></script>
+
+<script>
 var type = 'pie';
 var data = {
   "properties": {
@@ -72,12 +72,15 @@ var data = {
   ]
 };
 var config = {
-  "colorData": "default",
+  "colorData": [
+    "default",
+    {}
+  ],
   "direction": "ltr",
   "height": null,
   "id": "chart_",
   "locality": {
-    "label": "English (US)",
+    "label": "American English",
     "decimal": ".",
     "thousands": ",",
     "grouping": [
@@ -166,7 +169,7 @@ var config = {
     "bottom": 10,
     "left": 10
   },
-  "showTitle": 1,
+  "showTitle": true,
   "showLegend": true,
   "showControls": false,
   "strings": {
@@ -184,96 +187,46 @@ var config = {
   "textureFill": true,
   "tooltips": true,
   "width": null,
-  "donut": "1",
-  "donutRatio": "0.4",
+  "donut": true,
+  "donutRatio": 0.4,
   "pieLabelsOutside": true,
   "maxRadius": 250,
   "minRadius": 100,
-  "gradient": [
-    "0",
-    "vertical",
-    "middle"
-  ],
-  "locale": "en",
-  "showLabels": "1",
-  "vertical": 1,
-  "showValues": 0,
-  "allowScroll": 1,
-  "tickDisplay": [
-    "wrap",
-    "stagger",
-    "rotate"
-  ],
-  "mirrorAxis": "lab",
-  "holeLabel": "0",
-  "colorOptions": {}
+  "showLabels": true
 };
+
 var chart = sucrose.charts.pieChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
-function configure() {
-var k, v;
-for (k in config)
-{
-if (!config.hasOwnProperty(k)) {
-continue;
-}
-switch (k)
-{
-case 'colorData':
-if (!chart.colorData) {
-continue;
-}
-chart.colorData(config.colorData, config.colorOptions);
-break;
-case 'showLabels':
-v = !!parseInt(config[k], 10);
-if (chart.xAxis) {
-chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
-}
-if (chart.yAxis) {
-chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
-}
-break;
-case 'tickDisplay':
-v = config[k];
-if (chart.wrapTicks) {
-chart.wrapTicks(v.indexOf('wrap') !== -1)
-}
-if (chart.staggerTicks) {
-chart.staggerTicks(v.indexOf('stagger') !== -1)
-}
-if (chart.rotateTicks) {
-chart.rotateTicks(v.indexOf('rotate') !== -1);
-}
-break;
-default:
-if (!chart[k]) {
-continue;
-}
-v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
-if (chart[k]) {
-chart[k](v);
-}
-}
-}
+function configure(type, chart, config) {
+  // do not use Object.each because we don't load Sugar
+  Object.getOwnPropertyNames(config).forEach(function(k, i, a) {
+    var m = chart[k];
+    m = sucrose.utility.isFunction(m) && m;
+    if (!m) {
+      return;
+    }
+    var v = sucrose.utility.toNative(config[k]);
+    if (Array.isArray(v)) {
+      m.apply(chart, v);
+    } else {
+      m(v);
+    }
+  });
 }
 
-function format(callback) {
-callback(chart);
+function format(chart, callback) {
+  callback(chart);
 }
 
 window.onload = function () {
-
-    // remap d3v4 to d3
-
     // apply configuration
-    configure();
+    configure(type, chart, config);
 
     // format then render chart
-    format(function() {
+    format(chart, function() {
         // Bind D3 chart to SVG element
         d3.select('#chart_ svg')
             .attr('class', 'sucrose sc-chart sc-chart-' + type)
@@ -298,6 +251,6 @@ window.onload = function () {
         });
     });
 };
-    </script>
+</script>
   </body>
 </html>

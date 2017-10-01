@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -6,13 +6,13 @@
     <title>Sucrose Chart - multibar</title>
     <link rel="stylesheet" href="../build/sucrose.min.css">
     <style>
-        .chart {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-        }
+      .chart {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
     </style>
   </head>
   <body>
@@ -20,11 +20,11 @@
       <svg class="sucrose sc-chart"></svg>
     </div>
 
-    <script src="../build/d3.min.js"></script>
-    <!-- {{TopoJSON}} -->
-    <script src="../build/sucrose.min.js"></script>
+<script src="../build/d3.min.js"></script>
 
-    <script>
+<script src="../build/sucrose.min.js"></script>
+
+<script>
 var type = 'multibar';
 var data = {
   "properties": {
@@ -71,6 +71,31 @@ var data = {
         {
           "x": 5,
           "y": 100
+        }
+      ]
+    },
+    {
+      "key": "Closed",
+      "values": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 5,
+          "y": 0
         }
       ]
     },
@@ -123,41 +148,19 @@ var data = {
           "y": 40
         }
       ]
-    },
-    {
-      "key": "Closed",
-      "values": [
-        {
-          "x": 1,
-          "y": 0
-        },
-        {
-          "x": 2,
-          "y": 0
-        },
-        {
-          "x": 3,
-          "y": 0
-        },
-        {
-          "x": 4,
-          "y": 0
-        },
-        {
-          "x": 5,
-          "y": 0
-        }
-      ]
     }
   ]
 };
 var config = {
-  "colorData": "default",
+  "colorData": [
+    "default",
+    {}
+  ],
   "direction": "ltr",
   "height": null,
   "id": "chart_",
   "locality": {
-    "label": "English (US)",
+    "label": "American English",
     "decimal": ".",
     "thousands": ",",
     "grouping": [
@@ -246,7 +249,7 @@ var config = {
     "bottom": 10,
     "left": 10
   },
-  "showTitle": 1,
+  "showTitle": true,
   "showLegend": true,
   "showControls": true,
   "strings": {
@@ -265,122 +268,53 @@ var config = {
   "tooltips": true,
   "width": null,
   "stacked": true,
-  "gradient": [
-    "0",
-    "vertical",
-    "middle"
-  ],
-  "locale": "en",
-  "showLabels": "1",
-  "vertical": 1,
-  "showValues": 0,
-  "allowScroll": 1,
-  "tickDisplay": [
-    "wrap",
-    "stagger",
-    "rotate"
-  ],
-  "colorOptions": {}
+  "xAxisLabel": "X-Axis Label",
+  "yAxisLabel": "Y-Axis Label",
+  "vertical": true,
+  "showValues": false,
+  "allowScroll": true,
+  "wrapTicks": true,
+  "staggerTicks": true,
+  "rotateTicks": true
 };
+
 var chart = sucrose.charts.multibarChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
-function configure() {
-var k, v;
-for (k in config)
-{
-if (!config.hasOwnProperty(k)) {
-continue;
-}
-switch (k)
-{
-case 'colorData':
-if (!chart.colorData) {
-continue;
-}
-chart.colorData(config.colorData, config.colorOptions);
-break;
-case 'showLabels':
-v = !!parseInt(config[k], 10);
-if (chart.xAxis) {
-chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
-}
-if (chart.yAxis) {
-chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
-}
-break;
-case 'tickDisplay':
-v = config[k];
-if (chart.wrapTicks) {
-chart.wrapTicks(v.indexOf('wrap') !== -1)
-}
-if (chart.staggerTicks) {
-chart.staggerTicks(v.indexOf('stagger') !== -1)
-}
-if (chart.rotateTicks) {
-chart.rotateTicks(v.indexOf('rotate') !== -1);
-}
-break;
-default:
-if (!chart[k]) {
-continue;
-}
-v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
-if (chart[k]) {
-chart[k](v);
-}
-}
-}
+function configure(type, chart, config) {
+  // do not use Object.each because we don't load Sugar
+  Object.getOwnPropertyNames(config).forEach(function(k, i, a) {
+    var m = chart[k];
+    m = sucrose.utility.isFunction(m) && m;
+    if (!m) {
+      return;
+    }
+    var v = sucrose.utility.toNative(config[k]);
+    if (Array.isArray(v)) {
+      m.apply(chart, v);
+    } else {
+      m(v);
+    }
+  });
 }
 
-function format(callback) {
-// chart
-//   .valueFormat(function(d) {
-//     return sucrose.utility.numberFormatRound(d, 2, yIsCurrency, chart.locality());
-//   })
-// .yValueFormat(function(d, i, label, isCurrency, precision) {
-//   precision = isNaN(precision) ? 2 : precision;
-//   return sucrose.utility.numberFormatRound(d, precision, yIsCurrency, chart.locality());
-// })
-// .tooltipContent(function(eo, properties) {
-//   var key = eo.series.key;
-//   var label = eo.group.label;
-//   var y = eo.point.y;
-//   var x = eo.point.x;
-//   var value = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-//   var group = xIsDatetime ?
-//         sucrose.utility.dateFormat(label, '%x', chart.locality()) :
-//         chart.xAxis.tickFormat()(x, eo.pointIndex, null, false);
-//   var percent;
-//   var content = '<p>Key: <b>' + key + '</b></p>';
-//       content += '<p>' + (xIsDatetime ? 'Date' : 'Group') + ': <b>' + group + '</b></p>';
-//       content += '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + value + '</b></p>';
-//   if (typeof eo.group._height !== 'undefined') {
-//     percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-//     percent = sucrose.utility.numberFormatRound(percent, 2, false, chart.locality());
-//     content += '<p>Percentage: <b>' + percent + '%</b></p>';
-//   }
-//   return content;
-// });
-//TODO: fix multibar overfolow handler
-// .overflowHandler(function(d) {
-//   var b = $('body');
-//   b.scrollTop(b.scrollTop() + d);
-// });
-callback(chart);
+function format(chart, callback) {
+  //TODO: fix multibar overfolow handler
+  // chart.overflowHandler(function(d) {
+  //   var b = $('body');
+  //   b.scrollTop(b.scrollTop() + d);
+  // });
+  callback(chart);
 }
 
 window.onload = function () {
-
-    // remap d3v4 to d3
-
     // apply configuration
-    configure();
+    configure(type, chart, config);
 
     // format then render chart
-    format(function() {
+    format(chart, function() {
         // Bind D3 chart to SVG element
         d3.select('#chart_ svg')
             .attr('class', 'sucrose sc-chart sc-chart-' + type)
@@ -405,6 +339,6 @@ window.onload = function () {
         });
     });
 };
-    </script>
+</script>
   </body>
 </html>
