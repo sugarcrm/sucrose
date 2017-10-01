@@ -262,7 +262,7 @@ nav ul a strong {
 
 menu {
   list-style: disc;
-  padding-left: 16px;
+  padding-left: 0;
 }
 menuitem {
   display: list-item;

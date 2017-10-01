@@ -705,7 +705,7 @@ nav ul a strong {
 
 menu {
   list-style: disc;
-  padding-left: 16px;
+  padding-left: 0;
 }
 menuitem {
   display: list-item;
@@ -1792,12 +1792,7 @@ input.mindmup {
 -------------------------------------------------- */
 .chart-selector {
   display: block;
-  position: relative;
-  max-height: 30px;
-  font-size: 0;
-  line-height: 0;
   z-index: 2;
-  overflow: hidden;
 }
 .chart-selector button {
   display: none;
@@ -1824,28 +1819,21 @@ input.mindmup {
   margin-right: -2px;
 }
 .chart-selector menuitem {
-  display: inline-block;
+  display: block;
 }
 .chart-selector a {
-  display: inline-block;
-  margin: 0 2px;
-  font-size: 0;
-  line-height: 0;
-  padding: 2px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-}
-.chart-selector a:hover {
-  background-color: #fff;
-}
-.chart-selector a.active {
-  background-color: #fff;
+  line-height: 24px;
 }
 .chart-selector svg {
   text-decoration: none;
   display: inline-block;
+  vertical-align: middle;
   width: 20px;
   height: 20px;
+}
+.chart-selector span {
+  vertical-align: middle;
+  margin: 0 8px;
 }
 .rtl .chart-selector .wrapper {
   float: left;
@@ -1855,6 +1843,34 @@ input.mindmup {
 .rtl .chart-selector button {
   left: 0;
   right: auto;
+}
+nav .chart-selector {
+  position: relative;
+  max-height: 30px;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+}
+nav .chart-selector menuitem {
+  display: inline-block;
+}
+nav .chart-selector a {
+  display: inline-block;
+  margin: 0 2px;
+  font-size: 0;
+  line-height: 0;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+nav .chart-selector a:hover {
+  background-color: #fff;
+}
+nav .chart-selector a.active {
+  background-color: #fff;
+}
+nav .chart-selector span {
+  margin: 0;
 }
 /* Popovers
 -------------------------------------------------- */
@@ -2063,14 +2079,9 @@ a.success:hover {
   .chart-selector.open .wrapper a {
     display: block;
   }
-  .chart-selector.open .wrapper svg {
-    vertical-align: middle;
-  }
   .chart-selector.open .wrapper span {
-    display: inline-block;
     font-size: 11px;
     line-height: 18px;
-    vertical-align: middle;
     margin: 0 8px;
   }
   .rtl .chart-selector.open .wrapper {
