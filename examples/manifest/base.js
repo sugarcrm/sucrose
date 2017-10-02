@@ -19,7 +19,7 @@ module.exports =
     title: 'Locale',
     type: 'select',
     values: [
-      {"value": "en","label": "English (US)"}
+      {'value': 'en', 'label': 'English (US)'}
     ]
   },
   '[name=color_data]': {
@@ -31,7 +31,7 @@ module.exports =
     events: 'click.my',
     title: 'Color Model',
     type: 'radio',
-    watch: '[name=gradient]',
+    // watch: '[name=gradient]',
     values: [
       {value: 'default', label: 'Default'},
       {value: 'class', label: 'Class'},
@@ -43,13 +43,13 @@ module.exports =
       return this.bindControl(d, v, $o, this.loadColor);
     },
     setChartOption: function() { return; },
-    recalc: '[name=color_data]',
-    check: /[0|1|default|vertical|horizontal|middle|base]+/ig,
+    // recalc: '[name=color_data]',
+    check: /[false|true|default|vertical|horizontal|middle|base]+/ig,
     events: 'click.my',
     title: 'Gradient',
     type: 'checkbox',
     values: [
-      {value: '1', label: 'Use gradient'},
+      {value: 'true', label: 'Use gradient'},
       {value: 'horizontal', label: 'Align horizontally'},
       {value: 'base', label: 'Align base'}
      ]
@@ -72,17 +72,17 @@ module.exports =
   },
   '[name=show_title]': {
     setChartOption: function (v, self) {
-      var showTitle = v == 1;
+      var value = sucrose.utility.toBoolean(v);
       if (self.Chart.showTitle) {
-        self.Chart.showTitle(showTitle);
+        self.Chart.showTitle(value);
       }
     },
-    check: /1/i,
+    check: /true/i,
     events: 'change.my',
     title: 'Show Title',
     type: 'checkbox',
     values: [
-      {value: '1', label: 'Enable'}
+      {value: 'true', label: 'Enable'}
     ]
   },
 };

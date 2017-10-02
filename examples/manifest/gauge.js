@@ -12,16 +12,16 @@ module.exports =
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {
-    show_values: '1',
-    show_pointer: '1'
+    show_values: 'true',
+    show_pointer: 'true'
   },
   ui: {
     '[name=show_values]': {
       setChartOption: function (v, self) {
-        var value = isNaN(v) ? v : !!parseInt(v, 10);
+        var value = sucrose.utility.toBoolean(v);
         self.Chart.showLabels(value);
       },
-      check: /0|1/i,
+      check: /false|true/i,
       events: 'change.my',
       title: 'Show Values',
       type: 'radio'
@@ -31,10 +31,10 @@ module.exports =
         return this.bindControl(d, v, $o, this.chartUpdater());
       },
       setChartOption: function (v, self) {
-        var value = !!parseInt(v, 10);
+        var value = sucrose.utility.toBoolean(v);
         self.Chart.showPointer(value);
       },
-      check: /0|1/i,
+      check: /false|true/i,
       events: 'change.my',
       title: 'Show Pointer',
       type: 'radio'

@@ -7,7 +7,7 @@ module.exports =
   // These chart options will be set
   optionPresets: {
     file: 'line_data',
-    show_labels: '1'
+    show_labels: 'true'
   },
   yAxisLabel: 'Y-axis label',
   xAxisLabel: 'X-axis label',
@@ -15,7 +15,7 @@ module.exports =
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {
-    show_labels: '0',
+    show_labels: 'false',
     mirror_axis: 'lab',
     tick_display: ['wrap', 'stagger', 'rotate']
   },
@@ -30,7 +30,7 @@ module.exports =
         self.Chart.xAxis
           .orient(v === 'lab' ? 'bottom' : 'top');
       },
-      check: /0|1/i,
+      check: /lab|rat/i,
       events: 'change.my',
       title: 'Mirror Axes',
       type: 'radio',
@@ -41,11 +41,11 @@ module.exports =
     },
     '[name=show_labels]': {
       setChartOption: function (v, self) {
-        var value = !!parseInt(v, 10);
+        var value = sucrose.utility.toBoolean(v);
         self.Chart.xAxis.axisLabel(value ? self.xAxisLabel : null);
         self.Chart.yAxis.axisLabel(value ? self.yAxisLabel : null);
       },
-      check: /0|1/i,
+      check: /false|true/i,
       events: 'change.my',
       title: 'Show Axes Labels',
       type: 'radio'

@@ -12,15 +12,15 @@ module.exports =
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {
-    wrap_labels: '1'
+    wrap_labels: 'true'
   },
   ui: {
     '[name=wrap_labels]': {
       setChartOption: function (v, self) {
-        var value = !!parseInt(v, 10);
+        var value = sucrose.utility.toBoolean(v);
         self.Chart.wrapLabels(value);
       },
-      check: /0|1/i,
+      check: /false|true/i,
       events: 'change.my',
       title: 'Wrap Labels',
       type: 'radio'
