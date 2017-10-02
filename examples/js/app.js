@@ -43,39 +43,29 @@ var sucroseCharts = function() {
 
   function getDefaultConfiguration(type, chart) {
     var config = {};
-    var defaultOptions = configs.default;
-    var chartOptions = configs[type];
+    var defaultConfig = configs.default;
+    var chartConfig = configs[type];
     var k;
-
-    for (k in defaultOptions) {
-      if (!defaultOptions.hasOwnProperty(k)) {
-        continue;
-      }
+    Object.each(defaultConfig, function(k, v) {
       if (!chart[k]) {
-        continue;
+        return;
       }
-      config[k] = defaultOptions[k];
-    }
-
-    for (k in chartOptions) {
-      if (!chartOptions.hasOwnProperty(k)) {
-        continue;
-      }
+      config[k] = sucrose.utility.toNative(v);
+    });
+    Object.each(chartConfig, function(k, v) {
       if (k.substr(0,1) === '_') {
-        continue;
+        return;
       }
-      config[k] = chartOptions[k];
-    }
-
+      config[k] = sucrose.utility.toNative(v);
+    });
     return config;
   }
 
-  function applyConfigurationSettings(config, settings) {
+  function applyConfigurationSettings(config, settings, chart) {
     var KEYMETHODMAP = {
           'allow_scroll': 'allowScroll',
           'auto_spin': 'autoSping',
           'color_data': 'colorData',
-          'color_options': 'colorOptions',
           'donut_ratio': 'donutRatio',
           'hole_label': 'holeLabel',
           'mirror_axis': 'mirrorAxis',
@@ -86,76 +76,80 @@ var sucroseCharts = function() {
           'show_title': 'showTitle',
           'show_values': 'showValues',
           'texture_fill': 'textureFill',
-          'tick_display': 'tickDisplay',
-          'tooltips': 'tooltips',
           'wrap_labels': 'wrapLabels'
         };
-    var k, m;
+    var BLOCKEDMETHODS = ['gradient', 'seriesClick'];
 
-    for (k in settings) {
-      if (!settings.hasOwnProperty(k)) {
-        continue;
+    Object.each(settings, function(k, v) {
+      var m = KEYMETHODMAP[k] || k;
+      if (BLOCKEDMETHODS.indexOf(m) !== -1) {
+        return;
       }
+      v = sucrose.utility.toNative(v);
+      switch (m)
+      {
+        case 'showLabels':
+          v = !!v;
+          if (chart.showLabels) {
+            config[m] = v;
+            break;
+          }
+          if (chart.xAxisLabel) {
+            config['xAxisLabel'] = v ? 'X-Axis Label' : null;
+          }
+          if (chart.yAxisLabel) {
+            config['yAxisLabel'] = v ? 'Y-Axis Label' : null;
+          }
+          break;
+        case 'tick_display':
+          if (chart.wrapTicks) {
+            config['wrapTicks'] = v.indexOf('wrap') !== -1
+          }
+          if (chart.staggerTicks) {
+            config['staggerTicks'] = v.indexOf('stagger') !== -1
+          }
+          if (chart.rotateTicks) {
+            config['rotateTicks'] = v.indexOf('rotate') !== -1
+          }
+          break;
+        case 'colorData':
+          if (settings.colorOptions) {
+            config['colorData'] = [v, settings.colorOptions];
+          } else {
+            config['colorData'] = v;
+          }
+          break;
+        default:
+          config[m] = v;
+      }
+    });
 
-      m = KEYMETHODMAP[k] || k;
-
-      config[m] = settings[k];
-    }
+    Object.each(config, function(k, v) {
+      if (!chart[k]) {
+        delete config[k];
+        return;
+      }
+      config[k] = sucrose.utility.toNative(v);
+    });
 
     return config;
   }
 
   function configureChart(type, chart, config) {
-    var k, v;
-
-    for (k in config)
-    {
-      if (!config.hasOwnProperty(k)) {
-          continue;
+    // do not use Object.each because we don't load Sugar
+    Object.getOwnPropertyNames(config).forEach(function(k, i, a) {
+      var m = chart[k];
+      m = sucrose.utility.isFunction(m) && m;
+      if (!m) {
+        return;
       }
-
-      switch (k)
-      {
-        case 'colorData':
-          if (!chart.colorData) {
-              continue;
-          }
-          chart.colorData(config.colorData, config.colorOptions);
-          break;
-
-        case 'showLabels':
-          v = !!parseInt(config[k], 10);
-          if (chart.xAxis) {
-              chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
-          }
-          if (chart.yAxis) {
-              chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
-          }
-          break;
-
-        case 'tickDisplay':
-          v = config[k];
-          if (chart.wrapTicks) {
-              chart.wrapTicks(v.indexOf('wrap') !== -1)
-          }
-          if (chart.staggerTicks) {
-              chart.staggerTicks(v.indexOf('stagger') !== -1)
-          }
-          if (chart.rotateTicks) {
-              chart.rotateTicks(v.indexOf('rotate') !== -1);
-          }
-          break;
-
-        default:
-          if (!chart[k]) {
-              continue;
-          }
-          v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
-          if (chart[k]) {
-            chart[k](v);
-          }
+      var v = sucrose.utility.toNative(config[k]);
+      if (Array.isArray(v)) {
+        m.apply(chart, v);
+      } else {
+        m(v);
       }
-    }
+    });
   }
 
   var configs = {
@@ -181,9 +175,9 @@ var sucroseCharts = function() {
           chart.dataSeriesActivate(eo);
         }
       },
-      showTitle: true,
-      showLegend: true,
-      showControls: true,
+      showTitle: 'true',
+      showLegend: 'true',
+      showControls: 'true',
       strings: {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -191,8 +185,8 @@ var sucroseCharts = function() {
         noLabel: 'undefined'
       },
       // state: {},
-      textureFill: true,
-      tooltips: true,
+      textureFill: 'true',
+      tooltips: 'true',
       width: null
       // x: null,
       // xDomain: null,
@@ -200,8 +194,8 @@ var sucroseCharts = function() {
       // yDomain: null
     },
     area: {
-      tooltips: true,
-      useVoronoi: false,
+      tooltips: 'true',
+      useVoronoi: 'false',
       _format: function format(chart, callback) {
         callback(chart);
       }
@@ -221,7 +215,7 @@ var sucroseCharts = function() {
           .tooltipContent(function(eo, properties) {
             var point = eo.point;
             return '<p>Assigned: <b>' + point.assigned_user_name + '</b></p>' +
-                   '<p>Amount: <b>$' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
+                   '<p>Amount: <b>' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
                    '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(point.x)) + '</b></p>' +
                    '<p>Probability: <b>' + point.probability + '%</b></p>' +
                    '<p>Account: <b>' + point.account_name + '</b></p>';
@@ -232,7 +226,7 @@ var sucroseCharts = function() {
     funnel: {
       minLabelWidth: null,
       wrapLabels: null,
-      showControls: false,
+      showControls: 'false',
       _format: function format(chart, callback) {
         chart
           .fmtValue(function(d) {
@@ -248,13 +242,13 @@ var sucroseCharts = function() {
       ringWidth: 50,
       maxValue: 9,
       transitionMs: 4000,
-      showControls: false,
+      showControls: 'false',
       _format: function format(chart, callback) {
         callback(chart);
       }
     },
     globe: {
-      showTitle: false,
+      showTitle: 'false',
       _format: function format(chart, callback) {
         d3.queue()
           .defer(d3.json, 'data/geo/world-countries-topo-110.json')
@@ -273,87 +267,45 @@ var sucroseCharts = function() {
       }
     },
     line: {
-      useVoronoi: true,
-      clipEdge: false,
+      useVoronoi: 'true',
+      clipEdge: 'false',
       _format: function format(chart, callback) {
-        // chart
-        //   .tooltipContent(function(eo, properties) {
-        //     var key = eo.series.key;
-        //     var x = eo.point.x;
-        //     var y = eo.point.y;
-        //     var value = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
-        //     var group = xIsDatetime && eo.group ?
-        //           sucrose.utility.dateFormat(eo.group.label, '%x', chart.locality()) :
-        //           chart.xAxis.tickFormat()(x, eo.pointIndex, null, false);
-        //     var content = '<p>Key: <b>' + key + '</b></p>';
-        //         content += '<p>' + (xIsDatetime ? 'Date' : 'Group') + ': <b>' + group + '</b></p>';
-        //         content += '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + value + '</b></p>';
-        //     return content;
-        //   });
         callback(chart);
       }
     },
     multibar: {
-      stacked: true,
+      stacked: 'true',
       _format: function format(chart, callback) {
-        // chart
-        //   .valueFormat(function(d) {
-        //     return sucrose.utility.numberFormatRound(d, 2, yIsCurrency, chart.locality());
-        //   })
-          // .yValueFormat(function(d, i, label, isCurrency, precision) {
-          //   precision = isNaN(precision) ? 2 : precision;
-          //   return sucrose.utility.numberFormatRound(d, precision, yIsCurrency, chart.locality());
-          // })
-          // .tooltipContent(function(eo, properties) {
-          //   var key = eo.series.key;
-          //   var label = eo.group.label;
-          //   var y = eo.point.y;
-          //   var x = eo.point.x;
-          //   var value = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-          //   var group = xIsDatetime ?
-          //         sucrose.utility.dateFormat(label, '%x', chart.locality()) :
-          //         chart.xAxis.tickFormat()(x, eo.pointIndex, null, false);
-          //   var percent;
-          //   var content = '<p>Key: <b>' + key + '</b></p>';
-          //       content += '<p>' + (xIsDatetime ? 'Date' : 'Group') + ': <b>' + group + '</b></p>';
-          //       content += '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + value + '</b></p>';
-          //   if (typeof eo.group._height !== 'undefined') {
-          //     percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          //     percent = sucrose.utility.numberFormatRound(percent, 2, false, chart.locality());
-          //     content += '<p>Percentage: <b>' + percent + '%</b></p>';
-          //   }
-
-          //   return content;
-          // });
-          //TODO: fix multibar overfolow handler
-          // .overflowHandler(function(d) {
-          //   var b = $('body');
-          //   b.scrollTop(b.scrollTop() + d);
-          // });
+        //TODO: fix multibar overfolow handler
+        // chart.overflowHandler(function(d) {
+        //   var b = $('body');
+        //   b.scrollTop(b.scrollTop() + d);
+        // });
         callback(chart);
       }
     },
     pareto: {
-      stacked: true,
-      clipEdge: false,
+      //TODO: this needs to be set by data
+      stacked: 'false',
+      clipEdge: 'false',
       _format: function format(chart, callback) {
         chart
           .valueFormat(function(d) {
             return sucrose.utility.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
           .tooltipBar(function(key, x, y, e, graph) {
-            var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality()),
-                percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
+            var val = sucrose.utility.numberFormat(Math.floor(y), 2, yIsCurrency, chart.locality()),
+                percent = sucrose.utility.numberFormat(x, 2, false, chart.locality());
             return '<p><b>' + key + '</b></p>' +
                    '<p><b>' + val + '</b></p>' +
                    '<p><b>' + percent + '%</b></p>';
           })
           .tooltipLine(function(key, x, y, e, graph) {
-            var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+            var val = sucrose.utility.numberFormat(Math.floor(y), 2, yIsCurrency, chart.locality());
             return '<p><p>' + key + ': <b>' + val + '</b></p>';
           })
           .tooltipQuota(function(key, x, y, e, graph) {
-            var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+            var val = sucrose.utility.numberFormat(Math.floor(y), 2, yIsCurrency, chart.locality());
             return '<p>' + e.key + ': <b>' + val + '</b></p>';
           })
           .seriesClick(function(data, eo, chart, container) {
@@ -390,12 +342,12 @@ var sucroseCharts = function() {
       }
     },
     pie: {
-      donut: true,
+      donut: 'true',
       donutRatio: 0.5,
-      pieLabelsOutside: true,
+      pieLabelsOutside: 'true',
       maxRadius: 250,
       minRadius: 100,
-      showControls: false,
+      showControls: 'false',
       // rotateDegrees: 0,
       // arcDegrees: 360,
       // fixedRadius: function(container, chart) {
@@ -408,7 +360,7 @@ var sucroseCharts = function() {
       }
     },
     tree: {
-      horizontal: false,
+      horizontal: 'false',
       duration: 500,
       _format: function format(chart, callback) {
         chart
@@ -477,29 +429,15 @@ var sucroseCharts = function() {
       }
     },
     treemap: {
-      showTitle: false,
-      showLegend: false,
-      showControls: false,
+      showTitle: 'false',
+      showLegend: 'false',
+      showControls: 'false',
       _format: function format(chart, callback) {
         chart
           .leafClick(function(d) {
             alert('leaf clicked');
           })
           .getValue(function(d) { return d.size; });
-          // .tooltipContent(function(point) {
-          //   var rep = (point.assigned_user_name) ? point.assigned_user_name : (point.className) ? point.parent.name : point.name,
-          //       stage = (point.sales_stage) ? point.sales_stage : (point.className) ? point.name : null,
-          //       account = (point.account_name) ? point.account_name : null;
-          //   var tt = '<p>Amount: <b>$' + d3.format(',.2s')(point.value) + '</b></p>' +
-          //            '<p>Sales Rep: <b>' + rep + '</b></p>';
-          //   if (stage) {
-          //     tt += '<p>Stage: <b>' + stage + '</b></p>';
-          //   }
-          //   if (account) {
-          //     tt += '<p>Account: <b>' + account + '</b></p>';
-          //   }
-          //   return tt;
-          // })
         callback(chart);
       }
     }
@@ -513,8 +451,8 @@ var sucroseCharts = function() {
       return sucrose.charts[this.getChartModel(type)]();
     },
     getConfig: function(type, chart, settings) {
-      var defaultConfig = getDefaultConfiguration(type, chart);
-      return applyConfigurationSettings(defaultConfig, settings);
+      var config = getDefaultConfiguration(type, chart);
+      return applyConfigurationSettings(config, settings, chart);
     },
     get: function(type, locality) {
       var settings = {
@@ -531,15 +469,14 @@ var sucroseCharts = function() {
 
       return chart;
     },
-    formatToString: function(type) {
-      return configs[type]._format.toString()
-        .replace(/format\([a-z,\s]*\)/, 'format(callback)')
-        .replace(/\n\s*/g, '\n');
-    },
     configureToString: function() {
       return configureChart.toString()
-        .replace(/configureChart\([a-z,\s]*\)/, 'configure()')
-        .replace(/\n\s*/g, '\n');
+        .replace(/configureChart\(/, 'configure(')
+        .replace(/\n\s{2}/g, '\n');
+    },
+    formatToString: function(type) {
+      return configs[type]._format.toString()
+        .replace(/\n\s{6}/g, '\n');
     }
   };
 
@@ -697,18 +634,18 @@ function transformDataToD3(json, chartType, barType) {
       yDataType: json.properties[0].yDataType,
       xDataType: json.properties[0].xDataType,
       // bar group data (x-axis)
-      labels: chartType === 'line' && json.label ?
+      groups: chartType === 'line' && json.label ?
         json.label.map(function(d, i) {
           return {
             group: i + 1,
-            l: pickLabel(d)
+            label: pickLabel(d)
           };
         }) :
         json.values.filter(function(d) { return d.values.length; }).length ?
           json.values.map(function(d, i) {
             return {
               group: i + 1,
-              l: pickLabel(d.label)
+              label: pickLabel(d.label)
             };
           }) :
           [],
@@ -750,14 +687,14 @@ function transformDataToD3(json, chartType, barType) {
               return {
                 id: d.id,
                 x: d.date_closed,
-                y: Math.round(parseInt(d.likely_case, 10) / parseFloat(d.base_rate)),
+                y: Math.round(Math.floor(d.likely_case) / parseFloat(d.base_rate)),
                 shape: 'circle',
                 account_name: d.account_name,
                 assigned_user_name: d.assigned_user_name,
                 sales_stage: d.sales_stage,
                 sales_stage_short: salesStageMap[d.sales_stage] || d.sales_stage,
-                probability: parseInt(d.probability, 10),
-                base_amount: parseInt(d.likely_case, 10),
+                probability: Math.floor(d.probability),
+                base_amount: Math.floor(d.likely_case),
                 currency_symbol: '$'
               };
             }),
@@ -918,8 +855,8 @@ function parseTreemapData(data) {
           children: [],
           x: 0,
           y: 0,
-          dx: parseInt(document.getElementById('chart').offsetWidth, 10),
-          dy: parseInt(document.getElementById('chart').offsetHeight, 10),
+          dx: Math.floor(document.getElementById('chart').offsetWidth),
+          dy: Math.floor(document.getElementById('chart').offsetHeight),
           depth: 0,
           colorIndex: '0root_Opportunities'
         },
@@ -965,7 +902,7 @@ function parseTreemapData(data) {
         }
         _.each(value2, function(record) {
           record.className = 'stage_' + record.sales_stage.toLowerCase().replace(' ', '');
-          record.value = parseInt(record.amount_usdollar, 10);
+          record.value = Math.floor(record.amount_usdollar);
           record.colorIndex = '2oppgroup_' + key2;
         });
         child.push({
@@ -1029,6 +966,7 @@ function generatePackage(e) {
   var model = sucroseCharts.getChartModel(chartType);
   var format = sucroseCharts.formatToString(chartType);
   var configure = sucroseCharts.configureToString();
+  var topojson = chartType === 'globe' ? '<script src="topojson.min.js"></script>' : '';
 
   settings.locality = Manifest.getLocaleData(settings.locale);
   settings.colorOptions = Manifest.getColorOptions();
@@ -1065,14 +1003,8 @@ function generatePackage(e) {
         .replace('{{Config}}', config)
         .replace('{{Model}}', model)
         .replace('{{Format}}', format)
-        .replace('{{Configure}}', configure);
-
-      if (chartType === 'globe') {
-        indexTemplate = indexTemplate.replace(
-          '<!-- {{TopoJSON}} -->',
-          (chartType === 'globe' ? '<script src="topojson.min.js"></script>' : '')
-        );
-      }
+        .replace('{{Configure}}', configure)
+        .replace('{{TopoJSON}}', topojson);
 
       // add files to zip
       zip.file('index-' + chartType + '.html', indexTemplate);
@@ -1271,8 +1203,8 @@ function loader(type, options) {
                 return this.bindControl(d, v, $o, this.loadChart);
               },
               values: [
-                {value: '0', label: 'No'},
-                {value: '1', label: 'Yes'}
+                {value: 'false', label: 'No'},
+                {value: 'true', label: 'Yes'}
               ]
             },
             false, // shallow copy
@@ -1346,10 +1278,10 @@ var Manifest =
   optionDefaults: {
     file: '',
     color_data: 'default',
-    gradient: ['0', 'vertical', 'middle'],
+    gradient: ['false', 'vertical', 'middle'],
     direction: 'ltr',
-    locale: 'en',
-    show_title: 1
+    locale: 'en_US',
+    show_title: 'true'
   },
 
   // UI elements
@@ -1625,9 +1557,9 @@ var Manifest =
 
   // Create option form row
   createOptionRow: function (k, v) {
-    var row = $('<div class="option-row"/>'),
-        name = this.getNameFromSelector(k),
-        control = this.createControlFromType(v.type, v.values, name);
+    var row = $('<div class="option-row"/>');
+    var name = this.getNameFromSelector(k);
+    var control = this.createControlFromType(v.type, v.values, name);
     row.append($('<span class="title">' + v.title + '</span>'));
     row.append($(control));
     return row;
@@ -1678,22 +1610,19 @@ var Manifest =
   selectControl: function (v, n) {
     var select = '<select name="' + n + '">';
     v.each(function (r) {
-      select += '<option value="' + r.value + '">' +
-        r.label + '</option>';
+      select += '<option value="' + r.value + '">' + r.label + '</option>';
     });
     select += '</select>';
     return select;
   },
   textareaControl: function (v, n) {
-    var value = v.map(function (o) { return o.value; }).join(' '),
-        textarea = '<textarea name="' + n + '">' +
-          value + '</textarea>';
+    var value = v.map(function (o) { return o.value; }).join(' ');
+    var textarea = '<textarea name="' + n + '">' + value + '</textarea>';
     return textarea;
   },
   textControl: function (v, n) {
-    var value = v.map(function (o) { return o.value; }).join(' '),
-        text = '<input type="text" name="' + n + '" value="' +
-          value + '">';
+    var value = v.map(function (o) { return o.value; }).join(' ');
+    var text = '<input type="text" name="' + n + '" value="' + value + '">';
     return text;
   },
   buttonControl: function (v, n) {
@@ -1714,8 +1643,8 @@ var Manifest =
   },
   // jQuery.my common method for initializing control
   initControl: function ($o) {
-    var k = $o.attr('name'),
-        v = this.getData(this.data, k);
+    var k = $o.attr('name');
+    var v = this.getData(this.data, k);
     this.setOption(this.data, k, v);
   },
   // jQuery.my common method for binding control
@@ -1735,15 +1664,12 @@ var Manifest =
     // First, lets update and store the option
     // in case it overrides a form preset value
     this.selectedOptions[k] = v;
-
     // Now, if the options is the default, lets remove it from display
     if (this.selectedOptions[k] === d[k].def) {
       delete this.selectedOptions[k];
     }
-
     chartStore.optionPresets = Object.clone(this.selectedOptions);
     store.set('example-' + this.type, chartStore);
-
     this.ui['[name=' + k + ']'].setChartOption(v, this);
   },
   setConfig: function (presets) {
@@ -1765,8 +1691,8 @@ var Manifest =
   },
   getLocaleOptions: function () {
     return localeData.keys().map(function(k) {
-        return {value: k, label: localeData[k].label};
-      });
+      return {value: k, label: localeData[k].label};
+    });
     // var locales = [];
     // Object.each(localeData, function (k, v) {
     //   locales.push({value: k, label: v.language});
@@ -1800,7 +1726,8 @@ var Manifest =
     $chart.resizable({
       containment: 'parent',
       minHeight: 200,
-      minWidth: 200
+      minWidth: 200,
+      autoHide: true
     });
 
     // Rebind window resizer
@@ -1832,20 +1759,22 @@ var Manifest =
     series[k] = v;
   },
   updateColorModel: function (v) {
-    var color = this.getData(self.data, 'color_data'),
-        options = this.getColorOptions();
+    var color = this.getData(self.data, 'color_data');
+    var options = this.getColorOptions();
     if (!this.Chart.colorData) {
       return;
     }
     this.Chart.colorData(color, options);
   },
   getColorOptions: function () {
-    var options = {},
-        color = this.getData(self.data, 'color_data'),
-        gradient = this.getData(self.data, 'gradient'),
-        startColor = this.gradientStart,
-        stopColor = this.gradientStop,
-        lengthColor = self.colorLength;
+    var options, color, gradient, startColor, stopColor, lengthColor;
+
+    options = {};
+    color = this.getData(self.data, 'color_data');
+    gradient = this.getData(self.data, 'gradient');
+    startColor = this.gradientStart;
+    stopColor = this.gradientStop;
+    lengthColor = self.colorLength;
 
     if (this.type === 'globe') {
       if (color === 'graduated') {
@@ -1866,7 +1795,7 @@ var Manifest =
       options = {c1: startColor, c2: stopColor};
     }
 
-    if (color !== 'class' && this.gradientStop && gradient.filter('1').length) {
+    if (color !== 'class' && this.gradientStop && gradient.filter('true').length) {
       options.gradient = true;
       options.orientation = gradient.filter('horizontal').length ? 'horizontal' : 'vertical';
       options.position = gradient.filter('base').length ? 'base' : 'middle';
@@ -1880,30 +1809,23 @@ var Manifest =
 
   loadDataEditor: function (id, json) {
     this.unloadDataEditor(id);
-
-    switch (id) {
-      case 'data':
-        this.dataEditor = this.createEditor(id, json);
-        break;
-      case 'config':
-        this.configEditor = this.createEditor(id, json);
-        break;
+    if (id === 'data') {
+      this.dataEditor = this.createEditor(id, json);
+    } else if (id === 'config') {
+      this.configEditor = this.createEditor(id, json);
     }
   },
   unloadDataEditor: function (id) {
-    switch (id) {
-      case 'data':
-        $data.find('.CodeMirror').remove();
-        this.dataEditor = null;
-        break;
-      case 'config':
-        $config.find('.CodeMirror').remove();
-        this.configEditor = null;
-        break;
+    if (id === 'data') {
+      $data.find('.CodeMirror').remove();
+      this.dataEditor = null;
+    } else if (id === 'config') {
+      $config.find('.CodeMirror').remove();
+      this.configEditor = null;
     }
   },
   createEditor: function (id, json) {
-    var editor = CodeMirror(document.getElementById(id + '_'), {
+    var options = {
       value: JSON.stringify(json, null, '  '),
       mode:  'application/json',
       lint: {
@@ -1919,7 +1841,8 @@ var Manifest =
       lineNumbers: true,
       foldGutter: true,
       gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter', 'CodeMirror-lint-markers']
-    });
+    };
+    var editor = CodeMirror(document.getElementById(id + '_'), options);
     editor.focus();
     return editor;
   },
@@ -2047,12 +1970,12 @@ var Manifest =
 
   loadColor: function () {
     this.updateColorModel();
-    this.chartUpdater()();
+    this.loadChart();
+    // this.chartUpdater()();
   },
 
   loadLocale: function (locale) {
     this.locale = locale;
-
     this.Chart.locality(this.getLocaleData(locale));
     this.chartUpdater()();
   }

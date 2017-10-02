@@ -15,6 +15,7 @@ function generatePackage(e) {
   var model = sucroseCharts.getChartModel(chartType);
   var format = sucroseCharts.formatToString(chartType);
   var configure = sucroseCharts.configureToString();
+  var topojson = chartType === 'globe' ? '<script src="topojson.min.js"></script>' : '';
 
   settings.locality = Manifest.getLocaleData(settings.locale);
   settings.colorOptions = Manifest.getColorOptions();
@@ -51,14 +52,8 @@ function generatePackage(e) {
         .replace('{{Config}}', config)
         .replace('{{Model}}', model)
         .replace('{{Format}}', format)
-        .replace('{{Configure}}', configure);
-
-      if (chartType === 'globe') {
-        indexTemplate = indexTemplate.replace(
-          '<!-- {{TopoJSON}} -->',
-          (chartType === 'globe' ? '<script src="topojson.min.js"></script>' : '')
-        );
-      }
+        .replace('{{Configure}}', configure)
+        .replace('{{TopoJSON}}', topojson);
 
       // add files to zip
       zip.file('index-' + chartType + '.html', indexTemplate);
