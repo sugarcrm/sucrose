@@ -13,6 +13,21 @@ module.exports =
     donut_ratio: '0.4'
   },
   ui: {
+    //TODO: allow for way to override base ui
+    // '[name=gradient]': {
+    //   bind: function (d, v, $o) {
+    //     return this.bindControl(d, v, $o, this.loadColor);
+    //   },
+    //   setChartOption: function() { return; },
+    //   // recalc: '[name=color_data]',
+    //   check: /[false|true]+/ig,
+    //   events: 'click.my',
+    //   title: 'Gradient',
+    //   type: 'checkbox',
+    //   values: [
+    //     {value: 'true', label: 'Use gradient'}
+    //    ]
+    // },
     '[name=show_labels]': {
       setChartOption: function (v, self) {
         var value = sucrose.utility.toBoolean(v);

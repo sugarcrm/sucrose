@@ -134,6 +134,7 @@ var sucroseCharts = function() {
         } else if (chart.dataSeriesActivate) {
           chart.dataSeriesActivate(eo);
         }
+        chart.render();
       },
       showTitle: 'true',
       showLegend: 'true',
@@ -394,8 +395,8 @@ var sucroseCharts = function() {
       showControls: 'false',
       _format: function format(chart, callback) {
         chart
-          .leafClick(function(d) {
-            alert('leaf clicked');
+          .seriesClick(function(data, eo, chart) {
+            chart.cellActivate(eo);
           })
           .getValue(function(d) { return d.size; });
         callback(chart);
