@@ -29,7 +29,7 @@ export default function area() {
       forceX = [],
       forceY = [],
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorLinearGradient,
       fill = color,
       classes = function(d, i) { return 'sc-area sc-series-' + d.seriesIndex; },
       dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -68,11 +68,6 @@ export default function area() {
       var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette][stackOffsetIndex];
       var stackOrderIndex = [['default', 'inside-out'].indexOf(order)];
       var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut][stackOrderIndex];
-
-      // gradient constructor function
-      gradient = gradient || function(d, i, p) {
-        return utility.colorLinearGradient(d, model.id() + '-' + i, p, color(d, i), wrap.select('defs'));
-      };
 
       //------------------------------------------------------------
       // Process data
@@ -193,6 +188,7 @@ export default function area() {
       var wrap = container.select('.sc-wrap.sc-area').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
@@ -201,14 +197,22 @@ export default function area() {
 
       //------------------------------------------------------------
 
-      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id)
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
 
-      wrap.select('#sc-edge-clip-' + id + ' rect')
+      defs.select('#sc-edge-clip-' + id + ' rect')
         .attr('width', availableWidth)
         .attr('height', availableHeight);
 
       wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i, params) {
+        var gradientId = id + '-' + i;
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Series

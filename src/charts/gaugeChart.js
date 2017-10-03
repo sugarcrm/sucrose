@@ -366,8 +366,8 @@ export default function gaugeChart() {
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient()(d, d.seriesIndex);
+    var fill = !params.gradient ? color : function(d, i) {
+      return model.gradientFill(d, d.seriesIndex);
     };
 
     model.color(color);

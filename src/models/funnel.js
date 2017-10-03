@@ -22,7 +22,7 @@ export default function funnel() {
       delay = 0,
       duration = 0,
       color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorLinearGradient,
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -60,13 +60,8 @@ export default function funnel() {
           funnelTotal = 0,
           funnelOffset = 0;
 
-      //sum the values for each data element
+      // sum the values for each data element
       funnelTotal = d3.sum(data, function(d) { return d.value; });
-
-      //set up the gradient constructor function
-      gradient = function(d, i, p) {
-        return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
-      };
 
       //------------------------------------------------------------
       // Setup scales
@@ -136,11 +131,13 @@ export default function funnel() {
 
       //------------------------------------------------------------
       // Setup containers and skeleton of model
+
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-funnel');
       var wrap = container.select('.sc-wrap.sc-funnel').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap.attr('transform', utility.translation(margin.left, margin.top));
 
@@ -150,6 +147,13 @@ export default function funnel() {
       if (textureFill) {
         var mask = utility.createTexture(defs_entr, id);
       }
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i, params) {
+        var gradientId = id + '-' + i;
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Append major data series grouping containers
@@ -225,7 +229,7 @@ export default function funnel() {
         });
 
       if (textureFill) {
-        // For on click active bars
+        // For on click active slices
         slice_entr.append('polygon')
           .attr('class', 'sc-texture')
           .style('mask', 'url(' + mask + ')');
@@ -507,6 +511,7 @@ export default function funnel() {
           count: getCount(d),
           data: d,
           series: d.series,
+          seriesIndex: d.series.seriesIndex,
           e: e
         };
       }

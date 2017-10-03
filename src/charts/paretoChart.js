@@ -170,6 +170,7 @@ export default function paretoChart() {
         return chart;
       }
 
+
       //------------------------------------------------------------
       // Process data
 
@@ -965,13 +966,13 @@ export default function paretoChart() {
 
   chart.colorData = function(_) {
     var type = arguments[0],
-      params = arguments[1] || {};
-    var barColor = function(d, i) {
-      return utility.defaultColor()(d, d.seriesIndex);
-    };
+        params = arguments[1] || {};
+    var barColor = function(d) {
+          return utility.defaultColor()(d, d.seriesIndex);
+        };
     var barClasses = function(d, i) {
-      return 'sc-series sc-series-' + d.seriesIndex;
-    };
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
     var lineColor = function(d, i) {
       var p = params.lineColor ? params.lineColor : {
         c1: '#1A8221',
@@ -981,12 +982,12 @@ export default function paretoChart() {
       return d.color || d3.interpolateHsl(d3.rgb(p.c1), d3.rgb(p.c2))(d.seriesIndex / 2);
     };
     var lineClasses = function(d, i) {
-      return 'sc-series sc-series-' + d.seriesIndex;
-    };
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
 
     switch (type) {
       case 'graduated':
-        barColor = function(d, i) {
+        barColor = function(d) {
           return d3.interpolateHsl(d3.rgb(params.barColor.c1), d3.rgb(params.barColor.c2))(d.seriesIndex / params.barColor.l);
         };
         break;
@@ -994,33 +995,38 @@ export default function paretoChart() {
         barColor = function() {
           return 'inherit';
         };
-        barClasses = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        barClasses = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass;
         };
-        lineClasses = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        lineClasses = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
-        barColor = function(d, i) {
+        barColor = function(d) {
           return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
-        barClasses = function(d, i) {
+        barClasses = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
-        lineClasses = function(d, i) {
+        lineClasses = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var barFill = (!params.gradient) ? barColor : function(d, i) {
-      var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-      return bars.gradient()(d, d.seriesIndex, p);
+    var barFill = !params.gradient ? barColor : function(d) {
+      var p = {
+            orientation: params.orientation || 'vertical',
+            position: params.position || 'middle'
+          };
+      return bars.gradientFill(d, d.seriesIndex, p);
     };
 
     bars.color(barColor);

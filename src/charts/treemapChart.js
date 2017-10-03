@@ -20,6 +20,7 @@ export default function treemapChart() {
       colorData = 'default',
       //create a clone of the d3 array
       colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utility.identity),
+      state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -27,7 +28,20 @@ export default function treemapChart() {
         noLabel: 'undefined'
       };
 
-  var dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
+  var dispatch = d3.dispatch(
+        'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
+        'elementMousemove'
+      );
+
+  var tooltipContent = function(point, properties) {
+        var tt = '<h3>' + point.data.name + '</h3>' +
+                 '<p>' + utility.numberFormatSI(point.value) + '</p>';
+        return tt;
+      };
+
+  var seriesClick = function(data, i, chart) {
+        return;
+      };
 
   //============================================================
   // Private Variables
@@ -38,14 +52,7 @@ export default function treemapChart() {
   var header = headers();
 
   var controlsData = [];
-
   var tt = null;
-
-  var tooltipContent = function(point, properties) {
-        var tt = '<h3>' + point.data.name + '</h3>' +
-                 '<p>' + utility.numberFormatSI(point.value) + '</p>';
-        return tt;
-      };
 
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo.point, properties);
@@ -56,6 +63,7 @@ export default function treemapChart() {
     .showTitle(true)
     .showControls(false)
     .showLegend(false);
+
 
   //============================================================
 
@@ -74,6 +82,47 @@ export default function treemapChart() {
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
+      };
+
+      chart.setActiveState = function(child, state) {
+        child.active = state;
+        // series.values.forEach(function(v) {
+        //   v.active = state;
+        // });
+      };
+
+      chart.clearActive = function(d) {
+        var parent = d || data;
+        if (parent.children) {
+          parent.children.forEach(function(child) {
+            chart.setActiveState(child, '');
+          });
+        }
+      };
+
+      chart.cellActivate = function(eo) {
+        // seriesClick is defined outside chart scope, so when it calls
+        // cellActivate, it only has access to (data, eo, chart)
+        var cell = eo.d;
+        var activeState;
+
+        if (!cell) {
+          return;
+        }
+
+        // store toggle active state
+        activeState = (
+            typeof cell.active === 'undefined' ||
+            cell.active === 'inactive' ||
+            cell.active === ''
+          ) ? 'active' : '';
+
+        // unset entire active state first
+        chart.clearActive(cell.parent);
+
+        cell.active = activeState;
+
+        chart.render();
       };
 
       chart.container = this;
@@ -247,6 +296,16 @@ export default function treemapChart() {
         }
       });
 
+      model.dispatch.on('chartClick', function(eo) {
+        if (eo.children) {
+          chart.clearActive(eo);
+        }
+      });
+
+      model.dispatch.on('elementClick', function(eo) {
+        seriesClick(data, eo, chart);
+      });
+
 
       //============================================================
 
@@ -296,7 +355,7 @@ export default function treemapChart() {
   chart.options = utility.optionsFunc.bind(chart);
 
   utility.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient');
-  utility.rebind(chart, model, 'leafClick', 'getValue', 'getKey');
+  utility.rebind(chart, model, 'leafClick', 'getValue', 'getKey', 'textureFill');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
 
   chart.colorData = function(_) {
@@ -330,9 +389,12 @@ export default function treemapChart() {
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return model.gradient()(d, i, p);
+    var fill = !params.gradient ? color : function(d, i) {
+      var p = {
+        orientation: params.orientation || 'horizontal',
+        position: params.position || 'base'
+      };
+      return model.gradientFill(d, i, p);
     };
 
     model.color(color);
@@ -411,6 +473,12 @@ export default function treemapChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) { return seriesClick; }
+    seriesClick = _;
     return chart;
   };
 

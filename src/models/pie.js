@@ -22,7 +22,7 @@ export default function pie() {
       delay = 0,
       duration = 0,
       color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorRadialGradient,
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -85,12 +85,6 @@ export default function pie() {
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
 
-      //set up the gradient constructor function
-      gradient = gradient || function(d, i) {
-        var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
-        return utility.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
-      };
-
       //------------------------------------------------------------
       // recalculate width and height based on label length
 
@@ -114,6 +108,7 @@ export default function pie() {
       var wrap = container.select('.sc-wrap.sc-pie').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
@@ -129,6 +124,20 @@ export default function pie() {
       if (textureFill) {
         var mask = utility.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i) {
+        var gradientId = id + '-' + i;
+        var params = {
+          x: 0,
+          y: 0,
+          r: pieRadius,
+          s: (donut ? (donutRatio * 100) + '%' : '0%'),
+          u: 'userSpaceOnUse'
+        };
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Append major data series grouping containers
@@ -181,6 +190,7 @@ export default function pie() {
         });
 
       if (textureFill) {
+        // For on click active slices
         slice_entr.append('path')
           .attr('class', 'sc-texture')
           .each(function(d, i) {
@@ -449,6 +459,7 @@ export default function pie() {
           count: getCount(d),
           data: d,
           series: d.series,
+          seriesIndex: d.series.seriesIndex,
           e: e
         };
       }

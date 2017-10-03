@@ -284,7 +284,7 @@ utility.colorRadialGradient = function(d, i, p, c, defs) {
   var id = 'rg_gradient_' + i;
   var grad = defs.select('#' + id);
   if (grad.empty()) {
-    utility.createRadialGradient( id, p, defs, [
+    utility.createRadialGradient(id, p, defs, [
       {'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1},
       {'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1}
     ]);

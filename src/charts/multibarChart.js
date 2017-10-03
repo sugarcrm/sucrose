@@ -177,75 +177,76 @@ export default function multibarChart() {
         });
       };
 
-      chart.clearActive = function() {
+      chart.clearActive = function(reset) {
         data.forEach(function(s) {
-          chart.setActiveState(s, '');
+          chart.setActiveState(s, reset || '');
         });
         delete state.active;
       };
 
-      chart.seriesActivate = function(series) {
-        // inactivate all series
-        data.forEach(function(s) {
-          chart.setActiveState(s, 'inactive');
-        });
-        // then activate the selected series
-        chart.setActiveState(series, 'active');
-        // set the state to a truthy map
-        state.active = data.map(function(s) {
-          return s.active === 'active';
-        });
-      };
-
+      // only accepts an event object with seriesIndex
       chart.cellActivate = function(eo) {
         // seriesClick is defined outside chart scope, so when it calls
         // cellActivate, it only has access to (data, eo, chart, labels)
         var cell = data[eo.seriesIndex].values[eo.pointIndex];
         var activeState;
-
         if (!cell) {
           return;
         }
-
         // store toggle active state
         activeState = (
             typeof cell.active === 'undefined' ||
             cell.active === 'inactive' ||
             cell.active === ''
           ) ? 'active' : '';
-
         // unset entire active state first
         chart.clearActive();
-
         cell.active = activeState;
-
-        chart.render();
       };
 
-      chart.dataSeriesActivate = function(eo) {
+      // accepts either an event object with actual series data or seriesIndex
+      chart.seriesActivate = function(eo) {
         var series = eo.series || data[eo.seriesIndex];
         var activeState;
-
         if (!series) {
           return;
         }
+        // store toggle active state
+        activeState = (
+            typeof series.active === 'undefined' ||
+            series.active === 'inactive' ||
+            series.active === ''
+          ) ? 'active' : '';
+        // inactivate all series
+        chart.clearActive(activeState === 'active' ? 'inactive' : '');
+        // then activate the selected series
+        chart.setActiveState(series, activeState);
+        // set the state to a truthy map
+        state.active = data.map(function(s) {
+          return s.active === 'active';
+        });
+      };
 
+      // accepts either an event object with actual series data or seriesIndex
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+        if (!series) {
+          return;
+        }
         // toggle active state
         activeState = (
             typeof series.active === 'undefined' ||
             series.active === 'inactive' ||
             series.active === ''
           ) ? 'active' : 'inactive';
-
         if (activeState === 'active') {
           // if you have activated a data series,
-          chart.seriesActivate(series);
+          chart.seriesActivate(eo);
         } else {
           // if there are no active data series, unset entire active state
           chart.clearActive();
         }
-
-        chart.render();
       };
 
       chart.container = this;
@@ -559,6 +560,7 @@ export default function multibarChart() {
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-background-wrap');
       var back_wrap = wrap.select('.sc-background-wrap');
@@ -1009,18 +1011,17 @@ export default function multibarChart() {
           return utility.defaultColor()(d, d.seriesIndex);
         };
         classes = function(d) {
-          var i = d.seriesIndex;
-          return 'sc-series sc-series-' + i + (d.classes ? ' ' + d.classes : '');
+          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var fill = !params.gradient ? color : function(d, i) {
+    var fill = !params.gradient ? color : function(d) {
       var p = {
-        orientation: params.orientation || (vertical ? 'vertical' : 'horizontal'),
-        position: params.position || 'middle'
-      };
-      return model.gradient()(d, d.seriesIndex, p);
+            orientation: params.orientation || (vertical ? 'vertical' : 'horizontal'),
+            position: params.position || 'middle'
+          };
+      return model.gradientFill(d, d.seriesIndex, p);
     };
 
     model.color(color);

@@ -26,7 +26,10 @@ export default function bubbleChart() {
         noLabel: 'undefined'
       };
 
-  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+  var dispatch = d3.dispatch(
+        'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
+        'stateChange', 'changeState'
+      );
 
   var getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
@@ -52,6 +55,18 @@ export default function bubbleChart() {
         return utility.numberFormatSI(label, precision, isCurrency, chart.locality());
       };
 
+  var tooltipContent = function(eo, properties) {
+        var key = eo.series.key;
+        var x = eo.point.x;
+        var y = eo.point.y;
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
+
+  var seriesClick = function(data, eo, chart, labels) {
+        return;
+      };
+
   //============================================================
   // Private Variables
   //------------------------------------------------------------
@@ -64,22 +79,12 @@ export default function bubbleChart() {
 
   var tt = null;
 
-  var tooltipContent = function(eo, properties) {
-        var key = eo.series.key;
-        var x = eo.point.x;
-        var y = eo.point.y;
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
-      };
-
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
-        var gravity = eo.value < 0 ? 'n' : 's';
+        var gravity = eo.value < 0 ?
+          'n' :
+          's';
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
-      };
-
-  var seriesClick = function(data, eo, chart, labels) {
-        return;
       };
 
   model
@@ -338,7 +343,8 @@ export default function bubbleChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
@@ -491,6 +497,7 @@ export default function bubbleChart() {
           .transition().duration(chart.delay())
             .call(model);
 
+
         //------------------------------------------------------------
         // Final repositioning
 
@@ -517,6 +524,7 @@ export default function bubbleChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
+      //TODO: change legendClick to menuClick
       header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
 
@@ -619,7 +627,10 @@ export default function bubbleChart() {
   chart.yAxisLabel = yAxis.axisLabel;
   chart.options = utility.optionsFunc.bind(chart);
 
-  utility.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  utility.rebind(chart, model,
+    'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge',
+    'color', 'fill', 'classes', 'gradient', 'locality'
+  );
   utility.rebind(chart, model, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   utility.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
@@ -627,16 +638,16 @@ export default function bubbleChart() {
   chart.colorData = function(_) {
     var type = arguments[0],
         params = arguments[1] || {};
-    var color = function(d, i) {
+    var color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-    var classes = function(d, i) {
+    var classes = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
-        color = function(d, i) {
+        color = function(d) {
           return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
@@ -644,24 +655,26 @@ export default function bubbleChart() {
         color = function() {
           return 'inherit';
         };
-        classes = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        classes = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
-        color = function(d, i) {
+        color = function(d) {
           return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
-        classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        classes = function(d) {
+          var i = d.seriesIndex;
+          return 'sc-series sc-series-' + i + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient()(d, d.seriesIndex);
+    var fill = !params.gradient ? color : function(d, i) {
+      return model.gradientFill(d, d.seriesIndex);
     };
 
     model.color(color);

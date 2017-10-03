@@ -32,7 +32,7 @@ export default function multibar() {
       yDomain = null,
       nice = false,
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorLinearGradient,
       fill = color,
       textureFill = false,
       barColor = null, // adding the ability to set the color for each rather than the whole group
@@ -272,32 +272,34 @@ export default function multibar() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
       var wrap = container.select('.sc-wrap.sc-multibar').merge(wrap_entr);
 
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
+
       wrap.attr('transform', utility.translation(margin.left, margin.top));
 
 
       //------------------------------------------------------------
       // Definitions
 
-      var defs_entr = wrap_entr.append('defs');
-
       if (clipEdge) {
         defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + id)
           .append('rect');
-        wrap.select('#sc-edge-clip-' + id + ' rect')
+        defs.select('#sc-edge-clip-' + id + ' rect')
           .attr('width', availableWidth)
           .attr('height', availableHeight);
       }
       wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
-
       if (textureFill) {
         var mask = utility.createTexture(defs_entr, id);
       }
 
-      //set up the gradient constructor function
-      gradient = function(d, i, p) {
-        return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i, params) {
+        var gradientId = id + '-' + i;
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
       };
 
       //------------------------------------------------------------
@@ -387,36 +389,39 @@ export default function multibar() {
         })
         .classed('sc-active', function(d) { return d.active === 'active'; })
         .attr('transform', function(d, i) {
-          var trans = stacked ? {
-                x: Math.round(x(getX(d, i))),
-                y: Math.round(y(d.y0))
-              } :
-              { x: Math.round(d.seri * barThickness() + x(getX(d, i))),
-                y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
-              };
+          var trans;
+          if (stacked) {
+            trans = {
+              x: Math.round(x(getX(d, i))),
+              y: Math.round(y(d.y0))
+            };
+          } else {
+            trans = {
+              x: Math.round(d.seri * barThickness() + x(getX(d, i))),
+              y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
+            };
+          }
           return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
         })
         .style('display', function(d, i) {
           return barLength(d, i) !== 0 ? 'inline' : 'none';
         });
 
-      bars
-        .select('rect.sc-base')
-          .attr(valX, 0)
-          .attr(dimY, barLength)
-          .attr(dimX, barThickness);
+      bars.select('rect.sc-base')
+        .attr(valX, 0)
+        .attr(dimY, barLength)
+        .attr(dimX, barThickness);
 
       if (textureFill) {
-        bars
-          .select('rect.sc-texture')
-            .attr(valX, 0)
-            .attr(dimY, barLength)
-            .attr(dimX, barThickness)
-            .style('fill', function(d, i) {
-              var backColor = fill(d),
-                  foreColor = utility.getTextContrast(backColor, i);
-              return foreColor;
-            });
+        bars.select('rect.sc-texture')
+          .attr(valX, 0)
+          .attr(dimY, barLength)
+          .attr(dimX, barThickness)
+          .style('fill', function(d, i) {
+            var backColor = fill(d),
+                foreColor = utility.getTextContrast(backColor, i);
+            return foreColor;
+          });
       }
 
       //------------------------------------------------------------
@@ -424,14 +429,14 @@ export default function multibar() {
 
       function buildEventObject(e, d, i) {
         return {
-            pointIndex: i,
-            point: d,
-            seriesIndex: d.seriesIndex,
-            series: data[d.seri],
-            groupIndex: d.groupIndex,
-            id: id,
-            e: e
-          };
+          pointIndex: i,
+          point: d,
+          seriesIndex: d.seriesIndex,
+          series: data[d.seri],
+          groupIndex: d.groupIndex,
+          id: id,
+          e: e
+        };
       }
 
       bars
@@ -868,15 +873,15 @@ export default function multibar() {
     return model;
   };
 
-  model.nice = function(_) {
-    if (!arguments.length) { return nice; }
-    nice = _;
-    return model;
-  };
-
   model.textureFill = function(_) {
     if (!arguments.length) { return textureFill; }
     textureFill = _;
+    return model;
+  };
+
+  model.nice = function(_) {
+    if (!arguments.length) { return nice; }
+    nice = _;
     return model;
   };
 

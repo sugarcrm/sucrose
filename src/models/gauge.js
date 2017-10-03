@@ -24,7 +24,7 @@ export default function gauge() {
       delay = 0,
       duration = 0,
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorRadialGradient,
       fill = color,
       classes = function(d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -55,12 +55,6 @@ export default function gauge() {
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
 
-      //set up the gradient constructor function
-      gradient = gradient || function(d, i) {
-        var params = {x: 0, y: 0, r: radius, s: ringWidth / 100, u: 'userSpaceOnUse'};
-        return utility.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
-      };
-
       var radius = Math.min((availableWidth / 2), availableHeight) / ((100 + labelInset) / 100),
           range = maxAngle - minAngle,
           scale = d3.scaleLinear().range([0, 1]).domain([minValue, maxValue]),
@@ -88,6 +82,7 @@ export default function gauge() {
       var wrap = container.select('.sc-wrap.sc-gauge').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
@@ -102,6 +97,23 @@ export default function gauge() {
       var odometer_wrap = wrap.select('.sc-odometer');
 
       wrap.attr('transform', 'translate('+ (margin.left/2 + margin.right/2 + prop(labelInset)) +','+ (margin.top + prop(labelInset)) +')');
+
+      //------------------------------------------------------------
+      // Definitions
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i) {
+        var gradientId = id + '-' + i;
+        var params = {
+          x: 0,
+          y: 0,
+          r: radius,
+          s: ringWidth / 100,
+          u: 'userSpaceOnUse'
+        };
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Append major data series grouping containers

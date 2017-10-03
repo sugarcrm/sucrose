@@ -19,17 +19,18 @@ export default function treemap() {
       clipEdge = true, // if true, masks lines within x and y scale
       duration = 0,
       delay = 0,
-      leafClick = function() { return false; },
+      leafClick = function(d, i) { return false; },
       // color = function(d, i) { return utility.defaultColor()(d, i); },
       color = d3.scaleOrdinal().range(
-                d3.schemeCategory20.map(function(c) {
-                  c = d3.rgb(c);
-                  c.opacity = 0.6;
-                  return c;
-                })
-              ),
-      gradient = null,
+        d3.schemeCategory20.map(function(c) {
+          c = d3.rgb(c);
+          c.opacity = 0.6;
+          return c;
+        })
+      ),
+      gradient = utility.colorLinearGradient,
       fill = color,
+      textureFill = false,
       classes = function(d, i) { return 'sc-child'; },
       direction = 'ltr',
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -77,18 +78,6 @@ export default function treemap() {
           container = d3.select(this),
           transitioning;
 
-      // Set up the gradient constructor function
-      gradient = function(d, i, p) {
-        var iColor = (d.parent.data.colorIndex || NODES.indexOf(groupBy(d.parent.data)) || i);
-        return utility.colorLinearGradient(
-          d,
-          id + '-' + i,
-          p,
-          color(d, iColor, NODES.length),
-          wrap.select('defs')
-        );
-      };
-
       // We only need to define TREE and NODES once on initial load
       // TREE is always available in its initial state and NODES is immutable
       TREE = TREE ||
@@ -121,19 +110,32 @@ export default function treemap() {
       var wrap = container.select('.sc-wrap.sc-treemap').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       // wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
-      // Clip Path
+      // Definitions
 
       defs_entr.append('clipPath')
         .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
-      wrap.select('#sc-edge-clip-' + id + ' rect')
+      defs.select('#sc-edge-clip-' + id + ' rect')
         .attr('width', width)
         .attr('height', height);
       wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      if (textureFill) {
+        var mask = utility.createTexture(defs_entr, id);
+      }
+
+      // Set up the gradient constructor function
+      model.gradientFill = function(d, i, params) {
+        var gradientId = id + '-' + i;
+        var iColor = (d.parent.data.colorIndex || NODES.indexOf(groupBy(d.parent.data)) || i);
+        var c = color(d, iColor, NODES.length);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Family Tree Path
@@ -144,7 +146,10 @@ export default function treemap() {
 
       treepath_enter.append('rect')
         .attr('class', 'sc-target')
-        .on('click', transition);
+        .on('click', function(d) {
+          dispatch.call('chartClick', this, d);
+          transition.call(this, d.parent);
+        });
 
       treepath_enter.append('text')
         .attr('x', direction === 'rtl' ? width - 6 : 6)
@@ -178,11 +183,25 @@ export default function treemap() {
         var parents = grandparent.selectAll('.sc-parent').merge(parents_entr);
         parents_bind.exit().remove();
 
+        parents
+          .classed('sc-active', function(d) { return d.active === 'active'; })
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 1);
+
         // Child rectangles
         var children_bind = parents.selectAll('rect.sc-child').data(function(d) { return d.children || [d]; });
         var children_entr = children_bind.enter().append('rect').attr('class', 'sc-child');
         var children = parents.selectAll('.sc-child').merge(children_entr);
         children_bind.exit().remove();
+
+        if (textureFill) {
+          // For on click active bars
+          parents_entr.append('rect')
+            .attr('class', 'sc-texture')
+            .attr('x', 0)
+            .attr('y', 0)
+            .style('mask', 'url(' + mask + ')');
+        }
 
         children
           .attr('class', classes)
@@ -195,6 +214,17 @@ export default function treemap() {
             return this.getAttribute('fill') || fill(d, iColor, NODES.length);
           })
             .call(rect);
+
+        if (textureFill) {
+          parents.select('rect.sc-texture')
+            .style('fill', function(d, i) {
+              var iColor = (d.parent.data.colorIndex || NODES.indexOf(getKey(d.parent.data)) || i);
+              var backColor = this.getAttribute('fill') || fill(d, iColor, NODES.length),
+                  foreColor = utility.getTextContrast(backColor, i);
+              return foreColor;
+            })
+              .call(rect);
+        }
 
         // Parent labels
         var label_bind = parents.selectAll('text.sc-label').data(function(d) { return [d]; });
@@ -224,7 +254,7 @@ export default function treemap() {
             .text(crumbs);
 
         treepath.selectAll('rect')
-            .data([ROOT.parent]);
+            .datum(ROOT);
 
         // -------------
         // Assign Events
@@ -232,12 +262,24 @@ export default function treemap() {
         // Assign transition event for parents with children.
         target
           .filter(function(d) { return d.children; })
-          .on('click', transition);
+          .on('click', function(d) {
+            if (d.parent)  {
+              dispatch.call('chartClick', this, d.parent);
+            }
+            transition.call(this, d);
+          });
 
         // Assign navigate event for parents without children (leaves).
         target
           .filter(function(d) { return !(d.children); })
-          .on('click', leafClick);
+          .on('click', function(d, i) {
+            d3.event.stopPropagation();
+            var eo = {
+              d: d,
+              i: i
+            };
+            dispatch.call('elementClick', this, eo);
+          });
 
         // Tooltips
         target
@@ -486,6 +528,12 @@ export default function treemap() {
       return direction;
     }
     direction = _;
+    return model;
+  };
+
+  model.textureFill = function(_) {
+    if (!arguments.length) { return textureFill; }
+    textureFill = _;
     return model;
   };
 

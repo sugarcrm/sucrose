@@ -375,6 +375,7 @@ export default function areaChart() {
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-background-wrap');
       var back_wrap = wrap.select('.sc-background-wrap');
@@ -846,8 +847,11 @@ export default function areaChart() {
     }
 
     var fill = !params.gradient ? color : function(d, i) {
-      var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return model.gradient()(d, d.seriesIndex, p);
+      var p = {
+        orientation: params.orientation || 'horizontal',
+        position: params.position || 'base'
+      };
+      return model.gradientFill(d, d.seriesIndex, p);
     };
 
     model.color(color);
