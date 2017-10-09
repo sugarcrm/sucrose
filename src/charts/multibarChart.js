@@ -964,7 +964,9 @@ export default function multibarChart() {
   chart.legend = header.legend;
   chart.controls = header.controls;
   chart.xAxis = xAxis;
+  chart.xAxisLabel = xAxis.axisLabel;
   chart.yAxis = yAxis;
+  chart.yAxisLabel = yAxis.axisLabel;
   chart.options = utility.optionsFunc.bind(chart);
 
   utility.rebind(chart, model,

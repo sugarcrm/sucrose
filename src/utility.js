@@ -26,6 +26,11 @@ utility.functor = function functor(v) {
   };
 };
 
+utility.isFunction = function(o) {
+ var ol = {};
+ return o && ol.toString.call(o) == '[object Function]';
+};
+
 // Copies a variable number of methods from source to target.
 utility.rebind = function(target, source) {
   var i = 1, n = arguments.length, method;
@@ -44,56 +49,60 @@ To enable in the chart:
 chart.options = utility.optionsFunc.bind(chart);
 */
 utility.optionsFunc = function(args) {
-  if (args) {
-    d3.map(args).each((function(value, key) {
-      if (typeof this[key] === 'function') {
-        this[key](value);
-      }
-    }).bind(this));
+  if (!args) {
+    return this;
   }
+  d3.map(args).each((function(value, key) {
+    if (Array.isArray(value)) {
+      this[key].apply(value);
+    } else if (utility.isFunction(this[key])) {
+      this[key](utility.toNative(value));
+    }
+  }).bind(this));
   return this;
 };
 
 // Window functions
-utility.windowSize = function () {
+utility.windowSize = function() {
   // Sane defaults
   var size = {width: 640, height: 480};
 
   // Earlier IE uses Doc.body
   if (document.body && document.body.offsetWidth) {
-      size.width = document.body.offsetWidth;
-      size.height = document.body.offsetHeight;
+    size.width = document.body.offsetWidth;
+    size.height = document.body.offsetHeight;
   }
 
   // IE can use depending on mode it is in
   if (document.compatMode === 'CSS1Compat' &&
-      document.documentElement &&
-      document.documentElement.offsetWidth ) {
-      size.width = document.documentElement.offsetWidth;
-      size.height = document.documentElement.offsetHeight;
+    document.documentElement &&
+    document.documentElement.offsetWidth ) {
+    size.width = document.documentElement.offsetWidth;
+    size.height = document.documentElement.offsetHeight;
   }
 
   // Most recent browsers use
   if (window.innerWidth && window.innerHeight) {
-      size.width = window.innerWidth;
-      size.height = window.innerHeight;
+    size.width = window.innerWidth;
+    size.height = window.innerHeight;
   }
+
   return (size);
 };
 
 // Easy way to bind multiple functions to window.onresize
   // TODO: give a way to remove a function after its bound, other than removing alkl of them
-  // utility.windowResize = function (fun)
+  // utility.windowResize = function(fun)
   // {
   //   var oldresize = window.onresize;
 
-  //   window.onresize = function (e) {
+  //   window.onresize = function(e) {
   //     if (typeof oldresize == 'function') oldresize(e);
   //     fun(e);
   //   }
 // }
 
-utility.windowResize = function (fun) {
+utility.windowResize = function(fun) {
   if (window.attachEvent) {
       window.attachEvent('onresize', fun);
   }
@@ -105,26 +114,26 @@ utility.windowResize = function (fun) {
   }
 };
 
-utility.windowUnResize = function (fun) {
+utility.windowUnResize = function(fun) {
   if (window.detachEvent) {
-      window.detachEvent('onresize', fun);
+    window.detachEvent('onresize', fun);
   }
   else if (window.removeEventListener) {
-      window.removeEventListener('resize', fun, true);
+    window.removeEventListener('resize', fun, true);
   }
   else {
-      //The browser does not support Javascript event binding
+    //The browser does not support Javascript event binding
   }
 };
 
-utility.resizeOnPrint = function (fn) {
+utility.resizeOnPrint = function(fn) {
   if (window.matchMedia) {
-      var mediaQueryList = window.matchMedia('print');
-      mediaQueryList.addListener(function (mql) {
-          if (mql.matches) {
-              fn();
-          }
-      });
+    var mediaQueryList = window.matchMedia('print');
+    mediaQueryList.addListener(function(mql) {
+        if (mql.matches) {
+            fn();
+        }
+    });
   } else if (window.attachEvent) {
     window.attachEvent('onbeforeprint', fn);
   } else {
@@ -134,14 +143,14 @@ utility.resizeOnPrint = function (fn) {
   //window.attachEvent('onafterprint', fn);
 };
 
-utility.unResizeOnPrint = function (fn) {
+utility.unResizeOnPrint = function(fn) {
   if (window.matchMedia) {
-      var mediaQueryList = window.matchMedia('print');
-      mediaQueryList.removeListener(function (mql) {
-          if (mql.matches) {
-              fn();
-          }
-      });
+    var mediaQueryList = window.matchMedia('print');
+    mediaQueryList.removeListener(function(mql) {
+        if (mql.matches) {
+            fn();
+        }
+    });
   } else if (window.detachEvent) {
     window.detachEvent('onbeforeprint', fn);
   } else {
@@ -154,14 +163,13 @@ utility.unResizeOnPrint = function (fn) {
 // Backwards compatible way to implement more d3-like coloring of graphs.
 // If passed an array, wrap it in a function which implements the old default
 // behavior
-utility.getColor = function (color) {
+utility.getColor = function(color) {
   if (!arguments.length) {
     //if you pass in nothing, get default colors back
     return utility.defaultColor();
   }
-
   if (Array.isArray(color)) {
-    return function (d, i) {
+    return function(d, i) {
       return d.color || color[i % color.length];
     };
   } else if (Object.prototype.toString.call(color) === '[object String]') {
@@ -170,15 +178,15 @@ utility.getColor = function (color) {
     };
   } else {
     return color;
-      // can't really help it if someone passes rubbish as color
-      // or color is already a function
+    // can't really help it if someone passes rubbish as color
+    // or color is already a function
   }
 };
 
 // Default color chooser uses the index of an object as before.
-utility.defaultColor = function () {
+utility.defaultColor = function() {
   var colors = d3.scaleOrdinal(d3.schemeCategory20).range();
-  return function (d, i) {
+  return function(d, i) {
     return d.color || colors[i % colors.length];
   };
 };
@@ -200,17 +208,17 @@ utility.getTextContrast = function(c, i, callback) {
 
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
-utility.customTheme = function (dictionary, getKey, defaultColors) {
-  getKey = getKey || function (series) { return series.key; }; // use default series.key if getKey is undefined
+utility.customTheme = function(dictionary, getKey, defaultColors) {
+  var defIndex;
+  getKey = getKey || function(series) { return series.key; }; // use default series.key if getKey is undefined
   defaultColors = defaultColors || d3.scaleOrdinal(d3.schemeCategory20).range(); //default color function
-
-  var defIndex = defaultColors.length; //current default color (going in reverse)
-
-  return function (series, index) {
+  defIndex = defaultColors.length; //current default color (going in reverse)
+  return function(series, index) {
     var key = getKey(series);
 
-    if (!defIndex) defIndex = defaultColors.length; //used all the default colors, start over
-
+    if (!defIndex) {
+      defIndex = defaultColors.length; //used all the default colors, start over
+    }
     if (typeof dictionary[key] !== 'undefined') {
       return (typeof dictionary[key] === 'function') ? dictionary[key]() : dictionary[key];
     } else {
@@ -221,7 +229,7 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
 
 // Gradient functions
 
-utility.colorLinearGradient = function (d, i, p, c, defs) {
+utility.colorLinearGradient = function(d, i, p, c, defs) {
   var id = 'lg_gradient_' + i;
   var grad = defs.select('#' + id);
   if (grad.empty()) {
@@ -248,7 +256,7 @@ utility.colorLinearGradient = function (d, i, p, c, defs) {
 // id:dynamic id for arc
 // radius:outer edge of gradient
 // stops: an array of attribute objects
-utility.createLinearGradient = function (id, params, defs, stops) {
+utility.createLinearGradient = function(id, params, defs, stops) {
   var x2 = params.orientation === 'horizontal' ? '0%' : '100%';
   var y2 = params.orientation === 'horizontal' ? '100%' : '0%';
   var attrs, stop;
@@ -272,32 +280,32 @@ utility.createLinearGradient = function (id, params, defs, stops) {
   }
 };
 
-utility.colorRadialGradient = function (d, i, p, c, defs) {
+utility.colorRadialGradient = function(d, i, p, c, defs) {
   var id = 'rg_gradient_' + i;
   var grad = defs.select('#' + id);
-  if ( grad.empty() ) {
+  if (grad.empty()) {
     utility.createRadialGradient( id, p, defs, [
-      { 'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
-      { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1 }
+      {'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1},
+      {'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1}
     ]);
   }
   return 'url(#' + id + ')';
 };
 
-utility.createRadialGradient = function (id, params, defs, stops) {
-  var attrs, stop;
-  var grad = defs.append('radialGradient')
-        .attr('id', id)
-        .attr('r', params.r)
-        .attr('cx', params.x)
-        .attr('cy', params.y)
-        .attr('gradientUnits', params.u)
-        .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1) {
+utility.createRadialGradient = function(id, params, defs, stops) {
+  var attrs, stop, grad;
+  grad = defs.append('radialGradient')
+    .attr('id', id)
+    .attr('r', params.r)
+    .attr('cx', params.x)
+    .attr('cy', params.y)
+    .attr('gradientUnits', params.u)
+    .attr('spreadMethod', 'pad');
+  for (var i = 0; i < stops.length; i += 1) {
     attrs = stops[i];
     stop = grad.append('stop');
     for (var a in attrs) {
-      if ( attrs.hasOwnProperty(a) ) {
+      if (attrs.hasOwnProperty(a)) {
         stop.attr(a, attrs[a]);
       }
     }
@@ -305,27 +313,28 @@ utility.createRadialGradient = function (id, params, defs, stops) {
 };
 
 // Creates a rectangle with rounded corners
-utility.roundedRectangle = function (x, y, width, height, radius) {
-  return 'M' + x + ',' + y +
-       'h' + (width - radius * 2) +
-       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + radius +
-       'v' + (height - 2 - radius * 2) +
-       'a' + radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + radius +
-       'h' + (radius * 2 - width) +
-       'a' + -radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + -radius +
-       'v' + ( -height + radius * 2 + 2 ) +
-       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + -radius +
-       'z';
+utility.roundedRectangle = function(x, y, width, height, radius) {
+  var s =
+    'M' + x + ',' + y +
+    'h' + (width - radius * 2) +
+    'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + radius +
+    'v' + (height - 2 - radius * 2) +
+    'a' + radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + radius +
+    'h' + (radius * 2 - width) +
+    'a' + -radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + -radius +
+    'v' + ( -height + radius * 2 + 2 ) +
+    'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + -radius +
+    'z';
+  return s;
 };
 
-utility.dropShadow = function (id, defs, options) {
+utility.dropShadow = function(id, defs, options) {
   var opt = options || {};
   var h = opt.height || '130%';
   var o = opt.offset || 2;
   var b = opt.blur || 1;
   var filter;
   var merge;
-
   if (defs.select('#' + id).empty()) {
     filter = defs.append('filter')
       .attr('id', id)
@@ -344,13 +353,11 @@ utility.dropShadow = function (id, defs, options) {
       .attr('in', 'matrixOut')
       .attr('result', 'blurOut')
       .attr('stdDeviation', b); //stdDeviation is how much to blur
-
     merge = filter.append('feMerge');
     merge.append('feMergeNode'); //this contains the offset blurred image
     merge.append('feMergeNode')
       .attr('in', 'SourceGraphic'); //this contains the element that the filter is applied to
   }
-
   return 'url(#' + id + ')';
 };
 // <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
@@ -367,9 +374,8 @@ utility.dropShadow = function (id, defs, options) {
 // </svg>
 
 utility.createTexture = function(defs, id, x, y) {
-  var texture = '#sc-diagonalHatch-' + id,
-      mask = '#sc-textureMask-' + id;
-
+  var texture = '#sc-diagonalHatch-' + id;
+  var mask = '#sc-textureMask-' + id;
   defs
     .append('pattern')
       .attr('id', 'sc-diagonalHatch-' + id)
@@ -383,7 +389,6 @@ utility.createTexture = function(defs, id, x, y) {
         // .attr('stroke', fill)
         .attr('stroke', '#fff')
         .attr('stroke-linecap', 'square');
-
   defs
     .append('mask')
       .attr('id', 'sc-textureMask-' + id)
@@ -404,8 +409,8 @@ utility.createTexture = function(defs, id, x, y) {
 // String functions
 
 utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
-  var lengths = [],
-      txt = _container.select('.tmp-text-strings').select('text');
+  var lengths = [];
+  var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
     txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
   }
@@ -420,8 +425,8 @@ utility.stringSetLengths = function(_data, _container, _format, classes, styles)
 };
 
 utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
-  var thicknesses = [],
-      txt = _container.select('.tmp-text-strings').select('text');
+  var thicknesses = [];
+  var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
     txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
   }
@@ -465,8 +470,8 @@ utility.stringEllipsify = function(_string, _container, _length) {
 };
 
 utility.getTextBBox = function(text, floats) {
-  var bbox = text.node().getBoundingClientRect(),
-      size = {
+  var bbox = text.node().getBoundingClientRect();
+  var size = {
         width: floats ? bbox.width : parseInt(bbox.width, 10),
         height: floats ? bbox.height : parseInt(bbox.height, 10),
         top: floats ? bbox.top : parseInt(bbox.top, 10),
@@ -480,8 +485,8 @@ utility.strip = function(s) {
 };
 
 utility.isRTLChar = function(c) {
-  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
-      rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
+  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC';
+  var rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
   return rtlCharReg_.test(c);
 };
 
@@ -489,12 +494,7 @@ utility.isRTLChar = function(c) {
 
 // Numbers that are undefined, null or NaN, convert them to zeros.
 utility.NaNtoZero = function(n) {
-  if (typeof n !== 'number'
-      || isNaN(n)
-      || n === null
-      || n === Infinity) return 0;
-
-  return n;
+  return utility.isNumeric(n) ? n : 0;
 };
 
 utility.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
@@ -512,22 +512,44 @@ utility.angleToDegrees = function(angleInRadians) {
   return angleInRadians * 180.0 / Math.PI;
 };
 
-utility.getAbsoluteXY = function (element) {
+utility.getAbsoluteXY = function(element) {
   var viewportElement = document.documentElement;
   var box = element.getBoundingClientRect();
   var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
   var scrollTop = viewportElement.scrollTop + document.body.scrollTop;
   var x = box.left + scrollLeft;
   var y = box.top + scrollTop;
-
   return {'left': x, 'top': y};
 };
+
 utility.translation = function(x, y) {
   return 'translate(' + x + ',' + y + ')';
 };
 
 utility.isNumeric = function(value) {
   return !isNaN(value) && Number.isFinite(value);
+};
+
+utility.toNative = function(value) {
+  var v = utility.isNumeric(parseFloat(value)) ?
+    parseFloat(value) :
+    value === 'true' ?
+      true :
+      value === 'false' ?
+        false :
+        value;
+  return v;
+};
+
+utility.toBoolean = function(value) {
+  var v = utility.isNumeric(parseFloat(value)) ?
+    !!parseFloat(value) :
+    value === 'true' ?
+      true :
+      value === 'false' ?
+        false :
+        value;
+  return v;
 };
 
 utility.round = function(x, n) {
@@ -545,7 +567,7 @@ utility.countSigFigsAfter = function(value) {
 };
 
 utility.countSigFigsBefore = function(value) {
-    return Math.floor(value).toString().replace(/0+$/g, '').length;
+  return Math.floor(value).toString().replace(/0+$/g, '').length;
 };
 
 utility.siDecimal = function(n) {
@@ -625,7 +647,7 @@ utility.numberFormatFixed = function(d, p, c, l) {
 utility.numberFormatSI = function(d, p, c, l) {
   var f, s, m;
   if (!utility.isNumeric(d)) {
-      return d;
+    return d;
   }
   c = typeof c === 'boolean' ? c : false;
   p = Number.isFinite(p) ? p : 0;
@@ -677,7 +699,7 @@ utility.numberFormatSI = function(d, p, c, l) {
 utility.numberFormatSIFixed = function(d, p, c, l, si) {
   var f, s;
   if (!utility.isNumeric(d)) {
-      return d.toString();
+    return d.toString();
   }
   c = typeof c === 'boolean' ? c : false;
   p = utility.isNumeric(p) ? p : c ? 2 : 0;
@@ -818,7 +840,6 @@ utility.getDateFormatUTC = function(values) {
   var formatIndex = values.length ? d3.min(values, function(date) {
     var d = new Date(date);
     var format;
-
     // if round to second is less than date
     if (+d3.utcSecond(date) < +d) {
       // use millisecond format - .%L
@@ -862,7 +883,6 @@ utility.getDateFormatUTC = function(values) {
     }
     return format;
   }) : 8;
-
   return dateFormats[formatIndex];
 };
 
@@ -937,18 +957,16 @@ utility.buildLocality = function(l, d) {
         'y': '%Y'
       };
   var def;
-
   for (var key in locale) {
     if (l.hasOwnProperty(key)) {
       def = locale[key];
       definition[key] = !deep || !Array.isArray(def) ? def : unfer(def);
     }
   }
-
   return definition;
 };
 
-utility.displayNoData = function (hasData, container, label, x, y) {
+utility.displayNoData = function(hasData, container, label, x, y) {
   var data = hasData ? [] : [label];
   var noData_bind = container.selectAll('.sc-no-data').data(data);
   var noData_entr = noData_bind.enter().append('text')
@@ -968,6 +986,5 @@ utility.displayNoData = function (hasData, container, label, x, y) {
     return false;
   }
 };
-
 
 export default utility;
