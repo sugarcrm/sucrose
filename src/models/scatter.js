@@ -87,7 +87,9 @@ export default function scatter() {
       // Setup Scales
 
       // remap and flatten the data for use in calculating the scales' domains
-      var seriesData = (xDomain && yDomain && zDomain) ? [] : // if we know xDomain and yDomain and zDomain, no need to calculate.... if Size is constant remember to set zDomain to speed up performance
+      // if we know xDomain and yDomain and zDomain, no need to calculate....
+      // if Size is constant remember to set zDomain to speed up performance
+      var seriesData = (xDomain && yDomain && zDomain) ? [] :
             d3.merge(
               data.map(function(d) {
                 return d.values.map(function(d, i) {

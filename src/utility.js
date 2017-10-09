@@ -3,6 +3,17 @@ import d3 from 'd3';
 /*-------------------
       UTILITIES
 -------------------*/
+
+// Method is assumed to be a standard D3 getter-setter:
+// If passed with no arguments, gets the value.
+// If passed with arguments, sets the value and returns the target.
+function d3_rebind(target, source, method) {
+  return function() {
+    var value = method.apply(source, arguments);
+    return value === source ? target : value;
+  };
+}
+
 var utility = {};
 
 utility.identity = function(d) {
@@ -22,15 +33,6 @@ utility.rebind = function(target, source) {
   return target;
 };
 
-// Method is assumed to be a standard D3 getter-setter:
-// If passed with no arguments, gets the value.
-// If passed with arguments, sets the value and returns the target.
-function d3_rebind(target, source, method) {
-  return function() {
-    var value = method.apply(source, arguments);
-    return value === source ? target : value;
-  };
-}
 /*
 Snippet of code you can insert into each utility.models.* to give you the ability to
 do things like:
@@ -222,21 +224,17 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
 utility.colorLinearGradient = function (d, i, p, c, defs) {
   var id = 'lg_gradient_' + i;
   var grad = defs.select('#' + id);
-  if ( grad.empty() )
-  {
-    if (p.position === 'middle')
-    {
-      utility.createLinearGradient( id, p, defs, [
+  if (grad.empty()) {
+    if (p.position === 'middle') {
+      utility.createLinearGradient(id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '20%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
         { 'offset': '80%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 }
       ]);
-    }
-    else
-    {
-      utility.createLinearGradient( id, p, defs, [
+    } else {
+      utility.createLinearGradient(id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '100%','stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 }
@@ -254,15 +252,16 @@ utility.createLinearGradient = function (id, params, defs, stops) {
   var x2 = params.orientation === 'horizontal' ? '0%' : '100%';
   var y2 = params.orientation === 'horizontal' ? '100%' : '0%';
   var attrs, stop;
-  var grad = defs.append('linearGradient')
-        .attr('id', id)
-        .attr('x1', '0%')
-        .attr('y1', '0%')
-        .attr('x2', x2 )
-        .attr('y2', y2 )
-        //.attr('gradientUnits', 'userSpaceOnUse')objectBoundingBox
-        .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1) {
+  var grad = defs.append('linearGradient');
+  grad
+    .attr('id', id)
+    .attr('x1', '0%')
+    .attr('y1', '0%')
+    .attr('x2', x2 )
+    .attr('y2', y2 )
+    //.attr('gradientUnits', 'userSpaceOnUse')objectBoundingBox
+    .attr('spreadMethod', 'pad');
+  for (var i = 0; i < stops.length; i += 1) {
     attrs = stops[i];
     stop = grad.append('stop');
     for (var a in attrs) {

@@ -173,7 +173,7 @@ export default function multibar() {
 
       function unique(x) {
         return x.reverse()
-                .filter(function (e, i, x) { return x.indexOf(e, i+1) === -1; })
+                .filter(function (e, i, x) { return x.indexOf(e, i + 1) === -1; })
                 .reverse();
       }
 
@@ -274,10 +274,6 @@ export default function multibar() {
 
       wrap.attr('transform', utility.translation(margin.left, margin.top));
 
-      //set up the gradient constructor function
-      gradient = gradient || function(d, i, p) {
-        return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
-      };
 
       //------------------------------------------------------------
       // Definitions
@@ -298,6 +294,11 @@ export default function multibar() {
       if (textureFill) {
         var mask = utility.createTexture(defs_entr, id);
       }
+
+      //set up the gradient constructor function
+      gradient = function(d, i, p) {
+        return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
+      };
 
       //------------------------------------------------------------
 
@@ -329,7 +330,8 @@ export default function multibar() {
         .style('fill-opacity', 1);
 
       series
-        .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
+        .on('mouseover', function(d, i, j) {
+          //TODO: figure out why j works above, but not here
           d3.select(this).classed('hover', true);
         })
         .on('mouseout', function(d, i, j) {
@@ -339,8 +341,7 @@ export default function multibar() {
       //------------------------------------------------------------
 
       var bars_bind = series.selectAll('.sc-bar').data(function(d) { return d.values; });
-      var bars_entr = bars_bind.enter().append('g')
-            .attr('class', 'sc-bar');
+      var bars_entr = bars_bind.enter().append('g').attr('class', 'sc-bar');
       bars_bind.exit().remove();
       var bars = series.selectAll('.sc-bar').merge(bars_entr);
 
@@ -374,8 +375,8 @@ export default function multibar() {
         .style('fill-opacity', 0);
 
       // For label text
-      var barText_entr = bars_entr.append('text') // TODO: should this be inside labelPosition?
-        .attr('class', 'sc-label-value');
+      // TODO: should this be inside labelPosition?
+      var barText_entr = bars_entr.append('text').attr('class', 'sc-label-value');
       var barText = bars.select('.sc-label-value').merge(barText_entr);
 
       //------------------------------------------------------------

@@ -21,7 +21,6 @@ export default function gauge() {
       fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
       locality = utility.buildLocality(),
       direction = 'ltr',
-      clipEdge = true,
       delay = 0,
       duration = 0,
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },

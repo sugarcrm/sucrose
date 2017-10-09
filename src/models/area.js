@@ -47,7 +47,6 @@ export default function area() {
    ************************************/
 
   var data0;
-  var x0 = x.copy();
   var y0 = y.copy();
 
   //============================================================
@@ -177,6 +176,15 @@ export default function area() {
       x.domain(d3.extent(xValues)).range([0, availableWidth]);
       y.domain([0, max - min]).range([availableHeight, 0]);
 
+      model.resetDimensions = function(w, h) {
+        width = w;
+        height = h;
+        availableWidth = w - margin.left - margin.right;
+        availableHeight = h - margin.top - margin.bottom;
+        x.range([0, availableWidth]);
+        y.range([availableHeight, 0]);
+      };
+
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
@@ -301,6 +309,9 @@ export default function area() {
           d3.select(this).classed('hover', false);
           dispatch.call('elementClick', this, eo);
         });
+
+      //store old scales for use in transitions on update
+      y0 = y.copy();
 
     });
 

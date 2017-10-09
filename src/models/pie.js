@@ -457,7 +457,6 @@ export default function pie() {
       function calcScalars(slices, maxWidth, maxHeight) {
         var widths = [],
             heights = [],
-            Pi = Math.PI,
             twoPi = 2 * Math.PI,
             north = 0,
             east = Math.PI / 2,
