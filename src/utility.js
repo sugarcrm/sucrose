@@ -526,46 +526,9 @@ utility.getAbsoluteXY = function (element) {
 utility.translation = function(x, y) {
   return 'translate(' + x + ',' + y + ')';
 };
-// utility.numberFormatSI = function(d, p, c, l) {
-  //     var fmtr, spec, si;
-  //     if (isNaN(d)) {
-  //         return d;
-  //     }
-  //     p = typeof p === 'undefined' ? 2 : p;
-  //     c = typeof c === 'undefined' ? false : !!c;
-  //     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  //     d = Math.round(d * 10 * p) / 10 * p;
-  //     spec = c ? '$,' : ',';
-  //     if (c && d < 1000 && d !== parseInt(d, 10)) {
-  //         spec += '.2f';
-  //     }
-  //     if (d < 1 && d > -1) {
-  //         spec += '.2s';
-  //     }
-  //     return fmtr(spec)(d);
-// };
 
-utility.numberFormatSI = function(d, p, c, l) {
-  var fmtr, spec;
-  if (isNaN(d) || d === 0) {
-      return d;
-  }
-  p = typeof p === 'undefined' ? 2 : p;
-  c = typeof c === 'undefined' ? false : !!c;
-  fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  spec = c ? '$,' : ',';
-  // spec += '.' + 2 + 'r';
-  if (c && d < 1000 && d !== parseInt(d, 10)) {
-    spec += '.2f';
-  } else if (Math.abs(d) > 1 && Math.abs(d) <= 1000) {
-    d = p === 0 ? Math.round(d) : Math.round(d * 10 * p) / (10 * p);
-  } else {
-    spec += '.' + p + 's';
-  }
-  if (d > -1 && d < 1) {
-    return fmtr(spec)(d);
-  }
-  return fmtr(spec)(d);
+utility.isNumeric = function(value) {
+  return !isNaN(value) && Number.isFinite(value);
 };
 
 utility.round = function(x, n) {
@@ -574,16 +537,156 @@ utility.round = function(x, n) {
   return Math.round(x * ten_n) / ten_n;
 };
 
-utility.numberFormatRound = function(d, p, c, l) {
-  var fmtr, spec;
-  if (isNaN(d)) {
-    return d;
+utility.countSigFigsAfter = function(value) {
+  // consider: d3.precisionFixed(value);
+  // if value has decimals
+  return (Math.floor(value) !== parseFloat(value) ) ?
+    parseFloat(value).toString().split('.').pop().length || 0 :
+    0;
+};
+
+utility.countSigFigsBefore = function(value) {
+    return Math.floor(value).toString().replace(/0+$/g, '').length;
+};
+
+utility.siDecimal = function(n) {
+  return Math.pow(10, Math.floor(Math.log10(n)));
+  // return Math.pow(1000, Math.floor((Math.round(parseFloat(n)).toString().length - 1) / 3));
+};
+
+utility.siValue = function(si) {
+  if (utility.isNumeric(si)) {
+    return utility.siDecimal(si);
+  }
+  var units = {
+    y: 1e-24,
+    yocto: 1e-24,
+    z: 1e-21,
+    zepto: 1e-21,
+    a: 1e-18,
+    atto: 1e-18,
+    f: 1e-15,
+    femto: 1e-15,
+    p: 1e-12,
+    pico: 1e-12,
+    n: 1e-9,
+    nano: 1e-9,
+    µ: 1e-6,
+    micro: 1e-6,
+    m: 1e-3,
+    milli: 1e-3,
+    k: 1e3,
+    kilo: 1e3,
+    M: 1e6,
+    mega: 1e6,
+    G: 1e9,
+    giga: 1e9,
+    T: 1e12,
+    tera: 1e12,
+    P: 1e15,
+    peta: 1e15,
+    E: 1e18,
+    exa: 1e18,
+    Z: 1e21,
+    zetta: 1e21,
+    Y: 1e24,
+    yotta: 1e24
+  };
+  return units[si] || 0;
+};
+
+utility.numberFormat = function(d, p, c, l) {
+  var f, s, m;
+  c = typeof c === 'boolean' ? c : false;
+  if (!utility.isNumeric(d) || (d === 0 && !c)) {
+    return d.toString();
+  }
+  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  m = utility.countSigFigsAfter(d);
+  p = m && c ? p : Math.min(p, m);
+  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  s = c ? '$,' : ',';
+  s += m ? ('.' + p + 'f') : '';
+  return f(s)(d);
+};
+
+utility.numberFormatFixed = function(d, p, c, l) {
+  var f, s;
+  if (!utility.isNumeric(d)) {
+    return d.toString();
   }
   c = typeof c === 'boolean' ? c : false;
-  p = Number.isFinite(p) ? p : c ? 2 : 0;
-  fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  spec = (c ? '$' : '') + ',.' + p + 'f';
-  return fmtr(spec)(d);
+  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  s = c ? '$,' : ',';
+  s += '.' + p + 'f';
+  return f(s)(d);
+};
+
+utility.numberFormatSI = function(d, p, c, l) {
+  var f, s, m;
+  if (!utility.isNumeric(d)) {
+      return d;
+  }
+  c = typeof c === 'boolean' ? c : false;
+  p = Number.isFinite(p) ? p : 0;
+  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  m = utility.countSigFigsAfter(d);
+  s = c ? '$,' : ',';
+  // if currency less than 1k with decimal places
+  if (c && m && d < 1000) {
+    d = utility.round(d, p);
+    m = utility.countSigFigsAfter(d);
+    p = Math.min(m, p);
+    if (p === 1) {
+      p = 2;
+    }
+    // try using: d = parseFloat(d.toFixed(p)).toString();
+    // use fixed formatting with rounding
+    s += '.' + p + 'f';
+  }
+  // if absolute value less than 1
+  else if (Math.abs(d) < 1) {
+    s += (
+      // if rounding to precision results in 0
+      +d.toFixed(p) === 0 ?
+        // use next si unit
+        '.1s' :
+        // round to a single significant figure
+        '.' + Math.min(p, m) + 'f'
+    );
+  }
+  // if absolute value less than 1k
+  else if (Math.abs(d) < 1000) {
+    d = utility.round(d, p);
+  }
+  else {
+    f = typeof l === 'undefined' ? d3.formatPrefix : d3.formatLocale(l).formatPrefix;
+    if (p !== 0) {
+      var d1 = f('.' + p + 's', d)(d);
+      var d2 = d1.split('.').pop().replace(/[^\d]+$/, '').match(/0+$/g);
+      if (Array.isArray(d2)) {
+        p -= d2.pop().length;
+      }
+    }
+    s += '.' + p + 's';
+    return f(s, d)(d);
+  }
+  return f(s)(d);
+};
+
+utility.numberFormatSIFixed = function(d, p, c, l, si) {
+  var f, s;
+  if (!utility.isNumeric(d)) {
+      return d.toString();
+  }
+  c = typeof c === 'boolean' ? c : false;
+  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  f = typeof l === 'undefined' ? d3.formatPrefix : d3.formatLocale(l).formatPrefix;
+  si = utility.siValue(si);
+  s = c ? '$,' : ',';
+  s += '.' + p + 's';
+  return f(s, si)(d);
 };
 
 // Date functions

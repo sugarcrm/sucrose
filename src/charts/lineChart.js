@@ -47,7 +47,7 @@ export default function lineChart() {
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units
         // for tooltip, we want the full value
-        var valueLabel = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
+        var valueLabel = utility.numberFormat(y, null, yIsCurrency, chart.locality());
 
         var percent;
         var content = '';
@@ -58,7 +58,7 @@ export default function lineChart() {
 
         if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
+          percent = utility.numberFormat(percent, 2, false, chart.locality());
           content += '<p>Percentage: <b>' + percent + '%</b></p>';
         }
 

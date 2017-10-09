@@ -61,7 +61,6 @@ export default function axis() {
 
       var tickDimensions = [],
           tickDimensionsHash = {},
-          tickValueArray = [],
           minTickDimensions = {},
           maxTickDimensions = {};
 
@@ -76,6 +75,11 @@ export default function axis() {
       } else {
         axis.ticks(Math.ceil(scaleWidth / 100));
       }
+
+      // wrap
+      axis.tickFormat(function(d, i, selection) {
+        return valueFormat(d, i, selection, 'axis');
+      });
 
       // test to see if rotateTicks was passed as a boolean
       if (rotateTicks && !isFinite(String(rotateTicks))) {
@@ -111,21 +115,15 @@ export default function axis() {
       axisMaxMin_entr.append('text').style('opacity', 0);
       axisMaxMin_entr.append('line').style('opacity', 0);
 
-      if (showMaxMin) {
-        axisMaxMin.select('text')
-          .text(function(d, i, selection) {
-            return axis.tickFormat()(d, i, selection, false);
-          });
-      }
+      var maxminText = axisMaxMin.select('text');
+
 
       // Get all axes and maxmin tick text for text handling functions
       var tickText = wrap.selectAll('g.tick, g.sc-axisMaxMin').select('text')
             .filter(function(d) {
               return this.getBoundingClientRect().width;
-            })
-            .each(function(d, i) {
-              tickValueArray.push(d3.select(this).text());
             });
+
 
       // Axis label
       var axisLabel_data = !!axisLabelText ? [axisLabelText] : [];
@@ -145,10 +143,12 @@ export default function axis() {
           rotateSucceeded = false;
 
       if (vertical) {
-        resetTicks();
+
+        resetTicks(true);
 
         tickText
           .style('text-anchor', rtlTextAnchor(textAnchor || (isMirrored() ? 'start' : 'end')));
+
       } else {
         //Not needed but keep for now
         // if (reduceXTicks) {
@@ -157,14 +157,14 @@ export default function axis() {
         //         .style('opacity', i % Math.ceil(data[0].values.length / (scaleWidth / 100)) !== 0 ? 0 : 1);
         //     });
         // }
-        resetTicks();
+        resetTicks(false);
         recalcMargin();
 
         if (labelCollision(1)) {
 
           // if wrap is enabled, try it first (for ordinal scales only)
           if (wrapTicks) {
-            resetTicks();
+            resetTicks(false);
             handleWrap();
             recalcMargin();
             handleWrap();
@@ -176,7 +176,7 @@ export default function axis() {
 
           // wrapping failed so fall back to stagger if enabled
           if (!wrapSucceeded && staggerTicks) {
-            resetTicks();
+            resetTicks(false);
             handleStagger();
             recalcMargin();
             handleStagger();
@@ -192,7 +192,7 @@ export default function axis() {
             if (!rotateTicks) {
               rotateTicks = 30;
             }
-            resetTicks();
+            resetTicks(true);
             handleRotation(rotateTicks);
             recalcMargin(rotateTicks);
             handleRotation(rotateTicks);
@@ -232,6 +232,7 @@ export default function axis() {
               collision = (dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap) &&
                           (dim.bottom < minTickDimensions.top || dim.top > maxTickDimensions.bottom);
             } else {
+              //TODO: fix this in date x axis
               collision = dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap;
             }
 
@@ -481,9 +482,20 @@ export default function axis() {
           .attr('x', vertical ? axis.tickPadding() * reflect : 0)
           .attr('y', vertical ? 0 : axis.tickPadding() * reflect)
           .attr('transform', 'translate(0,0)')
-          .text(function(d, i) { return tickValueArray[i]; })
           .style('text-anchor', 'middle')
           .style('opacity', 1);
+
+        // don't need this because wrap.call(axis) does formatting
+        // axisTicks.select('text')
+        //   .text(function(d, i, selection) {
+        //     // shouldn't we just use
+        //     return valueFormat(d, i, selection, 'axis reset');
+        //   });
+        maxminText
+          .text(function(d, i, selection) {
+            // get the current tickFormatter which is a wrapper around valueFormat
+            return valueFormat(d, i, selection, 'maxmin');
+          });
 
         calcMaxLabelSizes();
         setThickness();
@@ -492,8 +504,9 @@ export default function axis() {
       function handleWrap() {
         var tickSpacing = getTickSpacing();
 
-        tickText.each(function(d, i) {
-          var textContent = axis.tickFormat()(d, i, selection, true);
+        tickText.each(function(d, i, selection) {
+          // do not ellipsify the label
+          var textContent = valueFormat(d, i, selection, 'no-ellipsis');
           var textNode = d3.select(this);
           var isDate = utility.isValidDate(textContent);
           var dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
@@ -767,9 +780,9 @@ export default function axis() {
       return valueFormat || axis.tickFormat();
     }
     valueFormat = _;
-    axis.tickFormat(_);
     return model;
   };
+  // mask axis native tickFormat method
   model.tickFormat = function(_) {
     if (!arguments.length) {
       return tickFormat || axis.tickFormat();

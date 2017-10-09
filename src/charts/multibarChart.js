@@ -46,8 +46,11 @@ export default function multibarChart() {
         }
       };
 
-  var yValueFormat = function(d, i, label, isCurrency, precision) {
-        precision = isNaN(precision) ? 2 : precision;
+  var yValueFormat = function(d, i, label, isCurrency, precision, si) {
+        return utility.numberFormatSIFixed(d, precision, isCurrency, chart.locality(), si);
+      };
+
+  var valueFormat = function(d, i, label, isCurrency, precision) {
         return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
       };
 
@@ -83,9 +86,9 @@ export default function multibarChart() {
         var valueName = yIsCurrency ? 'Amount' : 'Count';
         var y = eo.point.y;
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
-        // we can't use yValueFormat because it needs SI units
+        // we can't use yValueFormat because it needs SI units for axis
         // for tooltip, we want the full value
-        var valueLabel = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
+        var valueLabel = utility.numberFormat(y, null, yIsCurrency, chart.locality());
 
         var percent;
         var content = '';
@@ -96,7 +99,7 @@ export default function multibarChart() {
 
         if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
+          percent = utility.numberFormat(percent, 2, false, chart.locality());
           content += '<p>Percentage: <b>' + percent + '%</b></p>';
         }
 
@@ -452,18 +455,6 @@ export default function multibarChart() {
         xDateFormat = utility.getDateFormat(groupLabels);
       }
 
-      xAxisFormat = function(d, i, selection, noEllipsis) {
-        //TODO: isn't there always groupLabels?
-        // var group = hasGroupLabels ? groupLabels[i] : d;
-        var group = groupLabels[i];
-        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
-        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
-      };
-
-      yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, null, yIsCurrency, 2);
-      };
-
 
       //------------------------------------------------------------
       // State persistence model
@@ -482,10 +473,18 @@ export default function multibarChart() {
         .controlsData(controlsData)
         .legendData(data);
 
-      // we want the bar value label to have the same formatting as y-axis
+      // we want the bar value label to not show decimals (confirm) with SI
       model.valueFormat(function(d, i) {
-        return yValueFormat(d, i, null, yIsCurrency, 2);
+        return valueFormat(d, i, null, yIsCurrency, 0);
       });
+
+      xAxisFormat = function(d, i, selection, type) {
+        //TODO: isn't there always groupLabels?
+        // var group = hasGroupLabels ? groupLabels[i] : d;
+        var group = groupLabels[i];
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return type === 'no-ellipsis' ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
+      };
 
       xAxis
         .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
@@ -495,6 +494,38 @@ export default function multibarChart() {
         .tickPadding(4)
         .highlightZero(false)
         .showMaxMin(false);
+
+      var yAxisFormatProperties = {
+        axis: null,
+        maxmin: null
+      };
+
+      function setAxisFormatProperties(type, selection) {
+        // i.e., 100 | 200 | 300
+        var tickDatum = selection.map(function(t) {
+            return d3.select(t).datum();
+          });
+        // i.e., 1 | 1000 | 1000000
+        var decimal = d3.max(d3.extent(tickDatum), function(v) {
+            return utility.siDecimal(Math.abs(v));
+          });
+        var precision = d3.max(tickDatum, function(v) {
+            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+          });
+        if (type === 'maxmin' && yAxisFormatProperties.axis) {
+          precision = Math.max(yAxisFormatProperties.axis.precision, precision);
+        }
+        yAxisFormatProperties[type] = {
+          decimal: decimal,
+          precision: precision
+        };
+        return yAxisFormatProperties[type];
+      }
+
+      yAxisFormat = function(d, i, selection, type) {
+        var properties = yAxisFormatProperties[type] || setAxisFormatProperties(type, selection);
+        return yValueFormat(d, i, null, yIsCurrency, properties.precision, properties.decimal);
+      };
 
       yAxis
         .orient(vertical ? 'left' : 'bottom')
