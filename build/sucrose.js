@@ -26,6 +26,17 @@ var version = "0.6.12";
 /*-------------------
       UTILITIES
 -------------------*/
+
+// Method is assumed to be a standard D3 getter-setter:
+// If passed with no arguments, gets the value.
+// If passed with arguments, sets the value and returns the target.
+function d3_rebind(target, source, method) {
+  return function() {
+    var value = method.apply(source, arguments);
+    return value === source ? target : value;
+  };
+}
+
 var utility = {};
 
 utility.identity = function(d) {
@@ -38,6 +49,11 @@ utility.functor = function functor(v) {
   };
 };
 
+utility.isFunction = function(o) {
+ var ol = {};
+ return o && ol.toString.call(o) == '[object Function]';
+};
+
 // Copies a variable number of methods from source to target.
 utility.rebind = function(target, source) {
   var i = 1, n = arguments.length, method;
@@ -45,15 +61,6 @@ utility.rebind = function(target, source) {
   return target;
 };
 
-// Method is assumed to be a standard D3 getter-setter:
-// If passed with no arguments, gets the value.
-// If passed with arguments, sets the value and returns the target.
-function d3_rebind(target, source, method) {
-  return function() {
-    var value = method.apply(source, arguments);
-    return value === source ? target : value;
-  };
-}
 /*
 Snippet of code you can insert into each utility.models.* to give you the ability to
 do things like:
@@ -65,56 +72,65 @@ To enable in the chart:
 chart.options = utility.optionsFunc.bind(chart);
 */
 utility.optionsFunc = function(args) {
-  if (args) {
-    d3.map(args).each((function(value, key) {
-      if (typeof this[key] === 'function') {
-        this[key](value);
-      }
-    }).bind(this));
+  if (!args) {
+    return this;
   }
+  d3.map(args).each((function(value, key) {
+    var m = this[key];
+    var v = utility.toNative(value);
+    if (!utility.isFunction(m)) {
+      return;
+    }
+    if (Array.isArray(v)) {
+      m.apply(v);
+    } else {
+      m(v);
+    }
+  }).bind(this));
   return this;
 };
 
 // Window functions
-utility.windowSize = function () {
+utility.windowSize = function() {
   // Sane defaults
   var size = {width: 640, height: 480};
 
   // Earlier IE uses Doc.body
   if (document.body && document.body.offsetWidth) {
-      size.width = document.body.offsetWidth;
-      size.height = document.body.offsetHeight;
+    size.width = document.body.offsetWidth;
+    size.height = document.body.offsetHeight;
   }
 
   // IE can use depending on mode it is in
   if (document.compatMode === 'CSS1Compat' &&
-      document.documentElement &&
-      document.documentElement.offsetWidth ) {
-      size.width = document.documentElement.offsetWidth;
-      size.height = document.documentElement.offsetHeight;
+    document.documentElement &&
+    document.documentElement.offsetWidth ) {
+    size.width = document.documentElement.offsetWidth;
+    size.height = document.documentElement.offsetHeight;
   }
 
   // Most recent browsers use
   if (window.innerWidth && window.innerHeight) {
-      size.width = window.innerWidth;
-      size.height = window.innerHeight;
+    size.width = window.innerWidth;
+    size.height = window.innerHeight;
   }
+
   return (size);
 };
 
 // Easy way to bind multiple functions to window.onresize
   // TODO: give a way to remove a function after its bound, other than removing alkl of them
-  // utility.windowResize = function (fun)
+  // utility.windowResize = function(fun)
   // {
   //   var oldresize = window.onresize;
 
-  //   window.onresize = function (e) {
+  //   window.onresize = function(e) {
   //     if (typeof oldresize == 'function') oldresize(e);
   //     fun(e);
   //   }
 // }
 
-utility.windowResize = function (fun) {
+utility.windowResize = function(fun) {
   if (window.attachEvent) {
       window.attachEvent('onresize', fun);
   }
@@ -126,26 +142,26 @@ utility.windowResize = function (fun) {
   }
 };
 
-utility.windowUnResize = function (fun) {
+utility.windowUnResize = function(fun) {
   if (window.detachEvent) {
-      window.detachEvent('onresize', fun);
+    window.detachEvent('onresize', fun);
   }
   else if (window.removeEventListener) {
-      window.removeEventListener('resize', fun, true);
+    window.removeEventListener('resize', fun, true);
   }
   else {
-      //The browser does not support Javascript event binding
+    //The browser does not support Javascript event binding
   }
 };
 
-utility.resizeOnPrint = function (fn) {
+utility.resizeOnPrint = function(fn) {
   if (window.matchMedia) {
-      var mediaQueryList = window.matchMedia('print');
-      mediaQueryList.addListener(function (mql) {
-          if (mql.matches) {
-              fn();
-          }
-      });
+    var mediaQueryList = window.matchMedia('print');
+    mediaQueryList.addListener(function(mql) {
+        if (mql.matches) {
+            fn();
+        }
+    });
   } else if (window.attachEvent) {
     window.attachEvent('onbeforeprint', fn);
   } else {
@@ -155,14 +171,14 @@ utility.resizeOnPrint = function (fn) {
   //window.attachEvent('onafterprint', fn);
 };
 
-utility.unResizeOnPrint = function (fn) {
+utility.unResizeOnPrint = function(fn) {
   if (window.matchMedia) {
-      var mediaQueryList = window.matchMedia('print');
-      mediaQueryList.removeListener(function (mql) {
-          if (mql.matches) {
-              fn();
-          }
-      });
+    var mediaQueryList = window.matchMedia('print');
+    mediaQueryList.removeListener(function(mql) {
+        if (mql.matches) {
+            fn();
+        }
+    });
   } else if (window.detachEvent) {
     window.detachEvent('onbeforeprint', fn);
   } else {
@@ -175,14 +191,13 @@ utility.unResizeOnPrint = function (fn) {
 // Backwards compatible way to implement more d3-like coloring of graphs.
 // If passed an array, wrap it in a function which implements the old default
 // behavior
-utility.getColor = function (color) {
+utility.getColor = function(color) {
   if (!arguments.length) {
     //if you pass in nothing, get default colors back
     return utility.defaultColor();
   }
-
   if (Array.isArray(color)) {
-    return function (d, i) {
+    return function(d, i) {
       return d.color || color[i % color.length];
     };
   } else if (Object.prototype.toString.call(color) === '[object String]') {
@@ -191,15 +206,15 @@ utility.getColor = function (color) {
     };
   } else {
     return color;
-      // can't really help it if someone passes rubbish as color
-      // or color is already a function
+    // can't really help it if someone passes rubbish as color
+    // or color is already a function
   }
 };
 
 // Default color chooser uses the index of an object as before.
-utility.defaultColor = function () {
+utility.defaultColor = function() {
   var colors = d3.scaleOrdinal(d3.schemeCategory20).range();
-  return function (d, i) {
+  return function(d, i) {
     return d.color || colors[i % colors.length];
   };
 };
@@ -221,17 +236,17 @@ utility.getTextContrast = function(c, i, callback) {
 
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
-utility.customTheme = function (dictionary, getKey, defaultColors) {
-  getKey = getKey || function (series) { return series.key; }; // use default series.key if getKey is undefined
+utility.customTheme = function(dictionary, getKey, defaultColors) {
+  var defIndex;
+  getKey = getKey || function(series) { return series.key; }; // use default series.key if getKey is undefined
   defaultColors = defaultColors || d3.scaleOrdinal(d3.schemeCategory20).range(); //default color function
-
-  var defIndex = defaultColors.length; //current default color (going in reverse)
-
-  return function (series, index) {
+  defIndex = defaultColors.length; //current default color (going in reverse)
+  return function(series, index) {
     var key = getKey(series);
 
-    if (!defIndex) defIndex = defaultColors.length; //used all the default colors, start over
-
+    if (!defIndex) {
+      defIndex = defaultColors.length; //used all the default colors, start over
+    }
     if (typeof dictionary[key] !== 'undefined') {
       return (typeof dictionary[key] === 'function') ? dictionary[key]() : dictionary[key];
     } else {
@@ -242,24 +257,20 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
 
 // Gradient functions
 
-utility.colorLinearGradient = function (d, i, p, c, defs) {
+utility.colorLinearGradient = function(d, i, p, c, defs) {
   var id = 'lg_gradient_' + i;
   var grad = defs.select('#' + id);
-  if ( grad.empty() )
-  {
-    if (p.position === 'middle')
-    {
-      utility.createLinearGradient( id, p, defs, [
+  if (grad.empty()) {
+    if (p.position === 'middle') {
+      utility.createLinearGradient(id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '20%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
         { 'offset': '80%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 }
       ]);
-    }
-    else
-    {
-      utility.createLinearGradient( id, p, defs, [
+    } else {
+      utility.createLinearGradient(id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '100%','stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 }
@@ -273,19 +284,20 @@ utility.colorLinearGradient = function (d, i, p, c, defs) {
 // id:dynamic id for arc
 // radius:outer edge of gradient
 // stops: an array of attribute objects
-utility.createLinearGradient = function (id, params, defs, stops) {
+utility.createLinearGradient = function(id, params, defs, stops) {
   var x2 = params.orientation === 'horizontal' ? '0%' : '100%';
   var y2 = params.orientation === 'horizontal' ? '100%' : '0%';
   var attrs, stop;
-  var grad = defs.append('linearGradient')
-        .attr('id', id)
-        .attr('x1', '0%')
-        .attr('y1', '0%')
-        .attr('x2', x2 )
-        .attr('y2', y2 )
-        //.attr('gradientUnits', 'userSpaceOnUse')objectBoundingBox
-        .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1) {
+  var grad = defs.append('linearGradient');
+  grad
+    .attr('id', id)
+    .attr('x1', '0%')
+    .attr('y1', '0%')
+    .attr('x2', x2 )
+    .attr('y2', y2 )
+    //.attr('gradientUnits', 'userSpaceOnUse')objectBoundingBox
+    .attr('spreadMethod', 'pad');
+  for (var i = 0; i < stops.length; i += 1) {
     attrs = stops[i];
     stop = grad.append('stop');
     for (var a in attrs) {
@@ -296,32 +308,32 @@ utility.createLinearGradient = function (id, params, defs, stops) {
   }
 };
 
-utility.colorRadialGradient = function (d, i, p, c, defs) {
+utility.colorRadialGradient = function(d, i, p, c, defs) {
   var id = 'rg_gradient_' + i;
   var grad = defs.select('#' + id);
-  if ( grad.empty() ) {
-    utility.createRadialGradient( id, p, defs, [
-      { 'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
-      { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1 }
+  if (grad.empty()) {
+    utility.createRadialGradient(id, p, defs, [
+      {'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1},
+      {'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1}
     ]);
   }
   return 'url(#' + id + ')';
 };
 
-utility.createRadialGradient = function (id, params, defs, stops) {
-  var attrs, stop;
-  var grad = defs.append('radialGradient')
-        .attr('id', id)
-        .attr('r', params.r)
-        .attr('cx', params.x)
-        .attr('cy', params.y)
-        .attr('gradientUnits', params.u)
-        .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1) {
+utility.createRadialGradient = function(id, params, defs, stops) {
+  var attrs, stop, grad;
+  grad = defs.append('radialGradient')
+    .attr('id', id)
+    .attr('r', params.r)
+    .attr('cx', params.x)
+    .attr('cy', params.y)
+    .attr('gradientUnits', params.u)
+    .attr('spreadMethod', 'pad');
+  for (var i = 0; i < stops.length; i += 1) {
     attrs = stops[i];
     stop = grad.append('stop');
     for (var a in attrs) {
-      if ( attrs.hasOwnProperty(a) ) {
+      if (attrs.hasOwnProperty(a)) {
         stop.attr(a, attrs[a]);
       }
     }
@@ -329,27 +341,28 @@ utility.createRadialGradient = function (id, params, defs, stops) {
 };
 
 // Creates a rectangle with rounded corners
-utility.roundedRectangle = function (x, y, width, height, radius) {
-  return 'M' + x + ',' + y +
-       'h' + (width - radius * 2) +
-       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + radius +
-       'v' + (height - 2 - radius * 2) +
-       'a' + radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + radius +
-       'h' + (radius * 2 - width) +
-       'a' + -radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + -radius +
-       'v' + ( -height + radius * 2 + 2 ) +
-       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + -radius +
-       'z';
+utility.roundedRectangle = function(x, y, width, height, radius) {
+  var s =
+    'M' + x + ',' + y +
+    'h' + (width - radius * 2) +
+    'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + radius +
+    'v' + (height - 2 - radius * 2) +
+    'a' + radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + radius +
+    'h' + (radius * 2 - width) +
+    'a' + -radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + -radius +
+    'v' + ( -height + radius * 2 + 2 ) +
+    'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + -radius +
+    'z';
+  return s;
 };
 
-utility.dropShadow = function (id, defs, options) {
+utility.dropShadow = function(id, defs, options) {
   var opt = options || {};
   var h = opt.height || '130%';
   var o = opt.offset || 2;
   var b = opt.blur || 1;
   var filter;
   var merge;
-
   if (defs.select('#' + id).empty()) {
     filter = defs.append('filter')
       .attr('id', id)
@@ -368,13 +381,11 @@ utility.dropShadow = function (id, defs, options) {
       .attr('in', 'matrixOut')
       .attr('result', 'blurOut')
       .attr('stdDeviation', b); //stdDeviation is how much to blur
-
     merge = filter.append('feMerge');
     merge.append('feMergeNode'); //this contains the offset blurred image
     merge.append('feMergeNode')
       .attr('in', 'SourceGraphic'); //this contains the element that the filter is applied to
   }
-
   return 'url(#' + id + ')';
 };
 // <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
@@ -391,9 +402,8 @@ utility.dropShadow = function (id, defs, options) {
 // </svg>
 
 utility.createTexture = function(defs, id, x, y) {
-  var texture = '#sc-diagonalHatch-' + id,
-      mask = '#sc-textureMask-' + id;
-
+  var texture = '#sc-diagonalHatch-' + id;
+  var mask = '#sc-textureMask-' + id;
   defs
     .append('pattern')
       .attr('id', 'sc-diagonalHatch-' + id)
@@ -407,7 +417,6 @@ utility.createTexture = function(defs, id, x, y) {
         // .attr('stroke', fill)
         .attr('stroke', '#fff')
         .attr('stroke-linecap', 'square');
-
   defs
     .append('mask')
       .attr('id', 'sc-textureMask-' + id)
@@ -428,8 +437,8 @@ utility.createTexture = function(defs, id, x, y) {
 // String functions
 
 utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
-  var lengths = [],
-      txt = _container.select('.tmp-text-strings').select('text');
+  var lengths = [];
+  var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
     txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
   }
@@ -444,8 +453,8 @@ utility.stringSetLengths = function(_data, _container, _format, classes, styles)
 };
 
 utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
-  var thicknesses = [],
-      txt = _container.select('.tmp-text-strings').select('text');
+  var thicknesses = [];
+  var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
     txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
   }
@@ -489,8 +498,8 @@ utility.stringEllipsify = function(_string, _container, _length) {
 };
 
 utility.getTextBBox = function(text, floats) {
-  var bbox = text.node().getBoundingClientRect(),
-      size = {
+  var bbox = text.node().getBoundingClientRect();
+  var size = {
         width: floats ? bbox.width : parseInt(bbox.width, 10),
         height: floats ? bbox.height : parseInt(bbox.height, 10),
         top: floats ? bbox.top : parseInt(bbox.top, 10),
@@ -504,8 +513,8 @@ utility.strip = function(s) {
 };
 
 utility.isRTLChar = function(c) {
-  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
-      rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
+  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC';
+  var rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
   return rtlCharReg_.test(c);
 };
 
@@ -513,12 +522,7 @@ utility.isRTLChar = function(c) {
 
 // Numbers that are undefined, null or NaN, convert them to zeros.
 utility.NaNtoZero = function(n) {
-  if (typeof n !== 'number'
-      || isNaN(n)
-      || n === null
-      || n === Infinity) return 0;
-
-  return n;
+  return utility.isNumeric(n) ? n : 0;
 };
 
 utility.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
@@ -536,59 +540,44 @@ utility.angleToDegrees = function(angleInRadians) {
   return angleInRadians * 180.0 / Math.PI;
 };
 
-utility.getAbsoluteXY = function (element) {
+utility.getAbsoluteXY = function(element) {
   var viewportElement = document.documentElement;
   var box = element.getBoundingClientRect();
   var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
   var scrollTop = viewportElement.scrollTop + document.body.scrollTop;
   var x = box.left + scrollLeft;
   var y = box.top + scrollTop;
-
   return {'left': x, 'top': y};
 };
+
 utility.translation = function(x, y) {
   return 'translate(' + x + ',' + y + ')';
 };
-// utility.numberFormatSI = function(d, p, c, l) {
-  //     var fmtr, spec, si;
-  //     if (isNaN(d)) {
-  //         return d;
-  //     }
-  //     p = typeof p === 'undefined' ? 2 : p;
-  //     c = typeof c === 'undefined' ? false : !!c;
-  //     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  //     d = Math.round(d * 10 * p) / 10 * p;
-  //     spec = c ? '$,' : ',';
-  //     if (c && d < 1000 && d !== parseInt(d, 10)) {
-  //         spec += '.2f';
-  //     }
-  //     if (d < 1 && d > -1) {
-  //         spec += '.2s';
-  //     }
-  //     return fmtr(spec)(d);
-// };
 
-utility.numberFormatSI = function(d, p, c, l) {
-  var fmtr, spec;
-  if (isNaN(d) || d === 0) {
-      return d;
-  }
-  p = typeof p === 'undefined' ? 2 : p;
-  c = typeof c === 'undefined' ? false : !!c;
-  fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  spec = c ? '$,' : ',';
-  // spec += '.' + 2 + 'r';
-  if (c && d < 1000 && d !== parseInt(d, 10)) {
-    spec += '.2f';
-  } else if (Math.abs(d) > 1 && Math.abs(d) <= 1000) {
-    d = p === 0 ? Math.round(d) : Math.round(d * 10 * p) / (10 * p);
-  } else {
-    spec += '.' + p + 's';
-  }
-  if (d > -1 && d < 1) {
-    return fmtr(spec)(d);
-  }
-  return fmtr(spec)(d);
+utility.isNumeric = function(value) {
+  return !isNaN(value) && Number.isFinite(value);
+};
+
+utility.toNative = function(value) {
+  var v = utility.isNumeric(parseFloat(value)) ?
+    parseFloat(value) :
+    value === 'true' ?
+      true :
+      value === 'false' ?
+        false :
+        value;
+  return v;
+};
+
+utility.toBoolean = function(value) {
+  var v = utility.isNumeric(parseFloat(value)) ?
+    !!parseFloat(value) :
+    value === 'true' ?
+      true :
+      value === 'false' ?
+        false :
+        value;
+  return v;
 };
 
 utility.round = function(x, n) {
@@ -597,16 +586,156 @@ utility.round = function(x, n) {
   return Math.round(x * ten_n) / ten_n;
 };
 
-utility.numberFormatRound = function(d, p, c, l) {
-  var fmtr, spec;
-  if (isNaN(d)) {
+utility.countSigFigsAfter = function(value) {
+  // consider: d3.precisionFixed(value);
+  // if value has decimals
+  return (Math.floor(value) !== parseFloat(value) ) ?
+    parseFloat(value).toString().split('.').pop().length || 0 :
+    0;
+};
+
+utility.countSigFigsBefore = function(value) {
+  return Math.floor(value).toString().replace(/0+$/g, '').length;
+};
+
+utility.siDecimal = function(n) {
+  return Math.pow(10, Math.floor(Math.log10(n)));
+  // return Math.pow(1000, Math.floor((Math.round(parseFloat(n)).toString().length - 1) / 3));
+};
+
+utility.siValue = function(si) {
+  if (utility.isNumeric(si)) {
+    return utility.siDecimal(si);
+  }
+  var units = {
+    y: 1e-24,
+    yocto: 1e-24,
+    z: 1e-21,
+    zepto: 1e-21,
+    a: 1e-18,
+    atto: 1e-18,
+    f: 1e-15,
+    femto: 1e-15,
+    p: 1e-12,
+    pico: 1e-12,
+    n: 1e-9,
+    nano: 1e-9,
+    µ: 1e-6,
+    micro: 1e-6,
+    m: 1e-3,
+    milli: 1e-3,
+    k: 1e3,
+    kilo: 1e3,
+    M: 1e6,
+    mega: 1e6,
+    G: 1e9,
+    giga: 1e9,
+    T: 1e12,
+    tera: 1e12,
+    P: 1e15,
+    peta: 1e15,
+    E: 1e18,
+    exa: 1e18,
+    Z: 1e21,
+    zetta: 1e21,
+    Y: 1e24,
+    yotta: 1e24
+  };
+  return units[si] || 0;
+};
+
+utility.numberFormat = function(d, p, c, l) {
+  var f, s, m;
+  c = typeof c === 'boolean' ? c : false;
+  if (!utility.isNumeric(d) || (d === 0 && !c)) {
+    return d.toString();
+  }
+  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  m = utility.countSigFigsAfter(d);
+  p = m && c ? p : Math.min(p, m);
+  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  s = c ? '$,' : ',';
+  s += m ? ('.' + p + 'f') : '';
+  return f(s)(d);
+};
+
+utility.numberFormatFixed = function(d, p, c, l) {
+  var f, s;
+  if (!utility.isNumeric(d)) {
+    return d.toString();
+  }
+  c = typeof c === 'boolean' ? c : false;
+  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  s = c ? '$,' : ',';
+  s += '.' + p + 'f';
+  return f(s)(d);
+};
+
+utility.numberFormatSI = function(d, p, c, l) {
+  var f, s, m;
+  if (!utility.isNumeric(d)) {
     return d;
   }
   c = typeof c === 'boolean' ? c : false;
-  p = Number.isFinite(p) ? p : c ? 2 : 0;
-  fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  spec = (c ? '$' : '') + ',.' + p + 'f';
-  return fmtr(spec)(d);
+  p = Number.isFinite(p) ? p : 0;
+  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  m = utility.countSigFigsAfter(d);
+  s = c ? '$,' : ',';
+  // if currency less than 1k with decimal places
+  if (c && m && d < 1000) {
+    d = utility.round(d, p);
+    m = utility.countSigFigsAfter(d);
+    p = Math.min(m, p);
+    if (p === 1) {
+      p = 2;
+    }
+    // try using: d = parseFloat(d.toFixed(p)).toString();
+    // use fixed formatting with rounding
+    s += '.' + p + 'f';
+  }
+  // if absolute value less than 1
+  else if (Math.abs(d) < 1) {
+    s += (
+      // if rounding to precision results in 0
+      +d.toFixed(p) === 0 ?
+        // use next si unit
+        '.1s' :
+        // round to a single significant figure
+        '.' + Math.min(p, m) + 'f'
+    );
+  }
+  // if absolute value less than 1k
+  else if (Math.abs(d) < 1000) {
+    d = utility.round(d, p);
+  }
+  else {
+    f = typeof l === 'undefined' ? d3.formatPrefix : d3.formatLocale(l).formatPrefix;
+    if (p !== 0) {
+      var d1 = f('.' + p + 's', d)(d);
+      var d2 = d1.split('.').pop().replace(/[^\d]+$/, '').match(/0+$/g);
+      if (Array.isArray(d2)) {
+        p -= d2.pop().length;
+      }
+    }
+    s += '.' + p + 's';
+    return f(s, d)(d);
+  }
+  return f(s)(d);
+};
+
+utility.numberFormatSIFixed = function(d, p, c, l, si) {
+  var f, s;
+  if (!utility.isNumeric(d)) {
+    return d.toString();
+  }
+  c = typeof c === 'boolean' ? c : false;
+  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  f = typeof l === 'undefined' ? d3.formatPrefix : d3.formatLocale(l).formatPrefix;
+  si = utility.siValue(si);
+  s = c ? '$,' : ',';
+  s += '.' + p + 's';
+  return f(s, si)(d);
 };
 
 // Date functions
@@ -615,53 +744,115 @@ utility.daysInMonth = function(month, year) {
 };
 
 utility.isValidDate = function(d) {
-  var testDate;
   if (!d) {
     return false;
   }
-  testDate = new Date(d);
-  return testDate instanceof Date && !isNaN(testDate.valueOf());
+  return d instanceof Date && !isNaN(d.valueOf());
 };
 
-utility.getDateFormat = function(values) {
-  var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
-  var formatIndex = 0;
+// accepts (ISO, W3C, RFC 822):
+// 2012,
+// '2012',
+// 1330837567000,
+// '1330837567000',
+// '2012-03-04T05:06:07.000Z',
+// '2012-03-04T00:06:07.000-05:00',
+// '2012-03-04T05:06:07.000Z',
+// 'March 4, 2012, 0:06:07 AM',
+// 'March 4, 2012, 5:06:07 AM GMT',
+// 'Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)',
+// 'Sun Mar 04 2012 00:06:07 GMT-0500 (EST)'
+utility.parseDatetime = function(d) {
+  var date, m;
+  // only for 1991 or '1991'
+  if (utility.isNumeric(Math.floor(d)) && d.toString().length === 4) {
+    // date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
+    // append day and month parts and GMT to get correct UTC offset
+    date = new Date(Math.floor(d) + '-1-1 GMT');
+  }
+  // only for '1330837567000' or 1330837567000
+  //   it will not fire for a Date object
+  //   if you use Math.floor, Date object would convert to number
+  else if (parseInt(d, 10).toString() === d || parseInt(d, 10) === d) {
+    date = new Date(parseInt(d, 10));
+  }
+  // only for Date object or Date string
+  else {
+    // convert a numeric timestamp: 1330837567000
+    // or convert a date string: 'Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)'
+    date = new Date(d);
+    //Q: what should we do about dt strings w/o timezone?
+    //'March 4, 2012, 0:06:07 AM'
+    if (
+      d.toString().substr(-1) !== 'Z' &&
+      d.toString().indexOf('GMT') === -1 &&
+      !d.toString().match(/\d\d\d\d-\d\d-\d\dT/)
+    ) {
+      // force to UTC
+      date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
+    }
+  }
+  if (!utility.isValidDate(date)) {
+    date = d;
+  }
+  return date;
+};
 
-  formatIndex = values.length ? d3.min(values, function(date) {
+// expects an array of dates constructed from local datetime strings without GTM
+// for instance: "2/3/1991, 4:05:06 AM" or "1991-2-3" which evaluates as
+// Sun Feb 03 1991 04:05:06 GMT-0500 (EST). The GMT offset is ignored.
+utility.getDateFormat = function(values, utc) {
+  //TODO: use locality format strings mmmmY, etc.
+  var dateFormats = [
+    'multi',
+    '%x, %I:%M:%S.%L %p',
+    '%x, %I:%M:%S %p',
+    '%x, %I:%M %p',
+    '%x, %I %p',
+    '%x',
+    '%b %d',
+    '%B %Y',
+    '%Y'
+  ];
+
+  var formatIndex = values.length ? d3.min(values, function(date) {
+    if (utc === true) {
+      date.setUTCMilliseconds(date.getUTCMilliseconds() + date.getTimezoneOffset() * 60000);
+    }
+    var d = new Date(date);
     var format;
-
     // if round to second is less than date
-    if (d3.timeSecond(date) < date) {
+    if (+d3.timeSecond(date) < +d) {
       // use millisecond format - .%L
       format = 1;
     }
     else
     // if round to minute is less than date
-    if (d3.timeMinute(date) < date) {
+    if (+d3.timeMinute(date) < +d) {
       // use second format - :%S
       format = 2;
     }
     else
     // if round to hour is less than date
-    if (d3.timeHour(date) < date) {
+    if (+d3.timeHour(date) < +d) {
       // use minute format - %I:%M
       format = 3;
     }
     else
     // if round to day is less than date
-    if (d3.timeDay(date) < date) {
+    if (+d3.timeDay(date) < +d) {
       // use hour format - %I %p
       format = 4;
     }
     else
     // if round to month is less than date
-    if (d3.timeMonth(date) < date) {
+    if (+d3.timeMonth(date) < +d) {
       // use day format - %x
       format = 5; // format = (d3.timeWeek(date) < date ? 4 : 5);
     }
     else
     // if round to year is less than date
-    if (d3.timeYear(date) < date) {
+    if (+d3.timeYear(date) < +d) {
       // use month format - %B
       format = 7;
     }
@@ -672,51 +863,63 @@ utility.getDateFormat = function(values) {
       format = 8;
     }
     return format;
-  }) : 0;
+  }) : 8;
 
   return dateFormats[formatIndex];
 };
 
-utility.getUTCDateFormat = function(values) {
-  var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
-  var formatIndex = 0;
+// expects an array of date objects adjusted to GMT
+// for instance: "Sun Feb 03 1991 04:05:06 GMT" which evaluates as
+// Sun Feb 03 1991 04:05:06 GMT
+utility.getDateFormatUTC = function(values) {
+  //TODO: use locality format strings mmmmY, etc.
+  var dateFormats = [
+    'multi',
+    '%x, %I:%M:%S.%L %p',
+    '%x, %I:%M:%S %p',
+    '%x, %I:%M %p',
+    '%x, %I %p',
+    '%x',
+    '%b %d',
+    '%B %Y',
+    '%Y'
+  ];
 
-  formatIndex = values.length ? d3.min(values, function(date) {
+  var formatIndex = values.length ? d3.min(values, function(date) {
+    var d = new Date(date);
     var format;
-    date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
-
     // if round to second is less than date
-    if (d3.utcSecond(date) < date) {
+    if (+d3.utcSecond(date) < +d) {
       // use millisecond format - .%L
       format = 1;
     }
     else
     // if round to minute is less than date
-    if (d3.utcMinute(date) < date) {
+    if (+d3.utcMinute(date) < +d) {
       // use second format - :%S
       format = 2;
     }
     else
     // if round to hour is less than date
-    if (d3.utcHour(date) < date) {
+    if (+d3.utcHour(date) < +d) {
       // use minute format - %I:%M
       format = 3;
     }
     else
     // if round to day is less than date
-    if (d3.utcDay(date) < date) {
+    if (+d3.utcDay(date) < +d) {
       // use hour format - %I %p
       format = 4;
     }
     else
     // if round to month is less than date
-    if (d3.utcMonth(date) < date) {
+    if (+d3.utcMonth(date) < +d) {
       // use day format - %x
       format = 5; // format = (d3.utcWeek(date) < date ? 4 : 5);
     }
     else
     // if round to year is less than date
-    if (d3.utcYear(date) < date) {
+    if (+d3.utcYear(date) < +d) {
       // use month format - %B
       format = 7;
     }
@@ -727,63 +930,39 @@ utility.getUTCDateFormat = function(values) {
       format = 8;
     }
     return format;
-  }) : 0;
-
+  }) : 8;
   return dateFormats[formatIndex];
 };
 
-utility.multiFormat = function(d) {
-  var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
-  var format;
-  if (d3.timeSecond(date) < d) {
-    format = '.%L'; //millisecond
-  } else if (d3.timeMinute(date) < d) {
-    format = ':%S'; //second
-  } else if (d3.timeHour(date) < d) {
-    format = '%I:%M'; //minute
-  } else if (d3.timeDay(date) < d) {
-    format = '%I %p'; //hour
-  } else if (d3.timeMonth(date) < d) {
-    format = '%x'; //day
-    // format = (d3.timeWeek(date) < date ? formatDay : formatWeek);
-  } else if (d3.timeYear(date) < d) {
-    format = '%B'; //month
-  } else {
-    format = '%Y'; //year
-  }
-  return format;
+utility.multiFormat = function(date, utc) {
+  return utc === false ?
+    utility.getDateFormat([date]) :
+    utility.getDateFormatUTC([date]);
 };
 
+// expects string or date object
 utility.dateFormat = function(d, p, l) {
-  var dateString, date, locale, spec, fmtr;
+  var locale, fmtr, spec;
+  var dateString = d.toString();
 
-  // if the date value provided is a year
-  dateString = d.toString();
-  if (!isNaN(parseInt(dateString, 10)) && dateString.length === 4) {
-    // append day and month parts to get correct UTC offset
-    date = new Date(dateString + '-1-1'); // '1/1/' + dateString;
-  } else {
-    date = new Date(d);
-  }
-  date.setMilliseconds(date.getMilliseconds() - date.getTimezoneOffset() * 60000);
+  var date = utility.parseDatetime(d);
 
-  if (!(date instanceof Date) || isNaN(date.valueOf())) {
+  if (!utility.isValidDate(date)) {
     return d;
   }
 
   if (l && l.hasOwnProperty('utcFormat')) {
     // Use rebuilt locale formatter
     fmtr = l.utcFormat;
-    spec = p && p.indexOf('%') !== -1 ? p : utility.multiFormat(date);
+    spec = p ? p.indexOf('%') !== -1 ? p : utility.multiFormat(date) : '%Y';
   } else {
     // Ensure locality object has all needed properties
     // TODO: this is expensive so consider removing
     locale = utility.buildLocality(l);
-    fmtr = d3.timeFormatDefaultLocale(locale).utcFormat;
-    spec = p && p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date);
+    fmtr = d3.timeFormatLocale(locale).utcFormat;
+    spec = p ? p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date) : '%Y';
     // TODO: if not explicit pattern provided, we should use .multi()
   }
-
   return fmtr(spec)(date);
 };
 
@@ -826,18 +1005,16 @@ utility.buildLocality = function(l, d) {
         'y': '%Y'
       };
   var def;
-
   for (var key in locale) {
     if (l.hasOwnProperty(key)) {
       def = locale[key];
       definition[key] = !deep || !Array.isArray(def) ? def : unfer(def);
     }
   }
-
   return definition;
 };
 
-utility.displayNoData = function (hasData, container, label, x, y) {
+utility.displayNoData = function(hasData, container, label, x, y) {
   var data = hasData ? [] : [label];
   var noData_bind = container.selectAll('.sc-no-data').data(data);
   var noData_entr = noData_bind.enter().append('text')
@@ -1041,7 +1218,7 @@ function area() {
       forceX = [],
       forceY = [],
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorLinearGradient,
       fill = color,
       classes = function(d, i) { return 'sc-area sc-series-' + d.seriesIndex; },
       dispatch =  d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -1059,7 +1236,6 @@ function area() {
    ************************************/
 
   var data0;
-  var x0 = x.copy();
   var y0 = y.copy();
 
   //============================================================
@@ -1081,11 +1257,6 @@ function area() {
       var stackOffset = [d3.stackOffsetNone, d3.stackOffsetWiggle, d3.stackOffsetExpand, d3.stackOffsetSilhouette][stackOffsetIndex];
       var stackOrderIndex = [['default', 'inside-out'].indexOf(order)];
       var stackOrder = [d3.stackOrderNone, d3.stackOrderInsideOut][stackOrderIndex];
-
-      // gradient constructor function
-      gradient = gradient || function(d, i, p) {
-        return utility.colorLinearGradient(d, model.id() + '-' + i, p, color(d, i), wrap.select('defs'));
-      };
 
       //------------------------------------------------------------
       // Process data
@@ -1189,6 +1360,15 @@ function area() {
       x.domain(d3.extent(xValues)).range([0, availableWidth]);
       y.domain([0, max - min]).range([availableHeight, 0]);
 
+      model.resetDimensions = function(w, h) {
+        width = w;
+        height = h;
+        availableWidth = w - margin.left - margin.right;
+        availableHeight = h - margin.top - margin.bottom;
+        x.range([0, availableWidth]);
+        y.range([availableHeight, 0]);
+      };
+
       //------------------------------------------------------------
       // Setup containers and skeleton of chart
 
@@ -1197,6 +1377,7 @@ function area() {
       var wrap = container.select('.sc-wrap.sc-area').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
@@ -1205,14 +1386,22 @@ function area() {
 
       //------------------------------------------------------------
 
-      defs_entr.append('clipPath').attr('id', 'sc-edge-clip-' + id)
+      defs_entr.append('clipPath')
+        .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
 
-      wrap.select('#sc-edge-clip-' + id + ' rect')
+      defs.select('#sc-edge-clip-' + id + ' rect')
         .attr('width', availableWidth)
         .attr('height', availableHeight);
 
       wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i, params) {
+        var gradientId = id + '-' + i;
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Series
@@ -1313,6 +1502,9 @@ function area() {
           d3.select(this).classed('hover', false);
           dispatch.call('elementClick', this, eo);
         });
+
+      //store old scales for use in transitions on update
+      y0 = y.copy();
 
     });
 
@@ -1547,7 +1739,6 @@ function axis() {
 
       var tickDimensions = [],
           tickDimensionsHash = {},
-          tickValueArray = [],
           minTickDimensions = {},
           maxTickDimensions = {};
 
@@ -1562,6 +1753,11 @@ function axis() {
       } else {
         axis.ticks(Math.ceil(scaleWidth / 100));
       }
+
+      // wrap
+      axis.tickFormat(function(d, i, selection) {
+        return valueFormat(d, i, selection, 'axis');
+      });
 
       // test to see if rotateTicks was passed as a boolean
       if (rotateTicks && !isFinite(String(rotateTicks))) {
@@ -1597,21 +1793,15 @@ function axis() {
       axisMaxMin_entr.append('text').style('opacity', 0);
       axisMaxMin_entr.append('line').style('opacity', 0);
 
-      if (showMaxMin) {
-        axisMaxMin.select('text')
-          .text(function(d, i, selection) {
-            return axis.tickFormat()(d, i, selection, false);
-          });
-      }
+      var maxminText = axisMaxMin.select('text');
+
 
       // Get all axes and maxmin tick text for text handling functions
       var tickText = wrap.selectAll('g.tick, g.sc-axisMaxMin').select('text')
             .filter(function(d) {
               return this.getBoundingClientRect().width;
-            })
-            .each(function(d, i) {
-              tickValueArray.push(d3.select(this).text());
             });
+
 
       // Axis label
       var axisLabel_data = !!axisLabelText ? [axisLabelText] : [];
@@ -1631,10 +1821,12 @@ function axis() {
           rotateSucceeded = false;
 
       if (vertical) {
-        resetTicks();
+
+        resetTicks(true);
 
         tickText
           .style('text-anchor', rtlTextAnchor(textAnchor || (isMirrored() ? 'start' : 'end')));
+
       } else {
         //Not needed but keep for now
         // if (reduceXTicks) {
@@ -1643,14 +1835,14 @@ function axis() {
         //         .style('opacity', i % Math.ceil(data[0].values.length / (scaleWidth / 100)) !== 0 ? 0 : 1);
         //     });
         // }
-        resetTicks();
+        resetTicks(false);
         recalcMargin();
 
         if (labelCollision(1)) {
 
           // if wrap is enabled, try it first (for ordinal scales only)
           if (wrapTicks) {
-            resetTicks();
+            resetTicks(false);
             handleWrap();
             recalcMargin();
             handleWrap();
@@ -1662,7 +1854,7 @@ function axis() {
 
           // wrapping failed so fall back to stagger if enabled
           if (!wrapSucceeded && staggerTicks) {
-            resetTicks();
+            resetTicks(false);
             handleStagger();
             recalcMargin();
             handleStagger();
@@ -1678,7 +1870,7 @@ function axis() {
             if (!rotateTicks) {
               rotateTicks = 30;
             }
-            resetTicks();
+            resetTicks(true);
             handleRotation(rotateTicks);
             recalcMargin(rotateTicks);
             handleRotation(rotateTicks);
@@ -1718,6 +1910,7 @@ function axis() {
               collision = (dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap) &&
                           (dim.bottom < minTickDimensions.top || dim.top > maxTickDimensions.bottom);
             } else {
+              //TODO: fix this in date x axis
               collision = dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap;
             }
 
@@ -1951,9 +2144,20 @@ function axis() {
           .attr('x', vertical ? axis.tickPadding() * reflect : 0)
           .attr('y', vertical ? 0 : axis.tickPadding() * reflect)
           .attr('transform', 'translate(0,0)')
-          .text(function(d, i) { return tickValueArray[i]; })
           .style('text-anchor', 'middle')
           .style('opacity', 1);
+
+        // don't need this because wrap.call(axis) does formatting
+        // axisTicks.select('text')
+        //   .text(function(d, i, selection) {
+        //     // shouldn't we just use
+        //     return valueFormat(d, i, selection, 'axis reset');
+        //   });
+        maxminText
+          .text(function(d, i, selection) {
+            // get the current tickFormatter which is a wrapper around valueFormat
+            return valueFormat(d, i, selection, 'maxmin');
+          });
 
         calcMaxLabelSizes();
         setThickness();
@@ -1962,10 +2166,11 @@ function axis() {
       function handleWrap() {
         var tickSpacing = getTickSpacing();
 
-        tickText.each(function(d, i) {
-          var textContent = axis.tickFormat()(d, i, selection, true);
+        tickText.each(function(d, i, selection) {
+          // do not ellipsify the label
+          var textContent = valueFormat(d, i, selection, 'no-ellipsis');
           var textNode = d3.select(this);
-          var isDate = utility.isValidDate(textContent);
+          var isDate = utility.isValidDate(utility.parseDatetime(textContent));
           var dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
           var di = 0;
           var textArray = (
@@ -2237,9 +2442,9 @@ function axis() {
       return valueFormat || axis.tickFormat();
     }
     valueFormat = _;
-    axis.tickFormat(_);
     return model;
   };
+  // mask axis native tickFormat method
   model.tickFormat = function(_) {
     if (!arguments.length) {
       return tickFormat || axis.tickFormat();
@@ -2315,7 +2520,7 @@ function funnel() {
       delay = 0,
       duration = 0,
       color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorLinearGradient,
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -2353,13 +2558,8 @@ function funnel() {
           funnelTotal = 0,
           funnelOffset = 0;
 
-      //sum the values for each data element
+      // sum the values for each data element
       funnelTotal = d3.sum(data, function(d) { return d.value; });
-
-      //set up the gradient constructor function
-      gradient = function(d, i, p) {
-        return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
-      };
 
       //------------------------------------------------------------
       // Setup scales
@@ -2429,11 +2629,13 @@ function funnel() {
 
       //------------------------------------------------------------
       // Setup containers and skeleton of model
+
       var wrap_bind = container.selectAll('g.sc-wrap').data([data]);
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-funnel');
       var wrap = container.select('.sc-wrap.sc-funnel').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap.attr('transform', utility.translation(margin.left, margin.top));
 
@@ -2443,6 +2645,13 @@ function funnel() {
       if (textureFill) {
         var mask = utility.createTexture(defs_entr, id);
       }
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i, params) {
+        var gradientId = id + '-' + i;
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Append major data series grouping containers
@@ -2518,7 +2727,7 @@ function funnel() {
         });
 
       if (textureFill) {
-        // For on click active bars
+        // For on click active slices
         slice_entr.append('polygon')
           .attr('class', 'sc-texture')
           .style('mask', 'url(' + mask + ')');
@@ -2800,6 +3009,7 @@ function funnel() {
           count: getCount(d),
           data: d,
           series: d.series,
+          seriesIndex: d.series.seriesIndex,
           e: e
         };
       }
@@ -3278,11 +3488,10 @@ function gauge() {
       fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
       locality = utility.buildLocality(),
       direction = 'ltr',
-      clipEdge = true,
       delay = 0,
       duration = 0,
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorRadialGradient,
       fill = color,
       classes = function(d, i) { return 'sc-slice sc-series-' + d.seriesIndex; },
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -3313,12 +3522,6 @@ function gauge() {
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
 
-      //set up the gradient constructor function
-      gradient = gradient || function(d, i) {
-        var params = {x: 0, y: 0, r: radius, s: ringWidth / 100, u: 'userSpaceOnUse'};
-        return utility.colorRadialGradient( d, id + '-' + i, params, color(d, i), wrap.select('defs') );
-      };
-
       var radius = Math.min((availableWidth / 2), availableHeight) / ((100 + labelInset) / 100),
           range = maxAngle - minAngle,
           scale = d3.scaleLinear().range([0, 1]).domain([minValue, maxValue]),
@@ -3346,6 +3549,7 @@ function gauge() {
       var wrap = container.select('.sc-wrap.sc-gauge').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
@@ -3360,6 +3564,23 @@ function gauge() {
       var odometer_wrap = wrap.select('.sc-odometer');
 
       wrap.attr('transform', 'translate('+ (margin.left/2 + margin.right/2 + prop(labelInset)) +','+ (margin.top + prop(labelInset)) +')');
+
+      //------------------------------------------------------------
+      // Definitions
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i) {
+        var gradientId = id + '-' + i;
+        var params = {
+          x: 0,
+          y: 0,
+          r: radius,
+          s: ringWidth / 100,
+          u: 'userSpaceOnUse'
+        };
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Append major data series grouping containers
@@ -4858,7 +5079,7 @@ function scatter() {
       height = 500,
       margin = {top: 0, right: 0, bottom: 0, left: 0},
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); }, // chooses color
-      gradient = null,
+      gradient = utility.colorRadialGradient,
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       x = d3.scaleLinear(),
@@ -4933,7 +5154,9 @@ function scatter() {
       // Setup Scales
 
       // remap and flatten the data for use in calculating the scales' domains
-      var seriesData = (xDomain && yDomain && zDomain) ? [] : // if we know xDomain and yDomain and zDomain, no need to calculate.... if Size is constant remember to set zDomain to speed up performance
+      // if we know xDomain and yDomain and zDomain, no need to calculate....
+      // if Size is constant remember to set zDomain to speed up performance
+      var seriesData = (xDomain && yDomain && zDomain) ? [] :
             d3.merge(
               data.map(function(d) {
                 return d.values.map(function(d, i) {
@@ -5037,11 +5260,7 @@ function scatter() {
       var wrap = container.select('.sc-wrap.sc-scatter').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
-
-      //set up the gradient constructor function
-      gradient = gradient || function(d, i) {
-        return utility.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
-      };
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
@@ -5062,11 +5281,25 @@ function scatter() {
         .attr('id', 'sc-points-clip-' + id)
         .attr('class', 'sc-point-clips');
 
-      wrap.select('#sc-edge-clip-' + id + ' rect')
+      defs.select('#sc-edge-clip-' + id + ' rect')
           .attr('width', availableWidth)
           .attr('height', availableHeight);
 
       wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i) {
+        var gradientId = id + '-' + i;
+        var params = {
+          x: 0.5,
+          y: 0.5,
+          r: 0.5,
+          s: 0,
+          u: 'objectBoundingBox'
+        };
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Series
@@ -5717,6 +5950,14 @@ function line() {
       // x0 = x.copy();
       // y0 = y.copy();
 
+      model.resetDimensions = function(w, h) {
+        width = w;
+        height = h;
+        availableWidth = w - margin.left - margin.right;
+        availableHeight = h - margin.top - margin.bottom;
+        points.resetDimensions(w, h);
+      };
+
       //------------------------------------------------------------
       // Setup containers and skeleton of model
 
@@ -6015,6 +6256,7 @@ function multibar() {
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       locality = utility.buildLocality(),
+      forceX = [],
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
       stacked = true,
       disabled, // used in conjunction with barColor to communicate to multibarChart what series are disabled
@@ -6031,7 +6273,7 @@ function multibar() {
       yDomain = null,
       nice = false,
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorLinearGradient,
       fill = color,
       textureFill = false,
       barColor = null, // adding the ability to set the color for each rather than the whole group
@@ -6168,12 +6410,12 @@ function multibar() {
 
       function unique(x) {
         return x.reverse()
-                .filter(function (e, i, x) { return x.indexOf(e, i+1) === -1; })
+                .filter(function (e, i, x) { return x.indexOf(e, i + 1) === -1; })
                 .reverse();
       }
 
       function resetScale() {
-        var xDomain = xDomain || unique(seriesData.map(getX));
+        var xDomain = xDomain || unique(seriesData.map(getX).concat(forceX));
         var maxX = vertical ? availableWidth : availableHeight,
             maxY = vertical ? availableHeight : availableWidth;
 
@@ -6267,32 +6509,35 @@ function multibar() {
       var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-wrap sc-multibar');
       var wrap = container.select('.sc-wrap.sc-multibar').merge(wrap_entr);
 
+      var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
+
       wrap.attr('transform', utility.translation(margin.left, margin.top));
 
-      //set up the gradient constructor function
-      gradient = gradient || function(d, i, p) {
-        return utility.colorLinearGradient(d, id + '-' + i, p, color(d, i), wrap.select('defs'));
-      };
 
       //------------------------------------------------------------
       // Definitions
-
-      var defs_entr = wrap_entr.append('defs');
 
       if (clipEdge) {
         defs_entr.append('clipPath')
           .attr('id', 'sc-edge-clip-' + id)
           .append('rect');
-        wrap.select('#sc-edge-clip-' + id + ' rect')
+        defs.select('#sc-edge-clip-' + id + ' rect')
           .attr('width', availableWidth)
           .attr('height', availableHeight);
       }
       wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
 
-
       if (textureFill) {
         var mask = utility.createTexture(defs_entr, id);
       }
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i, params) {
+        var gradientId = id + '-' + i;
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
 
@@ -6324,7 +6569,8 @@ function multibar() {
         .style('fill-opacity', 1);
 
       series
-        .on('mouseover', function(d, i, j) { //TODO: figure out why j works above, but not here
+        .on('mouseover', function(d, i, j) {
+          //TODO: figure out why j works above, but not here
           d3.select(this).classed('hover', true);
         })
         .on('mouseout', function(d, i, j) {
@@ -6334,8 +6580,7 @@ function multibar() {
       //------------------------------------------------------------
 
       var bars_bind = series.selectAll('.sc-bar').data(function(d) { return d.values; });
-      var bars_entr = bars_bind.enter().append('g')
-            .attr('class', 'sc-bar');
+      var bars_entr = bars_bind.enter().append('g').attr('class', 'sc-bar');
       bars_bind.exit().remove();
       var bars = series.selectAll('.sc-bar').merge(bars_entr);
 
@@ -6369,8 +6614,8 @@ function multibar() {
         .style('fill-opacity', 0);
 
       // For label text
-      var barText_entr = bars_entr.append('text') // TODO: should this be inside labelPosition?
-        .attr('class', 'sc-label-value');
+      // TODO: should this be inside labelPosition?
+      var barText_entr = bars_entr.append('text').attr('class', 'sc-label-value');
       var barText = bars.select('.sc-label-value').merge(barText_entr);
 
       //------------------------------------------------------------
@@ -6381,36 +6626,39 @@ function multibar() {
         })
         .classed('sc-active', function(d) { return d.active === 'active'; })
         .attr('transform', function(d, i) {
-          var trans = stacked ? {
-                x: Math.round(x(getX(d, i))),
-                y: Math.round(y(d.y0))
-              } :
-              { x: Math.round(d.seri * barThickness() + x(getX(d, i))),
-                y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
-              };
+          var trans;
+          if (stacked) {
+            trans = {
+              x: Math.round(x(getX(d, i))),
+              y: Math.round(y(d.y0))
+            };
+          } else {
+            trans = {
+              x: Math.round(d.seri * barThickness() + x(getX(d, i))),
+              y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
+            };
+          }
           return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
         })
         .style('display', function(d, i) {
           return barLength(d, i) !== 0 ? 'inline' : 'none';
         });
 
-      bars
-        .select('rect.sc-base')
-          .attr(valX, 0)
-          .attr(dimY, barLength)
-          .attr(dimX, barThickness);
+      bars.select('rect.sc-base')
+        .attr(valX, 0)
+        .attr(dimY, barLength)
+        .attr(dimX, barThickness);
 
       if (textureFill) {
-        bars
-          .select('rect.sc-texture')
-            .attr(valX, 0)
-            .attr(dimY, barLength)
-            .attr(dimX, barThickness)
-            .style('fill', function(d, i) {
-              var backColor = fill(d),
-                  foreColor = utility.getTextContrast(backColor, i);
-              return foreColor;
-            });
+        bars.select('rect.sc-texture')
+          .attr(valX, 0)
+          .attr(dimY, barLength)
+          .attr(dimX, barThickness)
+          .style('fill', function(d, i) {
+            var backColor = fill(d),
+                foreColor = utility.getTextContrast(backColor, i);
+            return foreColor;
+          });
       }
 
       //------------------------------------------------------------
@@ -6418,14 +6666,14 @@ function multibar() {
 
       function buildEventObject(e, d, i) {
         return {
-            pointIndex: i,
-            point: d,
-            seriesIndex: d.seriesIndex,
-            series: data[d.seri],
-            groupIndex: d.groupIndex,
-            id: id,
-            e: e
-          };
+          pointIndex: i,
+          point: d,
+          seriesIndex: d.seriesIndex,
+          series: data[d.seri],
+          groupIndex: d.groupIndex,
+          id: id,
+          e: e
+        };
       }
 
       bars
@@ -6778,6 +7026,12 @@ function multibar() {
     return model;
   };
 
+  model.forceX = function(_) {
+    if (!arguments.length) { return forceX; }
+    forceX = _;
+    return model;
+  };
+
   model.forceY = function(_) {
     if (!arguments.length) { return forceY; }
     forceY = _;
@@ -6862,15 +7116,15 @@ function multibar() {
     return model;
   };
 
-  model.nice = function(_) {
-    if (!arguments.length) { return nice; }
-    nice = _;
-    return model;
-  };
-
   model.textureFill = function(_) {
     if (!arguments.length) { return textureFill; }
     textureFill = _;
+    return model;
+  };
+
+  model.nice = function(_) {
+    if (!arguments.length) { return nice; }
+    nice = _;
     return model;
   };
 
@@ -6906,7 +7160,7 @@ function pie() {
       delay = 0,
       duration = 0,
       color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorRadialGradient,
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -6969,12 +7223,6 @@ function pie() {
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
 
-      //set up the gradient constructor function
-      gradient = gradient || function(d, i) {
-        var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
-        return utility.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
-      };
-
       //------------------------------------------------------------
       // recalculate width and height based on label length
 
@@ -6998,6 +7246,7 @@ function pie() {
       var wrap = container.select('.sc-wrap.sc-pie').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
@@ -7013,6 +7262,20 @@ function pie() {
       if (textureFill) {
         var mask = utility.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i) {
+        var gradientId = id + '-' + i;
+        var params = {
+          x: 0,
+          y: 0,
+          r: pieRadius,
+          s: (donut ? (donutRatio * 100) + '%' : '0%'),
+          u: 'userSpaceOnUse'
+        };
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Append major data series grouping containers
@@ -7065,6 +7328,7 @@ function pie() {
         });
 
       if (textureFill) {
+        // For on click active slices
         slice_entr.append('path')
           .attr('class', 'sc-texture')
           .each(function(d, i) {
@@ -7333,6 +7597,7 @@ function pie() {
           count: getCount(d),
           data: d,
           series: d.series,
+          seriesIndex: d.series.seriesIndex,
           e: e
         };
       }
@@ -7341,7 +7606,6 @@ function pie() {
       function calcScalars(slices, maxWidth, maxHeight) {
         var widths = [],
             heights = [],
-            Pi = Math.PI,
             twoPi = 2 * Math.PI,
             north = 0,
             east = Math.PI / 2,
@@ -8156,7 +8420,7 @@ function table() {
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var labels = properties.labels ||
+      var labels = properties.groups ||
             d3.range(
               1,
               d3.max(data.map(function (d) { return d.values.length; })) + 1
@@ -8423,17 +8687,18 @@ function treemap() {
       clipEdge = true, // if true, masks lines within x and y scale
       duration = 0,
       delay = 0,
-      leafClick = function() { return false; },
+      leafClick = function(d, i) { return false; },
       // color = function(d, i) { return utility.defaultColor()(d, i); },
       color = d3.scaleOrdinal().range(
-                d3.schemeCategory20.map(function(c) {
-                  c = d3.rgb(c);
-                  c.opacity = 0.6;
-                  return c;
-                })
-              ),
-      gradient = null,
+        d3.schemeCategory20.map(function(c) {
+          c = d3.rgb(c);
+          c.opacity = 0.6;
+          return c;
+        })
+      ),
+      gradient = utility.colorLinearGradient,
       fill = color,
+      textureFill = false,
       classes = function(d, i) { return 'sc-child'; },
       direction = 'ltr',
       dispatch = d3.dispatch('chartClick', 'elementClick', 'elementDblClick', 'elementMouseover', 'elementMouseout', 'elementMousemove');
@@ -8481,18 +8746,6 @@ function treemap() {
           container = d3.select(this),
           transitioning;
 
-      // Set up the gradient constructor function
-      gradient = function(d, i, p) {
-        var iColor = (d.parent.data.colorIndex || NODES.indexOf(groupBy(d.parent.data)) || i);
-        return utility.colorLinearGradient(
-          d,
-          id + '-' + i,
-          p,
-          color(d, iColor, NODES.length),
-          wrap.select('defs')
-        );
-      };
-
       // We only need to define TREE and NODES once on initial load
       // TREE is always available in its initial state and NODES is immutable
       TREE = TREE ||
@@ -8525,19 +8778,32 @@ function treemap() {
       var wrap = container.select('.sc-wrap.sc-treemap').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       // wrap.attr('transform', utility.translation(margin.left, margin.top));
 
       //------------------------------------------------------------
-      // Clip Path
+      // Definitions
 
       defs_entr.append('clipPath')
         .attr('id', 'sc-edge-clip-' + id)
         .append('rect');
-      wrap.select('#sc-edge-clip-' + id + ' rect')
+      defs.select('#sc-edge-clip-' + id + ' rect')
         .attr('width', width)
         .attr('height', height);
       wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      if (textureFill) {
+        var mask = utility.createTexture(defs_entr, id);
+      }
+
+      // Set up the gradient constructor function
+      model.gradientFill = function(d, i, params) {
+        var gradientId = id + '-' + i;
+        var iColor = (d.parent.data.colorIndex || NODES.indexOf(groupBy(d.parent.data)) || i);
+        var c = color(d, iColor, NODES.length);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Family Tree Path
@@ -8548,7 +8814,10 @@ function treemap() {
 
       treepath_enter.append('rect')
         .attr('class', 'sc-target')
-        .on('click', transition);
+        .on('click', function(d) {
+          dispatch.call('chartClick', this, d);
+          transition.call(this, d.parent);
+        });
 
       treepath_enter.append('text')
         .attr('x', direction === 'rtl' ? width - 6 : 6)
@@ -8582,11 +8851,25 @@ function treemap() {
         var parents = grandparent.selectAll('.sc-parent').merge(parents_entr);
         parents_bind.exit().remove();
 
+        parents
+          .classed('sc-active', function(d) { return d.active === 'active'; })
+          .style('stroke-opacity', 1)
+          .style('fill-opacity', 1);
+
         // Child rectangles
         var children_bind = parents.selectAll('rect.sc-child').data(function(d) { return d.children || [d]; });
         var children_entr = children_bind.enter().append('rect').attr('class', 'sc-child');
         var children = parents.selectAll('.sc-child').merge(children_entr);
         children_bind.exit().remove();
+
+        if (textureFill) {
+          // For on click active bars
+          parents_entr.append('rect')
+            .attr('class', 'sc-texture')
+            .attr('x', 0)
+            .attr('y', 0)
+            .style('mask', 'url(' + mask + ')');
+        }
 
         children
           .attr('class', classes)
@@ -8599,6 +8882,17 @@ function treemap() {
             return this.getAttribute('fill') || fill(d, iColor, NODES.length);
           })
             .call(rect);
+
+        if (textureFill) {
+          parents.select('rect.sc-texture')
+            .style('fill', function(d, i) {
+              var iColor = (d.parent.data.colorIndex || NODES.indexOf(getKey(d.parent.data)) || i);
+              var backColor = this.getAttribute('fill') || fill(d, iColor, NODES.length),
+                  foreColor = utility.getTextContrast(backColor, i);
+              return foreColor;
+            })
+              .call(rect);
+        }
 
         // Parent labels
         var label_bind = parents.selectAll('text.sc-label').data(function(d) { return [d]; });
@@ -8628,7 +8922,7 @@ function treemap() {
             .text(crumbs);
 
         treepath.selectAll('rect')
-            .data([ROOT.parent]);
+            .datum(ROOT);
 
         // -------------
         // Assign Events
@@ -8636,12 +8930,24 @@ function treemap() {
         // Assign transition event for parents with children.
         target
           .filter(function(d) { return d.children; })
-          .on('click', transition);
+          .on('click', function(d) {
+            if (d.parent)  {
+              dispatch.call('chartClick', this, d.parent);
+            }
+            transition.call(this, d);
+          });
 
         // Assign navigate event for parents without children (leaves).
         target
           .filter(function(d) { return !(d.children); })
-          .on('click', leafClick);
+          .on('click', function(d, i) {
+            d3.event.stopPropagation();
+            var eo = {
+              d: d,
+              i: i
+            };
+            dispatch.call('elementClick', this, eo);
+          });
 
         // Tooltips
         target
@@ -8893,6 +9199,12 @@ function treemap() {
     return model;
   };
 
+  model.textureFill = function(_) {
+    if (!arguments.length) { return textureFill; }
+    textureFill = _;
+    return model;
+  };
+
   //============================================================
 
 
@@ -8940,16 +9252,12 @@ function areaChart() {
         noLabel: 'undefined'
       };
 
+  var dispatch = d3.dispatch(
+        'chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
+        'stateChange', 'changeState'
+      );
+
   var pointRadius = 3;
-
-  var dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
-
-  var tooltipContent = function(eo, properties) {
-        var key = eo.seriesKey;
-        var yIsCurrency = properties.yDataType === 'currency';
-        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
-        return '<p>' + key + ': ' + y + '</p>';
-      };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
@@ -8968,6 +9276,13 @@ function areaChart() {
         return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
       };
 
+  var tooltipContent = function(eo, properties) {
+        var key = eo.seriesKey;
+        var yIsCurrency = properties.yDataType === 'currency';
+        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
+        return '<p>' + key + ': ' + y + '</p>';
+      };
+
   //============================================================
   // Private Variables
   //------------------------------------------------------------
@@ -8979,8 +9294,8 @@ function areaChart() {
   var yAxis = axis();
   var guide = line();
 
-  var tt = null,
-      guidetips = null;
+  var tt = null;
+  var guidetips = null;
 
   model
     .clipEdge(true);
@@ -8990,6 +9305,7 @@ function areaChart() {
     .showLegend(true);
   guide
     .duration(0);
+
 
   //============================================================
 
@@ -9014,7 +9330,7 @@ function areaChart() {
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var groupData = properties.groups,
-          hasGroupData = Array.isArray(groupData) && groupData.length,
+          hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
@@ -9024,14 +9340,6 @@ function areaChart() {
           totalAmount = 0;
 
       var padding = 0;
-      var singlePoint = false;
-      var showMaxMin = false;
-
-          //TODO: allow formatter to be set by data
-      var xTickMaxWidth = 75,
-          xDateFormat = null,
-          xAxisFormat = null,
-          yAxisFormat = null;
 
       var controlsData = [
         {key: 'Stacked', disabled: model.offset() !== 'zero'},
@@ -9070,15 +9378,6 @@ function areaChart() {
       //------------------------------------------------------------
       // Process data
 
-      function setGroupLabels(groupData) {
-        // Get simple array of group labels for ticks
-        groupLabels = groupData.map(function(group) {
-            return group.label;
-          });
-        groupCount = groupLabels.length;
-        hasGroupLabels = groupCount > 0;
-      }
-
       // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
@@ -9114,36 +9413,46 @@ function areaChart() {
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (hasGroupData) {
+      function setGroupLabels(groupData) {
+        // Get simple array of group labels for ticks
+        groupLabels = groupData.map(function(group) {
+            return group.label;
+          });
+        groupCount = groupLabels.length;
+        hasGroupLabels = groupCount > 0;
+      }
 
-        groupData.forEach(function(group, g) {
-          var label = typeof group.label === 'undefined' || group.label === '' ?
-            strings.noLabel :
-              xIsDatetime ?
-                new Date(group.label) :
-                group.label;
-          group.group = g,
-          group.label = label;
-          group.total = 0;
-        });
+      if (hasGroupData) {
 
         // Calculate group totals and height
         // based on enabled data series
-        groupData.forEach(function(group, g) {
-          //TODO: only sum enabled series
-          // update group data with values
-          modelData
-            .forEach(function(series, s) {
-            //TODO: there is a better way with map reduce?
-              series.values
-                .filter(function(value, v) {
-                  return value.group === g;
-                })
-                .forEach(function(value, v) {
-                  group.total += value.y;
-                });
-            });
-        });
+        groupData
+          .forEach(function(group, g) {
+            var label = typeof group.label === 'undefined' || group.label === '' ?
+              strings.noLabel :
+                xIsDatetime ?
+                  utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
+                    new Date(group.label) :
+                    new Date(group.label + ' GMT') :
+                  group.label;
+            group.group = g,
+            group.label = label;
+            group.total = 0;
+
+            //TODO: only sum enabled series
+            // update group data with values
+            modelData
+              .forEach(function(series, s) {
+              //TODO: there is a better way with map reduce?
+                series.values
+                  .filter(function(value, v) {
+                    return value.group === g;
+                  })
+                  .forEach(function(value, v) {
+                    group.total += value.y;
+                  });
+              });
+          });
 
         setGroupLabels(groupData);
 
@@ -9175,19 +9484,59 @@ function areaChart() {
 
       }
 
-      // Configure axis format functions
-      if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(groupLabels);
-      }
 
-      xAxisFormat = function(d, i, selection, noEllipsis) {
-        var group = hasGroupLabels ? groupLabels[i] : d;
-        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
-        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
+      //------------------------------------------------------------
+      // Configure axis format functions
+
+          //TODO: allow formatter to be set by data
+      var xTickMaxWidth = 75,
+          xDateFormat = null,
+          xAxisFormat = null,
+          yAxisFormat = null;
+
+      var yAxisFormatProperties = {
+        axis: null,
+        maxmin: null
       };
 
-      yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, null, yIsCurrency, 2);
+      function setAxisFormatProperties(type, selection) {
+        // i.e., 100 | 200 | 300
+        var tickDatum = selection.map(function(t) {
+            return d3.select(t).datum();
+          });
+        // i.e., 1 | 1000 | 1000000
+        var decimal = d3.max(d3.extent(tickDatum), function(v) {
+            return utility.siDecimal(Math.abs(v));
+          });
+        var precision = d3.max(tickDatum, function(v) {
+            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+          });
+        if (type === 'maxmin' && yAxisFormatProperties.axis) {
+          precision = Math.max(yAxisFormatProperties.axis.precision, precision);
+        }
+        yAxisFormatProperties[type] = {
+          decimal: decimal,
+          precision: precision
+        };
+        return yAxisFormatProperties[type];
+      }
+
+      if (xIsDatetime) {
+        xDateFormat = utility.getDateFormatUTC(groupLabels);
+      }
+
+      xAxisFormat = function(d, i, selection, type) {
+        var group = hasGroupLabels ? groupLabels[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return type === 'no-ellipsis' ?
+          label :
+          utility.stringEllipsify(label, container, xTickMaxWidth);
+      };
+
+      yAxisFormat = function(d, i, selection, type) {
+        var props = yAxisFormatProperties[type] ||
+              setAxisFormatProperties(type, selection);
+        return yValueFormat(d, i, null, yIsCurrency, props.precision, props.decimal);
       };
 
 
@@ -9219,20 +9568,20 @@ function areaChart() {
         .orient('bottom')
         .ticks(null)
         .tickValues(null)
-        .showMaxMin(xIsDatetime)
-        .highlightZero(false)
         .scale(x)
         .tickPadding(6)
-        .valueFormat(xAxisFormat);
+        .valueFormat(xAxisFormat)
+        .highlightZero(false)
+        .showMaxMin(xIsDatetime);
 
       yAxis
         .orient('left')
         .ticks(null)
-        .showMaxMin(true)
-        .highlightZero(true)
         .scale(y)
         .tickPadding(6)
-        .valueFormat(yAxisFormat);
+        .valueFormat(yAxisFormat)
+        .highlightZero(true)
+        .showMaxMin(true);
 
       guide
         .id(model.id())
@@ -9246,10 +9595,12 @@ function areaChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-background-wrap');
       var back_wrap = wrap.select('.sc-background-wrap');
@@ -9330,9 +9681,19 @@ function areaChart() {
         //------------------------------------------------------------
         // Main Chart Component(s)
 
+        function getDimension(d) {
+          if (d === 'width') {
+            return innerWidth;
+          } else if (d === 'height') {
+            return innerHeight;
+          } else {
+            return 0;
+          }
+        }
+
         model
-          .width(innerWidth)
-          .height(innerHeight);
+          .width(getDimension('width'))
+          .height(getDimension('height'));
         model_wrap
           .datum(modelData)
           .call(model);
@@ -9345,67 +9706,57 @@ function areaChart() {
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
 
         function setInnerMargins() {
+          xAxisMargin = xAxis.margin();
+          yAxisMargin = yAxis.margin();
           innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
           innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
           innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
           innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+          setInnerDimensions();
         }
 
         function setInnerDimensions() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          model.width(innerWidth).height(innerHeight);
-          // This resets the scales for the whole chart
-          // unfortunately we can't call this without until line instance is called
-          // model.scatter.resetDimensions(innerWidth, innerHeight);
-          x.range([0, innerWidth]);
-          y.range([innerHeight, 0]);
+          model.resetDimensions(getDimension('width'), getDimension('height'));
         }
 
-        // Y-Axis
-        yAxis
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
-        // reset inner dimensions
-        yAxisMargin = yAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
+        function yAxisRender() {
+          yAxis
+            .ticks(model.offset() === 'wiggle' ? 0 : null)
+            .tickSize(padding - innerWidth, 0)
+            .margin(innerMargin);
+          yAxis_wrap
+            .call(yAxis);
+          setInnerMargins();
+        }
 
-        // X-Axis
-        // resize ticks based on new dimensions
-        xAxis
-          .tickSize(padding - innerHeight, 0)
-          .margin(innerMargin);
-        xAxis_wrap
-          .call(xAxis);
+        function xAxisRender() {
+          xAxis
+            .tickSize(padding - innerHeight, 0)
+            .margin(innerMargin);
+          xAxis_wrap
+            .call(xAxis);
+          setInnerMargins();
+        }
 
-        // reset inner dimensions
-        xAxisMargin = xAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
+        // initial Y-Axis call
+        yAxisRender();
+        // initial X-Axis call
+        xAxisRender();
 
-        // recall y-axis, x-axis and lines to set final size based on new dimensions
-        yAxis
-          .ticks(model.offset() === 'wiggle' ? 0 : null)
-          .tickSize(padding - innerWidth, 0)
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
+        // recall X-axis to set final size based on new dimensions
+        xAxisRender();
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
 
-        xAxis
-          .tickSize(padding - innerHeight, 0)
-          .margin(innerMargin);
-        xAxis_wrap
-          .call(xAxis);
-
-        model
-          .width(innerWidth)
-          .height(innerHeight);
+        // final call to lines based on new dimensions
         model_wrap
-          .datum(modelData)
-          .call(model);
+          .transition().duration(duration)
+            .call(model);
 
         //------------------------------------------------------------
         // Guide Line
@@ -9516,6 +9867,7 @@ function areaChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
+      //TODO: change legendClick to menuClick
       header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
 
@@ -9668,10 +10020,15 @@ function areaChart() {
   chart.legend = header.legend;
   chart.controls = header.controls;
   chart.xAxis = xAxis;
+  chart.xAxisLabel = xAxis.axisLabel;
   chart.yAxis = yAxis;
+  chart.yAxisLabel = yAxis.axisLabel;
   chart.options = utility.optionsFunc.bind(chart);
 
-  utility.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  utility.rebind(chart, model,
+    'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge',
+    'color', 'fill', 'classes', 'gradient', 'locality'
+  );
   utility.rebind(chart, model, 'offset', 'order', 'style');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   utility.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
@@ -9679,16 +10036,16 @@ function areaChart() {
   chart.colorData = function(_) {
     var type = arguments[0],
         params = arguments[1] || {};
-    var color = function(d, i) {
+    var color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-    var classes = function(d, i) {
+    var classes = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
-        color = function(d, i) {
+        color = function(d) {
           return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
@@ -9696,25 +10053,30 @@ function areaChart() {
         color = function() {
           return 'inherit';
         };
-        classes = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        classes = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
-        color = function(d, i) {
+        color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-        classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        classes = function(d) {
+          var i = d.seriesIndex;
+          return 'sc-series sc-series-' + i + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return model.gradient()(d, d.seriesIndex, p);
+    var fill = !params.gradient ? color : function(d, i) {
+      var p = {
+        orientation: params.orientation || 'horizontal',
+        position: params.position || 'base'
+      };
+      return model.gradientFill(d, d.seriesIndex, p);
     };
 
     model.color(color);
@@ -9806,12 +10168,6 @@ function areaChart() {
     return chart;
   };
 
-  chart.pointRadius = function(_) {
-    if (!arguments.length) { return pointRadius; }
-    pointRadius = _;
-    return chart;
-  };
-
   chart.xValueFormat = function(_) {
     if (!arguments.length) {
       return xValueFormat;
@@ -9825,6 +10181,12 @@ function areaChart() {
       return yValueFormat;
     }
     yValueFormat = _;
+    return chart;
+  };
+
+  chart.pointRadius = function(_) {
+    if (!arguments.length) { return pointRadius; }
+    pointRadius = _;
     return chart;
   };
 
@@ -9854,17 +10216,17 @@ function bubbleChart() {
         noLabel: 'undefined'
       };
 
-  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+  var dispatch = d3.dispatch(
+        'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
+        'stateChange', 'changeState'
+      );
 
   var getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       forceY = [0]; // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do chart.forceY([]) to remove
 
   var groupBy = function(d) { return d.y; },
-      filterBy = function(d) { return d.y; },
-      clipEdge = false, // if true, masks lines within x and y scale
-      seriesLength = 0,
-      reduceYTicks = false; // if false a tick will show for every data point
+      filterBy = function(d) { return d.y; };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
@@ -9883,6 +10245,18 @@ function bubbleChart() {
         return utility.numberFormatSI(label, precision, isCurrency, chart.locality());
       };
 
+  var tooltipContent = function(eo, properties) {
+        var key = eo.series.key;
+        var x = eo.point.x;
+        var y = eo.point.y;
+        return '<h3>' + key + '</h3>' +
+               '<p>' + y + ' on ' + x + '</p>';
+      };
+
+  var seriesClick = function(data, eo, chart, labels) {
+        return;
+      };
+
   //============================================================
   // Private Variables
   //------------------------------------------------------------
@@ -9895,22 +10269,12 @@ function bubbleChart() {
 
   var tt = null;
 
-  var tooltipContent = function(eo, properties) {
-        var key = eo.series.key;
-        var x = eo.point.x;
-        var y = eo.point.y;
-        return '<h3>' + key + '</h3>' +
-               '<p>' + y + ' on ' + x + '</p>';
-      };
-
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
-        var gravity = eo.value < 0 ? 'n' : 's';
+        var gravity = eo.value < 0 ?
+          'n' :
+          's';
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
-      };
-
-  var seriesClick = function(data, eo, chart, labels) {
-        return;
       };
 
   model
@@ -10169,7 +10533,8 @@ function bubbleChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
@@ -10322,6 +10687,7 @@ function bubbleChart() {
           .transition().duration(chart.delay())
             .call(model);
 
+
         //------------------------------------------------------------
         // Final repositioning
 
@@ -10348,6 +10714,7 @@ function bubbleChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
+      //TODO: change legendClick to menuClick
       header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
 
@@ -10445,10 +10812,15 @@ function bubbleChart() {
   chart.legend = header.legend;
   chart.controls = header.controls;
   chart.xAxis = xAxis;
+  chart.xAxisLabel = xAxis.axisLabel;
   chart.yAxis = yAxis;
+  chart.yAxisLabel = yAxis.axisLabel;
   chart.options = utility.optionsFunc.bind(chart);
 
-  utility.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  utility.rebind(chart, model,
+    'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge',
+    'color', 'fill', 'classes', 'gradient', 'locality'
+  );
   utility.rebind(chart, model, 'size', 'zScale', 'sizeDomain', 'forceSize', 'interactive', 'clipVoronoi', 'clipRadius');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   utility.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
@@ -10456,16 +10828,16 @@ function bubbleChart() {
   chart.colorData = function(_) {
     var type = arguments[0],
         params = arguments[1] || {};
-    var color = function(d, i) {
+    var color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-    var classes = function(d, i) {
+    var classes = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
-        color = function(d, i) {
+        color = function(d) {
           return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
@@ -10473,24 +10845,26 @@ function bubbleChart() {
         color = function() {
           return 'inherit';
         };
-        classes = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        classes = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
-        color = function(d, i) {
+        color = function(d) {
           return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
-        classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        classes = function(d) {
+          var i = d.seriesIndex;
+          return 'sc-series sc-series-' + i + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient()(d, d.seriesIndex);
+    var fill = !params.gradient ? color : function(d, i) {
+      return model.gradientFill(d, d.seriesIndex);
     };
 
     model.color(color);
@@ -10636,6 +11010,7 @@ function funnelChart() {
       duration = 0,
       tooltips = true,
       state = {},
+      exclusiveActive = true,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -10663,8 +11038,8 @@ function funnelChart() {
         var y = model.getValue()(eo);
         var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
         var yIsCurrency = properties.yDataType === 'currency';
-        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
+        var val = utility.numberFormat(y, 2, yIsCurrency, chart.locality());
+        var percent = utility.numberFormat(x, 2, false, chart.locality());
         return '<p>' + label + ': <b>' + key + '</b></p>' +
                '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                '<p>Percent: <b>' + percent + '%</b></p>';
@@ -10728,23 +11103,48 @@ function funnelChart() {
       //------------------------------------------------------------
       // Process data
 
-      chart.clearActive = function() {
-        data.map(function(d) {
-          d.active = '';
-          container.selectAll('.nv-series').classed('nv-inactive', false);
-          return d;
+      chart.setActiveState = function(series, state) {
+        series.active = state;
+      };
+
+      chart.clearActive = function(reset) {
+        data.forEach(function(s) {
+          chart.setActiveState(s, reset || '');
         });
+        delete state.active;
       };
 
+      // accepts either an event object with actual series data or seriesIndex
       chart.seriesActivate = function(eo) {
-        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+        if (!series) {
+          return;
+        }
+        if (exclusiveActive) {
+          // store toggle active state
+          activeState = (
+              typeof series.active === 'undefined' ||
+              series.active === 'inactive' ||
+              series.active === ''
+            ) ? 'active' : '';
+          // inactivate all series
+          chart.clearActive(activeState === 'active' ? 'inactive' : '');
+          // then activate the selected series
+          chart.setActiveState(series, activeState);
+          // set the state to a truthy map
+          state.active = data.map(function(s) {
+            return s.active === 'active';
+          });
+        } else {
+          chart.dataSeriesActivate({series: series});
+        }
       };
 
+      // accepts either an event object with actual series data or seriesIndex
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
-
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
-
         // if you have activated a data series, inactivate the other non-active series
         if (series.active === 'active') {
           data
@@ -10756,13 +11156,10 @@ function funnelChart() {
               return d;
             });
         }
-
         // if there are no active data series, inactivate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
           chart.clearActive();
         }
-
-        container.call(chart);
       };
 
       // add series index to each data point for reference
@@ -10823,10 +11220,12 @@ function funnelChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-background-wrap');
       var back_wrap = wrap.select('.sc-background-wrap');
@@ -11058,9 +11457,12 @@ function funnelChart() {
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-      return model.gradient()(d, d.seriesIndex, p);
+    var fill = !params.gradient ? color : function(d, i) {
+      var p = {
+        orientation: params.orientation || 'vertical',
+        position: params.position || 'middle'
+      };
+      return model.gradientFill(d, d.seriesIndex, p);
     };
 
     model.color(color);
@@ -11525,8 +11927,8 @@ function gaugeChart() {
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient()(d, d.seriesIndex);
+    var fill = !params.gradient ? color : function(d, i) {
+      return model.gradientFill(d, d.seriesIndex);
     };
 
     model.color(color);
@@ -11864,7 +12266,6 @@ function globeChart() {
       };
 
       chart.render = function() {
-
         calcDimensions();
 
         projection
@@ -12304,6 +12705,15 @@ function globeChart() {
     country_labels = _;
     return chart;
   };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
   //============================================================
 
   return chart;
@@ -12330,9 +12740,28 @@ function lineChart() {
         noLabel: 'undefined'
       };
 
-  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+  var dispatch = d3.dispatch(
+        'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
+        'stateChange', 'changeState'
+      );
 
   var pointRadius = 3;
+
+  var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
+        if (isDate) {
+          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
+          return utility.dateFormat(value, dateFormat, chart.locality());
+        } else {
+          return value;
+        }
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency, precision, si) {
+        return utility.numberFormatSIFixed(d, precision, isCurrency, chart.locality(), si);
+      };
 
   var tooltipContent = function(eo, properties) {
         var seriesName = properties.seriesLabel || 'Key';
@@ -12349,9 +12778,9 @@ function lineChart() {
         var valueName = yIsCurrency ? 'Amount' : 'Count';
         var y = eo.point.y;
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
-        // we can't use yValueFormat because it needs SI units
+        // we can't use yValueFormat because it needs SI units for axis
         // for tooltip, we want the full value
-        var valueLabel = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
+        var valueLabel = utility.numberFormat(y, null, yIsCurrency, chart.locality());
 
         var percent;
         var content = '';
@@ -12362,28 +12791,15 @@ function lineChart() {
 
         if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
+          percent = utility.numberFormat(percent, 2, false, chart.locality());
           content += '<p>Percentage: <b>' + percent + '%</b></p>';
         }
 
         return content;
       };
 
-  var xValueFormat = function(d, i, label, isDate, dateFormat) {
-        // If ordinal, label is provided so use it.
-        // If date or numeric use d.
-        var value = label || d;
-        if (isDate) {
-          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(value, dateFormat, chart.locality());
-        } else {
-          return value;
-        }
-      };
-
-  var yValueFormat = function(d, i, label, isCurrency, precision) {
-        precision = isNaN(precision) ? 2 : precision;
-        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+  var seriesClick = function(data, eo, chart, labels) {
+        return;
       };
 
   //============================================================
@@ -12400,12 +12816,10 @@ function lineChart() {
 
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
-        var gravity = eo.value < 0 ? 'n' : 's';
+        var gravity = eo.value < 0 ?
+          'n' :
+          's';
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
-      };
-
-  var seriesClick = function(data, eo, chart, labels) {
-        return;
       };
 
   model
@@ -12438,7 +12852,7 @@ function lineChart() {
       var xIsDatetime = properties.xDataType === 'datetime' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
-      var groupData = properties.groups,
+      var groupData = properties.groups || properties.labels,
           hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
@@ -12450,12 +12864,6 @@ function lineChart() {
 
       var padding = (model.padData() ? pointRadius : 0);
       var singlePoint = false;
-
-          //TODO: allow formatter to be set by data
-      var xTickMaxWidth = 75,
-          xDateFormat = null,
-          xAxisFormat = null,
-          yAxisFormat = null;
 
       var controlsData = [
         {key: 'Linear', disabled: model.interpolate() !== 'linear'},
@@ -12477,75 +12885,76 @@ function lineChart() {
         });
       };
 
-      chart.clearActive = function() {
+      chart.clearActive = function(reset) {
         data.forEach(function(s) {
-          chart.setActiveState(s, '');
+          chart.setActiveState(s, reset || '');
         });
         delete state.active;
       };
 
-      chart.seriesActivate = function(series) {
-        // inactivate all series
-        data.forEach(function(s) {
-          chart.setActiveState(s, 'inactive');
-        });
-        // then activate the selected series
-        chart.setActiveState(series, 'active');
-        // set the state to a truthy map
-        state.active = data.map(function(s) {
-          return s.active === 'active';
-        });
-      };
-
+      // only accepts an event object with seriesIndex
       chart.cellActivate = function(eo) {
         // seriesClick is defined outside chart scope, so when it calls
         // cellActivate, it only has access to (data, eo, chart, labels)
         var cell = data[eo.seriesIndex].values[eo.pointIndex];
         var activeState;
-
         if (!cell) {
           return;
         }
-
         // store toggle active state
         activeState = (
             typeof cell.active === 'undefined' ||
             cell.active === 'inactive' ||
             cell.active === ''
           ) ? 'active' : '';
-
-        // unset entire active state
+        // unset entire active state first
         chart.clearActive();
-
         cell.active = activeState;
-
-        chart.render();
       };
 
-      chart.dataSeriesActivate = function(eo) {
+      // accepts either an event object with actual series data or seriesIndex
+      chart.seriesActivate = function(eo) {
         var series = eo.series || data[eo.seriesIndex];
         var activeState;
-
         if (!series) {
           return;
         }
+        // store toggle active state
+        activeState = (
+            typeof series.active === 'undefined' ||
+            series.active === 'inactive' ||
+            series.active === ''
+          ) ? 'active' : '';
+        // inactivate all series
+        chart.clearActive(activeState === 'active' ? 'inactive' : '');
+        // then activate the selected series
+        chart.setActiveState(series, activeState);
+        // set the state to a truthy map
+        state.active = data.map(function(s) {
+          return s.active === 'active';
+        });
+      };
 
+      // accepts either an event object with actual series data or seriesIndex
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+        if (!series) {
+          return;
+        }
         // toggle active state
         activeState = (
             typeof series.active === 'undefined' ||
             series.active === 'inactive' ||
             series.active === ''
           ) ? 'active' : 'inactive';
-
         if (activeState === 'active') {
           // if you have activated a data series,
-          chart.seriesActivate(series);
+          chart.seriesActivate(eo);
         } else {
           // if there are no active data series, unset entire active state
           chart.clearActive();
         }
-
-        chart.render();
       };
 
       chart.container = this;
@@ -12627,7 +13036,9 @@ function lineChart() {
             var label = typeof group.label === 'undefined' || group.label === '' ?
               strings.noLabel :
                 xIsDatetime ?
-                  new Date(group.label) :
+                  utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
+                    new Date(group.label) :
+                    new Date(group.label + ' GMT') :
                   group.label;
             group.group = g,
             group.label = label;
@@ -12678,19 +13089,59 @@ function lineChart() {
 
       }
 
-      // Configure axis format functions
-      if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(groupLabels);
-      }
 
-      xAxisFormat = function(d, i, selection, noEllipsis) {
-        var group = hasGroupLabels ? groupLabels[i] : d;
-        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
-        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
+      //------------------------------------------------------------
+      // Configure axis format functions
+
+          //TODO: allow formatter to be set by data
+      var xTickMaxWidth = 75,
+          xDateFormat = null,
+          xAxisFormat = null,
+          yAxisFormat = null;
+
+      var yAxisFormatProperties = {
+        axis: null,
+        maxmin: null
       };
 
-      yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, null, yIsCurrency, 2);
+      function setAxisFormatProperties(type, selection) {
+        // i.e., 100 | 200 | 300
+        var tickDatum = selection.map(function(t) {
+            return d3.select(t).datum();
+          });
+        // i.e., 1 | 1000 | 1000000
+        var decimal = d3.max(d3.extent(tickDatum), function(v) {
+            return utility.siDecimal(Math.abs(v));
+          });
+        var precision = d3.max(tickDatum, function(v) {
+            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+          });
+        if (type === 'maxmin' && yAxisFormatProperties.axis) {
+          precision = Math.max(yAxisFormatProperties.axis.precision, precision);
+        }
+        yAxisFormatProperties[type] = {
+          decimal: decimal,
+          precision: precision
+        };
+        return yAxisFormatProperties[type];
+      }
+
+      if (xIsDatetime) {
+        xDateFormat = utility.getDateFormatUTC(groupLabels);
+      }
+
+      xAxisFormat = function(d, i, selection, type) {
+        var group = hasGroupLabels ? groupLabels[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return type === 'no-ellipsis' ?
+          label :
+          utility.stringEllipsify(label, container, xTickMaxWidth);
+      };
+
+      yAxisFormat = function(d, i, selection, type) {
+        var props = yAxisFormatProperties[type] ||
+              setAxisFormatProperties(type, selection);
+        return yValueFormat(d, i, null, yIsCurrency, props.precision, props.decimal);
       };
 
 
@@ -12732,6 +13183,7 @@ function lineChart() {
         .sizeDomain([pointSize, pointSize]); //set to speed up calculation, needs to be unset if there is a custom size accessor
 
       if (singlePoint) {
+
         var xValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
                   return model.x()(d, i);
@@ -12767,7 +13219,6 @@ function lineChart() {
 
         xAxis
           .orient('bottom')
-          .showMaxMin(false)
           .ticks(xValues.length)
           .tickValues(xValues)
           .highlightZero(false)
@@ -12778,26 +13229,30 @@ function lineChart() {
           .ticks(singlePoint ? 5 : null) //TODO: why 5?
           .highlightZero(false)
           .showMaxMin(false);
+
       } else {
+
         model
-          .xDomain(null)  //?why null?
-          .yDomain(null);
+          .xDomain(null)
+          .yDomain(null); //?why null? so scatter will be forced to calc
 
         xAxis
           .orient('bottom')
           //NOTE: be careful of this. If the x value is ordinal, then the values
           // should be [1...n]. If the x value is numeric, then the values are
           // zero indexed as [0..n-1]
-          .tickValues(hasGroupLabels ? d3.range(1, groupLabels.length + 1) : null)
-          .ticks(hasGroupLabels ? groupLabels.length : null)
-          .showMaxMin(xIsDatetime)
-          .highlightZero(false);
+          .tickValues(hasGroupLabels ? d3.range(1, groupCount + 1) : null)
+          .ticks(hasGroupLabels ? groupCount : null)
+          // .ticks(groupCount)
+          .highlightZero(false)
+          .showMaxMin(xIsDatetime);
 
         yAxis
           .orient('left')
           .ticks(null)
           .highlightZero(true)
           .showMaxMin(true);
+
       }
 
       xAxis
@@ -12815,7 +13270,8 @@ function lineChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
@@ -12896,9 +13352,19 @@ function lineChart() {
         //------------------------------------------------------------
         // Main Chart Component(s)
 
+        function getDimension(d) {
+          if (d === 'width') {
+            return innerWidth;
+          } else if (d === 'height') {
+            return innerHeight;
+          } else {
+            return 0;
+          }
+        }
+
         model
-          .width(innerWidth)
-          .height(innerHeight);
+          .width(getDimension('width'))
+          .height(getDimension('height'));
         model_wrap
           .datum(modelData)
           .call(model);
@@ -12911,70 +13377,56 @@ function lineChart() {
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
 
         function setInnerMargins() {
+          xAxisMargin = xAxis.margin();
+          yAxisMargin = yAxis.margin();
           innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
           innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
           innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
           innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+          setInnerDimensions();
         }
 
         function setInnerDimensions() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          model.width(innerWidth).height(innerHeight);
-          // This resets the scales for the whole chart
-          // unfortunately we can't call this without until line instance is called
-          model.scatter.resetDimensions(innerWidth, innerHeight);
+          model.resetDimensions(getDimension('width'), getDimension('height'));
         }
 
-        // Y-Axis
-        yAxis
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
-        // reset inner dimensions
-        yAxisMargin = yAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
+        function yAxisRender() {
+          yAxis
+            .tickSize(padding - innerWidth, 0)
+            .margin(innerMargin);
+          yAxis_wrap
+            .call(yAxis);
+          setInnerMargins();
+        }
 
-        // X-Axis
-        // resize ticks based on new dimensions
-        xAxis
-          .ticks(groupCount)
-          .tickSize(padding - innerHeight, 0)
-          .margin(innerMargin);
-        xAxis_wrap
-          .call(xAxis);
+        function xAxisRender() {
+          xAxis
+            .tickSize(padding - innerHeight, 0)
+            .margin(innerMargin);
+          xAxis_wrap
+            .call(xAxis);
+          setInnerMargins();
+        }
 
-        // reset inner dimensions
-        xAxisMargin = xAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
+        // initial Y-Axis call
+        yAxisRender();
+        // initial X-Axis call
+        xAxisRender();
 
-        // recall y-axis, x-axis and lines to set final size based on new dimensions
-        yAxis
-          .tickSize(padding - innerWidth, 0)
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
-
-        xAxis
-          .tickSize(padding - innerHeight, 0)
-          .margin(innerMargin);
-        xAxis_wrap
-          .call(xAxis);
-
-        model
-          .width(innerWidth)
-          .height(innerHeight);
-        model_wrap
-          .datum(modelData)
-          .call(model);
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
+        // recall X-axis to set final size based on new dimensions
+        xAxisRender();
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
 
         // final call to lines based on new dimensions
-        // model_wrap
-        //   .transition().duration(duration)
-        //     .call(model);
+        model_wrap
+          .transition().duration(duration)
+            .call(model);
 
 
         //------------------------------------------------------------
@@ -13005,6 +13457,7 @@ function lineChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
+      //TODO: change legendClick to menuClick
       header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
 
@@ -13172,10 +13625,15 @@ function lineChart() {
   chart.legend = header.legend;
   chart.controls = header.controls;
   chart.xAxis = xAxis;
+  chart.xAxisLabel = xAxis.axisLabel;
   chart.yAxis = yAxis;
+  chart.yAxisLabel = yAxis.axisLabel;
   chart.options = utility.optionsFunc.bind(chart);
 
-  utility.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  utility.rebind(chart, model,
+    'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge',
+    'color', 'fill', 'classes', 'gradient', 'locality'
+  );
   utility.rebind(chart, model, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   utility.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
@@ -13183,16 +13641,16 @@ function lineChart() {
   chart.colorData = function(_) {
     var type = arguments[0],
         params = arguments[1] || {};
-    var color = function(d, i) {
+    var color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-    var classes = function(d, i) {
+    var classes = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
-        color = function(d, i) {
+        color = function(d) {
           return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
@@ -13200,28 +13658,26 @@ function lineChart() {
         color = function() {
           return 'inherit';
         };
-        classes = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        classes = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
-        color = function(d, i) {
+        color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-        classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        classes = function(d) {
+          var i = d.seriesIndex;
+          return 'sc-series sc-series-' + i + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient()(d, d.seriesIndex);
-    };
-
     model.color(color);
-    model.fill(fill);
+    model.fill(color);
     model.classes(classes);
 
     // don't enable this since controls get a custom function
@@ -13309,12 +13765,6 @@ function lineChart() {
     return chart;
   };
 
-  chart.pointRadius = function(_) {
-    if (!arguments.length) { return pointRadius; }
-    pointRadius = _;
-    return chart;
-  };
-
   chart.xValueFormat = function(_) {
     if (!arguments.length) {
       return xValueFormat;
@@ -13334,6 +13784,12 @@ function lineChart() {
   chart.seriesClick = function(_) {
     if (!arguments.length) { return seriesClick; }
     seriesClick = _;
+    return chart;
+  };
+
+  chart.pointRadius = function(_) {
+    if (!arguments.length) { return pointRadius; }
+    pointRadius = _;
     return chart;
   };
 
@@ -13363,12 +13819,19 @@ function multibarChart() {
         noLabel: 'undefined'
       };
 
-  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+  var dispatch = d3.dispatch(
+        'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
+        'stateChange', 'changeState'
+      );
 
   var vertical = true,
       scrollEnabled = true,
       hideEmptyGroups = true,
       overflowHandler = function(d) { return; };
+
+  var valueFormat = function(d, i, label, isCurrency, precision) {
+        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+      };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
@@ -13382,9 +13845,47 @@ function multibarChart() {
         }
       };
 
-  var yValueFormat = function(d, i, label, isCurrency, precision) {
-        precision = isNaN(precision) ? 2 : precision;
-        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+  var yValueFormat = function(d, i, label, isCurrency, precision, si) {
+        return utility.numberFormatSIFixed(d, precision, isCurrency, chart.locality(), si);
+      };
+
+  var tooltipContent = function(eo, properties) {
+        var seriesName = properties.seriesLabel || 'Key';
+        var seriesLabel = eo.series.key;
+
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var groupName = properties.groupName || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        // the event object group is set by event dispatcher if x is ordinal
+        var group = eo.group || {};
+        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var groupLabel = xValueFormat(x, eo.pointIndex, group.label, xIsDatetime, '%x');
+
+        var yIsCurrency = properties.yDataType === 'currency';
+        var valueName = yIsCurrency ? 'Amount' : 'Count';
+        var y = eo.point.y;
+        // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
+        // we can't use yValueFormat because it needs SI units for axis
+        // for tooltip, we want the full value
+        var valueLabel = utility.numberFormat(y, null, yIsCurrency, chart.locality());
+
+        var percent;
+        var content = '';
+
+        content += '<p>' + seriesName + ': <b>' + seriesLabel + '</b></p>';
+        content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
+        content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
+
+        if (eo.group && Number.isFinite(eo.group._height)) {
+          percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
+          percent = utility.numberFormat(percent, 2, false, chart.locality());
+          content += '<p>Percentage: <b>' + percent + '%</b></p>';
+        }
+
+        return content;
+      };
+
+  var seriesClick = function(data, eo, chart, labels) {
+        return;
       };
 
   //============================================================
@@ -13404,51 +13905,12 @@ function multibarChart() {
 
   var tt = null;
 
-  var tooltipContent = function(eo, properties) {
-        var seriesName = properties.seriesLabel || 'Key';
-        var seriesLabel = eo.series.key;
-
-        var xIsDatetime = properties.xDataType === 'datetime';
-        var groupName = properties.groupName || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
-        // the event object group is set by event dispatcher if x is ordinal
-        var group = eo.group || {};
-        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
-        var groupLabel = xValueFormat(x, eo.pointIndex, group.label, xIsDatetime, '%x');
-
-        var yIsCurrency = properties.yDataType === 'currency';
-        var valueName = yIsCurrency ? 'Amount' : 'Count';
-        var y = eo.point.y;
-        // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
-        // we can't use yValueFormat because it needs SI units
-        // for tooltip, we want the full value
-        var valueLabel = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
-
-        var percent;
-        var content = '';
-
-        content += '<p>' + seriesName + ': <b>' + seriesLabel + '</b></p>';
-        content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
-        content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
-
-        if (eo.group && Number.isFinite(eo.group._height)) {
-          percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
-          content += '<p>Percentage: <b>' + percent + '%</b></p>';
-        }
-
-        return content;
-      };
-
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
         var gravity = eo.value < 0 ?
               vertical ? 'n' : 'e' :
               vertical ? 's' : 'w';
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
-      };
-
-  var seriesClick = function(data, eo, chart, labels) {
-        return;
       };
 
   header
@@ -13480,7 +13942,7 @@ function multibarChart() {
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var groupData = properties.groups,
-          hasGroupData = Array.isArray(groupData) && groupData.length,
+          hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
@@ -13490,12 +13952,6 @@ function multibarChart() {
           totalAmount = 0;
 
       var baseDimension = model.stacked() ? vertical ? 72 : 32 : 32;
-
-          //TODO: allow formatter to be set by data
-      var xTickMaxWidth = 75,
-          xDateFormat = null,
-          xAxisFormat = null,
-          yAxisFormat = null;
 
       var controlsData = [
         {key: 'Grouped', disabled: model.stacked()},
@@ -13513,75 +13969,76 @@ function multibarChart() {
         });
       };
 
-      chart.clearActive = function() {
+      chart.clearActive = function(reset) {
         data.forEach(function(s) {
-          chart.setActiveState(s, '');
+          chart.setActiveState(s, reset || '');
         });
         delete state.active;
       };
 
-      chart.seriesActivate = function(series) {
+      // only accepts an event object with seriesIndex
+      chart.cellActivate = function(eo) {
+        // seriesClick is defined outside chart scope, so when it calls
+        // cellActivate, it only has access to (data, eo, chart, labels)
+        var cell = data[eo.seriesIndex].values[eo.pointIndex];
+        var activeState;
+        if (!cell) {
+          return;
+        }
+        // store toggle active state
+        activeState = (
+            typeof cell.active === 'undefined' ||
+            cell.active === 'inactive' ||
+            cell.active === ''
+          ) ? 'active' : '';
+        // unset entire active state first
+        chart.clearActive();
+        cell.active = activeState;
+      };
+
+      // accepts either an event object with actual series data or seriesIndex
+      chart.seriesActivate = function(eo) {
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+        if (!series) {
+          return;
+        }
+        // store toggle active state
+        activeState = (
+            typeof series.active === 'undefined' ||
+            series.active === 'inactive' ||
+            series.active === ''
+          ) ? 'active' : '';
         // inactivate all series
-        data.forEach(function(s) {
-          chart.setActiveState(s, 'inactive');
-        });
+        chart.clearActive(activeState === 'active' ? 'inactive' : '');
         // then activate the selected series
-        chart.setActiveState(series, 'active');
+        chart.setActiveState(series, activeState);
         // set the state to a truthy map
         state.active = data.map(function(s) {
           return s.active === 'active';
         });
       };
 
-      chart.cellActivate = function(eo) {
-        // seriesClick is defined outside chart scope, so when it calls
-        // cellActivate, it only has access to (data, eo, chart, labels)
-        var cell = data[eo.seriesIndex].values[eo.pointIndex];
-        var activeState;
-
-        if (!cell) {
-          return;
-        }
-
-        // toggle active state
-        activeState = (
-            typeof cell.active === 'undefined' ||
-            cell.active === 'inactive' ||
-            cell.active === ''
-          ) ? 'active' : '';
-
-        // unset entire active state first
-        chart.clearActive();
-
-        cell.active = activeState;
-
-        chart.render();
-      };
-
+      // accepts either an event object with actual series data or seriesIndex
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series || data[eo.seriesIndex];
         var activeState;
-
         if (!series) {
           return;
         }
-
         // toggle active state
         activeState = (
             typeof series.active === 'undefined' ||
             series.active === 'inactive' ||
             series.active === ''
           ) ? 'active' : 'inactive';
-
         if (activeState === 'active') {
           // if you have activated a data series,
-          chart.seriesActivate(series);
+          chart.seriesActivate(eo);
         } else {
           // if there are no active data series, unset entire active state
           chart.clearActive();
         }
-
-        chart.render();
       };
 
       chart.container = this;
@@ -13607,15 +14064,6 @@ function multibarChart() {
 
       //------------------------------------------------------------
       // Process data
-
-      function setGroupLabels(groupData) {
-        // Get simple array of group labels for ticks
-        groupLabels = groupData.map(function(group) {
-            return group.label;
-          });
-        groupCount = groupLabels.length;
-        hasGroupLabels = groupCount > 0;
-      }
 
       // add series index to each data point for reference
       // and disable data series if total is zero
@@ -13691,19 +14139,33 @@ function multibarChart() {
       // -------------------------------------------
       // Get group data from properties or modelData
 
+      function setGroupLabels(groupData) {
+        // Get simple array of group labels for ticks
+        groupLabels = groupData.map(function(group) {
+            return group.label;
+          });
+        groupCount = groupLabels.length;
+        hasGroupLabels = groupCount > 0;
+      }
+
       if (hasGroupData) {
 
-        groupData.forEach(function(group, g) {
-          var label = typeof group.label === 'undefined' || group.label === '' ?
-            strings.noLabel :
-              xIsDatetime ?
-                new Date(group.label) :
-                group.label;
-          group.group = g,
-          group.label = label;
-          group.total = 0;
-          group._height = 0;
-        });
+        // Calculate group totals and height
+        // based on enabled data series
+        groupData
+          .forEach(function(group, g) {
+            var label = typeof group.label === 'undefined' || group.label === '' ?
+              strings.noLabel :
+                xIsDatetime ?
+                  utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
+                    new Date(group.label) :
+                    new Date(group.label + ' GMT') :
+                  group.label;
+            group.group = g,
+            group.label = label;
+            group.total = 0;
+            group._height = 0;
+          });
 
       } else {
         // support for uneven value lengths
@@ -13783,21 +14245,66 @@ function multibarChart() {
         return group.total;
       });
 
+
+      //------------------------------------------------------------
       // Configure axis format functions
-      if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(groupLabels);
+
+          //TODO: allow formatter to be set by data
+      var xTickMaxWidth = 75,
+          xDateFormat = null,
+          xAxisFormat = null,
+          yAxisFormat = null;
+
+      var yAxisFormatProperties = {
+        axis: null,
+        maxmin: null
+      };
+
+      function setAxisFormatProperties(type, selection) {
+        // i.e., 100 | 200 | 300
+        var tickDatum = selection.map(function(t) {
+            return d3.select(t).datum();
+          });
+        // i.e., 1 | 1000 | 1000000
+        var decimal = d3.max(d3.extent(tickDatum), function(v) {
+            return utility.siDecimal(Math.abs(v));
+          });
+        var precision = d3.max(tickDatum, function(v) {
+            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+          });
+        if (type === 'maxmin' && yAxisFormatProperties.axis) {
+          precision = Math.max(yAxisFormatProperties.axis.precision, precision);
+        }
+        yAxisFormatProperties[type] = {
+          decimal: decimal,
+          precision: precision
+        };
+        return yAxisFormatProperties[type];
       }
 
-      xAxisFormat = function(d, i, selection, noEllipsis) {
+      if (xIsDatetime) {
+        xDateFormat = utility.getDateFormatUTC(groupLabels);
+      }
+
+      // we want the bar value label to not show decimals (confirm) with SI
+      model.valueFormat(function(d, i) {
+        return valueFormat(d, i, null, yIsCurrency, 0);
+      });
+
+      xAxisFormat = function(d, i, selection, type) {
         //TODO: isn't there always groupLabels?
         // var group = hasGroupLabels ? groupLabels[i] : d;
         var group = groupLabels[i];
         var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
-        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
+        return type === 'no-ellipsis' ?
+          label :
+          utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
-      yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, null, yIsCurrency, 2);
+      yAxisFormat = function(d, i, selection, type) {
+        var props = yAxisFormatProperties[type] ||
+              setAxisFormatProperties(type, selection);
+        return yValueFormat(d, i, null, yIsCurrency, props.precision, props.decimal);
       };
 
 
@@ -13818,13 +14325,9 @@ function multibarChart() {
         .controlsData(controlsData)
         .legendData(data);
 
-      // we want the bar value label to have the same formatting as y-axis
-      model.valueFormat(function(d, i) {
-        return yValueFormat(d, i, null, yIsCurrency, 2);
-      });
-
+      // any time orient is called it resets the d3-axis model and has to be reconfigured
       xAxis
-        .orient(vertical ? 'bottom' : 'left') // any time orient is called it resets the d3-axis model and has to be reconfigured
+        .orient(vertical ? 'bottom' : 'left')
         .scale(model.xScale())
         .valueFormat(xAxisFormat)
         .tickSize(0)
@@ -13844,10 +14347,12 @@ function multibarChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-background-wrap');
       var back_wrap = wrap.select('.sc-background-wrap');
@@ -13861,10 +14366,12 @@ function multibarChart() {
       wrap_entr.append('g').attr('class', 'sc-scroll-wrap');
       var scroll_wrap = wrap.select('.sc-scroll-wrap');
 
-      wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-axis-wrap sc-axis-x');
+      wrap_entr.select('.sc-scroll-wrap').append('g')
+        .attr('class', 'sc-axis-wrap sc-axis-x');
       var xAxis_wrap = wrap.select('.sc-axis-wrap.sc-axis-x');
 
-      wrap_entr.select('.sc-scroll-wrap').append('g').attr('class', 'sc-bars-wrap');
+      wrap_entr.select('.sc-scroll-wrap').append('g')
+        .attr('class', 'sc-bars-wrap');
       var model_wrap = wrap.select('.sc-bars-wrap');
 
       wrap_entr.append('g').attr('class', 'sc-controls-wrap');
@@ -13913,14 +14420,16 @@ function multibarChart() {
           .attr('width', renderWidth)
           .attr('height', renderHeight);
 
-        xTickMaxWidth = Math.max(vertical ? baseDimension * 2 : availableWidth * 0.2, 75);
-
         // Scroll variables
         // for stacked, baseDimension is width of bar plus 1/4 of bar for gap
         // for grouped, baseDimension is width of bar plus width of one bar for gap
-        var boundsWidth = state.stacked ? baseDimension : baseDimension * seriesCount + baseDimension,
-            gap = baseDimension * (state.stacked ? 0.25 : 1),
-            minDimension = groupCount * boundsWidth + gap;
+        var boundsWidth = state.stacked ?
+              baseDimension :
+              baseDimension * seriesCount + baseDimension;
+        var gap = baseDimension * (state.stacked ? 0.25 : 1);
+        var minDimension = groupCount * boundsWidth + gap;
+
+        xTickMaxWidth = Math.max(vertical ? baseDimension * 2 : availableWidth * 0.2, 75);
 
 
         //------------------------------------------------------------
@@ -13943,9 +14452,13 @@ function multibarChart() {
 
         function getDimension(d) {
           if (d === 'width') {
-            return vertical && scrollEnabled ? Math.max(innerWidth, minDimension) : innerWidth;
+            return vertical && scrollEnabled ?
+              Math.max(innerWidth, minDimension) :
+              innerWidth;
           } else if (d === 'height') {
-            return !vertical && scrollEnabled ? Math.max(innerHeight, minDimension) : innerHeight;
+            return !vertical && scrollEnabled ?
+              Math.max(innerHeight, minDimension) :
+              innerHeight;
           } else {
             return 0;
           }
@@ -13954,13 +14467,11 @@ function multibarChart() {
         model
           .vertical(vertical)
           .baseDimension(baseDimension)
-          .disabled(data.map(function(series) { return series.disabled; }));
-
-        model
+          .disabled(data.map(function(series) { return series.disabled; }))
           .width(getDimension('width'))
           .height(getDimension('height'));
         model_wrap
-          .data([modelData])
+          .datum(modelData)
           .call(model);
 
 
@@ -13971,73 +14482,63 @@ function multibarChart() {
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
 
         function setInnerMargins() {
+          xAxisMargin = xAxis.margin();
+          yAxisMargin = yAxis.margin();
           innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
           innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
-          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top) + headerHeight;
+          innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
           innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
           setInnerDimensions();
         }
 
         function setInnerDimensions() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
-          innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+          innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
           model.resetDimensions(getDimension('width'), getDimension('height'));
         }
 
-        // Y-Axis
-        yAxis
-          .margin(innerMargin)
-          .ticks(innerHeight / 48);
-        yAxis_wrap
-          .call(yAxis);
-        // reset inner dimensions
-        yAxisMargin = yAxis.margin();
-        setInnerMargins();
+        function yAxisRender() {
+          yAxis
+            .ticks(innerHeight / 48)
+            .tickSize(vertical ? -innerWidth : -innerHeight, 0)
+            .margin(innerMargin);
+          yAxis_wrap
+            .call(yAxis);
+          setInnerMargins();
+        }
 
-        // X-Axis
-        xAxis
-          .margin(innerMargin)
-          .ticks(groupCount);
-        xpos = innerMargin.left;
-        ypos = innerMargin.top + (xAxis.orient() === 'bottom' ? innerHeight : 0);
-        xAxis_wrap
-          .attr('transform', utility.translation(xpos, ypos))
+        function xAxisRender() {
+          xAxis
+            .tickSize(0)
+            .margin(innerMargin);
+          xAxis_wrap
             .call(xAxis);
-        // reset inner dimensions
-        xAxisMargin = xAxis.margin();
-        setInnerMargins();
+          setInnerMargins();
+        }
 
-        // recall y-axis, x-axis and lines to set final size based on new dimensions
-        xAxis
-          .tickSize(0)
-          .margin(innerMargin);
-        xAxis_wrap
-          .call(xAxis);
+        // initial Y-Axis call
+        yAxisRender();
+        // initial X-Axis call
+        xAxisRender();
 
-        // reset inner dimensions
-        xAxisMargin = xAxis.margin();
-        setInnerMargins();
-
-        // recall y-axis to set final size based on new dimensions
-        yAxis
-          .tickSize(vertical ? -innerWidth : -innerHeight, 0)
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
-
-        // reset inner dimensions
-        yAxisMargin = yAxis.margin();
-        setInnerMargins();
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
+        // recall X-axis to set final size based on new dimensions
+        xAxisRender();
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
 
         // final call to lines based on new dimensions
         model_wrap
-          .transition()
+          .transition().duration(duration)
             .call(model);
 
 
         //------------------------------------------------------------
         // Final repositioning
+
+        innerMargin.top += headerHeight;
 
         xpos = (vertical || xAxis.orient() === 'left' ? 0 : innerWidth);
         ypos = (vertical && xAxis.orient() === 'bottom' ? innerHeight + 2 : -2);
@@ -14065,10 +14566,15 @@ function multibarChart() {
 
           var diff = (vertical ? innerWidth : innerHeight) - minDimension;
           var panMultibar = function() {
+                var x;
                 dispatch.call('tooltipHide', this);
                 scrollOffset = scroll.pan(diff);
+                x = vertical ?
+                  innerWidth - scrollOffset * 2 :
+                  scrollOffset * 2 - innerHeight;
+                x = x / 2;
                 xAxis_wrap.select('.sc-axislabel')
-                  .attr('x', (vertical ? innerWidth - scrollOffset * 2 : scrollOffset * 2 - innerHeight) / 2);
+                  .attr('x', x);
               };
 
           scroll
@@ -14207,8 +14713,7 @@ function multibarChart() {
       });
 
       model.dispatch.on('elementClick', function(eo) {
-
-        if (hasGroupLabels) {
+        if (hasGroupLabels && eo.groupIndex) {
           // set the group rather than pass entire groupData
           eo.group = groupData[eo.groupIndex];
         }
@@ -14253,10 +14758,15 @@ function multibarChart() {
   chart.legend = header.legend;
   chart.controls = header.controls;
   chart.xAxis = xAxis;
+  chart.xAxisLabel = xAxis.axisLabel;
   chart.yAxis = yAxis;
+  chart.yAxisLabel = yAxis.axisLabel;
   chart.options = utility.optionsFunc.bind(chart);
 
-  utility.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  utility.rebind(chart, model,
+    'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge',
+    'color', 'fill', 'classes', 'gradient', 'locality'
+  );
   utility.rebind(chart, model, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   utility.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
@@ -14264,16 +14774,16 @@ function multibarChart() {
   chart.colorData = function(_) {
     var type = arguments[0],
         params = arguments[1] || {};
-    var color = function(d, i) {
+    var color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-    var classes = function(d, i) {
+    var classes = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
-        color = function(d, i) {
+        color = function(d) {
           return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
@@ -14281,25 +14791,29 @@ function multibarChart() {
         color = function() {
           return 'inherit';
         };
-        classes = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        classes = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
-        color = function(d, i) {
+        color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-        classes = function(d, i) {
+        classes = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      var p = {orientation: params.orientation || (vertical ? 'vertical' : 'horizontal'), position: params.position || 'middle'};
-      return model.gradient()(d, d.seriesIndex, p);
+    var fill = !params.gradient ? color : function(d) {
+      var p = {
+            orientation: params.orientation || (vertical ? 'vertical' : 'horizontal'),
+            position: params.position || 'middle'
+          };
+      return model.gradientFill(d, d.seriesIndex, p);
     };
 
     model.color(color);
@@ -14391,24 +14905,6 @@ function multibarChart() {
     return chart;
   };
 
-  chart.vertical = function(_) {
-    if (!arguments.length) { return vertical; }
-    vertical = _;
-    return chart;
-  };
-
-  chart.allowScroll = function(_) {
-    if (!arguments.length) { return scrollEnabled; }
-    scrollEnabled = _;
-    return chart;
-  };
-
-  chart.hideEmptyGroups = function(_) {
-    if (!arguments.length) { return hideEmptyGroups; }
-    hideEmptyGroups = _;
-    return chart;
-  };
-
   chart.xValueFormat = function(_) {
     if (!arguments.length) {
       return xValueFormat;
@@ -14428,6 +14924,24 @@ function multibarChart() {
   chart.seriesClick = function(_) {
     if (!arguments.length) { return seriesClick; }
     seriesClick = _;
+    return chart;
+  };
+
+  chart.vertical = function(_) {
+    if (!arguments.length) { return vertical; }
+    vertical = _;
+    return chart;
+  };
+
+  chart.allowScroll = function(_) {
+    if (!arguments.length) { return scrollEnabled; }
+    scrollEnabled = _;
+    return chart;
+  };
+
+  chart.hideEmptyGroups = function(_) {
+    if (!arguments.length) { return hideEmptyGroups; }
+    hideEmptyGroups = _;
     return chart;
   };
 
@@ -14605,6 +15119,7 @@ function paretoChart() {
       if (displayNoData(data)) {
         return chart;
       }
+
 
       //------------------------------------------------------------
       // Process data
@@ -15390,7 +15905,9 @@ function paretoChart() {
   chart.barLegend = barLegend;
   chart.lineLegend = lineLegend;
   chart.xAxis = xAxis;
+  chart.xAxisLabel = xAxis.axisLabel;
   chart.yAxis = yAxis;
+  chart.yAxisLabel = yAxis.axisLabel;
   chart.options = utility.optionsFunc.bind(chart);
 
   utility.rebind(chart, bars, 'id', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceY', 'color', 'fill', 'classes', 'gradient');
@@ -15399,13 +15916,13 @@ function paretoChart() {
 
   chart.colorData = function(_) {
     var type = arguments[0],
-      params = arguments[1] || {};
-    var barColor = function(d, i) {
-      return utility.defaultColor()(d, d.seriesIndex);
-    };
+        params = arguments[1] || {};
+    var barColor = function(d) {
+          return utility.defaultColor()(d, d.seriesIndex);
+        };
     var barClasses = function(d, i) {
-      return 'sc-series sc-series-' + d.seriesIndex;
-    };
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
     var lineColor = function(d, i) {
       var p = params.lineColor ? params.lineColor : {
         c1: '#1A8221',
@@ -15415,12 +15932,12 @@ function paretoChart() {
       return d.color || d3.interpolateHsl(d3.rgb(p.c1), d3.rgb(p.c2))(d.seriesIndex / 2);
     };
     var lineClasses = function(d, i) {
-      return 'sc-series sc-series-' + d.seriesIndex;
-    };
+          return 'sc-series sc-series-' + d.seriesIndex;
+        };
 
     switch (type) {
       case 'graduated':
-        barColor = function(d, i) {
+        barColor = function(d) {
           return d3.interpolateHsl(d3.rgb(params.barColor.c1), d3.rgb(params.barColor.c2))(d.seriesIndex / params.barColor.l);
         };
         break;
@@ -15428,33 +15945,38 @@ function paretoChart() {
         barColor = function() {
           return 'inherit';
         };
-        barClasses = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        barClasses = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass;
         };
-        lineClasses = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        lineClasses = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
-        barColor = function(d, i) {
+        barColor = function(d) {
           return d.classes ? 'inherit' : d.color || utility.defaultColor()(d, d.seriesIndex);
         };
-        barClasses = function(d, i) {
+        barClasses = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
-        lineClasses = function(d, i) {
+        lineClasses = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var barFill = (!params.gradient) ? barColor : function(d, i) {
-      var p = {orientation: params.orientation || 'vertical', position: params.position || 'middle'};
-      return bars.gradient()(d, d.seriesIndex, p);
+    var barFill = !params.gradient ? barColor : function(d) {
+      var p = {
+            orientation: params.orientation || 'vertical',
+            position: params.position || 'middle'
+          };
+      return bars.gradientFill(d, d.seriesIndex, p);
     };
 
     bars.color(barColor);
@@ -15665,6 +16187,7 @@ function pieChart() {
       duration = 0,
       tooltips = true,
       state = {},
+      exclusiveActive = true,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -15692,8 +16215,8 @@ function pieChart() {
         var y = model.getValue()(eo);
         var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
         var yIsCurrency = properties.yDataType === 'currency';
-        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
+        var val = utility.numberFormat(y, 2, yIsCurrency, chart.locality());
+        var percent = utility.numberFormat(x, 2, false, chart.locality());
         return '<p>' + label + ': <b>' + key + '</b></p>' +
                '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                '<p>Percent: <b>' + percent + '%</b></p>';
@@ -15757,23 +16280,48 @@ function pieChart() {
       //------------------------------------------------------------
       // Process data
 
-      chart.clearActive = function() {
-        data.map(function(d) {
-          d.active = '';
-          container.selectAll('.nv-series').classed('nv-inactive', false);
-          return d;
+      chart.setActiveState = function(series, state) {
+        series.active = state;
+      };
+
+      chart.clearActive = function(reset) {
+        data.forEach(function(s) {
+          chart.setActiveState(s, reset || '');
         });
+        delete state.active;
       };
 
+      // accepts either an event object with actual series data or seriesIndex
       chart.seriesActivate = function(eo) {
-        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+        if (!series) {
+          return;
+        }
+        if (exclusiveActive) {
+          // store toggle active state
+          activeState = (
+              typeof series.active === 'undefined' ||
+              series.active === 'inactive' ||
+              series.active === ''
+            ) ? 'active' : '';
+          // inactivate all series
+          chart.clearActive(activeState === 'active' ? 'inactive' : '');
+          // then activate the selected series
+          chart.setActiveState(series, activeState);
+          // set the state to a truthy map
+          state.active = data.map(function(s) {
+            return s.active === 'active';
+          });
+        } else {
+          chart.dataSeriesActivate({series: series});
+        }
       };
 
+      // accepts either an event object with actual series data or seriesIndex
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
-
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
-
         // if you have activated a data series, inactivate the other non-active series
         if (series.active === 'active') {
           data
@@ -15785,13 +16333,10 @@ function pieChart() {
               return d;
             });
         }
-
         // if there are no active data series, inactivate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
           chart.clearActive();
         }
-
-        container.call(chart);
       };
 
       // add series index to each data point for reference
@@ -15852,10 +16397,12 @@ function pieChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-background-wrap');
       var back_wrap = wrap.select('.sc-background-wrap');
@@ -16088,14 +16635,17 @@ function pieChart() {
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient()(d, d.seriesIndex);
+    var fill = !params.gradient ? color : function(d, i) {
+      return model.gradientFill(d, d.seriesIndex);
     };
 
     model.color(color);
     model.fill(fill);
     model.classes(classes);
 
+    // don't enable this since controls get a custom function
+    // controls.color(color);
+    // controls.classes(classes);
     header.legend.color(color);
     header.legend.classes(classes);
 
@@ -16868,6 +17418,7 @@ function treemapChart() {
       colorData = 'default',
       //create a clone of the d3 array
       colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utility.identity),
+      state = {},
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -16875,7 +17426,20 @@ function treemapChart() {
         noLabel: 'undefined'
       };
 
-  var dispatch = d3.dispatch('tooltipShow', 'tooltipHide', 'tooltipMove', 'elementMousemove');
+  var dispatch = d3.dispatch(
+        'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
+        'elementMousemove'
+      );
+
+  var tooltipContent = function(point, properties) {
+        var tt = '<h3>' + point.data.name + '</h3>' +
+                 '<p>' + utility.numberFormatSI(point.value) + '</p>';
+        return tt;
+      };
+
+  var seriesClick = function(data, i, chart) {
+        return;
+      };
 
   //============================================================
   // Private Variables
@@ -16886,14 +17450,7 @@ function treemapChart() {
   var header = headers();
 
   var controlsData = [];
-
   var tt = null;
-
-  var tooltipContent = function(point, properties) {
-        var tt = '<h3>' + point.data.name + '</h3>' +
-                 '<p>' + utility.numberFormatSI(point.value) + '</p>';
-        return tt;
-      };
 
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo.point, properties);
@@ -16904,6 +17461,7 @@ function treemapChart() {
     .showTitle(true)
     .showControls(false)
     .showLegend(false);
+
 
   //============================================================
 
@@ -16922,6 +17480,47 @@ function treemapChart() {
 
       chart.update = function() {
         container.transition().duration(duration).call(chart);
+      };
+
+      chart.setActiveState = function(child, state) {
+        child.active = state;
+        // series.values.forEach(function(v) {
+        //   v.active = state;
+        // });
+      };
+
+      chart.clearActive = function(d) {
+        var parent = d || data;
+        if (parent.children) {
+          parent.children.forEach(function(child) {
+            chart.setActiveState(child, '');
+          });
+        }
+      };
+
+      chart.cellActivate = function(eo) {
+        // seriesClick is defined outside chart scope, so when it calls
+        // cellActivate, it only has access to (data, eo, chart)
+        var cell = eo.d;
+        var activeState;
+
+        if (!cell) {
+          return;
+        }
+
+        // store toggle active state
+        activeState = (
+            typeof cell.active === 'undefined' ||
+            cell.active === 'inactive' ||
+            cell.active === ''
+          ) ? 'active' : '';
+
+        // unset entire active state first
+        chart.clearActive(cell.parent);
+
+        cell.active = activeState;
+
+        chart.render();
       };
 
       chart.container = this;
@@ -17095,6 +17694,16 @@ function treemapChart() {
         }
       });
 
+      model.dispatch.on('chartClick', function(eo) {
+        if (eo.children) {
+          chart.clearActive(eo);
+        }
+      });
+
+      model.dispatch.on('elementClick', function(eo) {
+        seriesClick(data, eo, chart);
+      });
+
 
       //============================================================
 
@@ -17144,7 +17753,7 @@ function treemapChart() {
   chart.options = utility.optionsFunc.bind(chart);
 
   utility.rebind(chart, model, 'id', 'color', 'fill', 'classes', 'gradient');
-  utility.rebind(chart, model, 'leafClick', 'getValue', 'getKey');
+  utility.rebind(chart, model, 'leafClick', 'getValue', 'getKey', 'textureFill');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
 
   chart.colorData = function(_) {
@@ -17178,9 +17787,12 @@ function treemapChart() {
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return model.gradient()(d, i, p);
+    var fill = !params.gradient ? color : function(d, i) {
+      var p = {
+        orientation: params.orientation || 'horizontal',
+        position: params.position || 'base'
+      };
+      return model.gradientFill(d, i, p);
     };
 
     model.color(color);
@@ -17259,6 +17871,12 @@ function treemapChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) { return seriesClick; }
+    seriesClick = _;
     return chart;
   };
 
