@@ -16,6 +16,7 @@ export default function multibar() {
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       locality = utility.buildLocality(),
+      forceX = [],
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
       stacked = true,
       disabled, // used in conjunction with barColor to communicate to multibarChart what series are disabled
@@ -178,7 +179,7 @@ export default function multibar() {
       }
 
       function resetScale() {
-        var xDomain = xDomain || unique(seriesData.map(getX));
+        var xDomain = xDomain || unique(seriesData.map(getX).concat(forceX));
         var maxX = vertical ? availableWidth : availableHeight,
             maxY = vertical ? availableHeight : availableWidth;
 
@@ -786,6 +787,12 @@ export default function multibar() {
   model.yDomain = function(_) {
     if (!arguments.length) { return yDomain; }
     yDomain = _;
+    return model;
+  };
+
+  model.forceX = function(_) {
+    if (!arguments.length) { return forceX; }
+    forceX = _;
     return model;
   };
 

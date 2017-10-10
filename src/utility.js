@@ -53,10 +53,15 @@ utility.optionsFunc = function(args) {
     return this;
   }
   d3.map(args).each((function(value, key) {
-    if (Array.isArray(value)) {
-      this[key].apply(value);
-    } else if (utility.isFunction(this[key])) {
-      this[key](utility.toNative(value));
+    var m = this[key];
+    var v = utility.toNative(value);
+    if (!utility.isFunction(m)) {
+      return;
+    }
+    if (Array.isArray(v)) {
+      m.apply(v);
+    } else {
+      m(v);
     }
   }).bind(this));
   return this;
@@ -722,35 +727,55 @@ utility.isValidDate = function(d) {
   return d instanceof Date && !isNaN(d.valueOf());
 };
 
-// accepts:
-// a number (timestamp): 1330837567000,
-// a number as string: '1330837567000',
-// a datetime string (ISO, W3C, RFC 822):
+// accepts (ISO, W3C, RFC 822):
+// 2012,
+// '2012',
+// 1330837567000,
+// '1330837567000',
+// '2012-03-04T05:06:07.000Z',
+// '2012-03-04T00:06:07.000-05:00',
+// '2012-03-04T05:06:07.000Z',
+// 'March 4, 2012, 0:06:07 AM',
+// 'March 4, 2012, 5:06:07 AM GMT',
+// 'Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)',
+// 'Sun Mar 04 2012 00:06:07 GMT-0500 (EST)'
 utility.parseDatetime = function(d) {
-  var date;
-  if (utility.isNumeric(Math.floor(d)) && d.length === 4) {
-    // if the date value provided is a year
-    // append day and month parts to get correct UTC offset
-    date = new Date(Math.floor(d), 0); // '1/1/' + d;
+  var date, m;
+  // only for 1991 or '1991'
+  if (utility.isNumeric(Math.floor(d)) && d.toString().length === 4) {
+    // date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
+    // append day and month parts and GMT to get correct UTC offset
+    date = new Date(Math.floor(d) + '-1-1 GMT');
   }
-  else if (parseInt(d, 10).toString() === d) {
-    // note that this only fires for '1330837567000'
-    // it will not fire for a Date object
-    // if you use Math.floor, Date object would convert to number
+  // only for '1330837567000' or 1330837567000
+  //   it will not fire for a Date object
+  //   if you use Math.floor, Date object would convert to number
+  else if (parseInt(d, 10).toString() === d || parseInt(d, 10) === d) {
     date = new Date(parseInt(d, 10));
   }
+  // only for Date object or Date string
   else {
     // convert a numeric timestamp: 1330837567000
-    // convert a date string
+    // or convert a date string: 'Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)'
     date = new Date(d);
-    if (!utility.isValidDate(date)) {
-      date = d;
+    //Q: what should we do about dt strings w/o timezone?
+    //'March 4, 2012, 0:06:07 AM'
+    if (
+      d.toString().substr(-1) !== 'Z' &&
+      d.toString().indexOf('GMT') === -1 &&
+      !d.toString().match(/\d\d\d\d-\d\d-\d\dT/)
+    ) {
+      // force to UTC
+      date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
     }
+  }
+  if (!utility.isValidDate(date)) {
+    date = d;
   }
   return date;
 };
 
-// expects and array of dates constructed from local datetime strings without GTM
+// expects an array of dates constructed from local datetime strings without GTM
 // for instance: "2/3/1991, 4:05:06 AM" or "1991-2-3" which evaluates as
 // Sun Feb 03 1991 04:05:06 GMT-0500 (EST). The GMT offset is ignored.
 utility.getDateFormat = function(values, utc) {
