@@ -512,7 +512,8 @@ tests("UNIT: pieChart -", function(t) {
     t.test("gradient: ", function(assert) {
         assert.plan(2);
         let def = _chart.gradient();
-        assert.equal(def, null, "returns null by default");
+        let crg = sucrose.utility.colorRadialGradient;
+        assert.equal(def, crg, "returns colorRadialGradient by default");
         let val = function(){return 1;};
         _chart.gradient(val);
         assert.equal(_chart.gradient(), val, "returns set function");
