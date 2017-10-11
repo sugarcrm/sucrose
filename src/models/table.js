@@ -43,7 +43,7 @@ export default function table() {
       var containerWidth = parseInt(container.style('width'), 10),
           containerHeight = parseInt(container.style('height'), 10);
 
-      var labels = properties.labels ||
+      var labels = properties.groups ||
             d3.range(
               1,
               d3.max(data.map(function (d) { return d.values.length; })) + 1

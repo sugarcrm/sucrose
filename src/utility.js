@@ -695,53 +695,95 @@ utility.daysInMonth = function(month, year) {
 };
 
 utility.isValidDate = function(d) {
-  var testDate;
   if (!d) {
     return false;
   }
-  testDate = new Date(d);
-  return testDate instanceof Date && !isNaN(testDate.valueOf());
+  return d instanceof Date && !isNaN(d.valueOf());
 };
 
-utility.getDateFormat = function(values) {
-  var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
-  var formatIndex = 0;
+// accepts:
+// a number (timestamp): 1330837567000,
+// a number as string: '1330837567000',
+// a datetime string (ISO, W3C, RFC 822):
+utility.parseDatetime = function(d) {
+  var date;
+  if (utility.isNumeric(Math.floor(d)) && d.length === 4) {
+    // if the date value provided is a year
+    // append day and month parts to get correct UTC offset
+    date = new Date(Math.floor(d), 0); // '1/1/' + d;
+  }
+  else if (parseInt(d, 10).toString() === d) {
+    // note that this only fires for '1330837567000'
+    // it will not fire for a Date object
+    // if you use Math.floor, Date object would convert to number
+    date = new Date(parseInt(d, 10));
+  }
+  else {
+    // convert a numeric timestamp: 1330837567000
+    // convert a date string
+    date = new Date(d);
+    if (!utility.isValidDate(date)) {
+      date = d;
+    }
+  }
+  return date;
+};
 
-  formatIndex = values.length ? d3.min(values, function(date) {
+// expects and array of dates constructed from local datetime strings without GTM
+// for instance: "2/3/1991, 4:05:06 AM" or "1991-2-3" which evaluates as
+// Sun Feb 03 1991 04:05:06 GMT-0500 (EST). The GMT offset is ignored.
+utility.getDateFormat = function(values, utc) {
+  //TODO: use locality format strings mmmmY, etc.
+  var dateFormats = [
+    'multi',
+    '%x, %I:%M:%S.%L %p',
+    '%x, %I:%M:%S %p',
+    '%x, %I:%M %p',
+    '%x, %I %p',
+    '%x',
+    '%b %d',
+    '%B %Y',
+    '%Y'
+  ];
+
+  var formatIndex = values.length ? d3.min(values, function(date) {
+    if (utc === true) {
+      date.setUTCMilliseconds(date.getUTCMilliseconds() + date.getTimezoneOffset() * 60000);
+    }
+    var d = new Date(date);
     var format;
-
     // if round to second is less than date
-    if (d3.timeSecond(date) < date) {
+    if (+d3.timeSecond(date) < +d) {
       // use millisecond format - .%L
       format = 1;
     }
     else
     // if round to minute is less than date
-    if (d3.timeMinute(date) < date) {
+    if (+d3.timeMinute(date) < +d) {
       // use second format - :%S
       format = 2;
     }
     else
     // if round to hour is less than date
-    if (d3.timeHour(date) < date) {
+    if (+d3.timeHour(date) < +d) {
       // use minute format - %I:%M
       format = 3;
     }
     else
     // if round to day is less than date
-    if (d3.timeDay(date) < date) {
+    if (+d3.timeDay(date) < +d) {
       // use hour format - %I %p
       format = 4;
     }
     else
     // if round to month is less than date
-    if (d3.timeMonth(date) < date) {
+    if (+d3.timeMonth(date) < +d) {
       // use day format - %x
       format = 5; // format = (d3.timeWeek(date) < date ? 4 : 5);
     }
     else
     // if round to year is less than date
-    if (d3.timeYear(date) < date) {
+    if (+d3.timeYear(date) < +d) {
       // use month format - %B
       format = 7;
     }
@@ -752,51 +794,64 @@ utility.getDateFormat = function(values) {
       format = 8;
     }
     return format;
-  }) : 0;
+  }) : 8;
 
   return dateFormats[formatIndex];
 };
 
-utility.getUTCDateFormat = function(values) {
-  var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
-  var formatIndex = 0;
+// expects an array of date objects adjusted to GMT
+// for instance: "Sun Feb 03 1991 04:05:06 GMT" which evaluates as
+// Sun Feb 03 1991 04:05:06 GMT
+utility.getDateFormatUTC = function(values) {
+  //TODO: use locality format strings mmmmY, etc.
+  var dateFormats = [
+    'multi',
+    '%x, %I:%M:%S.%L %p',
+    '%x, %I:%M:%S %p',
+    '%x, %I:%M %p',
+    '%x, %I %p',
+    '%x',
+    '%b %d',
+    '%B %Y',
+    '%Y'
+  ];
 
-  formatIndex = values.length ? d3.min(values, function(date) {
+  var formatIndex = values.length ? d3.min(values, function(date) {
+    var d = new Date(date);
     var format;
-    date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
 
     // if round to second is less than date
-    if (d3.utcSecond(date) < date) {
+    if (+d3.utcSecond(date) < +d) {
       // use millisecond format - .%L
       format = 1;
     }
     else
     // if round to minute is less than date
-    if (d3.utcMinute(date) < date) {
+    if (+d3.utcMinute(date) < +d) {
       // use second format - :%S
       format = 2;
     }
     else
     // if round to hour is less than date
-    if (d3.utcHour(date) < date) {
+    if (+d3.utcHour(date) < +d) {
       // use minute format - %I:%M
       format = 3;
     }
     else
     // if round to day is less than date
-    if (d3.utcDay(date) < date) {
+    if (+d3.utcDay(date) < +d) {
       // use hour format - %I %p
       format = 4;
     }
     else
     // if round to month is less than date
-    if (d3.utcMonth(date) < date) {
+    if (+d3.utcMonth(date) < +d) {
       // use day format - %x
       format = 5; // format = (d3.utcWeek(date) < date ? 4 : 5);
     }
     else
     // if round to year is less than date
-    if (d3.utcYear(date) < date) {
+    if (+d3.utcYear(date) < +d) {
       // use month format - %B
       format = 7;
     }
@@ -807,63 +862,40 @@ utility.getUTCDateFormat = function(values) {
       format = 8;
     }
     return format;
-  }) : 0;
+  }) : 8;
 
   return dateFormats[formatIndex];
 };
 
-utility.multiFormat = function(d) {
-  var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
-  var format;
-  if (d3.timeSecond(date) < d) {
-    format = '.%L'; //millisecond
-  } else if (d3.timeMinute(date) < d) {
-    format = ':%S'; //second
-  } else if (d3.timeHour(date) < d) {
-    format = '%I:%M'; //minute
-  } else if (d3.timeDay(date) < d) {
-    format = '%I %p'; //hour
-  } else if (d3.timeMonth(date) < d) {
-    format = '%x'; //day
-    // format = (d3.timeWeek(date) < date ? formatDay : formatWeek);
-  } else if (d3.timeYear(date) < d) {
-    format = '%B'; //month
-  } else {
-    format = '%Y'; //year
-  }
-  return format;
+utility.multiFormat = function(date, utc) {
+  return utc === false ?
+    utility.getDateFormat([date]) :
+    utility.getDateFormatUTC([date]);
 };
 
+// expects string or date object
 utility.dateFormat = function(d, p, l) {
-  var dateString, date, locale, spec, fmtr;
+  var locale, fmtr, spec;
+  var dateString = d.toString();
 
-  // if the date value provided is a year
-  dateString = d.toString();
-  if (!isNaN(parseInt(dateString, 10)) && dateString.length === 4) {
-    // append day and month parts to get correct UTC offset
-    date = new Date(dateString + '-1-1'); // '1/1/' + dateString;
-  } else {
-    date = new Date(d);
-  }
-  date.setMilliseconds(date.getMilliseconds() - date.getTimezoneOffset() * 60000);
+  var date = utility.parseDatetime(d);
 
-  if (!(date instanceof Date) || isNaN(date.valueOf())) {
+  if (!utility.isValidDate(date)) {
     return d;
   }
 
   if (l && l.hasOwnProperty('utcFormat')) {
     // Use rebuilt locale formatter
     fmtr = l.utcFormat;
-    spec = p && p.indexOf('%') !== -1 ? p : utility.multiFormat(date);
+    spec = p ? p.indexOf('%') !== -1 ? p : utility.multiFormat(date) : '%Y';
   } else {
     // Ensure locality object has all needed properties
     // TODO: this is expensive so consider removing
     locale = utility.buildLocality(l);
-    fmtr = d3.timeFormatDefaultLocale(locale).utcFormat;
-    spec = p && p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date);
+    fmtr = d3.timeFormatLocale(locale).utcFormat;
+    spec = p ? p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date) : '%Y';
     // TODO: if not explicit pattern provided, we should use .multi()
   }
-
   return fmtr(spec)(date);
 };
 

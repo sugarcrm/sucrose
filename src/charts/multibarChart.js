@@ -164,6 +164,33 @@ export default function multibarChart() {
           xAxisFormat = null,
           yAxisFormat = null;
 
+      var yAxisFormatProperties = {
+        axis: null,
+        maxmin: null
+      };
+
+      function setAxisFormatProperties(type, selection) {
+        // i.e., 100 | 200 | 300
+        var tickDatum = selection.map(function(t) {
+            return d3.select(t).datum();
+          });
+        // i.e., 1 | 1000 | 1000000
+        var decimal = d3.max(d3.extent(tickDatum), function(v) {
+            return utility.siDecimal(Math.abs(v));
+          });
+        var precision = d3.max(tickDatum, function(v) {
+            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+          });
+        if (type === 'maxmin' && yAxisFormatProperties.axis) {
+          precision = Math.max(yAxisFormatProperties.axis.precision, precision);
+        }
+        yAxisFormatProperties[type] = {
+          decimal: decimal,
+          precision: precision
+        };
+        return yAxisFormatProperties[type];
+      }
+
       var controlsData = [
         {key: 'Grouped', disabled: model.stacked()},
         {key: 'Stacked', disabled: !model.stacked()}
@@ -364,7 +391,9 @@ export default function multibarChart() {
           var label = typeof group.label === 'undefined' || group.label === '' ?
             strings.noLabel :
               xIsDatetime ?
-                new Date(group.label) :
+                utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
+                  new Date(group.label) :
+                  new Date(group.label + ' GMT') :
                 group.label;
           group.group = g,
           group.label = label;
@@ -452,7 +481,7 @@ export default function multibarChart() {
 
       // Configure axis format functions
       if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(groupLabels);
+        xDateFormat = utility.getDateFormatUTC(groupLabels);
       }
 
 
@@ -494,33 +523,6 @@ export default function multibarChart() {
         .tickPadding(4)
         .highlightZero(false)
         .showMaxMin(false);
-
-      var yAxisFormatProperties = {
-        axis: null,
-        maxmin: null
-      };
-
-      function setAxisFormatProperties(type, selection) {
-        // i.e., 100 | 200 | 300
-        var tickDatum = selection.map(function(t) {
-            return d3.select(t).datum();
-          });
-        // i.e., 1 | 1000 | 1000000
-        var decimal = d3.max(d3.extent(tickDatum), function(v) {
-            return utility.siDecimal(Math.abs(v));
-          });
-        var precision = d3.max(tickDatum, function(v) {
-            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
-          });
-        if (type === 'maxmin' && yAxisFormatProperties.axis) {
-          precision = Math.max(yAxisFormatProperties.axis.precision, precision);
-        }
-        yAxisFormatProperties[type] = {
-          decimal: decimal,
-          precision: precision
-        };
-        return yAxisFormatProperties[type];
-      }
 
       yAxisFormat = function(d, i, selection, type) {
         var properties = yAxisFormatProperties[type] || setAxisFormatProperties(type, selection);

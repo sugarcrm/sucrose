@@ -134,7 +134,7 @@ export default function lineChart() {
       var xIsDatetime = properties.xDataType === 'datetime' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
-      var groupData = properties.groups,
+      var groupData = properties.groups || properties.labels,
           hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
@@ -323,7 +323,9 @@ export default function lineChart() {
             var label = typeof group.label === 'undefined' || group.label === '' ?
               strings.noLabel :
                 xIsDatetime ?
-                  new Date(group.label) :
+                  utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
+                    new Date(group.label) :
+                    new Date(group.label + ' GMT') :
                   group.label;
             group.group = g,
             group.label = label;
@@ -376,13 +378,13 @@ export default function lineChart() {
 
       // Configure axis format functions
       if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(groupLabels);
+        xDateFormat = utility.getDateFormatUTC(groupLabels);
       }
 
-      xAxisFormat = function(d, i, selection, noEllipsis) {
+      xAxisFormat = function(d, i, selection, type) {
         var group = hasGroupLabels ? groupLabels[i] : d;
         var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
-        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
+        return type === 'no-ellipsis' ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
       yAxisFormat = function(d, i, selection) {
@@ -484,7 +486,7 @@ export default function lineChart() {
           //NOTE: be careful of this. If the x value is ordinal, then the values
           // should be [1...n]. If the x value is numeric, then the values are
           // zero indexed as [0..n-1]
-          .tickValues(hasGroupLabels ? d3.range(1, groupLabels.length + 1) : null)
+          .tickValues(hasGroupLabels ? d3.range(1, groupLabels.length) : null)
           .ticks(hasGroupLabels ? groupLabels.length : null)
           .showMaxMin(xIsDatetime)
           .highlightZero(false);

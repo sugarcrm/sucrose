@@ -264,7 +264,7 @@ export default function areaChart() {
 
       // Configure axis format functions
       if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(groupLabels);
+        xDateFormat = utility.getDateFormatUTC(groupLabels);
       }
 
       xAxisFormat = function(d, i, selection, noEllipsis) {

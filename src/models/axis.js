@@ -508,7 +508,7 @@ export default function axis() {
           // do not ellipsify the label
           var textContent = valueFormat(d, i, selection, 'no-ellipsis');
           var textNode = d3.select(this);
-          var isDate = utility.isValidDate(textContent);
+          var isDate = utility.isValidDate(utility.parseDatetime(textContent));
           var dy = reflect === 1 ? 0.71 : -1; // TODO: wrong. fails on reflect with 3 lines of wrap
           var di = 0;
           var textArray = (
