@@ -30,8 +30,8 @@
     "postinstall": "make install-post"
   },
   "dependencies": {
-    "jquery": "^3.2.1",
-    "jquerymy": "1.2.10",
+    "jquery": "^1.7.4",
+    "jquerymy": "1.2.8",
     "jszip": "^3.0.0"
   },
   "devDependencies": {

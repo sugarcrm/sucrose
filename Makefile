@@ -50,6 +50,7 @@ clean: clean-js clean-css
 # SUCROSE BUILD TARGETS
 
 TAR = scr
+DEV = false
 
 # - [*] build full sucrose library and D3 custom bundle
 scr: TAR = scr
@@ -63,15 +64,15 @@ scr sgr: pack sucrose d3
 sucrose: sucrose.min.js
 
 # - build the sucrose Js library with components for target
+# rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false --banner "[dollarsign](HEADER)"
 sucrose.js:
 	rm -f ./build/$@
-	# rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false --banner "$(HEADER)"
-	rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false | cat ./src/header - > ./build/$@
+	rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:$(DEV) | cat ./src/header - > ./build/$@
 
 # - build then minify the sucrose Js library
+# uglifyjs --preamble "$(HEADER)" build/$^ -c negate_iife=false -m -o build/$@
 sucrose.min.js: sucrose.js
 	rm -f ./build/$@
-	# uglifyjs --preamble "$(HEADER)" build/$^ -c negate_iife=false -m -o build/$@
 	uglifyjs build/$^ -c negate_iife=false -m | cat ./src/header - > ./build/$@
 
 # - remove all sucrose and D3 Js files

@@ -11,6 +11,7 @@ fs.access(backupName, fs.constants.F_OK, function(err) {
     let package = fs.createReadStream(backupName);
 
     package.once('error', function(err) {
+        console.log('======== ERROR ========');
         console.log(err);
     });
     package.once('end', function() {
