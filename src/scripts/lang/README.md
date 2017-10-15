@@ -6,12 +6,13 @@ Inspired by Rafael Xavier de Souza's
 https://github.com/rxaviers/cldr-data-npm/tree/example-application
 
 ## Usage
-Make sure you run in root of examples:
-    `npm i cldr-data`
-to build locales, run:
+Make sure you run in root of sucrose:
+    `npm i cldr cldr-data cldrjs`
+to build locales, in /src/scripts/lang run:
     `node < build_locales.js`
-which will make a hashmap of D3 localities in
-    `data/locales/locales.json`.
+which will make a hashmap of D3 localities in:
+    `src/data/locales/locales.json`.
+The build command will copy the locales file to the build folder.
 
 To add or remove locales, edit the `src/scripts/lang/cldr-locales.json` file using the pattern:
     `["xx_YY", "xx", "ZZZ", "xx-YY", "Klingon (Klinzhai)"]`

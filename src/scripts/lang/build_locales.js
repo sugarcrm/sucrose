@@ -23,10 +23,11 @@ var fs = require('fs');
 var Loc = require('./loc.js');
 
 // ICU Code, Language, Currency, CLDR, Label
-var locales = require('./cldr-locales.json');
+var locales = require('../../data/cldr-locales.json');
 //http://www.localeplanet.com/icu/currency.html
 
 var localeSettings = {};
+var localeJson;
 
 locales.forEach(function(l) {
     var icuc = l[0];
@@ -59,7 +60,9 @@ locales.forEach(function(l) {
     localeSettings[l[0]] = settings;
 });
 
-fs.writeFile('../../data/locales/locales.json', JSON.stringify(localeSettings, null, '  '), function (err) {
+localeJson = JSON.stringify(localeSettings, null, '  ');
+
+fs.writeFile('../../data/locales.json', localeJson, function (err) {
   if (err) return console.log(err);
   console.log('Wrote localeSettings to file.');
 });
