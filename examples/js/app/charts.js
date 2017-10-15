@@ -216,12 +216,15 @@ var sucroseCharts = function() {
           .defer(d3.json, 'data/geo/usa-states-topo-110.json')
           .defer(d3.json, 'data/geo/cldr_en.json')
           .await(function(error, world, country, labels) {
+            var worldMap, countryMap;
             if (error) {
               return;
             }
+            worldMap = topojson.feature(world, world.objects.countries).features;
+            countryMap = {'USA': topojson.feature(country, country.objects.states).features};
             chart
-              .worldMap(topojson.feature(world, world.objects.countries).features)
-              .countryMap({'USA': topojson.feature(country, country.objects.states).features})
+              .worldMap(worldMap)
+              .countryMap(countryMap)
               .countryLabels(labels);
             callback(chart);
           });

@@ -20,6 +20,7 @@ var chartStore,
     chartType,
     fileCatalog,
     localeData,
+    translationData,
     tooltip;
 
 // Visualization data

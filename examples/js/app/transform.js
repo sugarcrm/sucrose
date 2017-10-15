@@ -212,6 +212,7 @@ function transformDataToD3(json, chartType, barType) {
 
 function transformTableData(chartData, chartType, Chart) {
   var data = [],
+      strNoLabel = 'undefined',
       properties = chartData.properties || {};
 
   switch (chartType) {
@@ -258,7 +259,7 @@ function transformTableData(chartData, chartType, Chart) {
           count: d.count || null,
           disabled: d.disabled || false,
           series: d.series || i,
-          values: [{x: i + 1, y: Chart.y()(d)}]
+          values: [{x: i + 1, y: Chart.getValue()(d)}]
         };
       });
       break;
@@ -274,7 +275,9 @@ function transformTableData(chartData, chartType, Chart) {
       });
       properties.labels = properties.labels || d3.merge(chartData.data.map(function(d) {
           return d.values.map(function(d, i) {
-            return Chart.lines.x()(d, i);
+            return chartType === 'lines' ?
+              Chart.lines.x()(d, i) :
+              Chart.area.x()(d, i);
           });
         }))
         .reduce(function(p, c) {

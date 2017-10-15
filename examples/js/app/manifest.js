@@ -11,7 +11,7 @@ var Manifest =
   // (will also be reset by chart type manifest)
   type: 'multibar',
   // ok, what's the deal here?
-  locale: 'en',
+  locale: 'en_US',
 
   // D3 chart
   Chart: null,
@@ -459,6 +459,10 @@ var Manifest =
   getLocaleData: function (lang) {
     return localeData[lang];
   },
+  getTranslationData: function (lang) {
+    return translationData[lang];
+  },
+
 
   /* ------------------------
    * CHART functions -------- */
@@ -734,6 +738,7 @@ var Manifest =
   loadLocale: function (locale) {
     this.locale = locale;
     this.Chart.locality(this.getLocaleData(locale));
+    this.Chart.strings(this.getTranslationData(locale));
     this.chartUpdater()();
   }
 };

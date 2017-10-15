@@ -28,6 +28,7 @@ var chartStore,
     chartType,
     fileCatalog,
     localeData,
+    translationData,
     tooltip;
 
 // Visualization data
@@ -174,6 +175,7 @@ var sucroseCharts = function() {
         } else if (chart.dataSeriesActivate) {
           chart.dataSeriesActivate(eo);
         }
+        chart.render();
       },
       showTitle: 'true',
       showLegend: 'true',
@@ -255,12 +257,15 @@ var sucroseCharts = function() {
           .defer(d3.json, 'data/geo/usa-states-topo-110.json')
           .defer(d3.json, 'data/geo/cldr_en.json')
           .await(function(error, world, country, labels) {
+            var worldMap, countryMap;
             if (error) {
               return;
             }
+            worldMap = topojson.feature(world, world.objects.countries).features;
+            countryMap = {'USA': topojson.feature(country, country.objects.states).features};
             chart
-              .worldMap(topojson.feature(world, world.objects.countries).features)
-              .countryMap({'USA': topojson.feature(country, country.objects.states).features})
+              .worldMap(worldMap)
+              .countryMap(countryMap)
               .countryLabels(labels);
             callback(chart);
           });
@@ -434,8 +439,8 @@ var sucroseCharts = function() {
       showControls: 'false',
       _format: function format(chart, callback) {
         chart
-          .leafClick(function(d) {
-            alert('leaf clicked');
+          .seriesClick(function(data, eo, chart) {
+            chart.cellActivate(eo);
           })
           .getValue(function(d) { return d.size; });
         callback(chart);
@@ -718,6 +723,7 @@ function transformDataToD3(json, chartType, barType) {
 
 function transformTableData(chartData, chartType, Chart) {
   var data = [],
+      strNoLabel = 'undefined',
       properties = chartData.properties || {};
 
   switch (chartType) {
@@ -764,7 +770,7 @@ function transformTableData(chartData, chartType, Chart) {
           count: d.count || null,
           disabled: d.disabled || false,
           series: d.series || i,
-          values: [{x: i + 1, y: Chart.y()(d)}]
+          values: [{x: i + 1, y: Chart.getValue()(d)}]
         };
       });
       break;
@@ -780,7 +786,9 @@ function transformTableData(chartData, chartType, Chart) {
       });
       properties.labels = properties.labels || d3.merge(chartData.data.map(function(d) {
           return d.values.map(function(d, i) {
-            return Chart.lines.x()(d, i);
+            return chartType === 'lines' ?
+              Chart.lines.x()(d, i) :
+              Chart.area.x()(d, i);
           });
         }))
         .reduce(function(p, c) {
@@ -1254,7 +1262,7 @@ var Manifest =
   // (will also be reset by chart type manifest)
   type: 'multibar',
   // ok, what's the deal here?
-  locale: 'en',
+  locale: 'en_US',
 
   // D3 chart
   Chart: null,
@@ -1702,6 +1710,10 @@ var Manifest =
   getLocaleData: function (lang) {
     return localeData[lang];
   },
+  getTranslationData: function (lang) {
+    return translationData[lang];
+  },
+
 
   /* ------------------------
    * CHART functions -------- */
@@ -1977,6 +1989,7 @@ var Manifest =
   loadLocale: function (locale) {
     this.locale = locale;
     this.Chart.locality(this.getLocaleData(locale));
+    this.Chart.strings(this.getTranslationData(locale));
     this.chartUpdater()();
   }
 };
@@ -2003,6 +2016,7 @@ chartStore = {};
 chartType = window.uQuery('type');
 fileCatalog = {};
 localeData = {};
+translationData = {};
 
 // jQuery.my data
 Config = {};
@@ -2087,6 +2101,7 @@ $('body')
 
 $.when(
     $.get({url:'data/locales/locales.json', dataType: 'json'}),
+    $.get({url:'data/locales/translation.json', dataType: 'json'}),
     $.get({url:'data/catalog.json', dataType: 'json'}),
     // Load manifest for base ui
     $.get({url: 'manifest/base.json', dataType: 'text'})
@@ -2098,8 +2113,9 @@ $.when(
   })
   .then(function (json) {
     localeData = Object.extended(json[0]);
-    fileCatalog = Object.extended(json[1]);
-    baseUI = $.my.fromjson(json[2]);
+    translationData = Object.extended(json[1]);
+    fileCatalog = Object.extended(json[2]);
+    baseUI = $.my.fromjson(json[3]);
   })
   .then(function () {
     // If chartType was passed in url, open it

@@ -63,7 +63,9 @@ HEADER = $(shell cat js/app/header)
 .DEFAULT_GOAL := help
 
 .PHONY: prod dev npm-prod npm-dev index-prod index-dev \
-	clean-sucrose clean-lib clean-dependencies clean-app clean-css list help md
+	clean-sucrose clean-dependencies \
+	clean-examples clean-dev clean-app clean-lib clean-css \
+	list help md
 
 
 #-----------
@@ -83,7 +85,8 @@ install-post: all index-prod
 all: sucrose dependencies
 
 # - remove sucrose and dependency files
-clean: clean-sucrose clean-dependencies clean-dev clean-examples
+clean: clean-sucrose clean-dependencies clean-examples clean-dev
+
 
 # - [*] copy sucrose js and css files
 sucrose: clean-sucrose
@@ -92,24 +95,26 @@ sucrose: clean-sucrose
 	cp ../build/sucrose.css css/sucrose.css
 	cp ../build/sucrose.min.css css/sucrose.min.css
 	cp ../build/locales.json data/locales/locales.json
+	cp ../build/translation.json data/locales/translation.json
 
 # - remove sucrose js and css files
 clean-sucrose:
-	rm -f js/sucrose.js js/sucrose.min.js \
-		css/sucrose.css css/sucrose.min.css \
-		data/locales/locales.json
+	rm -f js/sucrose*.js css/sucrose*.css \
+		data/locales/locales.json data/locales/translation.json
+
 
 # - copy dependency js files (D3, jQuery, jQueryMy)
 dependencies: clean-dependencies
 	# copy node module files
 	cp ../build/d3.min.js js/d3.min.js
-	cp ../node_modules/topojson/build/topojson.min.js js/topojson.min.js
+	cp ../build/topojson.min.js js/topojson.min.js
 	cp node_modules/jquery/dist/jquery.min.js js/jquery.min.js
 	cp node_modules/jquerymy/jquerymy.min.js js/jquerymy.min.js
 
 # - remove dependency js files
 clean-dependencies:
 	rm -f $(DEP_FILES)
+
 
 # - generate production version of index page
 index-prod:
@@ -138,24 +143,13 @@ npm-dev:
 clean-dev: index-prod
 	rm -f js/less.min.js
 
-# - build all js, css and library files
-examples: js css lib
+
+# - [*] build all js, css and library files
+examples: app lib css
 
 # - remove all built js, css and library files
-clean-examples: clean-js clean-css clean-lib
+clean-examples: clean-app clean-lib clean-css
 
-# - [*] build all javascript files
-js: app lib
-
-# - concatenate, compress and copy all development library files
-lib: $(LIB_FILES) clean-lib
-	# build lib js files
-	cat $(LIB_FILES) >> js/lib.js
-	cat $(LIB_FILES) | $(JS_MINIFIER) >> js/lib.min.js
-
-# - remove all development library files
-clean-lib:
-	rm -f js/lib.js js/lib.min.js
 
 # - [*] build the examples app js file
 app: $(APP_FILES) clean-app
@@ -164,7 +158,19 @@ app: $(APP_FILES) clean-app
 
 # - remove the examples app js file
 clean-app:
-	rm -f js/app.js js/app.min.js
+	rm -f js/app*.js
+
+
+# - concatenate, compress and copy all library files
+lib: $(LIB_FILES) clean-lib
+	# build lib js files
+	cat $(LIB_FILES) >> js/lib.js
+	cat $(LIB_FILES) | $(JS_MINIFIER) >> js/lib.min.js
+
+# - remove all library files
+clean-lib:
+	rm -f js/lib*.js
+
 
 # - [*] compile and compress LESS source into css files
 css: less/examples.less clean-css
@@ -174,7 +180,8 @@ css: less/examples.less clean-css
 
 # - remove the examples css file
 clean-css:
-	rm -f css/examples.css css/examples.min.css
+	rm -f css/examples*.css
+
 
 # - generate development version of index page
 index-dev:

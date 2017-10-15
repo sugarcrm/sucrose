@@ -21,6 +21,7 @@ chartStore = {};
 chartType = window.uQuery('type');
 fileCatalog = {};
 localeData = {};
+translationData = {};
 
 // jQuery.my data
 Config = {};
@@ -105,6 +106,7 @@ $('body')
 
 $.when(
     $.get({url:'data/locales/locales.json', dataType: 'json'}),
+    $.get({url:'data/locales/translation.json', dataType: 'json'}),
     $.get({url:'data/catalog.json', dataType: 'json'}),
     // Load manifest for base ui
     $.get({url: 'manifest/base.json', dataType: 'text'})
@@ -116,8 +118,9 @@ $.when(
   })
   .then(function (json) {
     localeData = Object.extended(json[0]);
-    fileCatalog = Object.extended(json[1]);
-    baseUI = $.my.fromjson(json[2]);
+    translationData = Object.extended(json[1]);
+    fileCatalog = Object.extended(json[2]);
+    baseUI = $.my.fromjson(json[3]);
   })
   .then(function () {
     // If chartType was passed in url, open it

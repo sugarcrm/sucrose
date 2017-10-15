@@ -72,7 +72,7 @@ module.exports =
   },
   '[name=show_title]': {
     setChartOption: function (v, self) {
-      var value = sucrose.utility.toBoolean(v);
+      var value = sucrose.utility.toBoolean(v[0]);
       if (self.Chart.showTitle) {
         self.Chart.showTitle(value);
       }
