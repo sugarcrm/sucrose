@@ -19,9 +19,9 @@ HEADER = $(shell cat src/header)
 
 .DEFAULT_GOAL := help
 
-.PHONY: prod dev all scr sgr sucrose css \
-	clean clean-js clean-css \
-	d3-scr d3-sgr d3-bundle d3-minify d3-all \
+.PHONY: prod dev all scr sgr sucrose css data \
+	clean clean-js clean-css clean-data \
+	d3-scr d3-sgr d3-bundle d3-minify d3-all clean-d3 \
 	examples examples-prod examples-dev \
 	pack npm-sugar cover help list md
 
@@ -41,10 +41,10 @@ dev:
 	make all
 
 # - compile sucrose Js and Css files
-all: scr css
+all: scr css data
 
 # - remove sucrose Js and Css files
-clean: clean-js clean-css
+clean: clean-js clean-css clean-data
 
 
 # SUCROSE BUILD TARGETS
@@ -77,9 +77,7 @@ sucrose.min.js: sucrose.js
 
 # - remove all sucrose and D3 Js files
 clean-js:
-	rm -f ./build/sucrose.js ./build/sucrose.min.js
-	rm -f ./build/d3.js ./build/d3.min.js
-	rm -f ./build/d3-sugar.js ./build/d3-sugar.min.js
+	rm -f ./build/sucrose*.js
 
 
 # D3 BUILD TARGETS
@@ -96,7 +94,7 @@ d3-scr: D3 = d3
 # - build custom D3 bundle with just required components for Sugar
 d3-sgr: D3 = d3-sugar
 
-d3-scr d3-sgr: d3-minify
+d3-scr d3-sgr: d3-minify d3-topo
 
 # - build the D3 library Js file with components for target
 d3-bundle:
@@ -112,11 +110,20 @@ d3-minify: d3-bundle
 		build/$(D3).js -c negate_iife=false -m -o build/$(D3).min.js
 
 # - copy full D3 from node_modules to build directory
-d3-all:
-	rm -f ./build/d3.js
+d3-all: d3-topo
+	rm -f ./build/d3*.js
 	echo ";" | cat - ./node_modules/d3/build/d3.js >> ./build/d3.js
-	rm -f ./build/d3.min.js
 	echo ";" | cat - ./node_modules/d3/build/d3.min.js >> ./build/d3.min.js
+
+d3-topo:
+	rm -f ./build/topojson*.js
+	cp ./node_modules/topojson/build/topojson.js build/topojson.js
+	cp ./node_modules/topojson/build/topojson.min.js build/topojson.min.js
+
+clean-d3:
+	rm -f ./build/$(D3).js
+	rm -f ./build/$(D3).min.js
+	rm -f ./build/topojson*.js
 
 
 # STYLESHEETS
@@ -136,15 +143,27 @@ sucrose.min.css: sucrose.css
 
 # - remove sucrose Css files
 clean-css:
-	rm -f ./build/sucrose.css ./build/sucrose.min.css
+	rm -f ./build/sucrose*.css
+
+
+#-----
+# DATA
+
+data: clean-data
+	cp src/data/locales.json build/locales.json
+	cp src/data/translation.json build/translation.json
+
+clean-data:
+	rm -f build/locales.json
+	rm -f build/translation.json
 
 
 #---------
 # EXAMPLES
 
 # - [*] build and copy the sucrose Js and Css files to the example application
-examples: scr css
-	cd examples && make sucrose && make dependencies
+examples: all
+	cd examples && make sucrose && make dependencies && make examples
 
 # - install production package dependencies for sucrose library and generate examples application
 examples-prod: prod
