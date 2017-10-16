@@ -2,7 +2,7 @@
   "properties": {
     "title": "Top 10 Opportunities",
     "value": 10,
-    "yDataType": "string",
+    "yDataType": "numeric",
     "xDataType": "datetime"
   },
   "data": [
