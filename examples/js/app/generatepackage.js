@@ -24,7 +24,7 @@ function generatePackage(e) {
   var includes = [
     $.get({url: 'tpl/index.html', dataType: 'text'}),
     $.get({url: 'js/d3.min.js', dataType: 'text'}),
-    $.get({url: 'js/sucrose.min.js', dataType: 'text'}),
+    $.get({url: 'js/sucrose.js', dataType: 'text'}),
     $.get({url: 'css/sucrose.min.css', dataType: 'text'})
   ];
 
@@ -63,7 +63,7 @@ function generatePackage(e) {
       // add files to zip
       zip.file('index-' + chartType + '.html', indexTemplate);
       zip.file('d3.min.js', files[1]);
-      zip.file('sucrose.min.js', files[2]);
+      zip.file('sucrose.js', files[2]);
       zip.file('sucrose.min.css', files[3]);
 
       if (chartType === 'globe') {
