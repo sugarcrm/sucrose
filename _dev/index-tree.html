@@ -172,6 +172,20 @@ var data = {
     }
   ]
 };
+var config = {
+  "height": null,
+  "id": "chart_",
+  "margin": {
+    "top": 10,
+    "right": 10,
+    "bottom": 10,
+    "left": 10
+  },
+  "width": null,
+  "horizontal": false,
+  "duration": 500,
+  "showLabels": false
+};
 
 var chart = sucrose.charts.treeChart();
 
@@ -179,121 +193,72 @@ var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
 function format(chart, callback) {
-  chart
-    .duration(500)
-    .nodeSize({'width': 124, 'height': 56})
-    .zoomExtents({'min': 0.25, 'max': 4})
-    .nodeRenderer(function(content, d, w, h) {
-      var nodeData = d.data;
-      var node = content.append('g').attr('class', 'sc-org-node');
-      var container = d3.select('#chart_ svg');
-      if (!nodeData.image || nodeData.image === '') {
-        nodeData.image = 'user.svg';
-      }
-
-      node.append('rect').attr('class', 'sc-org-bkgd')
-        .attr('x', 0)
-        .attr('y', 0)
-        .attr('rx', 2)
-        .attr('ry', 2)
-        .attr('width', w)
-        .attr('height', h);
-      node.append('image').attr('class', 'sc-org-avatar')
-        .attr('xlink:href', 'img/' + nodeData.image)
-        .attr('width', '32px')
-        .attr('height', '32px')
-        .attr('transform', 'translate(3, 3)')
-        .on('error', function() {
-          d3.select(this).attr('xlink:href', 'img/user.svg');
+    chart.duration(500).nodeSize({
+        width: 124,
+        height: 56
+    }).zoomExtents({
+        min: .25,
+        max: 4
+    }).nodeRenderer(function(content, d, w, h) {
+        var nodeData = d.data;
+        var node = content.append("g").attr("class", "sc-org-node");
+        var container = d3.select("#chart_ svg");
+        if (!nodeData.image || nodeData.image === "") {
+            nodeData.image = "user.svg";
+        }
+        node.append("rect").attr("class", "sc-org-bkgd").attr("x", 0).attr("y", 0).attr("rx", 2).attr("ry", 2).attr("width", w).attr("height", h);
+        node.append("image").attr("class", "sc-org-avatar").attr("xlink:href", "img/" + nodeData.image).attr("width", "32px").attr("height", "32px").attr("transform", "translate(3, 3)").on("error", function() {
+            d3.select(this).attr("xlink:href", "img/user.svg");
         });
-      node.append('text').attr('class', 'sc-org-name')
-        .attr('data-url', nodeData.url)
-        .attr('transform', 'translate(38, 11)')
-        .text(function() {
-          return sucrose.utility.stringEllipsify(nodeData.name, container, 96);
+        node.append("text").attr("class", "sc-org-name").attr("data-url", nodeData.url).attr("transform", "translate(38, 11)").text(function() {
+            return sucrose.utility.stringEllipsify(nodeData.name, container, 96);
         });
-      node.append('text').attr('class', 'sc-org-title')
-        .attr('data-url', nodeData.url)
-        .attr('transform', 'translate(38, 21)')
-        .text(function() {
-          return sucrose.utility.stringEllipsify(nodeData.title, container, 96);
+        node.append("text").attr("class", "sc-org-title").attr("data-url", nodeData.url).attr("transform", "translate(38, 21)").text(function() {
+            return sucrose.utility.stringEllipsify(nodeData.title, container, 96);
         });
-
-      node
-        .on('mouseenter', function(d) {
-          d3.select(this)
-            .select('.sc-org-name')
-              .style('text-decoration', 'underline');
-        })
-        .on('mouseleave', function(d) {
-          d3.select(this)
-            .select('.sc-org-name')
-              .style('text-decoration', 'none');
+        node.on("mouseenter", function(d) {
+            d3.select(this).select(".sc-org-name").style("text-decoration", "underline");
+        }).on("mouseleave", function(d) {
+            d3.select(this).select(".sc-org-name").style("text-decoration", "none");
         });
-
-      return node;
-    })
-    .nodeClick(function(d) {
-      console.log(d.data.name + ' clicked!');
-    })
-    .nodeCallback(function(d, i) {
-      var node = d3.select(this);
+        return node;
+    }).nodeClick(function(d) {
+        console.log(d.data.name + " clicked!");
+    }).nodeCallback(function(d, i) {
+        var node = d3.select(this);
     });
-
-  callback(chart);
+    callback(chart);
 }
 
-window.onload = function () {
+window.onload = function() {
+  // apply configuration
+  chart.options(config);
 
-    // format then render chart
-    format(chart, function() {
-        // Bind D3 chart to SVG element
-        d3.select('#chart_ svg')
-            .attr('class', 'sucrose sc-chart sc-chart-' + type)
-            .datum(data)
-                .call(chart);
+  // format then render chart
+  format(chart, function() {
+    // Bind D3 chart to SVG element
+    d3.select('#chart_ svg')
+      .attr('class', 'sucrose sc-chart sc-chart-' + type)
+      .datum(data)
+        .call(chart);
 
-        // Dismiss tooltips
-        d3.select('#chart_')
-            .on('click', function() {
-                if (chart.dispatch && chart.dispatch.chartClick) {
-                    chart.dispatch.chartClick();
-                }
-            });
+    // Dismiss tooltips
+    d3.select('#chart_')
+      .on('click', function() {
+        if (chart.dispatch && chart.dispatch.chartClick) {
+          chart.dispatch.chartClick();
+        }
+      });
 
-        // Rebind window resizer
-        window.addEventListener('resize', function() {
-            if (chart.render) {
-                chart.render();
-            } else if (chart.update) {
-                chart.update();
-            }
-        });
-
-        var toggleChart = function(evt) {
-            var button = evt.target;
-            //if icon clicked get parent button
-            switch (button.dataset.control) {
-                case 'orientation':
-                    chart.orientation();
-                    break;
-
-                case 'show-all-nodes':
-                    chart.showall();
-                    break;
-
-                case 'zoom-to-fit':
-                    chart.resetZoom();
-                    break;
-
-                default:
-            }
-        };
-
-        document.querySelectorAll('.toggle-control').forEach(function($el) {
-          $el.addEventListener('click', toggleChart);
-        });
+    // Rebind window resizer
+    window.addEventListener('resize', function() {
+      if (chart.render) {
+        chart.render();
+      } else if (chart.update) {
+        chart.update();
+      }
     });
+  });
 };
 </script>
   </body>

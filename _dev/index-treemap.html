@@ -1109,23 +1109,6 @@ var chart = sucrose.charts.treemapChart();
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
-function configure(type, chart, config) {
-  // do not use Object.each because we don't load Sugar
-  Object.getOwnPropertyNames(config).forEach(function(k, i, a) {
-    var m = chart[k];
-    m = sucrose.utility.isFunction(m) && m;
-    if (!m) {
-      return;
-    }
-    var v = sucrose.utility.toNative(config[k]);
-    if (Array.isArray(v)) {
-      m.apply(chart, v);
-    } else {
-      m(v);
-    }
-  });
-}
-
 function format(chart, callback) {
   chart
     .leafClick(function(d) {
@@ -1137,53 +1120,7 @@ function format(chart, callback) {
 
 window.onload = function () {
     // apply configuration
-    configure(type, chart, config);
-
-    // format then render chart
-    format(chart, function() {
-        // Bind D3 chart to SVG element
-        d3.select('#chart_ svg')
-            .attr('class', 'sucrose sc-chart sc-chart-' + type)
-            .datum(data)
-                .call(chart);
-
-        // Dismiss tooltips
-        d3.select('#chart_')
-            .on('click', function() {
-                if (chart.dispatch && chart.dispatch.chartClick) {
-                    chart.dispatch.chartClick();
-                }
-            });
-
-        // Rebind window resizer
-        window.addEventListener('resize', function() {
-            if (chart.render) {
-                chart.render();
-            } else if (chart.update) {
-                chart.update();
-            }
-        });
-    });
-};
-</script>
-  </body>
-</html>
- + d3.format(',.2s')(point.value) + '</b></p>' +
-    //            '<p>Sales Rep: <b>' + rep + '</b></p>';
-    //   if (stage) {
-    //     tt += '<p>Stage: <b>' + stage + '</b></p>';
-    //   }
-    //   if (account) {
-    //     tt += '<p>Account: <b>' + account + '</b></p>';
-    //   }
-    //   return tt;
-    // })
-  callback(chart);
-}
-
-window.onload = function () {
-    // apply configuration
-    configure(type, chart, config);
+    chart.options(config);
 
     // format then render chart
     format(chart, function() {

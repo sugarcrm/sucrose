@@ -182,30 +182,13 @@ var chart = sucrose.charts.gaugeChart();
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
-function configure(type, chart, config) {
-  // do not use Object.each because we don't load Sugar
-  Object.getOwnPropertyNames(config).forEach(function(k, i, a) {
-    var m = chart[k];
-    m = sucrose.utility.isFunction(m) && m;
-    if (!m) {
-      return;
-    }
-    var v = sucrose.utility.toNative(config[k]);
-    if (Array.isArray(v)) {
-      m.apply(chart, v);
-    } else {
-      m(v);
-    }
-  });
-}
-
 function format(chart, callback) {
   callback(chart);
 }
 
 window.onload = function () {
     // apply configuration
-    configure(type, chart, config);
+    chart.options(config);
 
     // format then render chart
     format(chart, function() {
