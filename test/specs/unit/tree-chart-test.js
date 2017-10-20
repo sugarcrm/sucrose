@@ -238,6 +238,16 @@ tests("UNIT: treeChart -", function(t) {
         assert.equal(_chart.getId()(), 123, "returns set function value");
         t.register(assert, type);
     });
+    t.test("getCardId: ", function(assert) {
+        let def = _chart.getCardId();
+        assert.equal(typeof def, "function", "returns default function");
+        let val = function(d){return 123;};
+        //reset id function
+        _chart.getId(val);
+        assert.equal(_chart.getCardId()(), "card-123", "returns set function value");
+        assert.end();
+        t.register(assert, type);
+    });
     t.test("nodeRenderer: ", function(assert) {
         assert.plan(4);
         let def = _chart.nodeRenderer();

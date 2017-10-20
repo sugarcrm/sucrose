@@ -328,65 +328,64 @@ var sucroseCharts = function() {
       duration: 500,
       _format: function format(chart, callback) {
         chart
+          .duration(500)
           .nodeSize({'width': 124, 'height': 56})
+          .zoomExtents({'min': 0.25, 'max': 4})
           .nodeRenderer(function(content, d, w, h) {
             var nodeData = d.data;
+            var node = content.append('g').attr('class', 'sc-org-node');
+            var container = d3.select('#chart_ svg');
             if (!nodeData.image || nodeData.image === '') {
               nodeData.image = 'user.svg';
             }
-            var container = d3.select('#chart_ svg');
-            var node = content.append('g').attr('class', 'sc-org-node');
-                node.append('rect').attr('class', 'sc-org-bkgd')
-                  .attr('x', 0)
-                  .attr('y', 0)
-                  .attr('rx', 2)
-                  .attr('ry', 2)
-                  .attr('width', w)
-                  .attr('height', h);
-                node.append('image').attr('class', 'sc-org-avatar')
-                  .attr('xlink:href', 'img/' + nodeData.image)
-                  .attr('width', '32px')
-                  .attr('height', '32px')
-                  .attr('transform', 'translate(3, 3)')
-                  .on('error', function() {
-                    d3.select(this).attr('xlink:href', 'img/user.svg');
-                  });
-                node.append('text').attr('class', 'sc-org-name')
-                  .attr('data-url', nodeData.url)
-                  .attr('transform', 'translate(38, 11)')
-                  .text(function() {
-                    return sucrose.utility.stringEllipsify(nodeData.name, container, 96);
-                  });
-                node.append('text').attr('class', 'sc-org-title')
-                  .attr('data-url', nodeData.url)
-                  .attr('transform', 'translate(38, 21)')
-                  .text(function() {
-                    return sucrose.utility.stringEllipsify(nodeData.title, container, 96);
-                  });
+
+            node.append('rect').attr('class', 'sc-org-bkgd')
+              .attr('x', 0)
+              .attr('y', 0)
+              .attr('rx', 2)
+              .attr('ry', 2)
+              .attr('width', w)
+              .attr('height', h);
+            node.append('image').attr('class', 'sc-org-avatar')
+              .attr('xlink:href', 'img/' + nodeData.image)
+              .attr('width', '32px')
+              .attr('height', '32px')
+              .attr('transform', 'translate(3, 3)')
+              .on('error', function() {
+                d3.select(this).attr('xlink:href', 'img/user.svg');
+              });
+            node.append('text').attr('class', 'sc-org-name')
+              .attr('data-url', nodeData.url)
+              .attr('transform', 'translate(38, 11)')
+              .text(function() {
+                return sucrose.utility.stringEllipsify(nodeData.name, container, 96);
+              });
+            node.append('text').attr('class', 'sc-org-title')
+              .attr('data-url', nodeData.url)
+              .attr('transform', 'translate(38, 21)')
+              .text(function() {
+                return sucrose.utility.stringEllipsify(nodeData.title, container, 96);
+              });
+
+            node
+              .on('mouseenter', function(d) {
+                d3.select(this)
+                  .select('.sc-org-name')
+                    .style('text-decoration', 'underline');
+              })
+              .on('mouseleave', function(d) {
+                d3.select(this)
+                  .select('.sc-org-name')
+                    .style('text-decoration', 'none');
+              });
+
             return node;
           })
-          .zoomExtents({'min': 0.25, 'max': 4})
           .nodeClick(function(d) {
-            alert(d.data.name + ' clicked!');
+            console.log(d.data.name + ' clicked!');
           })
-          .nodeCallback(function(nodes) {
-            var container = d3.select('#chart_ svg');
-            // nodes is the array of enter nodes
-            nodes
-              .on('mouseover', function(d) {
-                var useId = d3.select(this).attr('href');
-                container
-                  .select(useId)
-                  .select('.sc-org-name')
-                  .classed('hover', true);
-              })
-              .on('mouseout', function(d) {
-                var useId = d3.select(this).attr('href');
-                container
-                  .select(useId)
-                  .select('.sc-org-name')
-                  .classed('hover', false);
-              });
+          .nodeCallback(function(d, i) {
+            var node = d3.select(this);
           });
 
         callback(chart);

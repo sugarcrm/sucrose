@@ -31,7 +31,7 @@ export default function treeChart() {
       horizontal = false;
 
   var id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one,
-      color = function (d, i) { return utility.defaultColor()(d, i); },
+      color = function(d, i) { return utility.defaultColor()(d, i); },
       fill = function(d, i) { return color(d, i); },
 
       // setX = function(d, v) { d.x = v; },
@@ -45,6 +45,7 @@ export default function treeChart() {
       getY0 = function(d) { return horizontal ? d.data.x0 : d.data.y0; },
 
       getId = function(d) { return d.id || d.data.id; },
+      getCardId = function(d) { return 'card-' + getId(d); },
 
       useClass = false,
       clipEdge = true,
@@ -71,7 +72,7 @@ export default function treeChart() {
       var linkData = null;
       var zoom = null;
 
-      var tree = d3.tree()
+      var dendrogram = d3.tree()
             .size([null, null])
             .nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1])
             .separation(function separation(a, b) {
@@ -111,18 +112,18 @@ export default function treeChart() {
         .style('fill', 'transparent');
       var backg = wrap.select('.sc-chart-background');
 
-      var g_entr = wrap_entr.append('g').attr('class', 'sc-wrap');
-      var tree_wrap = wrap.select('.sc-wrap');
+      var g_entr = wrap_entr.append('g').attr('class', 'sc-tree-wrap');
+      var g_wrap = wrap.select('.sc-tree-wrap');
 
-      g_entr.append('g').attr('class', 'sc-tree');
-      var treeChart = wrap.select('.sc-tree');
+      g_entr.append('g').attr('class', 'sc-wrap sc-tree');
+      var tree_wrap = wrap.select('.sc-wrap.sc-tree');
 
       function grow(seed) {
         root = d3.hierarchy(seed, function(d) {
           return d.children;
         });
 
-        tree(root); // apply tree structure to data
+        dendrogram(root); // apply tree structure to data
 
         nodeData = root.descendants();
 
@@ -141,11 +142,56 @@ export default function treeChart() {
         }
       }
 
+      function diagonal(d, p) {
+        var dy = getY(d) - (horizontal ? 0 : nodeSize.height - r * 3),
+            dx = getX(d) - (horizontal ? nodeSize.width - r * 2 : 0),
+            py = getY(p),
+            px = getX(p),
+            cdx = horizontal ? (dx + px) / 2 : dx,
+            cdy = horizontal ? dy : (dy + py) / 2,
+            cpx = horizontal ? (dx + px) / 2 : px,
+            cpy = horizontal ? py : (dy + py) / 2;
+        return 'M' + dx + ',' + dy
+             + 'C' + cdx + ',' + cdy
+             + ' ' + cpx + ',' + cpy
+             + ' ' + px + ',' + py;
+      }
+
+      // Toggle children.
+      function toggle(branch) {
+        if (branch.children) {
+          branch._children = branch.children;
+          branch.children = null;
+        } else {
+          branch.children = branch._children;
+          branch._children = null;
+        }
+      }
+
+      // Click tree node.
+      function leafClick(leaf) {
+        toggle(leaf.data);
+        chart.update(leaf);
+      }
+
+      // Get the card id
+      function getNodeId(d) {
+        var id = 'node-' + getId(d);
+        return id;
+      }
+
+      // Get the link id
+      function getLinkId(d) {
+        var id = 'link-' + (d.parent ? getId(d.parent) : 0) + '-' + getId(d);
+        return id;
+      }
+
+
       chart.setZoom = function() {
         zoom = d3.zoom()
           .scaleExtent([zoomExtents.min, zoomExtents.max])
           .on('zoom', function() {
-            tree_wrap.attr('transform', 'translate(' + d3.event.transform.x + ',' + d3.event.transform.y + ')scale(' + d3.event.transform.k + ')');
+            g_wrap.attr('transform', 'translate(' + d3.event.transform.x + ',' + d3.event.transform.y + ')scale(' + d3.event.transform.k + ')');
             zoomCallback(d3.event.transform.k);
           });
       };
@@ -158,7 +204,7 @@ export default function treeChart() {
 
       chart.orientation = function(orientation) {
         horizontal = (orientation === 'horizontal' || !horizontal ? true : false);
-        tree.nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1]);
+        dendrogram.nodeSize([(horizontal ? nodeSize.height : nodeSize.width), 1]);
         chart.update(root);
       };
 
@@ -243,20 +289,8 @@ export default function treeChart() {
 
       // source is either root or a selected node
       chart.update = function(source) {
-        function diagonal(d, p) {
-          var dy = getY(d) - (horizontal ? 0 : nodeSize.height - r * 3),
-              dx = getX(d) - (horizontal ? nodeSize.width - r * 2 : 0),
-              py = getY(p),
-              px = getX(p),
-              cdx = horizontal ? (dx + px) / 2 : dx,
-              cdy = horizontal ? dy : (dy + py) / 2,
-              cpx = horizontal ? (dx + px) / 2 : px,
-              cpy = horizontal ? py : (dy + py) / 2;
-          return 'M' + dx + ',' + dy
-               + 'C' + cdx + ',' + cdy
-               + ' ' + cpx + ',' + cpy
-               + ' ' + px + ',' + py;
-        }
+        var target = {x: 0, y: 0};
+
         function initial(d) {
           // if the source is root
           if (getId(source) === getId(root)) {
@@ -273,155 +307,126 @@ export default function treeChart() {
           return diagonal(target, target);
         }
 
-        // Toggle children.
-        function toggle(branch) {
-          if (branch.children) {
-            branch._children = branch.children;
-            branch.children = null;
-          } else {
-            branch.children = branch._children;
-            branch._children = null;
-          }
-        }
-
-        // Click tree node.
-        function leafClick(leaf) {
-          toggle(leaf.data);
-          chart.update(leaf);
-        }
-
-        // Get the card id
-        function getCardId(d) {
-          var id = 'card-' + getId(d);
-          return id;
-        }
-
-        // Get the link id
-        function getLinkId(d) {
-          var id = 'link-' + (d.parent ? getId(d.parent) : 0) + '-' + getId(d);
-          return id;
-        }
-
-        var target = {x: 0, y: 0};
-
         grow(trunk);
 
-        var nodeOffsetX = (horizontal ? r - nodeSize.width : nodeSize.width / -2) + 'px',
-            nodeOffsetY = (horizontal ? (r - nodeSize.height) / 2 : r * 2 - nodeSize.height) + 'px';
+        var nodeOffsetX = (horizontal ? r - nodeSize.width : nodeSize.width / -2) + 'px';
+        var nodeOffsetY = (horizontal ? (r - nodeSize.height) / 2 : r * 2 - nodeSize.height) + 'px';
 
         // Update the nodes…
-        var nodes_bind = treeChart.selectAll('g.sc-card').data(nodeData, getId);
+        var nodes_bind = tree_wrap.selectAll('g.sc-card').data(nodeData, getId);
 
         // Enter any new nodes at the parent's previous position.
-        var nodes_entr = nodes_bind.enter().insert('g')
-              .attr('class', 'sc-card')
-              .attr('id', getCardId)
-              .attr('opacity', function(d) {
-                return getId(source) === getId(d) ? 1 : 0;
-              })
-              .attr('transform', function(d) {
-                // if the source is root
-                if (getId(source) === getId(root)) {
-                  return 'translate(' + getX(root) + ',' + getY(root) + ')';
-                } else {
-                  return 'translate(' + (horizontal ? getY0(source) : getX0(source)) + ',' + (horizontal ? getX0(source) : getY0(source)) + ')';
-                }
-              });
+        var nodes_entr;
+        nodes_entr = nodes_bind.enter().insert('g')
+          .attr('class', 'sc-card')
+          .attr('id', getNodeId)
+          .attr('opacity', function(d) {
+            return getId(source) === getId(d) ? 1 : 0;
+          })
+          .attr('transform', function(d) {
+            // if the source is root
+            if (getId(source) === getId(root)) {
+              return 'translate(' + getX(root) + ',' + getY(root) + ')';
+            } else {
+              return 'translate(' + (horizontal ? getY0(source) : getX0(source)) + ',' + (horizontal ? getX0(source) : getY0(source)) + ')';
+            }
+          });
 
-            // For each node create a shape for node content display
-            // Create <use> nodes in defs
-            nodes_entr.each(function(d) {
-              var nodeObject;
-              var nodeContent;
-              if (!defs.select('#myshape-' + getId(d)).empty()) {
-                return;
-              }
-              nodeObject = defs.append('svg')
-                .attr('class', 'sc-foreign-object')
-                .attr('id', 'myshape-' + getId(d))
-                .attr('version', '1.1')
-                .attr('xmlns', 'http://www.w3.org/2000/svg')
-                .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
-                .attr('x', nodeOffsetX)
-                .attr('y', nodeOffsetY)
-                .attr('width', nodeSize.width + 'px')
-                .attr('height', nodeSize.height + 'px')
-                .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
-                .attr('xml:space', 'preserve');
+        // For each node create a shape for node content display
+        // Create <use> nodes in defs
+        nodes_entr.each(function(d) {
+          var nodeObject;
+          var nodeContent;
+          if (!defs.select('#' + getCardId(d)).empty()) {
+            return;
+          }
+          nodeObject = defs.append('svg')
+            .attr('class', 'sc-foreign-object')
+            .attr('id', getCardId(d))
+            .attr('version', '1.1')
+            .attr('xmlns', 'http://www.w3.org/2000/svg')
+            .attr('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+            .attr('x', nodeOffsetX)
+            .attr('y', nodeOffsetY)
+            .attr('width', nodeSize.width + 'px')
+            .attr('height', nodeSize.height + 'px')
+            .attr('viewBox', '0 0 ' + nodeSize.width + ' ' + nodeSize.height)
+            .attr('xml:space', 'preserve');
 
-              nodeContent = nodeObject.append('g')
-                .attr('class', 'sc-tree-node-content')
-                .attr('transform', 'translate(' + r + ',' + r + ')');
+          nodeContent = nodeObject.append('g')
+            .attr('class', 'sc-tree-node-content')
+            .attr('transform', 'translate(' + r + ',' + r + ')');
 
-              nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
-            });
-            // Apply node content from <use>
-            nodes_entr.append('use')
-              .attr('xlink:href', function(d) {
-                return '#myshape-' + getId(d);
-              })
-              .attr('filter', nodeShadow)
-              .on('click', nodeClick)
-              .call(nodeCallback);
+          nodeRenderer(nodeContent, d, nodeSize.width - r * 2, nodeSize.height - r * 3);
+        });
 
-        // node circle
-        var xcCircle = nodes_entr.append('g').attr('class', 'sc-expcoll')
-              .style('opacity', 1e-6)
-              .on('click', leafClick);
-            xcCircle.append('circle').attr('class', 'sc-circ-back')
-              .attr('r', r);
-            xcCircle.append('line').attr('class', 'sc-line-vert')
-              .attr('x1', 0).attr('y1', 0.5 - r).attr('x2', 0).attr('y2', r - 0.5)
-              .style('stroke', '#bbb');
-            xcCircle.append('line').attr('class', 'sc-line-hrzn')
-              .attr('x1', 0.5 - r).attr('y1', 0).attr('x2', r - 0.5).attr('y2', 0)
-              .style('stroke', '#fff');
+        // Apply node content from <use>
+        nodes_entr.append('use')
+          .attr('xlink:href', function(d) {
+            return '#' + getCardId(d);
+          })
+          .attr('filter', nodeShadow)
+          .on('click', nodeClick);
 
-        //Transition nodes to their new position.
-        var nodes = treeChart.selectAll('g.sc-card').merge(nodes_entr);
-            nodes.transition(tran).duration(duration)
-              .attr('opacity', 1)
-              .attr('transform', function(d) {
-                if (getId(source) === getId(d)) {
-                  target = {x: horizontal ? getY(d) : getX(d), y: horizontal ? getX(d) : getY(d)};
-                }
-                return 'translate(' + getX(d) + ',' + getY(d) + ')';
-              });
-            nodes.select('.sc-expcoll')
-              .style('opacity', function(d) {
-                return ((d.data.children && d.data.children.length) || (d.data._children && d.data._children.length)) ? 1 : 0;
-              });
-            nodes.select('.sc-circ-back')
-              .style('fill', function(d) {
-                return (d.data._children && d.data._children.length) ? '#777' : (d.data.children ? '#bbb' : 'none');
-              });
-            nodes.select('.sc-line-vert')
-              .style('stroke', function(d) {
-                return (d.data._children && d.data._children.length) ? '#fff' : '#bbb';
-              });
-            nodes.each(function(d) {
-              defs.select('#myshape-' + getId(d))
-                .attr('x', nodeOffsetX)
-                .attr('y', nodeOffsetY);
-            });
+        // Transition nodes to their new position.
+        var nodes;
+        nodes = tree_wrap.selectAll('g.sc-card').merge(nodes_entr);
+        nodes.transition(tran).duration(duration)
+          .attr('opacity', 1)
+          .attr('transform', function(d) {
+            if (getId(source) === getId(d)) {
+              target = {x: horizontal ? getY(d) : getX(d), y: horizontal ? getX(d) : getY(d)};
+            }
+            return 'translate(' + getX(d) + ',' + getY(d) + ')';
+          })
+          .on('end', nodeCallback);
 
         // Transition exiting nodes to the parent's new position.
-        var nodes_exit = nodes_bind.exit().transition(tran).duration(duration)
-              .attr('opacity', 0)
-              .attr('transform', function(d) {
-                return 'translate(' + getX(target) + ',' + getY(target) + ')';
-              })
-              .remove();
-            nodes_exit.selectAll('.sc-expcoll')
-              .style('stroke-opacity', 1e-6);
-            nodes_exit.selectAll('.sc-foreign-object')
-              .attr('width', 1)
-              .attr('height', 1)
-              .attr('x', -1)
-              .attr('y', -1);
+        var nodes_exit;
+        nodes_exit = nodes_bind.exit().transition(tran).duration(duration)
+          .attr('opacity', 0)
+          .attr('transform', function(d) {
+            return 'translate(' + getX0(source) + ',' + getY0(source) + ')';
+          })
+          .remove();
+        nodes_exit.selectAll('.sc-expcoll')
+          .style('stroke-opacity', 1e-6);
+
+        defs.selectAll('.sc-foreign-object')
+            .attr('x', nodeOffsetX)
+            .attr('y', nodeOffsetY);
+
+        // Update the node expand/collapse circle
+        var xc_enter;
+        xc_enter = nodes_entr.append('g').attr('class', 'sc-expcoll')
+          .style('opacity', 1e-6)
+          .on('click', leafClick);
+        xc_enter.append('circle').attr('class', 'sc-circ-back')
+          .attr('r', r);
+        xc_enter.append('line').attr('class', 'sc-line-vert')
+          .attr('x1', 0).attr('y1', 0.5 - r).attr('x2', 0).attr('y2', r - 0.5)
+          .style('stroke', '#bbb');
+        xc_enter.append('line').attr('class', 'sc-line-hrzn')
+          .attr('x1', 0.5 - r).attr('y1', 0).attr('x2', r - 0.5).attr('y2', 0)
+          .style('stroke', '#fff');
+
+        var xc;
+        xc = tree_wrap.selectAll('g.sc-expcoll').merge(xc_enter);
+        xc.style('opacity', function(d) {
+            return ((d.data.children && d.data.children.length) || (d.data._children && d.data._children.length)) ? 1 : 0;
+          });
+        xc.select('.sc-circ-back')
+          .style('fill', function(d) {
+            return (d.data._children && d.data._children.length) ? '#777' : (d.data.children ? '#bbb' : 'none');
+          });
+        xc.select('.sc-line-vert')
+          .style('stroke', function(d) {
+            return (d.data._children && d.data._children.length) ? '#fff' : '#bbb';
+          });
+
 
         // Update the links
-        var links_bind = treeChart.selectAll('path.link').data(linkData, getLinkId);
+        var links_bind = tree_wrap.selectAll('path.link').data(linkData, getLinkId);
             // Enter any new links at the parent's previous position.
         var links_entr = links_bind.enter().insert('path', 'g')
               .attr('d', initial)
@@ -429,16 +434,17 @@ export default function treeChart() {
               .attr('id', getLinkId)
               .attr('opacity', 0);
 
-        var links = treeChart.selectAll('path.link').merge(links_entr);
-            // Transition links to their new position.
-            links.transition(tran).duration(duration)
-              .attr('d', extend)
-              .attr('opacity', 1);
-            // Transition exiting nodes to the parent's new position.
-            links_bind.exit().transition(tran).duration(duration)
-              .attr('d', retract)
-              .attr('opacity', 0)
-              .remove();
+        var links;
+        links = tree_wrap.selectAll('path.link').merge(links_entr);
+        // Transition links to their new position.
+        links.transition(tran).duration(duration)
+          .attr('d', extend)
+          .attr('opacity', 1);
+        // Transition exiting nodes to the parent's new position.
+        links_bind.exit().transition(tran).duration(duration)
+          .attr('d', retract)
+          .attr('opacity', 0)
+          .remove();
 
 
         // Stash the old positions for transition.
@@ -502,9 +508,9 @@ export default function treeChart() {
           .attr('height', availableSize.height);
 
         // TODO: do we need to interrupt transitions on resize to prevent Too late... error?
-        // treeChart.interrupt().selectAll('*').interrupt();
+        // tree_wrap.interrupt().selectAll('*').interrupt();
 
-        treeChart
+        tree_wrap
           .transition(tran).duration(initial ? 0 : duration)
           .attr('transform', 'translate(' + translate + ')scale(' + scale + ')');
       };
@@ -657,6 +663,12 @@ export default function treeChart() {
   chart.getId = function(_) {
     if (!arguments.length) { return getId; }
     getId = _;
+    return chart;
+  };
+
+  chart.getCardId = function(_) {
+    if (!arguments.length) { return getCardId; }
+    getCardId = _;
     return chart;
   };
 
