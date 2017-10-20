@@ -14,7 +14,6 @@ function generatePackage(e) {
   var chart = sucroseCharts.getChart(chartType);
   var model = sucroseCharts.getChartModel(chartType);
   var format = sucroseCharts.formatToString(chartType);
-  var configure = sucroseCharts.configureToString();
   var topojson = chartType === 'globe' ? '<script src="topojson.min.js"></script>' : '';
 
   settings.locality = Manifest.getLocaleData(settings.locale);
@@ -34,6 +33,8 @@ function generatePackage(e) {
     includes.push($.get({url: 'data/geo/world-countries-topo-110.json', dataType: 'text'}));
     includes.push($.get({url: 'data/geo/usa-states-topo-110.json', dataType: 'text'}));
     includes.push($.get({url: 'data/geo/cldr_en.json', dataType: 'text'}));
+  } else if (chartType === 'tree') {
+    includes.push($.get({url: 'img/user.svg', dataType: 'text'}));
   }
 
   $.when
@@ -52,7 +53,6 @@ function generatePackage(e) {
         .replace('{{Config}}', config)
         .replace('{{Model}}', model)
         .replace('{{Format}}', format)
-        .replace('{{Configure}}', configure)
         .replace('{{TopoJSON}}', topojson);
 
       // add files to zip
@@ -66,6 +66,8 @@ function generatePackage(e) {
         zip.file('data/geo/world-countries-topo-110.json', files[5]);
         zip.file('data/geo/usa-states-topo-110.json', files[6]);
         zip.file('data/geo/cldr_en.json', files[7]);
+      } else if (chartType === 'tree') {
+        zip.file('img/user.svg', files[4]);
       }
 
       // initiate zip download

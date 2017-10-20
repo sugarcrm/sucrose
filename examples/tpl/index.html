@@ -34,13 +34,11 @@ var chart = sucrose.charts.{{Model}}();
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
-{{Configure}}
-
 {{Format}}
 
-window.onload = function () {
+window.onload = function() {
   // apply configuration
-  configure(type, chart, config);
+  chart.options(config);
 
   // format then render chart
   format(chart, function() {

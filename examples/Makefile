@@ -11,6 +11,7 @@ LIB_FILES = \
 	js/lib/micro-query.js \
 	js/lib/mindmup-editabletable.js \
 	js/lib/sugar.js \
+	js/lib/uglifyjs.js \
 	node_modules/jsonlint/lib/jsonlint.js \
 	node_modules/codemirror/lib/codemirror.js \
 	node_modules/codemirror/mode/javascript/javascript.js \
@@ -90,6 +91,7 @@ clean: clean-sucrose clean-dependencies clean-examples clean-dev
 
 # - [*] copy sucrose js and css files
 sucrose: clean-sucrose
+	cd .. && make sucrose
 	cp ../build/sucrose.js js/sucrose.js
 	cp ../build/sucrose.min.js js/sucrose.min.js
 	cp ../build/sucrose.css css/sucrose.css
@@ -152,7 +154,7 @@ clean-examples: clean-app clean-lib clean-css
 
 
 # - [*] build the examples app js file
-app: $(APP_FILES) clean-app
+app: clean-app
 	cat js/app/header $(APP_FILES) >> js/app.js
 	cat $(APP_FILES) | $(JS_MINIFIER) --preamble "$(HEADER)" >> js/app.min.js
 
@@ -162,8 +164,9 @@ clean-app:
 
 
 # - concatenate, compress and copy all library files
-lib: $(LIB_FILES) clean-lib
+lib: clean-lib
 	# build lib js files
+	$(JS_MINIFIER) --self -c -m -o ./js/lib/uglifyjs.js
 	cat $(LIB_FILES) >> js/lib.js
 	cat $(LIB_FILES) | $(JS_MINIFIER) >> js/lib.min.js
 

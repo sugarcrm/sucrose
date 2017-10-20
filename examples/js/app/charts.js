@@ -95,23 +95,6 @@ var sucroseCharts = function() {
     return config;
   }
 
-  function configureChart(type, chart, config) {
-    // do not use Object.each because we don't load Sugar
-    Object.getOwnPropertyNames(config).forEach(function(k, i, a) {
-      var m = chart[k];
-      m = sucrose.utility.isFunction(m) && m;
-      if (!m) {
-        return;
-      }
-      var v = sucrose.utility.toNative(config[k]);
-      if (Array.isArray(v)) {
-        m.apply(chart, v);
-      } else {
-        m(v);
-      }
-    });
-  }
-
   var configs = {
     default: {
       // clipEdge: false,
@@ -424,7 +407,7 @@ var sucroseCharts = function() {
       var chart = this.getChart(type);
       var config = this.getConfig(type, chart, settings);
 
-      configureChart(type, chart, config);
+      chart.options(config);
       configs[type]._format(chart, function(d) { return; });
 
       // chart.transition().duration(500)
@@ -432,14 +415,10 @@ var sucroseCharts = function() {
 
       return chart;
     },
-    configureToString: function() {
-      return configureChart.toString()
-        .replace(/configureChart\(/, 'configure(')
-        .replace(/\n\s{2}/g, '\n');
-    },
     formatToString: function(type) {
-      return configs[type]._format.toString()
-        .replace(/\n\s{6}/g, '\n');
+      var f = configs[type]._format.toString();
+      var ast = UglifyJS.parse(f);
+      return ast.print_to_string({beautify: true, quote_style: 3});
     }
   };
 
