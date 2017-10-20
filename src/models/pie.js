@@ -61,7 +61,7 @@ export default function pie() {
         return d.startAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
       };
   var endAngle = function(d) {
-        return d.endAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
+        return d.endAngle * (arcDegrees / 360) + utility.angleToRadians(rotateDegrees);
       };
 
   var fixedRadius = function(model) { return null; };
@@ -174,6 +174,7 @@ export default function pie() {
                 v.endAngle = s.endAngle;
                 v.padAngle = s.padAngle;
                 v.startAngle = s.startAngle;
+                v.index = i;
                 return v;
               });
             },
@@ -252,7 +253,8 @@ export default function pie() {
           extHeights = [],
           verticalShift = 0,
           verticalReduction = doLabels ? 5 : 0,
-          horizontalReduction = leaderLength + textOffset;
+          horizontalReduction = leaderLength + textOffset,
+          holeOffset = 0;
 
       // side effect :: resets extWidths, extHeights
       slices.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
@@ -261,18 +263,15 @@ export default function pie() {
       hole_wrap.call(holeFormat, hole ? [hole] : []);
 
       if (hole) {
-        var heightHoleHalf = hole_wrap.node().getBoundingClientRect().height * 0.30,
-            heightPieHalf = Math.abs(maxHeightRadius * d3.min(extHeights)),
-            holeOffset = Math.round(heightHoleHalf - heightPieHalf);
-
+        holeOffset = calcHoleOffset();
         if (holeOffset > 0) {
           verticalReduction += holeOffset;
           verticalShift -= holeOffset / 2;
         }
       }
 
-      var offsetHorizontal = availableWidth / 2,
-          offsetVertical = availableHeight / 2;
+      var offsetHorizontal = availableWidth / 2;
+      var offsetVertical = availableHeight / 2;
 
       //first adjust the leaderLength to be proportional to radius
       if (doLabels) {
@@ -284,12 +283,16 @@ export default function pie() {
         maxRadius = fixedRadius(model);
       }
 
-      var labelRadius = Math.min(Math.max(calcMaxRadius(), minRadius), maxRadius),
-          pieRadius = labelRadius - (doLabels ? leaderLength : 0);
+      var labelRadius = Math.min(Math.max(calcMaxRadius(), minRadius), maxRadius);
+      var pieRadius = labelRadius - (doLabels ? leaderLength : 0);
 
-      offsetVertical += ((d3.max(extHeights) - d3.min(extHeights)) / 2 + d3.min(extHeights)) * ((labelRadius + verticalShift) / offsetVertical);
-      offsetHorizontal += ((d3.max(extWidths) - d3.min(extWidths)) / 2 - d3.max(extWidths)) * (labelRadius / offsetHorizontal);
-      offsetVertical += verticalShift / 2;
+      var ovA = (d3.max(extHeights) - d3.min(extHeights)) / 2 + d3.min(extHeights);
+      var ovB = (labelRadius + verticalShift) / offsetVertical;
+      offsetVertical += ovA * ovB + verticalShift / 2;
+
+      var ohA = (d3.max(extWidths) - d3.min(extWidths)) / 2 - d3.max(extWidths);
+      var ohB = labelRadius / offsetHorizontal;
+      offsetHorizontal += ohA * ohB;
 
       group_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
@@ -388,13 +391,15 @@ export default function pie() {
 
         slices
           .each(function(d, i) {
+            var theta, sin, labelLength, baseWidth, remainingWidth, label;
             if (labelLengths[i] > minRadius || labelRadius === minRadius) {
-              var theta = (startAngle(d) + endAngle(d)) / 2,
-                  sin = Math.abs(Math.sin(theta)),
-                  bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
-                  rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
-              if (rW < 0) {
-                var label = utility.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
+              theta = (startAngle(d) + endAngle(d)) / 2;
+              sin = Math.abs(Math.sin(theta));
+              labelLength = labelLengths[d.index];
+              baseWidth = labelRadius * sin + leaderLength + textOffset + labelLength;
+              remainingWidth = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - baseWidth;
+              if (remainingWidth < 0) {
+                label = utility.stringEllipsify(fmtKey(d), container, labelLength + remainingWidth);
                 d3.select(this).select('text').text(label);
               }
             }
@@ -480,8 +485,8 @@ export default function pie() {
         }
 
         slices.each(function(d, i) {
-          var aStart = (startAngle(d) + twoPi) % twoPi,
-              aEnd = (endAngle(d) + twoPi) % twoPi;
+          var aStart = startAngle(d) === 0 ? 0 : (startAngle(d) + twoPi) % twoPi,
+              aEnd = endAngle(d) === 0 ? 0 : (endAngle(d) + twoPi) % twoPi;
 
           var wStart = Math.round(Math.sin(aStart) * 10000) / 10000,
               wEnd = Math.round(Math.sin(aEnd) * 10000) / 10000,
@@ -585,6 +590,13 @@ export default function pie() {
         var radius = d3.min(widthRadius.concat(heightRadius).concat([]), function(d) { return Math.abs(d); });
 
         return radius;
+      }
+
+      function calcHoleOffset() {
+        var heightHoleHalf = hole_wrap.node().getBoundingClientRect().height * 0.30;
+        var heightPieHalf = Math.abs(maxHeightRadius * d3.min(extHeights));
+        var holeOffset = Math.round(heightHoleHalf - heightPieHalf);
+        return holeOffset;
       }
 
       function labelOpacity(d) {

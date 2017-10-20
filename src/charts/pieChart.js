@@ -183,7 +183,7 @@ export default function pieChart() {
         }
 
         s.values.forEach(function(p, j) {
-          p.index = j;
+          p.index = i;
           p.series = s;
           if (typeof p.value == 'undefined') {
             p.value = p.y;
