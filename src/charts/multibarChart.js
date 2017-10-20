@@ -772,11 +772,11 @@ export default function multibarChart() {
           xAxis_wrap.select('.sc-axislabel')
             .attr('x', (vertical ? innerWidth : -innerHeight) / 2);
 
-          var diff = (vertical ? innerWidth : innerHeight) - minDimension;
+          var maxScroll = (vertical ? innerWidth : innerHeight) - minDimension;
           var panMultibar = function() {
                 var x;
                 dispatch.call('tooltipHide', this);
-                scrollOffset = scroll.pan(diff);
+                scrollOffset = scroll.pan(maxScroll);
                 x = vertical ?
                   innerWidth - scrollOffset * 2 :
                   scrollOffset * 2 - innerHeight;

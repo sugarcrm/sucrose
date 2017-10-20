@@ -84,34 +84,43 @@ export default function scroller() {
 
     // typically called by panHandler
     // returns scrollOffset
-    scroll.pan = function(diff) {
-      var distance = 0;
-      var overflowDistance = 0;
-      var translate = '';
+    scroll.pan = function(maxScroll) {
+      var evt = d3.event;
+      var src;
       var x = 0;
       var y = 0;
-      var evt = d3.event;
+      var distance = 0;
+      var translate = '';
 
+      // we need click for handling legend toggle
       if (!evt || (evt.type !== 'click' && evt.type !== 'zoom')) {
         return 0;
       }
+      src = evt.sourceEvent;
 
       // don't fire on events other than zoom and drag
-      // we need click for handling legend toggle
-      if (evt.type === 'zoom' && evt.sourceEvent) {
-        x = -evt.sourceEvent.deltaX || evt.sourceEvent.movementX || 0;
-        y = -evt.sourceEvent.deltaY || evt.sourceEvent.movementY || 0;
-        distance = (Math.abs(x) > Math.abs(y) ? x : y);
+      if (evt.type === 'zoom' && src) {
+        if (src.type === 'wheel') {
+          x = -src.deltaX;
+          y = -src.deltaY;
+          distance = scrollOffset + (Math.abs(x) > Math.abs(y) ? x : y);
+        } else if (src.type === 'mousemove') {
+          x = src.movementX;
+          y = src.movementY;
+          distance = scrollOffset + (Math.abs(x) > Math.abs(y) ? x : y);
+        } else if (src.type === 'touchmove') {
+          x = evt.transform.x;
+          y = evt.transform.y;
+          distance = (Math.abs(x) > Math.abs(y) ? x : y);
+        }
       }
 
-      overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
-
       // reset value defined in panMultibar();
-      scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), -1);
+      scrollOffset = Math.min(Math.max(distance, maxScroll), -1);
       translate = 'translate(' + (vertical ? scrollOffset + ',0' : '0,' + scrollOffset) + ')';
 
-      if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
-        overflowHandler(overflowDistance);
+      if (distance > 0 || distance < maxScroll) {
+        overflowHandler(Math.abs(y) > Math.abs(x) ? y : 0);
       }
 
       foreShadows
@@ -129,14 +138,17 @@ export default function scroller() {
 
     function assignEvents() {
       if (enable) {
+        // var drag = d3.drag().on('drag', panHandler);
+        // scroll_wrap.call(drag);
+        // scrollTarget.call(drag);
         var zoom = d3.zoom().on('zoom', panHandler);
-        scroll_wrap
-          .call(zoom);
-        scrollTarget
-          .call(zoom);
+        scroll_wrap.call(zoom);
+        scrollTarget.call(zoom);
       } else {
-        scroll_wrap.on('.zoom', null);
-        scrollTarget.on('.zoom', null);
+        // scroll_wrap.on('drag', null);
+        // scrollTarget.on('drag', null);
+        scroll_wrap.on('zoom', null);
+        scrollTarget.on('zoom', null);
       }
     }
 

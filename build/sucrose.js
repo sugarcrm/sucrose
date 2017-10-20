@@ -4136,16 +4136,15 @@ function menu() {
           .attr('fill', color)
           .attr('stroke', color);
 
-      var rects_entr = series_entr
-        .append('rect')
-          .attr('x', (diameter + textGap) / -2)
-          .attr('y', (diameter + lineSpacing) / -2)
-          .attr('width', diameter + textGap)
-          .attr('height', diameter + lineSpacing)
-          .style('fill', '#FFE')
-          .style('stroke-width', 0)
-          .style('opacity', 0.1);
-      var rects = series.selectAll('rects').merge(rects_entr);
+      var rects_entr = series_entr.append('rect')
+            .attr('x', (diameter + textGap) / -2)
+            .attr('y', (diameter + lineSpacing) / -2)
+            .attr('width', diameter + textGap)
+            .attr('height', diameter + lineSpacing)
+            .style('fill', '#FFE')
+            .style('stroke-width', 0)
+            .style('opacity', 0.1);
+      var rects = series.selectAll('rect').merge(rects_entr);
 
       var circles_bind = series_entr.selectAll('circle').data(function(d) { return type === 'line' ? [d, d] : [d]; });
       circles_bind.exit().remove();
@@ -4519,9 +4518,9 @@ function menu() {
 
           rects
             .attr('x', function(d) {
-              var w = (diameter + gutter) / 2 * sign(rtl);
-              w -= rtl ? keyWidth(d.seriesIndex) : 0;
-              return w;
+              var x = (diameter + gutter) / 2 * sign(rtl);
+              x -= rtl ? keyWidth(d.seriesIndex) : 0;
+              return x;
             })
             .attr('width', function(d) {
               return keyWidth(d.seriesIndex);
@@ -4555,7 +4554,7 @@ function menu() {
         //------------------------------------------------------------
         // Enable scrolling
         if (scrollEnabled) {
-          var diff = dropdownHeight - legendHeight;
+          var maxScroll = dropdownHeight - legendHeight;
 
           var assignScrollEvents = function(enable) {
             if (enable) {
@@ -4569,33 +4568,42 @@ function menu() {
           };
 
           var panLegend = function() {
-            var distance = 0;
-            var overflowDistance = 0;
-            var translate = '';
+            var evt = d3.event;
+            var src;
             var x = 0;
             var y = 0;
-            var evt = d3.event;
+            var distance = 0;
+            var translate = '';
 
+            // we need click for handling legend toggle
             if (!evt || (evt.type !== 'click' && evt.type !== 'zoom')) {
               return;
             }
+            src = evt.sourceEvent;
 
             // don't fire on events other than zoom and drag
-            // we need click for handling legend toggle
-            if (evt.type === 'zoom' && evt.sourceEvent) {
-              x = -evt.sourceEvent.deltaX || evt.sourceEvent.movementX || 0;
-              y = -evt.sourceEvent.deltaY || evt.sourceEvent.movementY || 0;
-              distance = (Math.abs(x) > Math.abs(y) ? x : y);
+            if (evt.type === 'zoom' && src) {
+              if (src.type === 'wheel') {
+                x = -src.deltaX;
+                y = -src.deltaY;
+                distance = scrollOffset + (Math.abs(x) > Math.abs(y) ? x : y);
+              } else if (src.type === 'mousemove') {
+                x = src.movementX;
+                y = src.movementY;
+                distance = scrollOffset + (Math.abs(x) > Math.abs(y) ? x : y);
+              } else if (src.type === 'touchmove') {
+                x = evt.transform.x;
+                y = evt.transform.y;
+                distance = (Math.abs(x) > Math.abs(y) ? x : y);
+              }
             }
 
-            overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
-
             // reset value defined in panMultibar();
-            scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), 0);
+            scrollOffset = Math.min(Math.max(distance, maxScroll), 0);
             translate = 'translate(' + (rtl ? d3.max(keyWidths) + radius : 0) + ',' + scrollOffset + ')';
 
-            if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
-              overflowHandler(overflowDistance);
+            if (distance > 0 || distance < maxScroll) {
+              overflowHandler(Math.abs(y) > Math.abs(x) ? y : 0);
             }
 
             g.attr('transform', translate);
@@ -8068,34 +8076,43 @@ function scroller() {
 
     // typically called by panHandler
     // returns scrollOffset
-    scroll.pan = function(diff) {
-      var distance = 0;
-      var overflowDistance = 0;
-      var translate = '';
+    scroll.pan = function(maxScroll) {
+      var evt = d3.event;
+      var src;
       var x = 0;
       var y = 0;
-      var evt = d3.event;
+      var distance = 0;
+      var translate = '';
 
+      // we need click for handling legend toggle
       if (!evt || (evt.type !== 'click' && evt.type !== 'zoom')) {
         return 0;
       }
+      src = evt.sourceEvent;
 
       // don't fire on events other than zoom and drag
-      // we need click for handling legend toggle
-      if (evt.type === 'zoom' && evt.sourceEvent) {
-        x = -evt.sourceEvent.deltaX || evt.sourceEvent.movementX || 0;
-        y = -evt.sourceEvent.deltaY || evt.sourceEvent.movementY || 0;
-        distance = (Math.abs(x) > Math.abs(y) ? x : y);
+      if (evt.type === 'zoom' && src) {
+        if (src.type === 'wheel') {
+          x = -src.deltaX;
+          y = -src.deltaY;
+          distance = scrollOffset + (Math.abs(x) > Math.abs(y) ? x : y);
+        } else if (src.type === 'mousemove') {
+          x = src.movementX;
+          y = src.movementY;
+          distance = scrollOffset + (Math.abs(x) > Math.abs(y) ? x : y);
+        } else if (src.type === 'touchmove') {
+          x = evt.transform.x;
+          y = evt.transform.y;
+          distance = (Math.abs(x) > Math.abs(y) ? x : y);
+        }
       }
 
-      overflowDistance = (Math.abs(y) > Math.abs(x) ? y : 0);
-
       // reset value defined in panMultibar();
-      scrollOffset = Math.min(Math.max(scrollOffset + distance, diff), -1);
+      scrollOffset = Math.min(Math.max(distance, maxScroll), -1);
       translate = 'translate(' + (vertical ? scrollOffset + ',0' : '0,' + scrollOffset) + ')';
 
-      if (scrollOffset + distance > 0 || scrollOffset + distance < diff) {
-        overflowHandler(overflowDistance);
+      if (distance > 0 || distance < maxScroll) {
+        overflowHandler(Math.abs(y) > Math.abs(x) ? y : 0);
       }
 
       foreShadows
@@ -8113,14 +8130,17 @@ function scroller() {
 
     function assignEvents() {
       if (enable) {
+        // var drag = d3.drag().on('drag', panHandler);
+        // scroll_wrap.call(drag);
+        // scrollTarget.call(drag);
         var zoom = d3.zoom().on('zoom', panHandler);
-        scroll_wrap
-          .call(zoom);
-        scrollTarget
-          .call(zoom);
+        scroll_wrap.call(zoom);
+        scrollTarget.call(zoom);
       } else {
-        scroll_wrap.on('.zoom', null);
-        scrollTarget.on('.zoom', null);
+        // scroll_wrap.on('drag', null);
+        // scrollTarget.on('drag', null);
+        scroll_wrap.on('zoom', null);
+        scrollTarget.on('zoom', null);
       }
     }
 
@@ -14576,11 +14596,11 @@ function multibarChart() {
           xAxis_wrap.select('.sc-axislabel')
             .attr('x', (vertical ? innerWidth : -innerHeight) / 2);
 
-          var diff = (vertical ? innerWidth : innerHeight) - minDimension;
+          var maxScroll = (vertical ? innerWidth : innerHeight) - minDimension;
           var panMultibar = function() {
                 var x;
                 dispatch.call('tooltipHide', this);
-                scrollOffset = scroll.pan(diff);
+                scrollOffset = scroll.pan(maxScroll);
                 x = vertical ?
                   innerWidth - scrollOffset * 2 :
                   scrollOffset * 2 - innerHeight;
