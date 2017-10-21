@@ -11,14 +11,14 @@
       "classes": "won"
     },
     {
+      "key": "EEEEEEEEEEEE",
+      "value": 50,
+      "classes": "active"
+    },
+    {
       "key": "Lost",
       "value": 0,
       "classes": "lost"
-    },
-    {
-      "key": "Active",
-      "value": 5,
-      "classes": "active"
     }
   ]
 }

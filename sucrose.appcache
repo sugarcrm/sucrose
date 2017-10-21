@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# Version 0.5.2
+# Version 0.7.0
 
 CACHE:
 
@@ -14,6 +14,7 @@ css/examples.min.css
 css/sucrose.min.css
 
 #data
+data/catalog.json
 data/bubble_data.json
 data/bubble_data_color.json
 data/bubble_linear3_data.json
@@ -31,7 +32,6 @@ data/gauge_data_color.json
 data/globe_data.json
 data/line_data.json
 data/line_data_bar.json
-data/line_data_color.json
 data/line_raw_data.json
 data/line_single_bar.json
 data/line_single_data.json
@@ -39,6 +39,9 @@ data/line_two_single.json
 data/multibar_data.json
 data/multibar_data_baseline.json
 data/multibar_data_color.json
+data/multibar_data_dates.json
+data/multibar_data_label_dates.json
+data/multibar_data_label_dates_gmt.json
 data/multibar_data_long.json
 data/multibar_data_negative.json
 data/multibar_data_opportunities.json
@@ -51,20 +54,18 @@ data/pareto_data_salesrep_probability.json
 data/pareto_data_salesrep_stage.json
 data/pie_data.json
 data/pie_data_color.json
-data/pie_data_null.json
 data/pie_data_quarters.json
+data/pie_data_rpt-395.json
 data/pie_data_single.json
-data/sankey-static.json
-data/sankey.json
-data/sankey_root.json
 data/sugar_data_grouped.json
 data/top10_opportunities.json
 data/tree_data.json
-data/treemap_data.json
+#data/treemap_data.json
 data/geo/cldr_en.json
 data/geo/usa-states-topo-110.json
 data/geo/world-countries-topo-110.json
 data/locales/locales.json
+data/locales/translation.json
 
 #fonts
 fonts/SucroseFont.eot
@@ -113,7 +114,6 @@ img/favicons/mstile-144x144.png
 #js
 js/app.min.js
 js/d3.min.js
-js/d3fc-rebind.min.js
 js/jquery.min.js
 js/jquerymy.min.js
 js/lib.min.js

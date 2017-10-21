@@ -1,6 +1,18 @@
 /*
- * Copyright (c) 2016 SugarCRM Inc. Licensed by SugarCRM under the Apache 2.0 license.
- */
+Copyright 2017 SugarCRM, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 /**********
 * Mixins
 */
@@ -15,6 +27,12 @@
   stroke-width: 0.5px;
   stroke: #717171;
 }
+.sc-chart {
+  min-width: 100px;
+  min-height: 100px;
+  overflow: hidden;
+  position: relative;
+}
 .sc-print {
   visibility: hidden;
   position: absolute !important;
@@ -22,24 +40,25 @@
   width: 720px;
   height: 480px;
 }
-/*
-    Minimum height and width is a good idea to prevent negative SVG dimensions...
-    For example width should be =< margin.left + margin.right + 1,
-    of course 1 pixel for the entire chart would not be very useful, BUT should not have errors
-  */
+.sc-image-canvas {
+  visibility: hidden;
+  position: absolute;
+  left: -10000px;
+}
 /**********
  *  SVG
  */
-svg.sc-chart {
+svg.sc-chart,
+.sc-chart svg {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-  /* Trying to get SVG to act like a greedy block in all browsers */
   display: block;
   width: 100%;
   height: 100%;
 }
-svg.sc-chart text {
+svg.sc-chart text,
+.sc-chart svg text {
   font-style: normal;
   font-size: 11px;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -47,25 +66,32 @@ svg.sc-chart text {
   stroke: none;
   cursor: default;
 }
-svg.sc-chart text.sc-noData {
+svg.sc-chart text.sc-noData,
+.sc-chart svg text.sc-noData {
   font-size: 15px;
   font-weight: bold;
 }
-svg.sc-chart text.sc-title {
+svg.sc-chart text.sc-title,
+.sc-chart svg text.sc-title {
   font-size: 13px;
 }
-svg.sc-chart .sc-labels text {
+svg.sc-chart .sc-labels text,
+.sc-chart svg .sc-labels text {
   font-weight: bold;
   fill: #666;
 }
 svg.sc-chart .sc-label-value text,
-svg.sc-chart text.sc-label-value {
+.sc-chart svg .sc-label-value text,
+svg.sc-chart text.sc-label-value,
+.sc-chart svg text.sc-label-value {
   font-size: 13px;
 }
-svg.sc-chart .sc-label-box {
+svg.sc-chart .sc-label-box,
+.sc-chart svg .sc-label-box {
   fill: transparent;
 }
-svg.sc-chart .calc-text-strings {
+svg.sc-chart .calc-text-strings,
+.sc-chart svg .calc-text-strings {
   fill: #000000;
   stroke: rgba(0, 0, 0, 0);
   pointer-events: none;
@@ -78,7 +104,7 @@ svg.sc-chart .calc-text-strings {
   pointer-events: none;
 }
 .texture-line {
-  stroke-opacity: .5;
+  stroke-opacity: 0.5;
   stroke-width: 1px;
 }
 .sc-active .sc-texture {
@@ -260,356 +286,6 @@ svg.sc-chart .calc-text-strings {
   color: #ff6fcf;
 }
 /**********
-*  Legend
-*/
-.sc-legend .sc-series {
-  cursor: pointer;
-  font-size: 11px;
-}
-.sc-legend .sc-series line {
-  fill: none;
-}
-.sc-legend .sc-series text {
-  cursor: pointer;
-}
-.sc-legend .disabled circle {
-  fill: #fff;
-}
-.sc-legend-background {
-  fill: rgba(255, 255, 255, 0.9);
-  stroke: rgba(161, 160, 160, 0.75);
-  stroke-width: 1px;
-}
-.sc-legend-link {
-  cursor: pointer;
-  fill: #176de5;
-}
-.sc-legend-link:hover {
-  fill: #1257b7;
-  text-decoration: underline;
-}
-.sc-line-legend .sc-series {
-  cursor: default;
-  pointer-events: none;
-}
-.sc-line-legend .sc-series text {
-  cursor: default;
-}
-/**********
-*  Axis
-*/
-.sc-axis path,
-.sc-axis line,
-.sc-axis polyline {
-  fill: none;
-  stroke: #717171;
-  stroke-width: 1px;
-  shape-rendering: crispEdges;
-  pointer-events: none;
-}
-.sc-axis line,
-.sc-axis polyline {
-  stroke-opacity: .3;
-}
-.sc-axis path,
-.sc-axis line.zero {
-  stroke-opacity: .75;
-}
-.sc-axis path.domain {
-  stroke-width: 2px;
-  stroke: #bbb;
-}
-.sc-axis .sc-axisMaxMin text {
-  font-weight: bold;
-}
-.sc-x.sc-axis text {
-  font-size: 11px;
-}
-.sc-axislabel {
-  font-weight: 900;
-  font-style: italic;
-}
-/**********
-*  MultiBars
-*/
-.sc-multibar .sc-bar rect {
-  stroke-opacity: 1;
-  stroke-width: 2px;
-  stroke: #fff;
-}
-.sc-multibar .sc-bar rect:hover {
-  fill-opacity: .75;
-}
-.sc-multibar .sc-bar text {
-  fill: #000000;
-  stroke: rgba(0, 0, 0, 0);
-  pointer-events: none;
-}
-/***********
-*  Pie Chart
-*/
-.sc-pie .sc-series.hover path {
-  fill-opacity: .75;
-}
-.sc-pie polyline.sc-label-leader {
-  stroke-width: 1px;
-  pointer-events: none;
-}
-.sc-hole-wrap text {
-  text-anchor: middle;
-}
-text.sc-pie-hole-value {
-  font-size: 32px;
-  font-weight: bold;
-}
-text.sc-pie-hole-label {
-  font-size: 11px;
-}
-/**********
-* Lines
-*/
-.sc-group path.sc-line {
-  fill: none;
-  stroke-width: 2px;
-  stroke-linecap: round;
-  shape-rendering: geometricPrecision;
-}
-.sc-group path.sc-area {
-  stroke: none;
-  stroke-linecap: round;
-  shape-rendering: geometricPrecision;
-}
-.sc-line .sc-scatter .sc-series .sc-point {
-  stroke-opacity: 1;
-  stroke: #fff;
-  fill-opacity: 1;
-}
-.sc-scatter.sc-single-point .sc-series .sc-point {
-  stroke-width: 2px;
-}
-.sc-line.hover path {
-  stroke-width: 6px;
-}
-.sc-scatter .sc-series .sc-point.hover,
-.sc-series .sc-point.hover {
-  stroke-opacity: .3 !important;
-  stroke: inherit;
-}
-.sc-point-paths path {
-  stroke: transparent;
-  stroke-opacity: 0;
-  fill: #fff;
-  fill-opacity: 0;
-}
-.sc-indexLine {
-  cursor: ew-resize;
-}
-/**********
-* Distribution
-*/
-.sc-distribution {
-  pointer-events: none;
-}
-/**********
-*  Scatter
-*/
-.sc-series .sc-point {
-  pointer-events: none;
-}
-.sc-series .sc-point.hover {
-  stroke-width: 12px;
-  stroke-opacity: .3;
-}
-.sc-scatter .sc-point.hover {
-  fill-opacity: 1;
-}
-/**********
-*  Stacked Area
-*/
-.sc-chart-stackedarea path.sc-area {
-  fill-opacity: .7;
-  stroke-opacity: 0;
-}
-.sc-chart-stackedarea path.sc-area.hover {
-  fill-opacity: .9;
-}
-.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-line,
-.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-point {
-  pointer-events: none;
-  stroke: #777;
-  fill-opacity: 0;
-  stroke-opacity: 0;
-}
-.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-line {
-  stroke-width: 1.5px;
-}
-.sc-chart-stackedarea .sc-guide-wrap .sc-series .sc-point {
-  stroke-width: 1px;
-  fill: #FFF;
-}
-.sc-chart-stackedarea .sc-guide-wrap.hover .sc-series .sc-line,
-.sc-chart-stackedarea .sc-guide-wrap.hover .sc-series .sc-point {
-  fill-opacity: 1;
-  stroke-opacity: 1;
-}
-/**********
-* Guage
-*/
-.sc-odomText {
-  font-weight: bold;
-  fill: #000;
-}
-.sc-arc-group {
-  fill: steelblue;
-}
-.sc-pointer {
-  fill: #888888;
-  stroke: #fff;
-}
-/**********
-* Funnel
-*/
-.sc-chart-funnel .sc-slice.hover polygon {
-  fill-opacity: .75;
-}
-.sc-chart-funnel polyline.sc-label-leader {
-  stroke-width: 1px;
-  pointer-events: none;
-}
-.sc-chart-funnel .sc-label-value text.sc-label {
-  font-size: 11px;
-}
-.sc-chart-funnel .sc-label-value text.sc-value {
-  font-size: 13px;
-}
-/**********
-* Bubble
-*/
-.sc-chart-bubble .sc-scatter.sc-single-point .sc-group .sc-point {
-  fill-opacity: 1;
-  stroke-opacity: 1;
-}
-/**********
-* Pareto
-*/
-.sc-chart-pareto .sc-quota-wrap line {
-  opacity: .8;
-  stroke: #444;
-  stroke-width: 4px;
-  fill: none;
-  /*stroke-dasharray: '20, 5'; dashed lines must be defined in JS*/
-}
-.sc-chart-pareto .sc-quota-wrap line.sc-quota-target {
-  stroke: #777;
-}
-.sc-chart-pareto .sc-quota-wrap line.sc-quota-background {
-  opacity: 0;
-  stroke-width: 12px;
-}
-.sc-chart-pareto .sc-axis-y .domain {
-  display: none;
-}
-.sc-chart-pareto .sc-axis-y text.sc-quota-value,
-.sc-chart-pareto .sc-axis-y text.sc-target-quota-value {
-  font-weight: bold;
-}
-.sc-chart-pareto .sc-line .sc-group path {
-  stroke-width: 4px;
-}
-.sc-chart-pareto .sc-lines-wrap1 .sc-line .sc-group path {
-  stroke-width: 6px;
-}
-.sc-chart-pareto .sc-scatter .sc-group .sc-point {
-  fill-opacity: 1;
-  stroke-opacity: 1;
-  stroke-width: 2px;
-}
-.sc-chart-pareto .sc-lines-wrap2 .sc-scatter .sc-group circle {
-  stroke: #fff;
-}
-/**********
-* Treemap
-*/
-.sc-treemap {
-  background-color: #fff;
-}
-.sc-treemap text {
-  pointer-events: none;
-  fill: #fff;
-}
-.sc-treemap rect {
-  stroke: #fff;
-}
-.sc-treemap .sc-treepath text {
-  font-weight: bold;
-  fill: #555;
-}
-.sc-treemap .sc-parent text {
-  fill: #fff;
-}
-.sc-treemap .sc-child {
-  stroke-width: 1px;
-}
-.sc-treemap .sc-target {
-  stroke-width: 3px;
-  fill: none;
-  font-weight: normal;
-  cursor: pointer;
-  pointer-events: all;
-}
-.sc-treemap .sc-treepath .sc-target {
-  fill: #fff;
-}
-.sc-treemap .sc-parent.hover .sc-target {
-  fill: #fff;
-  opacity: 0.3;
-}
-/**********
-* Dendrogram
-*/
-.sc-card {
-  fill: #E9EFEF;
-  stroke: #AAA;
-  stroke-width: .5px;
-}
-.sc-card .sc-circ-front {
-  stroke-width: 0;
-}
-.sc-card line {
-  stroke-width: 2;
-}
-.sc-card .sc-expcoll {
-  cursor: pointer;
-}
-.sc-tree path.link {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 1.5px;
-}
-.sc-chart-org .sc-chart-background {
-  stroke: #d0d0d0;
-  stroke-width: 2px;
-}
-.sc-org-node text {
-  font-style: normal;
-  font-variant: normal;
-  font-weight: 300;
-  font-stretch: normal;
-  font-size: 10px;
-  line-height: normal;
-  font-family: "Helvetica Neue", Arial, sans-serif;
-}
-.sc-org-node text.sc-org-name {
-  font-size: 10px;
-  fill: #176de5;
-}
-.sc-org-node text.sc-org-name.hover {
-  text-decoration: underline;
-}
-.sc-org-node text.sc-org-title {
-  font-size: 8px;
-}
-/**********
 * Tooltips
 * Twitter bootstrap classes
 * with
@@ -664,8 +340,6 @@ text.sc-pie-hole-label {
   text-shadow: none;
   white-space: pre-wrap;
   word-wrap: break-word;
-  -webkit-border-radius: 3px;
-  -moz-border-radius: 3px;
   border-radius: 3px;
 }
 .tooltip-inner > div {
@@ -687,6 +361,13 @@ text.sc-pie-hole-label {
   height: 0;
   border-color: transparent;
   border-style: solid;
+}
+.tooltip-status {
+  margin-top: 5px;
+  padding-top: 2px;
+  border-top: 1px solid #7b7b7b;
+  color: #dddddd;
+  font-style: italic;
 }
 .tooltip.top .tooltip-arrow {
   bottom: 0;
@@ -717,6 +398,350 @@ text.sc-pie-hole-label {
   border-bottom-color: #000;
 }
 /**********
+*  Legend
+*/
+.sc-menu .sc-series {
+  cursor: pointer;
+  font-size: 11px;
+}
+.sc-menu .sc-series line {
+  fill: none;
+}
+.sc-menu .sc-series text {
+  cursor: pointer;
+}
+.sc-menu .disabled circle {
+  fill: #fff;
+}
+.sc-menu-background {
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: rgba(161, 160, 160, 0.75);
+  stroke-width: 1px;
+}
+.sc-menu-link {
+  cursor: pointer;
+  fill: #176de5;
+}
+.sc-menu-link:hover {
+  fill: #1257b7;
+  text-decoration: underline;
+}
+.sc-line-legend .sc-series {
+  cursor: default;
+  pointer-events: none;
+}
+.sc-line-legend .sc-series text {
+  cursor: default;
+}
+/**********
+*  Axis
+*/
+.sc-axis path,
+.sc-axis line,
+.sc-axis polyline {
+  fill: none;
+  stroke: #717171;
+  stroke-width: 1px;
+  shape-rendering: crispEdges;
+  pointer-events: none;
+}
+.sc-axis line,
+.sc-axis polyline {
+  stroke-opacity: 0.3;
+}
+.sc-axis path,
+.sc-axis line.zero {
+  stroke-opacity: 0.75;
+}
+.sc-axis path.domain {
+  stroke-width: 2px;
+  stroke: #bbb;
+}
+.sc-axis .sc-axisMaxMin text {
+  font-weight: bold;
+}
+.sc-axis-x .sc-axis text {
+  font-size: 11px;
+}
+.sc-axislabel {
+  font-weight: 900;
+  font-style: italic;
+}
+/**********
+*  Stacked Area
+*/
+.sc-chart-area path.sc-area {
+  fill-opacity: 0.7;
+  stroke-opacity: 0;
+}
+.sc-chart-area path.sc-area.hover {
+  fill-opacity: 0.9;
+}
+.sc-chart-area .sc-guide-wrap .sc-series path.sc-line,
+.sc-chart-area .sc-guide-wrap .sc-series circle.sc-point {
+  pointer-events: none;
+  stroke: #777;
+  fill-opacity: 0;
+  stroke-opacity: 0;
+}
+.sc-chart-area .sc-guide-wrap .sc-series path.sc-line {
+  stroke-width: 1.5px;
+}
+.sc-chart-area .sc-guide-wrap .sc-series circle.sc-point {
+  stroke-width: 1px;
+  fill: #fff;
+}
+.sc-chart-area .sc-guide-wrap.hover .sc-series path.sc-line,
+.sc-chart-area .sc-guide-wrap.hover .sc-series circle.sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+}
+/**********
+*  MultiBars
+*/
+.sc-multibar .sc-bar rect {
+  stroke-opacity: 1;
+  stroke-width: 2px;
+  stroke: #fff;
+}
+.sc-multibar .sc-bar rect:hover {
+  fill-opacity: 0.75;
+}
+.sc-multibar .sc-bar text {
+  fill: #000000;
+  stroke: rgba(0, 0, 0, 0);
+  pointer-events: none;
+}
+/***********
+*  Pie Chart
+*/
+.sc-pie .sc-series.hover path {
+  fill-opacity: 0.75;
+}
+.sc-pie polyline.sc-label-leader {
+  stroke-width: 1px;
+  pointer-events: none;
+}
+.sc-hole-wrap text {
+  text-anchor: middle;
+}
+text.sc-pie-hole-value {
+  font-size: 32px;
+  font-weight: bold;
+}
+text.sc-pie-hole-label {
+  font-size: 11px;
+}
+/**********
+* Lines
+*/
+.sc-group path.sc-line {
+  fill: none;
+  stroke-width: 2px;
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
+}
+.sc-group path.sc-area {
+  stroke: none;
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
+}
+.sc-line.hover path {
+  stroke-width: 6px;
+}
+.sc-point-paths path {
+  stroke: transparent;
+  stroke-opacity: 0;
+  fill: #fff;
+  fill-opacity: 0;
+}
+.sc-indexLine {
+  cursor: ew-resize;
+}
+.sc-line .sc-scatter .sc-point {
+  stroke: #fff;
+  stroke-opacity: 1;
+  stroke-width: 1px;
+  fill-opacity: 1;
+}
+.sc-line .sc-scatter.sc-single-point .sc-point {
+  stroke-width: 2px;
+}
+.sc-line .sc-scatter.sc-single-point .sc-point.sc-active {
+  stroke-width: 9px;
+}
+.sc-line .sc-scatter.sc-single-point .sc-point.hover {
+  stroke-width: 12px;
+}
+/**********
+*  Scatter
+*/
+.sc-scatter .sc-point {
+  pointer-events: none;
+}
+.sc-scatter .sc-point.sc-active,
+.sc-scatter .sc-point.hover {
+  stroke: inherit !important;
+  stroke-opacity: 0.3 !important;
+  stroke-width: 9px;
+}
+.sc-scatter .sc-point.hover {
+  stroke-width: 12px;
+}
+/**********
+* Guage
+*/
+.sc-odomText {
+  font-weight: bold;
+  fill: #000;
+}
+.sc-arc-group {
+  fill: steelblue;
+}
+.sc-pointer {
+  fill: #888;
+  stroke: #fff;
+}
+/**********
+* Funnel
+*/
+.sc-chart-funnel .sc-slice.hover polygon {
+  fill-opacity: 0.75;
+}
+.sc-chart-funnel polyline.sc-label-leader {
+  stroke-width: 1px;
+  pointer-events: none;
+}
+.sc-chart-funnel .sc-label-value text.sc-label {
+  font-size: 11px;
+}
+.sc-chart-funnel .sc-label-value text.sc-value {
+  font-size: 13px;
+}
+/**********
+* Bubble
+*/
+.sc-chart-bubble .sc-scatter.sc-single-point .sc-group .sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+}
+/**********
+* Pareto
+*/
+.sc-chart-pareto .sc-quota-wrap line {
+  opacity: 0.8;
+  stroke: #444;
+  stroke-width: 4px;
+  fill: none;
+}
+.sc-chart-pareto .sc-quota-wrap line.sc-quota-target {
+  stroke: #777;
+}
+.sc-chart-pareto .sc-quota-wrap line.sc-quota-background {
+  opacity: 0;
+  stroke-width: 12px;
+}
+.sc-chart-pareto .sc-axis-y .domain {
+  display: none;
+}
+.sc-chart-pareto .sc-axis-y text.sc-quota-value,
+.sc-chart-pareto .sc-axis-y text.sc-target-quota-value {
+  font-weight: bold;
+}
+.sc-chart-pareto .sc-line .sc-group path {
+  stroke-width: 4px;
+}
+.sc-chart-pareto .sc-lines-wrap1 .sc-line .sc-group path {
+  stroke-width: 6px;
+}
+.sc-chart-pareto .sc-scatter .sc-group .sc-point {
+  fill-opacity: 1;
+  stroke-opacity: 1;
+  stroke-width: 2px;
+}
+.sc-chart-pareto .sc-scatter .sc-group .sc-point.hover {
+  stroke-width: 10px;
+}
+.sc-chart-pareto .sc-lines-wrap2 .sc-scatter .sc-group circle {
+  stroke: #fff;
+}
+/**********
+* Dendrogram
+*/
+.sc-card {
+  fill: #e9efef;
+  stroke: #aaa;
+  stroke-width: 0.5px;
+}
+.sc-card .sc-circ-front {
+  stroke-width: 0;
+}
+.sc-card line {
+  stroke-width: 2;
+}
+.sc-card .sc-expcoll {
+  cursor: pointer;
+}
+.sc-tree path.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+.sc-chart-org .sc-chart-background {
+  stroke: #d0d0d0;
+  stroke-width: 2px;
+}
+.sc-org-node text {
+  font: normal normal 300 10px / normal "Helvetica Neue", Arial, sans-serif;
+}
+.sc-org-node text.sc-org-name {
+  font-size: 10px;
+  fill: #176de5;
+}
+.sc-org-node text.sc-org-name.hover {
+  text-decoration: underline;
+}
+.sc-org-node text.sc-org-title {
+  font-size: 8px;
+}
+/**********
+* Treemap
+*/
+.sc-treemap {
+  background-color: #fff;
+}
+.sc-treemap text {
+  pointer-events: none;
+  fill: #fff;
+}
+.sc-treemap rect {
+  stroke: #fff;
+}
+.sc-treemap .sc-treepath text {
+  font-weight: bold;
+  fill: #555;
+}
+.sc-treemap .sc-parent text {
+  fill: #fff;
+}
+.sc-treemap .sc-child {
+  stroke-width: 1px;
+}
+.sc-treemap .sc-target {
+  stroke-width: 3px;
+  fill: none;
+  font-weight: normal;
+  cursor: pointer;
+  pointer-events: all;
+}
+.sc-treemap .sc-treepath .sc-target {
+  fill: #fff;
+}
+.sc-treemap .sc-parent.hover .sc-target {
+  fill: #fff;
+  opacity: 0.3;
+}
+/**********
 * Globe
 */
 .sc-chart-globe svg {
@@ -726,24 +751,24 @@ text.sc-pie-hole-label {
   fill: #555;
 }
 .sc-chart-globe .sphere {
-  fill: #DBE4F0;
-  stroke: #DBE4F0;
+  fill: #dbe4f0;
+  stroke: #dbe4f0;
   stroke-width: 1px;
 }
 .sc-chart-globe .graticule {
   fill: none;
   stroke: #777;
-  stroke-width: .5px;
-  stroke-opacity: .6;
+  stroke-width: 0.5px;
+  stroke-opacity: 0.6;
   pointer-events: none;
 }
 .sc-chart-globe .countries {
-  fill: #AAA;
+  fill: #aaa;
 }
 .sc-chart-globe .countries path {
   stroke: #fff;
 }
 .sc-chart-globe .states path {
-  fill: #CCC;
+  fill: #ccc;
   stroke: #fff;
 }

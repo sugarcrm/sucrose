@@ -1,15 +1,33 @@
 {
-    "multibar": [
-        {"value": "multibar_data", "label": "Forecasting for Q1"},
-        {"value": "multibar_data_color", "label": "Forecasting for Q2 (color data)"},
-        {"value": "multibar_data_negative", "label": "Forecasting for Q1 (negative)"},
-        {"value": "multibar_data_wide", "label": "Opportunities by Industry (wide)"},
-        {"value": "multibar_data_baseline", "label": "Opportunities Won/Lost by Industry (baseline)"},
-        {"value": "multibar_data_opportunities", "label": "All Opportunities By Lead Source By Outcome"},
-        {"value": "multibar_data_long", "label": "Accounts by Type by Industry"},
-        {"value": "multibar_data_short", "label": "Apples or Oranges"},
-        {"value": "multibar_data_raw", "label": "Raw Report Data"},
+    "area": [
+        {"value": "line_data", "label": "Test Line Chart Data #1"},
         {"value": "data_null", "label": "Test Null Data"}
+    ],
+    "bubble": [
+        {"value": "top10_opportunities", "label": "Top 10 Opportunities"},
+        {"value": "bubble_data", "label": "Bubble Data"},
+        {"value": "bubble_data_color", "label": "Bubble Data with Color"},
+        {"value": "bubble_linear3_data", "label": "Linear Data"},
+        {"value": "bubble_year_data", "label": "Year Data"},
+        {"value": "data_null", "label": "Test Null Data"}
+    ],
+    "funnel": [
+        {"value": "funnel_data", "label": "Opportunity Total by Sales Stage"},
+        {"value": "funnel_data_color", "label": "Funnel Data with Color"},
+        {"value": "funnel_data_opps", "label": "Opportunity Data"},
+        {"value": "funnel_data_long", "label": "Long Label Lengths"},
+        {"value": "funnel_data_uniform", "label": "Uniform Data and Labels"},
+        {"value": "funnel_data_single", "label": "One Long Single Label"},
+        {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
+        {"value": "data_null", "label": "Test Null Data"}
+    ],
+    "gauge": [
+        {"value": "gauge_data", "label": "Closed Won Opportunities"},
+        {"value": "gauge_data_color", "label": "Test Quarter Labels"},
+        {"value": "data_null", "label": "Test Null Data"}
+    ],
+    "globe": [
+        {"value": "globe_data", "label": "Globe Data"}
     ],
     "line": [
         {"value": "line_data", "label": "Test Line Chart Data #1"},
@@ -20,29 +38,19 @@
         {"value": "line_two_single", "label": "Test Two Single Data Points"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
-    "pie": [
-        {"value": "pie_data", "label": "All Opportunities by Lead Source"},
-        {"value": "pie_data_quarters", "label": "Test Quarter Labels"},
-        {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
-        {"value": "pie_data_single", "label": "Test Single Slice Data"},
-        {"value": "data_null", "label": "Test Null Data"}
-    ],
-    "funnel": [
-        {"value": "funnel_data", "label": "Opportunity Total by Sales Stage"},
-        {"value": "funnel_data_opps", "label": "Opportunity Data"},
-        {"value": "funnel_data_long", "label": "Long Label Lengths"},
-        {"value": "funnel_data_uniform", "label": "Uniform Data and Labels"},
-        {"value": "funnel_data_single", "label": "One Long Single Label"},
-        {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
-        {"value": "data_null", "label": "Test Null Data"}
-    ],
-    "bubble": [
-        {"value": "top10_opportunities", "label": "Top 10 Opportunities"},
-        {"value": "bubble_year_data", "label": "Year Data"},
-        {"value": "data_null", "label": "Test Null Data"}
-    ],
-    "treemap": [
-        {"value": "flare", "label": "Flare Code Lines"},
+    "multibar": [
+        {"value": "multibar_data", "label": "Forecasting for Q1"},
+        {"value": "multibar_data_color", "label": "Forecasting for Q2 (color data)"},
+        {"value": "multibar_data_negative", "label": "Forecasting for Q1 (negative)"},
+        {"value": "multibar_data_wide", "label": "Opportunities by Industry (wide)"},
+        {"value": "multibar_data_baseline", "label": "Opportunities Won/Lost by Industry (baseline)"},
+        {"value": "multibar_data_opportunities", "label": "All Opportunities By Lead Source By Outcome"},
+        {"value": "multibar_data_long", "label": "Accounts by Type by Industry"},
+        {"value": "multibar_data_short", "label": "Apples or Oranges"},
+        {"value": "multibar_data_raw", "label": "Raw Report Data"},
+        {"value": "multibar_data_dates", "label": "Data Dates"},
+        {"value": "multibar_data_label_dates", "label": "Label Dates"},
+        {"value": "multibar_data_label_dates_gmt", "label": "Label Dates (GMT)"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
     "pareto": [
@@ -52,19 +60,20 @@
         {"value": "pareto_data_manager", "label": "Manager Worksheet"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
-    "gauge": [
-        {"value": "gauge_data", "label": "Closed Won Opportunities"},
-        {"value": "gauge_data_color", "label": "Test Quarter Labels"},
-        {"value": "data_null", "label": "Test Null Data"}
-    ],
-    "area": [
-        {"value": "line_data", "label": "Test Line Chart Data #1"},
-        {"value": "data_null", "label": "Test Null Data"}
+    "pie": [
+        {"value": "pie_data", "label": "All Opportunities by Lead Source"},
+        {"value": "pie_data_color", "label": "Pie Data with Color"},
+        {"value": "pie_data_quarters", "label": "Test Quarter Labels"},
+        {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
+        {"value": "pie_data_single", "label": "Test Single Slice Data"},
+        {"value": "data_null", "label": "Test Null Data"},
+        {"value": "pie_data_rpt-395", "label": "Test Single Active Series"}
     ],
     "tree": [
         {"value": "tree_data", "label": "Organization"}
     ],
-    "globe": [
-        {"value": "globe_data", "label": "Globe Data"}
+    "treemap": [
+        {"value": "flare", "label": "Flare Code Lines"},
+        {"value": "data_null", "label": "Test Null Data"}
     ]
 }

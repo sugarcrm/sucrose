@@ -6,7 +6,7 @@
     "groups": [
       {"label": "Opportunities"}
     ],
-    "key": "Sales Stage"
+    "seriesLabel": "Stage"
   },
   "data": [
     {
