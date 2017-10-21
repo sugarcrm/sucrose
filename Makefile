@@ -44,7 +44,7 @@ dev:
 all: scr css data
 
 # - remove sucrose Js and Css files
-clean: clean-js clean-css clean-data
+clean: clean-d3 clean-js clean-css clean-data
 
 
 # SUCROSE BUILD TARGETS
@@ -182,7 +182,6 @@ pack:
 	node pack.$(TAR).js
 	npm run-script package
 	node rollup.node
-	npm install
 
 # - publish the custom sugar build of sucrose
 npm-sugar:
