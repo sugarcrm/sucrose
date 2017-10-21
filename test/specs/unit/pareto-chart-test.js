@@ -482,6 +482,24 @@ tests("UNIT: paretoChart -", function(t) {
         assert.equal(_chart.nice(), val, "returns set value");
         t.register(assert, type);
     });
+    t.test("xAxisLabel: ", function(assert) {
+        let def = null;
+        assert.equal(_chart.xAxisLabel(), def, "returns null as default value");
+        let val = "asdf";
+        _chart.xAxisLabel(val);
+        assert.equal(_chart.xAxisLabel(), val, "returns set value");
+        assert.end();
+        t.register(assert, type);
+    });
+    t.test("yAxisLabel: ", function(assert) {
+        let def = null;
+        assert.equal(_chart.yAxisLabel(), def, "returns null as default value");
+        let val = "asdf";
+        _chart.yAxisLabel(val);
+        assert.equal(_chart.yAxisLabel(), val, "returns set value");
+        assert.end();
+        t.register(assert, type);
+    });
 
     t.test("seriesClick: ", function(assert) {
         assert.plan(3);
@@ -496,7 +514,8 @@ tests("UNIT: paretoChart -", function(t) {
     t.test("gradient: ", function(assert) {
         assert.plan(2);
         let def = _chart.gradient();
-        assert.equal(def, null, "returns null by default");
+        let clg = sucrose.utility.colorLinearGradient;
+        assert.equal(def, clg, "returns colorLinearGradient by default");
         let val = function(){return 1;};
         _chart.gradient(val);
         assert.equal(_chart.gradient(), val, "returns set function");

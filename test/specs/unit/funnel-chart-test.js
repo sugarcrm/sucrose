@@ -402,7 +402,8 @@ tests("UNIT: funnelChart -", function(t) {
     t.test("gradient: ", function(assert) {
         assert.plan(2);
         let def = _chart.gradient();
-        assert.equal(def, null, "returns null by default");
+        let clg = sucrose.utility.colorLinearGradient;
+        assert.equal(def, clg, "returns colorLinearGradient by default");
         let val = function(){return 1;};
         _chart.gradient(val);
         assert.equal(_chart.gradient(), val, "returns set function");

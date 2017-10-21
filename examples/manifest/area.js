@@ -7,7 +7,7 @@ module.exports =
   // These chart options will be set
   optionPresets: {
     file: 'line_data',
-    show_labels: '1'
+    show_labels: 'true'
   },
   yAxisLabel: 'Y-axis label',
   xAxisLabel: 'X-axis label',
@@ -15,7 +15,7 @@ module.exports =
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {
-    show_labels: '0',
+    show_labels: 'false',
     mirror_axis: 'lab',
     tick_display: ['wrap', 'stagger', 'rotate']
   },
@@ -53,8 +53,8 @@ module.exports =
       title: 'Show Axes Labels',
       type: 'radio',
       values: [
-        {value: '0', label: 'No'},
-        {value: '1', label: 'Yes'}
+        {value: 'false', label: 'No'},
+        {value: 'true', label: 'Yes'}
       ]
     },
     '[name=tick_display]': {

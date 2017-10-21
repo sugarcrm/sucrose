@@ -262,7 +262,7 @@ nav ul a strong {
 
 menu {
   list-style: disc;
-  padding-left: 16px;
+  padding-left: 0;
 }
 menuitem {
   display: list-item;
@@ -294,7 +294,8 @@ footer {
 }
 footer p {
   margin: 0;
-  line-height: 14px;
+  line-height: 24px;
+  float: right;
 }
 
 .index {

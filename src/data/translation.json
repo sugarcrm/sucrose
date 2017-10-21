@@ -1,0 +1,236 @@
+{
+  "ar_SA": {
+    "controls": {"close": "إخفاء أدوات التحكم", "open": "عرض أدوات التحكم"},
+    "legend": {"close": "إخفاء وسيلة الإيضاح", "open": "عرض وسيلة الإيضاح"},
+    "noData": "لا تتوفر بيانات.",
+    "noLabel": "غير محدد"
+  },
+  "bg_BG": {
+    "controls": {"close": "Скрий контролите", "open": "Покажи контролите"},
+    "legend": {"close": "Скрий легендата", "open": "Покажи легендата"},
+    "noData": "Липсват данни.",
+    "noLabel": "Недефинирано"
+  },
+  "ca_ES": {
+    "controls": {"close": "Oculta controls", "open": "Mostra controls"},
+    "legend": {"close": "Oculta llegenda", "open": "Mostra llegenda"},
+    "noData": "No hi ha dades disponibles.",
+    "noLabel": "No definit"
+  },
+  "cs_CZ": {
+    "controls": {"close": "Schovat ovladače", "open": "Zobrazit ovladače"},
+    "legend": {"close": "Skrýt legendu", "open": "Zobrazit legendu"},
+    "noData": "Žádná data",
+    "noLabel": "Nedefinovány"
+  },
+  "da_DK": {
+    "controls": {"close": "Skjul kontrolelementer", "open": "Vis kontrolelementer"},
+    "legend": {"close": "Skjul label", "open": "Vis label"},
+    "noData": "Ingen data til rådighed.',",
+    "noLabel": "Udefineret"
+  },
+  "de_DE": {
+    "controls": {"close": "Steuerung ausblenden", "open": "Steuerung einblenden"},
+    "legend": {"close": "Legende ausblenden", "open": "Legende einblenden"},
+    "noData": "Keine Daten gefunden.",
+    "noLabel": "undefiniert"
+  },
+  "el_EL": {
+    "controls": {"close": "Απόκρυψη στοιχείων ελέγχου", "open": "Εμφάνιση στοιχείων ελέγχου"},
+    "legend": {"close": "Απόκρυψη υπομνήματος", "open": "Εμφάνιση υπομνήματος"},
+    "noData": "Δεν βρέθηκαν δεδομένα.",
+    "noLabel": "Απροσδιόριστο"
+  },
+  "en_UK": {
+    "controls": {"close": "Hide controls", "open": "Show controls"},
+    "legend": {"close": "Hide legend", "open": "Show legend"},
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "en_US": {
+    "controls": {"close": "Hide controls", "open": "Show controls"},
+    "legend": {"close": "Hide legend", "open": "Show legend"},
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "es_ES": {
+    "controls": {"close": "Ocultar controles", "open": "Mostrar controles"},
+    "legend": {"close": "Ocultar leyenda", "open": "Mostrar leyenda"},
+    "noData": "No se han encontrado datos.",
+    "noLabel": "No definido"
+  },
+  "es_LA": {
+    "controls": {"close": "Ocultar controles", "open": "Mostrar controles"},
+    "legend": {"close": "Ocultar leyenda", "open": "Mostrar leyenda"},
+    "noData": "Datos no encontrados.",
+    "noLabel": "No definido"
+  },
+  "et_EE": {
+    "controls": {"close": "Hidecontrols", "open": "Showcontrols"},
+    "legend": {"close": "Hidelegend", "open": "Showlegend"},
+    "noData": "NoDataAvailable.",
+    "noLabel": "undefined"
+  },
+  "fi_FI": {
+    "controls": {"close": "Piilota nappulat", "open": "Näytä nappulat"},
+    "legend": {"close": "Piilota selite", "open": "Näytä selite"},
+    "noData": "Dataa ei löytynyt.",
+    "noLabel": "määrittelemätön"
+  },
+  "fr_FR": {
+    "controls": {"close": "Cacher les controles", "open": "Afficher les controles"},
+    "legend": {"close": "Cacher la légende", "open": "Afficher la légende"},
+    "noData": "Aucune donnée.",
+    "noLabel": "Indéfini"
+  },
+  "he_IL": {
+    "controls": {"close": "הסתר פקדים", "open": "הצג פקדים"},
+    "legend": {"close": "הסתר מקרא", "open": "הצג מקרא"},
+    "noData": "אין נתונים זמינים",
+    "noLabel": "לא מוגדר"
+  },
+  "hr_HR": {
+    "controls": {"close": "Hide controls", "open": "Show controls"},
+    "legend": {"close": "Hide legend", "open": "Show legend"},
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "hu_HU": {
+    "controls": {"close": "Vezérlők elrejtése", "open": "Vezérlők mutatása"},
+    "legend": {"close": "Jelmagyarázat elrejtése", "open": "Jelmagyarázat mutatása"},
+    "noData": "Nem található adat.",
+    "noLabel": "Nem definiált"
+  },
+  "it_it": {
+    "controls": {"close": "Nascondi controlli", "open": "Mostra controlli"},
+    "legend": {"close": "Nascondi legenda", "open": "Mostra legenda"},
+    "noData": "Nessun dato trovato.",
+    "noLabel": "Indefinito"
+  },
+  "ja_JP": {
+    "controls": {"close": "コントロールを隠す", "open": "コントロールを表示"},
+    "legend": {"close": "レジェンドを隠す", "open": "レジェンドを表示"},
+    "noData": "データがありません",
+    "noLabel": "未定義"
+  },
+  "ko_KR": {
+    "controls": {"close": "컨트롤 숨기기", "open": "컨트롤 표시"},
+    "legend": {"close": "범례 숨기기", "open": "범례 표시"},
+    "noData": "데이터가 없습니다.",
+    "noLabel": "정의되지 않은"
+  },
+  "lt_LT": {
+    "controls": {"close": "Hide controls", "open": "Show controls"},
+    "legend": {"close": "Hide legend", "open": "Show legend"},
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "lv_LV": {
+    "controls": {"close": "Slēpt kontroles", "open": "Rādīt kontroles"},
+    "legend": {"close": "Slēpt leģendu", "open": "Parādīt leģendu"},
+    "noData": "Dati nav atrasti.",
+    "noLabel": "Nenoteikts"
+  },
+  "nb_NO": {
+    "controls": {"close": "Skjul kontrollene", "open": "Vi kontrollene"},
+    "legend": {"close": "Skjul oversikt", "open": "Vis oversikt"},
+    "noData": "Ingen data tilgjengelig.",
+    "noLabel": "Udefinert"
+  },
+  "nl_NL": {
+    "controls": {"close": "Verberg opties", "open": "Toon opties"},
+    "legend": {"close": "Verberg legenda", "open": "Toon legenda"},
+    "noData": "Geen gegevens gevonden.",
+    "noLabel": "Niet ingegeven"
+  },
+  "pl_PL": {
+    "controls": {"close": "Ukryj kontrolki", "open": "Pokaż kontrolki"},
+    "legend": {"close": "Ukryj legendę", "open": "Pokaż legendę"},
+    "noData": "Brak danych.",
+    "noLabel": "Niezdefiniowane"
+  },
+  "pt_BR": {
+    "controls": {"close": "Ocultar controles", "open": "Mostrar controles"},
+    "legend": {"close": "Ocultar legenda", "open": "Mostrar legenda"},
+    "noData": "Nenhum registro disponível.",
+    "noLabel": "Não definido"
+  },
+  "pt_PT": {
+    "controls": {"close": "Esconder controlos", "open": "Mostrar controlos"},
+    "legend": {"close": "Esconder legenda", "open": "Mostrar legenda"},
+    "noData": "Sem dados encontrados.",
+    "noLabel": "Não definido"
+  },
+  "ro_RO": {
+    "controls": {"close": "Hide controls", "open": "Show controls"},
+    "legend": {"close": "Hide legend", "open": "Show legend"},
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "ru_RU": {
+    "controls": {"close": "Скрыть элементы управления", "open": "Показать элементы управления"},
+    "legend": {"close": "Скрыть условные обозначения", "open": "Показать условные обозначения"},
+    "noData": "Данные не найдены",
+    "noLabel": "Не определено"
+  },
+  "sk_SK": {
+    "controls": {"close": "Hide controls", "open": "Show controls"},
+    "legend": {"close": "Hide legend", "open": "Show legend"},
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "sq_AL": {
+    "controls": {"close": "Fshih kontollat", "open": "Shiko kontrollet"},
+    "legend": {"close": "Fshih legjendën", "open": "Trego legjendë"},
+    "noData": "Asnjë rezultat nuk u gjet deri tani.",
+    "noLabel": "E papërcaktuar"
+  },
+  "sr_RS": {
+    "controls": {"close": "Sakrij kontrole", "open": "Prikaži kontrole"},
+    "legend": {"close": "Sakrij legendu", "open": "Prikaži legendu"},
+    "noData": "Nisu pronađeni podaci.",
+    "noLabel": "Nedefinisano"
+  },
+  "sv_SE": {
+    "controls": {"close": "Göm kontroller", "open": "Visa kontroller"},
+    "legend": {"close": "Göm legend", "open": "Visa legend"},
+    "noData": "Inga data tillgängliga.",
+    "noLabel": "Odefinierad"
+  },
+  "th_TH": {
+    "controls": {"close": "Hide controls", "open": "Show controls"},
+    "legend": {"close": "Hide legend", "open": "Show legend"},
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "tr_TR": {
+    "controls": {"close": "Kontrolleri gizle", "open": "Kontrolleri göster"},
+    "legend": {"close": "Simgeleri gizle", "open": "Simgeleri göster"},
+    "noData": "Veri bulunamadı.",
+    "noLabel": "Tanımlanmamış"
+  },
+  "uk_UA": {
+    "controls": {"close": "Hide controls", "open": "Show controls"},
+    "legend": {"close": "Hide legend", "open": "Show legend"},
+    "noData": "No Data Available.",
+    "noLabel": "undefined"
+  },
+  "zh_CN": {
+    "controls": {"close": "隐藏控制", "open": "显示控制"},
+    "legend": {"close": "隐藏图例", "open": "显示图例"},
+    "noData": "未找到数据",
+    "noLabel": "未定义"
+  },
+  "zh_TW": {
+    "controls": {"close": "Hidecontrols", "open": "Showcontrols"},
+    "legend": {"close": "Hidelegend", "open": "Showlegend"},
+    "noData": "NoDataAvailable.",
+    "noLabel": "undefined"
+  },
+  "zu_ZA": {
+    "controls": {"close": "Hidecontrols", "open": "Showcontrols"},
+    "legend": {"close": "Hidelegend", "open": "Showlegend"},
+    "noData": "NoDataAvailable.",
+    "noLabel": "undefined"
+  }
+}

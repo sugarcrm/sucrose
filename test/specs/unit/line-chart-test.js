@@ -424,6 +424,24 @@ tests("UNIT: lineChart -", function(t) {
         assert.equal(_chart.reduceXTicks(), val, "returns set value");
         t.register(assert, type);
     });
+    t.test("xAxisLabel: ", function(assert) {
+        let def = null;
+        assert.equal(_chart.xAxisLabel(), def, "returns null as default value");
+        let val = "asdf";
+        _chart.xAxisLabel(val);
+        assert.equal(_chart.xAxisLabel(), val, "returns set value");
+        assert.end();
+        t.register(assert, type);
+    });
+    t.test("yAxisLabel: ", function(assert) {
+        let def = null;
+        assert.equal(_chart.yAxisLabel(), def, "returns null as default value");
+        let val = "asdf";
+        _chart.yAxisLabel(val);
+        assert.equal(_chart.yAxisLabel(), val, "returns set value");
+        assert.end();
+        t.register(assert, type);
+    });
 
     t.test("clipVoronoi: ", function(assert) {
         assert.plan(2);

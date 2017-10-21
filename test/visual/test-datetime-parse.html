@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <title>Chart Time Formatting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../../examples/css/examples.css">
+  <link rel="stylesheet" href="visual-tests.css">
+
+  <script src="../../examples/js/jquery.min.js"></script>
+  <script src="../../build/d3.min.js"></script>
+  <script src="../../build/sucrose.js"></script>
+</head>
+<body>
+  <div class="sc-demo sc-demo-locale">
+    <div class="page-header">
+      <h2>Chart Date Parse Test</h2>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Skeleton</th>
+                <th>Sucrose dateParse</th>
+                <!-- <th>Date.parse</th> -->
+                <!-- <th>Sucrose dateFormat Date</th> -->
+            </tr>
+        </thead>
+        <tbody id="compare"></tbody>
+    </table>
+  </div>
+
+<script>
+
+$(function () {
+
+    /* ----------------------------------
+    // Test Specs for standard formats
+    ---------------------------------- */
+    // date format specifiers
+    var skeletons = [
+      2012,
+      '2012',
+      1330837567000,
+      '1330837567000',
+      '2012-03-04T05:06:07.000Z',
+      '2012-03-04T00:06:07.000-05:00',
+      '2012-03-04T05:06:07.000Z',
+      'March 4, 2012, 5:06:07 AM',
+      'March 4, 2012, 5:06:07 AM GMT',
+      'Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)',
+      'Sun Mar 04 2012 00:06:07 GMT-0500 (EST)'
+    ];
+
+    /* ------------------------------------------------------------
+       D3 Locale and Sucrose dateFormat Test Data
+    ------------------------------------------------------------ */
+
+    var compareData = [];
+
+    function displayComparison(lang) {
+        lang = lang || 'ru_RU';
+
+        var testDate = new Date(1330837567000);
+
+        d3.select('#compare').selectAll('tr').remove();
+        var trows = d3.select('#compare').selectAll('tr').data(compareData);
+
+        trows.enter().append('tr').html(function(d, i) {
+            var html = '<td><b>' + d[0] + '</b></td>'; //skeleton
+
+            var c1 = testDate.valueOf(0) == d[1].valueOf(0) ? 'pass' : 'fail';
+            // var c2 = testDate.valueOf(0) == d[2].valueOf(0) ? 'pass' : 'fail';
+
+            html += '<td class="' + c1 + '">' + d[1].toISOString() + '</td>'; //d3.timeFormatLocale
+            // html += '<td class="' + c2 + '">' + d[2].toISOString() + '</td>'; //dateFormat Date
+
+            return html;
+        });
+    }
+
+    function generateComparison() {
+        var pattern;
+        var l = skeletons.length;
+
+        compareData = skeletons.map(function(d, i) { return [d]; });
+
+        for (var i = 0; i < l; i += 1) {
+            pattern = compareData[i][0];
+
+            compareData[i][1] = sucrose.utility.parseDatetime(pattern);
+            // compareData[i][2] = new Date(Date.parse(pattern) || 0);
+            // compareData[i][2] = new Date(pattern) || 0;
+        }
+        displayComparison();
+    }
+
+    generateComparison();
+});
+</script>
+</body>
+</html>

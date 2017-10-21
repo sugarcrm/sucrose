@@ -249,7 +249,6 @@ export default function globeChart() {
       };
 
       chart.render = function() {
-
         calcDimensions();
 
         projection
@@ -689,6 +688,15 @@ export default function globeChart() {
     country_labels = _;
     return chart;
   };
+
+  chart.seriesClick = function(_) {
+    if (!arguments.length) {
+      return seriesClick;
+    }
+    seriesClick = _;
+    return chart;
+  };
+
   //============================================================
 
   return chart;

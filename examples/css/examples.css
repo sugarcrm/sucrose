@@ -4,7 +4,6 @@
 * Copyright 2015 jQuery Foundation and other contributors; Licensed MIT */
 
 .ui-helper-hidden{display:none}.ui-helper-hidden-accessible{border:0;clip:rect(0 0 0 0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px}.ui-helper-reset{margin:0;padding:0;border:0;outline:0;line-height:1.3;text-decoration:none;font-size:100%;list-style:none}.ui-helper-clearfix:before,.ui-helper-clearfix:after{content:"";display:table;border-collapse:collapse}.ui-helper-clearfix:after{clear:both}.ui-helper-clearfix{min-height:0}.ui-helper-zfix{width:100%;height:100%;top:0;left:0;position:absolute;opacity:0;filter:Alpha(Opacity=0)}.ui-front{z-index:100}.ui-state-disabled{cursor:default!important}.ui-icon{display:block;text-indent:-99999px;overflow:hidden;background-repeat:no-repeat}.ui-widget-overlay{position:fixed;top:0;left:0;width:100%;height:100%}.ui-resizable{position:relative}.ui-resizable-handle{position:absolute;font-size:0.1px;display:block;-ms-touch-action:none;touch-action:none}.ui-resizable-disabled .ui-resizable-handle,.ui-resizable-autohide .ui-resizable-handle{display:none}.ui-resizable-n{cursor:n-resize;height:7px;width:100%;top:-5px;left:0}.ui-resizable-s{cursor:s-resize;height:7px;width:100%;bottom:-5px;left:0}.ui-resizable-e{cursor:e-resize;width:7px;right:-5px;top:0;height:100%}.ui-resizable-w{cursor:w-resize;width:7px;left:-5px;top:0;height:100%}.ui-resizable-se{cursor:se-resize;width:12px;height:12px;right:1px;bottom:1px}.ui-resizable-sw{cursor:sw-resize;width:9px;height:9px;left:-5px;bottom:-5px}.ui-resizable-nw{cursor:nw-resize;width:9px;height:9px;left:-5px;top:-5px}.ui-resizable-ne{cursor:ne-resize;width:9px;height:9px;right:-5px;top:-5px}
-.pln{color:#000}@media screen{.str{color:#080}.kwd{color:#008}.com{color:#800}.typ{color:#606}.lit{color:#066}.pun,.opn,.clo{color:#660}.tag{color:#008}.atn{color:#606}.atv{color:#080}.dec,.var{color:#606}.fun{color:red}}@media print,projection{.str{color:#060}.kwd{color:#006;font-weight:bold}.com{color:#600;font-style:italic}.typ{color:#404;font-weight:bold}.lit{color:#044}.pun,.opn,.clo{color:#440}.tag{color:#006;font-weight:bold}.atn{color:#404}.atv{color:#060}}pre.prettyprint{padding:2px;border:1px solid #888}ol.linenums{margin-top:0;margin-bottom:0}li.L0,li.L1,li.L2,li.L3,li.L5,li.L6,li.L7,li.L8{list-style-type:none}li.L1,li.L3,li.L5,li.L7,li.L9{background:#eee}
 /* BASICS */
 
 .CodeMirror {
@@ -705,7 +704,7 @@ nav ul a strong {
 
 menu {
   list-style: disc;
-  padding-left: 16px;
+  padding-left: 0;
 }
 menuitem {
   display: list-item;
@@ -737,7 +736,8 @@ footer {
 }
 footer p {
   margin: 0;
-  line-height: 14px;
+  line-height: 24px;
+  float: right;
 }
 
 .index {
@@ -1792,12 +1792,7 @@ input.mindmup {
 -------------------------------------------------- */
 .chart-selector {
   display: block;
-  position: relative;
-  max-height: 30px;
-  font-size: 0;
-  line-height: 0;
   z-index: 2;
-  overflow: hidden;
 }
 .chart-selector button {
   display: none;
@@ -1824,28 +1819,21 @@ input.mindmup {
   margin-right: -2px;
 }
 .chart-selector menuitem {
-  display: inline-block;
+  display: block;
 }
 .chart-selector a {
-  display: inline-block;
-  margin: 0 2px;
-  font-size: 0;
-  line-height: 0;
-  padding: 2px;
-  border: 1px solid transparent;
-  border-radius: 3px;
-}
-.chart-selector a:hover {
-  background-color: #fff;
-}
-.chart-selector a.active {
-  background-color: #fff;
+  line-height: 24px;
 }
 .chart-selector svg {
   text-decoration: none;
   display: inline-block;
+  vertical-align: middle;
   width: 20px;
   height: 20px;
+}
+.chart-selector span {
+  vertical-align: middle;
+  margin: 0 8px;
 }
 .rtl .chart-selector .wrapper {
   float: left;
@@ -1855,6 +1843,34 @@ input.mindmup {
 .rtl .chart-selector button {
   left: 0;
   right: auto;
+}
+nav .chart-selector {
+  position: relative;
+  max-height: 30px;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+}
+nav .chart-selector menuitem {
+  display: inline-block;
+}
+nav .chart-selector a {
+  display: inline-block;
+  margin: 0 2px;
+  font-size: 0;
+  line-height: 0;
+  padding: 2px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+nav .chart-selector a:hover {
+  background-color: #fff;
+}
+nav .chart-selector a.active {
+  background-color: #fff;
+}
+nav .chart-selector span {
+  margin: 0;
 }
 /* Popovers
 -------------------------------------------------- */
@@ -2063,14 +2079,9 @@ a.success:hover {
   .chart-selector.open .wrapper a {
     display: block;
   }
-  .chart-selector.open .wrapper svg {
-    vertical-align: middle;
-  }
   .chart-selector.open .wrapper span {
-    display: inline-block;
     font-size: 11px;
     line-height: 18px;
-    vertical-align: middle;
     margin: 0 8px;
   }
   .rtl .chart-selector.open .wrapper {

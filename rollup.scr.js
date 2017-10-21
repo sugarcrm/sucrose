@@ -25,7 +25,12 @@ export default {
         ENV_BUILD: 'scr',
       },
     }),
-    eslint(),
+    eslint({
+      throwOnError: true,
+      rules: {
+        'no-console': (process.env.DEV === 'false' ? 2 : 0)
+      }
+    }),
     resolve({
       jsnext: true,
       main: true,

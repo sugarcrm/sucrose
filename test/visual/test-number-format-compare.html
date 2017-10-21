@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <title>Chart Number Formatting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../examples/css/examples.css">
+  <link rel="stylesheet" href="visual-tests.css">
+  <script src="../../build/d3.min.js"></script>
+  <script src="../../build/sucrose.js"></script>
+</head>
+<body>
+  <div class="sc-demo sc-demo-locale">
+    <div class="page-header">
+      <h2>Compare Number Format Methods</h2>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>data</th>
+                <th>expected</th>
+                <th>new format</th>
+                <th>sucrose.numberFormatSI<br>multi format</th>
+                <th>d3.formatPrefix</th>
+            </tr>
+        </thead>
+        <tbody id="results"></tbody>
+    </table>
+  </div>
+
+<script type="text/javascript">
+//INSTALL: you will need to install two additional NPM packages from sucrose root to run this comparison test
+// npm i globalise twitter_cldr
+
+// y - yocto, 1e-24, 10⁻²⁴
+// z - zepto, 1e-21, 10⁻²¹
+// a - atto,  1e-18, 10⁻¹⁸
+// f - femto, 1e-15, 10⁻¹⁵
+// p - pico,  1e-12, 10⁻¹²
+// n - nano,  1e-9,  10⁻⁹
+// µ - micro, 1e-6,  10⁻⁶
+// m - milli, 1e-3,  10⁻³
+// ​- - norm,  1e-0,  10⁰
+// k - kilo,  1e+3,  10³
+// M - mega,  1e+6,  10⁶
+// G - giga,  1e+9,  10⁹
+// T - tera,  1e+12, 10¹²
+// P - peta,  1e+15, 10¹⁵
+// E - exa,   1e+18, 10¹⁸
+// Z - zetta, 1e+21, 10²¹
+// Y - yotta, 1e+24, 10²⁴
+
+var p0 = 2;
+
+var f1 = function(d, p) {
+        var si;
+        var num;
+        if (p === 0) {
+          return d;
+        }
+        if (d > -1000 && d < 1000) {
+            num = sucrose.utility.round(d, p);
+        } else {
+            var th = Math.floor(d / 1000);
+            // si = d3.format(',.' + p + 's');
+            si = d3.formatPrefix(',.' + p + 'f',  th * 1000);
+            num = si(d);
+            console.log('num: ', num);
+        }
+        return num;
+        // var si = d3.formatPrefix(',.' + p,  0.000001);
+        // return sucrose.utility.round(num, p)
+        // return d3.round(si.scale(d), p) + si.symbol;
+        // return d3.round(si(d), p);
+    };
+
+var t2 = [
+    [-1.234, '-1.23'],
+    [-0.439, '-0.44'],
+    [0.439, '0.44'],
+    [0.0432, '0.04'],
+    [0.432, '0.43'],
+    [0.43, '0.43'],
+    [0.4, '0.4'],
+    [0, '0'],
+    [1.2, '1.2'],
+    [1.23, '1.23'],
+    [1.234, '1.23'],
+    [1.239, '1.24'],
+    [12, '12'],
+    [12.3, '12.3'],
+    [12.34, '12.34'],
+    [12.345, '12.35'],
+    [123, '123'],
+    [123.45, '123.45'],
+    [123.456, '123.46'],
+    [1234, '1.23k'],
+    [1234.56, '1.23k'],
+    [12345, '12.35k'],
+    [123456, '123.46k'],
+    [1234567, '1.23M'],
+    [1234567.89, '1.23M']
+];
+
+function test(data, format, precision)
+{
+    var tbody = d3.select('#results').selectAll('tr').data(data);
+
+    tbody.enter().append('tr').html(function(d) {
+        var ft = format(d[0], precision);
+        var mf = sucrose.utility.numberFormatSI(d[0], precision, false);
+        var si = d3.formatPrefix(',.' + precision, 1000)(d[0]);
+
+        var clss = d[1] == ft ? 'pass' : 'fail';
+
+        return '<td>' +
+            d[0] + '</td><td>' +
+            d[1] + '</td><td class="' + clss + '">' +
+            ft + '</td><td>' +
+            mf + '</td><td>' +
+            si +
+        '</td>';
+    });
+}
+
+test(t2, f1, p0);
+</script>
+</body>
+</html>
+
+

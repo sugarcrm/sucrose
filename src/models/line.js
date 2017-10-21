@@ -84,6 +84,14 @@ export default function line() {
       // x0 = x.copy();
       // y0 = y.copy();
 
+      model.resetDimensions = function(w, h) {
+        width = w;
+        height = h;
+        availableWidth = w - margin.left - margin.right;
+        availableHeight = h - margin.top - margin.bottom;
+        points.resetDimensions(w, h);
+      };
+
       //------------------------------------------------------------
       // Setup containers and skeleton of model
 

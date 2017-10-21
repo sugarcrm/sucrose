@@ -3,6 +3,17 @@ import d3 from 'd3';
 /*-------------------
       UTILITIES
 -------------------*/
+
+// Method is assumed to be a standard D3 getter-setter:
+// If passed with no arguments, gets the value.
+// If passed with arguments, sets the value and returns the target.
+function d3_rebind(target, source, method) {
+  return function() {
+    var value = method.apply(source, arguments);
+    return value === source ? target : value;
+  };
+}
+
 var utility = {};
 
 utility.identity = function(d) {
@@ -15,6 +26,11 @@ utility.functor = function functor(v) {
   };
 };
 
+utility.isFunction = function(o) {
+ var ol = {};
+ return o && ol.toString.call(o) == '[object Function]';
+};
+
 // Copies a variable number of methods from source to target.
 utility.rebind = function(target, source) {
   var i = 1, n = arguments.length, method;
@@ -22,15 +38,6 @@ utility.rebind = function(target, source) {
   return target;
 };
 
-// Method is assumed to be a standard D3 getter-setter:
-// If passed with no arguments, gets the value.
-// If passed with arguments, sets the value and returns the target.
-function d3_rebind(target, source, method) {
-  return function() {
-    var value = method.apply(source, arguments);
-    return value === source ? target : value;
-  };
-}
 /*
 Snippet of code you can insert into each utility.models.* to give you the ability to
 do things like:
@@ -42,56 +49,65 @@ To enable in the chart:
 chart.options = utility.optionsFunc.bind(chart);
 */
 utility.optionsFunc = function(args) {
-  if (args) {
-    d3.map(args).each((function(value, key) {
-      if (typeof this[key] === 'function') {
-        this[key](value);
-      }
-    }).bind(this));
+  if (!args) {
+    return this;
   }
+  d3.map(args).each((function(value, key) {
+    var m = this[key];
+    var v = utility.toNative(value);
+    if (!utility.isFunction(m)) {
+      return;
+    }
+    if (Array.isArray(v)) {
+      m.apply(v);
+    } else {
+      m(v);
+    }
+  }).bind(this));
   return this;
 };
 
 // Window functions
-utility.windowSize = function () {
+utility.windowSize = function() {
   // Sane defaults
   var size = {width: 640, height: 480};
 
   // Earlier IE uses Doc.body
   if (document.body && document.body.offsetWidth) {
-      size.width = document.body.offsetWidth;
-      size.height = document.body.offsetHeight;
+    size.width = document.body.offsetWidth;
+    size.height = document.body.offsetHeight;
   }
 
   // IE can use depending on mode it is in
   if (document.compatMode === 'CSS1Compat' &&
-      document.documentElement &&
-      document.documentElement.offsetWidth ) {
-      size.width = document.documentElement.offsetWidth;
-      size.height = document.documentElement.offsetHeight;
+    document.documentElement &&
+    document.documentElement.offsetWidth ) {
+    size.width = document.documentElement.offsetWidth;
+    size.height = document.documentElement.offsetHeight;
   }
 
   // Most recent browsers use
   if (window.innerWidth && window.innerHeight) {
-      size.width = window.innerWidth;
-      size.height = window.innerHeight;
+    size.width = window.innerWidth;
+    size.height = window.innerHeight;
   }
+
   return (size);
 };
 
 // Easy way to bind multiple functions to window.onresize
   // TODO: give a way to remove a function after its bound, other than removing alkl of them
-  // utility.windowResize = function (fun)
+  // utility.windowResize = function(fun)
   // {
   //   var oldresize = window.onresize;
 
-  //   window.onresize = function (e) {
+  //   window.onresize = function(e) {
   //     if (typeof oldresize == 'function') oldresize(e);
   //     fun(e);
   //   }
 // }
 
-utility.windowResize = function (fun) {
+utility.windowResize = function(fun) {
   if (window.attachEvent) {
       window.attachEvent('onresize', fun);
   }
@@ -103,26 +119,26 @@ utility.windowResize = function (fun) {
   }
 };
 
-utility.windowUnResize = function (fun) {
+utility.windowUnResize = function(fun) {
   if (window.detachEvent) {
-      window.detachEvent('onresize', fun);
+    window.detachEvent('onresize', fun);
   }
   else if (window.removeEventListener) {
-      window.removeEventListener('resize', fun, true);
+    window.removeEventListener('resize', fun, true);
   }
   else {
-      //The browser does not support Javascript event binding
+    //The browser does not support Javascript event binding
   }
 };
 
-utility.resizeOnPrint = function (fn) {
+utility.resizeOnPrint = function(fn) {
   if (window.matchMedia) {
-      var mediaQueryList = window.matchMedia('print');
-      mediaQueryList.addListener(function (mql) {
-          if (mql.matches) {
-              fn();
-          }
-      });
+    var mediaQueryList = window.matchMedia('print');
+    mediaQueryList.addListener(function(mql) {
+        if (mql.matches) {
+            fn();
+        }
+    });
   } else if (window.attachEvent) {
     window.attachEvent('onbeforeprint', fn);
   } else {
@@ -132,14 +148,14 @@ utility.resizeOnPrint = function (fn) {
   //window.attachEvent('onafterprint', fn);
 };
 
-utility.unResizeOnPrint = function (fn) {
+utility.unResizeOnPrint = function(fn) {
   if (window.matchMedia) {
-      var mediaQueryList = window.matchMedia('print');
-      mediaQueryList.removeListener(function (mql) {
-          if (mql.matches) {
-              fn();
-          }
-      });
+    var mediaQueryList = window.matchMedia('print');
+    mediaQueryList.removeListener(function(mql) {
+        if (mql.matches) {
+            fn();
+        }
+    });
   } else if (window.detachEvent) {
     window.detachEvent('onbeforeprint', fn);
   } else {
@@ -152,14 +168,13 @@ utility.unResizeOnPrint = function (fn) {
 // Backwards compatible way to implement more d3-like coloring of graphs.
 // If passed an array, wrap it in a function which implements the old default
 // behavior
-utility.getColor = function (color) {
+utility.getColor = function(color) {
   if (!arguments.length) {
     //if you pass in nothing, get default colors back
     return utility.defaultColor();
   }
-
   if (Array.isArray(color)) {
-    return function (d, i) {
+    return function(d, i) {
       return d.color || color[i % color.length];
     };
   } else if (Object.prototype.toString.call(color) === '[object String]') {
@@ -168,15 +183,15 @@ utility.getColor = function (color) {
     };
   } else {
     return color;
-      // can't really help it if someone passes rubbish as color
-      // or color is already a function
+    // can't really help it if someone passes rubbish as color
+    // or color is already a function
   }
 };
 
 // Default color chooser uses the index of an object as before.
-utility.defaultColor = function () {
+utility.defaultColor = function() {
   var colors = d3.scaleOrdinal(d3.schemeCategory20).range();
-  return function (d, i) {
+  return function(d, i) {
     return d.color || colors[i % colors.length];
   };
 };
@@ -198,17 +213,17 @@ utility.getTextContrast = function(c, i, callback) {
 
 // Returns a color function that takes the result of 'getKey' for each series and
 // looks for a corresponding color from the dictionary,
-utility.customTheme = function (dictionary, getKey, defaultColors) {
-  getKey = getKey || function (series) { return series.key; }; // use default series.key if getKey is undefined
+utility.customTheme = function(dictionary, getKey, defaultColors) {
+  var defIndex;
+  getKey = getKey || function(series) { return series.key; }; // use default series.key if getKey is undefined
   defaultColors = defaultColors || d3.scaleOrdinal(d3.schemeCategory20).range(); //default color function
-
-  var defIndex = defaultColors.length; //current default color (going in reverse)
-
-  return function (series, index) {
+  defIndex = defaultColors.length; //current default color (going in reverse)
+  return function(series, index) {
     var key = getKey(series);
 
-    if (!defIndex) defIndex = defaultColors.length; //used all the default colors, start over
-
+    if (!defIndex) {
+      defIndex = defaultColors.length; //used all the default colors, start over
+    }
     if (typeof dictionary[key] !== 'undefined') {
       return (typeof dictionary[key] === 'function') ? dictionary[key]() : dictionary[key];
     } else {
@@ -219,24 +234,20 @@ utility.customTheme = function (dictionary, getKey, defaultColors) {
 
 // Gradient functions
 
-utility.colorLinearGradient = function (d, i, p, c, defs) {
+utility.colorLinearGradient = function(d, i, p, c, defs) {
   var id = 'lg_gradient_' + i;
   var grad = defs.select('#' + id);
-  if ( grad.empty() )
-  {
-    if (p.position === 'middle')
-    {
-      utility.createLinearGradient( id, p, defs, [
+  if (grad.empty()) {
+    if (p.position === 'middle') {
+      utility.createLinearGradient(id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '20%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
         { 'offset': '80%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 }
       ]);
-    }
-    else
-    {
-      utility.createLinearGradient( id, p, defs, [
+    } else {
+      utility.createLinearGradient(id, p, defs, [
         { 'offset': '0%',  'stop-color': d3.rgb(c).darker().toString(),  'stop-opacity': 1 },
         { 'offset': '50%', 'stop-color': d3.rgb(c).toString(), 'stop-opacity': 1 },
         { 'offset': '100%','stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 }
@@ -250,19 +261,20 @@ utility.colorLinearGradient = function (d, i, p, c, defs) {
 // id:dynamic id for arc
 // radius:outer edge of gradient
 // stops: an array of attribute objects
-utility.createLinearGradient = function (id, params, defs, stops) {
+utility.createLinearGradient = function(id, params, defs, stops) {
   var x2 = params.orientation === 'horizontal' ? '0%' : '100%';
   var y2 = params.orientation === 'horizontal' ? '100%' : '0%';
   var attrs, stop;
-  var grad = defs.append('linearGradient')
-        .attr('id', id)
-        .attr('x1', '0%')
-        .attr('y1', '0%')
-        .attr('x2', x2 )
-        .attr('y2', y2 )
-        //.attr('gradientUnits', 'userSpaceOnUse')objectBoundingBox
-        .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1) {
+  var grad = defs.append('linearGradient');
+  grad
+    .attr('id', id)
+    .attr('x1', '0%')
+    .attr('y1', '0%')
+    .attr('x2', x2 )
+    .attr('y2', y2 )
+    //.attr('gradientUnits', 'userSpaceOnUse')objectBoundingBox
+    .attr('spreadMethod', 'pad');
+  for (var i = 0; i < stops.length; i += 1) {
     attrs = stops[i];
     stop = grad.append('stop');
     for (var a in attrs) {
@@ -273,32 +285,32 @@ utility.createLinearGradient = function (id, params, defs, stops) {
   }
 };
 
-utility.colorRadialGradient = function (d, i, p, c, defs) {
+utility.colorRadialGradient = function(d, i, p, c, defs) {
   var id = 'rg_gradient_' + i;
   var grad = defs.select('#' + id);
-  if ( grad.empty() ) {
-    utility.createRadialGradient( id, p, defs, [
-      { 'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1 },
-      { 'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1 }
+  if (grad.empty()) {
+    utility.createRadialGradient(id, p, defs, [
+      {'offset': p.s, 'stop-color': d3.rgb(c).brighter().toString(), 'stop-opacity': 1},
+      {'offset': '100%','stop-color': d3.rgb(c).darker().toString(), 'stop-opacity': 1}
     ]);
   }
   return 'url(#' + id + ')';
 };
 
-utility.createRadialGradient = function (id, params, defs, stops) {
-  var attrs, stop;
-  var grad = defs.append('radialGradient')
-        .attr('id', id)
-        .attr('r', params.r)
-        .attr('cx', params.x)
-        .attr('cy', params.y)
-        .attr('gradientUnits', params.u)
-        .attr('spreadMethod', 'pad');
-  for (var i=0; i<stops.length; i+=1) {
+utility.createRadialGradient = function(id, params, defs, stops) {
+  var attrs, stop, grad;
+  grad = defs.append('radialGradient')
+    .attr('id', id)
+    .attr('r', params.r)
+    .attr('cx', params.x)
+    .attr('cy', params.y)
+    .attr('gradientUnits', params.u)
+    .attr('spreadMethod', 'pad');
+  for (var i = 0; i < stops.length; i += 1) {
     attrs = stops[i];
     stop = grad.append('stop');
     for (var a in attrs) {
-      if ( attrs.hasOwnProperty(a) ) {
+      if (attrs.hasOwnProperty(a)) {
         stop.attr(a, attrs[a]);
       }
     }
@@ -306,27 +318,28 @@ utility.createRadialGradient = function (id, params, defs, stops) {
 };
 
 // Creates a rectangle with rounded corners
-utility.roundedRectangle = function (x, y, width, height, radius) {
-  return 'M' + x + ',' + y +
-       'h' + (width - radius * 2) +
-       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + radius +
-       'v' + (height - 2 - radius * 2) +
-       'a' + radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + radius +
-       'h' + (radius * 2 - width) +
-       'a' + -radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + -radius +
-       'v' + ( -height + radius * 2 + 2 ) +
-       'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + -radius +
-       'z';
+utility.roundedRectangle = function(x, y, width, height, radius) {
+  var s =
+    'M' + x + ',' + y +
+    'h' + (width - radius * 2) +
+    'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + radius +
+    'v' + (height - 2 - radius * 2) +
+    'a' + radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + radius +
+    'h' + (radius * 2 - width) +
+    'a' + -radius + ',' + radius + ' 0 0 1 ' + -radius + ',' + -radius +
+    'v' + ( -height + radius * 2 + 2 ) +
+    'a' + radius + ',' + radius + ' 0 0 1 ' + radius + ',' + -radius +
+    'z';
+  return s;
 };
 
-utility.dropShadow = function (id, defs, options) {
+utility.dropShadow = function(id, defs, options) {
   var opt = options || {};
   var h = opt.height || '130%';
   var o = opt.offset || 2;
   var b = opt.blur || 1;
   var filter;
   var merge;
-
   if (defs.select('#' + id).empty()) {
     filter = defs.append('filter')
       .attr('id', id)
@@ -345,13 +358,11 @@ utility.dropShadow = function (id, defs, options) {
       .attr('in', 'matrixOut')
       .attr('result', 'blurOut')
       .attr('stdDeviation', b); //stdDeviation is how much to blur
-
     merge = filter.append('feMerge');
     merge.append('feMergeNode'); //this contains the offset blurred image
     merge.append('feMergeNode')
       .attr('in', 'SourceGraphic'); //this contains the element that the filter is applied to
   }
-
   return 'url(#' + id + ')';
 };
 // <svg xmlns="http://www.w3.org/2000/svg" version="1.1">
@@ -368,9 +379,8 @@ utility.dropShadow = function (id, defs, options) {
 // </svg>
 
 utility.createTexture = function(defs, id, x, y) {
-  var texture = '#sc-diagonalHatch-' + id,
-      mask = '#sc-textureMask-' + id;
-
+  var texture = '#sc-diagonalHatch-' + id;
+  var mask = '#sc-textureMask-' + id;
   defs
     .append('pattern')
       .attr('id', 'sc-diagonalHatch-' + id)
@@ -384,7 +394,6 @@ utility.createTexture = function(defs, id, x, y) {
         // .attr('stroke', fill)
         .attr('stroke', '#fff')
         .attr('stroke-linecap', 'square');
-
   defs
     .append('mask')
       .attr('id', 'sc-textureMask-' + id)
@@ -405,8 +414,8 @@ utility.createTexture = function(defs, id, x, y) {
 // String functions
 
 utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
-  var lengths = [],
-      txt = _container.select('.tmp-text-strings').select('text');
+  var lengths = [];
+  var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
     txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
   }
@@ -421,8 +430,8 @@ utility.stringSetLengths = function(_data, _container, _format, classes, styles)
 };
 
 utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
-  var thicknesses = [],
-      txt = _container.select('.tmp-text-strings').select('text');
+  var thicknesses = [];
+  var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
     txt = _container.append('g').attr('class', 'tmp-text-strings').append('text');
   }
@@ -466,8 +475,8 @@ utility.stringEllipsify = function(_string, _container, _length) {
 };
 
 utility.getTextBBox = function(text, floats) {
-  var bbox = text.node().getBoundingClientRect(),
-      size = {
+  var bbox = text.node().getBoundingClientRect();
+  var size = {
         width: floats ? bbox.width : parseInt(bbox.width, 10),
         height: floats ? bbox.height : parseInt(bbox.height, 10),
         top: floats ? bbox.top : parseInt(bbox.top, 10),
@@ -481,8 +490,8 @@ utility.strip = function(s) {
 };
 
 utility.isRTLChar = function(c) {
-  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC',
-      rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
+  var rtlChars_ = '\u0591-\u07FF\uFB1D-\uFDFF\uFE70-\uFEFC';
+  var rtlCharReg_ = new RegExp('[' + rtlChars_ + ']');
   return rtlCharReg_.test(c);
 };
 
@@ -490,12 +499,7 @@ utility.isRTLChar = function(c) {
 
 // Numbers that are undefined, null or NaN, convert them to zeros.
 utility.NaNtoZero = function(n) {
-  if (typeof n !== 'number'
-      || isNaN(n)
-      || n === null
-      || n === Infinity) return 0;
-
-  return n;
+  return utility.isNumeric(n) ? n : 0;
 };
 
 utility.polarToCartesian = function(centerX, centerY, radius, angleInDegrees) {
@@ -513,59 +517,44 @@ utility.angleToDegrees = function(angleInRadians) {
   return angleInRadians * 180.0 / Math.PI;
 };
 
-utility.getAbsoluteXY = function (element) {
+utility.getAbsoluteXY = function(element) {
   var viewportElement = document.documentElement;
   var box = element.getBoundingClientRect();
   var scrollLeft = viewportElement.scrollLeft + document.body.scrollLeft;
   var scrollTop = viewportElement.scrollTop + document.body.scrollTop;
   var x = box.left + scrollLeft;
   var y = box.top + scrollTop;
-
   return {'left': x, 'top': y};
 };
+
 utility.translation = function(x, y) {
   return 'translate(' + x + ',' + y + ')';
 };
-// utility.numberFormatSI = function(d, p, c, l) {
-  //     var fmtr, spec, si;
-  //     if (isNaN(d)) {
-  //         return d;
-  //     }
-  //     p = typeof p === 'undefined' ? 2 : p;
-  //     c = typeof c === 'undefined' ? false : !!c;
-  //     fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  //     d = Math.round(d * 10 * p) / 10 * p;
-  //     spec = c ? '$,' : ',';
-  //     if (c && d < 1000 && d !== parseInt(d, 10)) {
-  //         spec += '.2f';
-  //     }
-  //     if (d < 1 && d > -1) {
-  //         spec += '.2s';
-  //     }
-  //     return fmtr(spec)(d);
-// };
 
-utility.numberFormatSI = function(d, p, c, l) {
-  var fmtr, spec;
-  if (isNaN(d) || d === 0) {
-      return d;
-  }
-  p = typeof p === 'undefined' ? 2 : p;
-  c = typeof c === 'undefined' ? false : !!c;
-  fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  spec = c ? '$,' : ',';
-  // spec += '.' + 2 + 'r';
-  if (c && d < 1000 && d !== parseInt(d, 10)) {
-    spec += '.2f';
-  } else if (Math.abs(d) > 1 && Math.abs(d) <= 1000) {
-    d = p === 0 ? Math.round(d) : Math.round(d * 10 * p) / (10 * p);
-  } else {
-    spec += '.' + p + 's';
-  }
-  if (d > -1 && d < 1) {
-    return fmtr(spec)(d);
-  }
-  return fmtr(spec)(d);
+utility.isNumeric = function(value) {
+  return !isNaN(value) && Number.isFinite(value);
+};
+
+utility.toNative = function(value) {
+  var v = utility.isNumeric(parseFloat(value)) ?
+    parseFloat(value) :
+    value === 'true' ?
+      true :
+      value === 'false' ?
+        false :
+        value;
+  return v;
+};
+
+utility.toBoolean = function(value) {
+  var v = utility.isNumeric(parseFloat(value)) ?
+    !!parseFloat(value) :
+    value === 'true' ?
+      true :
+      value === 'false' ?
+        false :
+        value;
+  return v;
 };
 
 utility.round = function(x, n) {
@@ -574,16 +563,156 @@ utility.round = function(x, n) {
   return Math.round(x * ten_n) / ten_n;
 };
 
-utility.numberFormatRound = function(d, p, c, l) {
-  var fmtr, spec;
-  if (isNaN(d)) {
+utility.countSigFigsAfter = function(value) {
+  // consider: d3.precisionFixed(value);
+  // if value has decimals
+  return (Math.floor(value) !== parseFloat(value) ) ?
+    parseFloat(value).toString().split('.').pop().length || 0 :
+    0;
+};
+
+utility.countSigFigsBefore = function(value) {
+  return Math.floor(value).toString().replace(/0+$/g, '').length;
+};
+
+utility.siDecimal = function(n) {
+  return Math.pow(10, Math.floor(Math.log10(n)));
+  // return Math.pow(1000, Math.floor((Math.round(parseFloat(n)).toString().length - 1) / 3));
+};
+
+utility.siValue = function(si) {
+  if (utility.isNumeric(si)) {
+    return utility.siDecimal(si);
+  }
+  var units = {
+    y: 1e-24,
+    yocto: 1e-24,
+    z: 1e-21,
+    zepto: 1e-21,
+    a: 1e-18,
+    atto: 1e-18,
+    f: 1e-15,
+    femto: 1e-15,
+    p: 1e-12,
+    pico: 1e-12,
+    n: 1e-9,
+    nano: 1e-9,
+    µ: 1e-6,
+    micro: 1e-6,
+    m: 1e-3,
+    milli: 1e-3,
+    k: 1e3,
+    kilo: 1e3,
+    M: 1e6,
+    mega: 1e6,
+    G: 1e9,
+    giga: 1e9,
+    T: 1e12,
+    tera: 1e12,
+    P: 1e15,
+    peta: 1e15,
+    E: 1e18,
+    exa: 1e18,
+    Z: 1e21,
+    zetta: 1e21,
+    Y: 1e24,
+    yotta: 1e24
+  };
+  return units[si] || 0;
+};
+
+utility.numberFormat = function(d, p, c, l) {
+  var f, s, m;
+  c = typeof c === 'boolean' ? c : false;
+  if (!utility.isNumeric(d) || (d === 0 && !c)) {
+    return d.toString();
+  }
+  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  m = utility.countSigFigsAfter(d);
+  p = m && c ? p : Math.min(p, m);
+  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  s = c ? '$,' : ',';
+  s += m ? ('.' + p + 'f') : '';
+  return f(s)(d);
+};
+
+utility.numberFormatFixed = function(d, p, c, l) {
+  var f, s;
+  if (!utility.isNumeric(d)) {
+    return d.toString();
+  }
+  c = typeof c === 'boolean' ? c : false;
+  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  s = c ? '$,' : ',';
+  s += '.' + p + 'f';
+  return f(s)(d);
+};
+
+utility.numberFormatSI = function(d, p, c, l) {
+  var f, s, m;
+  if (!utility.isNumeric(d)) {
     return d;
   }
   c = typeof c === 'boolean' ? c : false;
-  p = Number.isFinite(p) ? p : c ? 2 : 0;
-  fmtr = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
-  spec = (c ? '$' : '') + ',.' + p + 'f';
-  return fmtr(spec)(d);
+  p = Number.isFinite(p) ? p : 0;
+  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  m = utility.countSigFigsAfter(d);
+  s = c ? '$,' : ',';
+  // if currency less than 1k with decimal places
+  if (c && m && d < 1000) {
+    d = utility.round(d, p);
+    m = utility.countSigFigsAfter(d);
+    p = Math.min(m, p);
+    if (p === 1) {
+      p = 2;
+    }
+    // try using: d = parseFloat(d.toFixed(p)).toString();
+    // use fixed formatting with rounding
+    s += '.' + p + 'f';
+  }
+  // if absolute value less than 1
+  else if (Math.abs(d) < 1) {
+    s += (
+      // if rounding to precision results in 0
+      +d.toFixed(p) === 0 ?
+        // use next si unit
+        '.1s' :
+        // round to a single significant figure
+        '.' + Math.min(p, m) + 'f'
+    );
+  }
+  // if absolute value less than 1k
+  else if (Math.abs(d) < 1000) {
+    d = utility.round(d, p);
+  }
+  else {
+    f = typeof l === 'undefined' ? d3.formatPrefix : d3.formatLocale(l).formatPrefix;
+    if (p !== 0) {
+      var d1 = f('.' + p + 's', d)(d);
+      var d2 = d1.split('.').pop().replace(/[^\d]+$/, '').match(/0+$/g);
+      if (Array.isArray(d2)) {
+        p -= d2.pop().length;
+      }
+    }
+    s += '.' + p + 's';
+    return f(s, d)(d);
+  }
+  return f(s)(d);
+};
+
+utility.numberFormatSIFixed = function(d, p, c, l, si) {
+  var f, s;
+  if (!utility.isNumeric(d)) {
+    return d.toString();
+  }
+  c = typeof c === 'boolean' ? c : false;
+  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  f = typeof l === 'undefined' ? d3.formatPrefix : d3.formatLocale(l).formatPrefix;
+  si = utility.siValue(si);
+  s = c ? '$,' : ',';
+  s += '.' + p + 's';
+  return f(s, si)(d);
 };
 
 // Date functions
@@ -592,53 +721,115 @@ utility.daysInMonth = function(month, year) {
 };
 
 utility.isValidDate = function(d) {
-  var testDate;
   if (!d) {
     return false;
   }
-  testDate = new Date(d);
-  return testDate instanceof Date && !isNaN(testDate.valueOf());
+  return d instanceof Date && !isNaN(d.valueOf());
 };
 
-utility.getDateFormat = function(values) {
-  var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
-  var formatIndex = 0;
+// accepts (ISO, W3C, RFC 822):
+// 2012,
+// '2012',
+// 1330837567000,
+// '1330837567000',
+// '2012-03-04T05:06:07.000Z',
+// '2012-03-04T00:06:07.000-05:00',
+// '2012-03-04T05:06:07.000Z',
+// 'March 4, 2012, 0:06:07 AM',
+// 'March 4, 2012, 5:06:07 AM GMT',
+// 'Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)',
+// 'Sun Mar 04 2012 00:06:07 GMT-0500 (EST)'
+utility.parseDatetime = function(d) {
+  var date, m;
+  // only for 1991 or '1991'
+  if (utility.isNumeric(Math.floor(d)) && d.toString().length === 4) {
+    // date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
+    // append day and month parts and GMT to get correct UTC offset
+    date = new Date(Math.floor(d) + '-1-1 GMT');
+  }
+  // only for '1330837567000' or 1330837567000
+  //   it will not fire for a Date object
+  //   if you use Math.floor, Date object would convert to number
+  else if (parseInt(d, 10).toString() === d || parseInt(d, 10) === d) {
+    date = new Date(parseInt(d, 10));
+  }
+  // only for Date object or Date string
+  else {
+    // convert a numeric timestamp: 1330837567000
+    // or convert a date string: 'Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)'
+    date = new Date(d);
+    //Q: what should we do about dt strings w/o timezone?
+    //'March 4, 2012, 0:06:07 AM'
+    if (
+      d.toString().substr(-1) !== 'Z' &&
+      d.toString().indexOf('GMT') === -1 &&
+      !d.toString().match(/\d\d\d\d-\d\d-\d\dT/)
+    ) {
+      // force to UTC
+      date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
+    }
+  }
+  if (!utility.isValidDate(date)) {
+    date = d;
+  }
+  return date;
+};
 
-  formatIndex = values.length ? d3.min(values, function(date) {
+// expects an array of dates constructed from local datetime strings without GTM
+// for instance: "2/3/1991, 4:05:06 AM" or "1991-2-3" which evaluates as
+// Sun Feb 03 1991 04:05:06 GMT-0500 (EST). The GMT offset is ignored.
+utility.getDateFormat = function(values, utc) {
+  //TODO: use locality format strings mmmmY, etc.
+  var dateFormats = [
+    'multi',
+    '%x, %I:%M:%S.%L %p',
+    '%x, %I:%M:%S %p',
+    '%x, %I:%M %p',
+    '%x, %I %p',
+    '%x',
+    '%b %d',
+    '%B %Y',
+    '%Y'
+  ];
+
+  var formatIndex = values.length ? d3.min(values, function(date) {
+    if (utc === true) {
+      date.setUTCMilliseconds(date.getUTCMilliseconds() + date.getTimezoneOffset() * 60000);
+    }
+    var d = new Date(date);
     var format;
-
     // if round to second is less than date
-    if (d3.timeSecond(date) < date) {
+    if (+d3.timeSecond(date) < +d) {
       // use millisecond format - .%L
       format = 1;
     }
     else
     // if round to minute is less than date
-    if (d3.timeMinute(date) < date) {
+    if (+d3.timeMinute(date) < +d) {
       // use second format - :%S
       format = 2;
     }
     else
     // if round to hour is less than date
-    if (d3.timeHour(date) < date) {
+    if (+d3.timeHour(date) < +d) {
       // use minute format - %I:%M
       format = 3;
     }
     else
     // if round to day is less than date
-    if (d3.timeDay(date) < date) {
+    if (+d3.timeDay(date) < +d) {
       // use hour format - %I %p
       format = 4;
     }
     else
     // if round to month is less than date
-    if (d3.timeMonth(date) < date) {
+    if (+d3.timeMonth(date) < +d) {
       // use day format - %x
       format = 5; // format = (d3.timeWeek(date) < date ? 4 : 5);
     }
     else
     // if round to year is less than date
-    if (d3.timeYear(date) < date) {
+    if (+d3.timeYear(date) < +d) {
       // use month format - %B
       format = 7;
     }
@@ -649,51 +840,63 @@ utility.getDateFormat = function(values) {
       format = 8;
     }
     return format;
-  }) : 0;
+  }) : 8;
 
   return dateFormats[formatIndex];
 };
 
-utility.getUTCDateFormat = function(values) {
-  var dateFormats = ['multi', '.%L', ':%S', '%I:%M', '%I %p', '%x', '%b %d', '%B', '%Y']; //TODO: use locality format strings mmmmY, etc.
-  var formatIndex = 0;
+// expects an array of date objects adjusted to GMT
+// for instance: "Sun Feb 03 1991 04:05:06 GMT" which evaluates as
+// Sun Feb 03 1991 04:05:06 GMT
+utility.getDateFormatUTC = function(values) {
+  //TODO: use locality format strings mmmmY, etc.
+  var dateFormats = [
+    'multi',
+    '%x, %I:%M:%S.%L %p',
+    '%x, %I:%M:%S %p',
+    '%x, %I:%M %p',
+    '%x, %I %p',
+    '%x',
+    '%b %d',
+    '%B %Y',
+    '%Y'
+  ];
 
-  formatIndex = values.length ? d3.min(values, function(date) {
+  var formatIndex = values.length ? d3.min(values, function(date) {
+    var d = new Date(date);
     var format;
-    date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
-
     // if round to second is less than date
-    if (d3.utcSecond(date) < date) {
+    if (+d3.utcSecond(date) < +d) {
       // use millisecond format - .%L
       format = 1;
     }
     else
     // if round to minute is less than date
-    if (d3.utcMinute(date) < date) {
+    if (+d3.utcMinute(date) < +d) {
       // use second format - :%S
       format = 2;
     }
     else
     // if round to hour is less than date
-    if (d3.utcHour(date) < date) {
+    if (+d3.utcHour(date) < +d) {
       // use minute format - %I:%M
       format = 3;
     }
     else
     // if round to day is less than date
-    if (d3.utcDay(date) < date) {
+    if (+d3.utcDay(date) < +d) {
       // use hour format - %I %p
       format = 4;
     }
     else
     // if round to month is less than date
-    if (d3.utcMonth(date) < date) {
+    if (+d3.utcMonth(date) < +d) {
       // use day format - %x
       format = 5; // format = (d3.utcWeek(date) < date ? 4 : 5);
     }
     else
     // if round to year is less than date
-    if (d3.utcYear(date) < date) {
+    if (+d3.utcYear(date) < +d) {
       // use month format - %B
       format = 7;
     }
@@ -704,63 +907,39 @@ utility.getUTCDateFormat = function(values) {
       format = 8;
     }
     return format;
-  }) : 0;
-
+  }) : 8;
   return dateFormats[formatIndex];
 };
 
-utility.multiFormat = function(d) {
-  var date = new Date(d.valueOf() + d.getTimezoneOffset() * 60000);
-  var format;
-  if (d3.timeSecond(date) < d) {
-    format = '.%L'; //millisecond
-  } else if (d3.timeMinute(date) < d) {
-    format = ':%S'; //second
-  } else if (d3.timeHour(date) < d) {
-    format = '%I:%M'; //minute
-  } else if (d3.timeDay(date) < d) {
-    format = '%I %p'; //hour
-  } else if (d3.timeMonth(date) < d) {
-    format = '%x'; //day
-    // format = (d3.timeWeek(date) < date ? formatDay : formatWeek);
-  } else if (d3.timeYear(date) < d) {
-    format = '%B'; //month
-  } else {
-    format = '%Y'; //year
-  }
-  return format;
+utility.multiFormat = function(date, utc) {
+  return utc === false ?
+    utility.getDateFormat([date]) :
+    utility.getDateFormatUTC([date]);
 };
 
+// expects string or date object
 utility.dateFormat = function(d, p, l) {
-  var dateString, date, locale, spec, fmtr;
+  var locale, fmtr, spec;
+  var dateString = d.toString();
 
-  // if the date value provided is a year
-  dateString = d.toString();
-  if (!isNaN(parseInt(dateString, 10)) && dateString.length === 4) {
-    // append day and month parts to get correct UTC offset
-    date = new Date(dateString + '-1-1'); // '1/1/' + dateString;
-  } else {
-    date = new Date(d);
-  }
-  date.setMilliseconds(date.getMilliseconds() - date.getTimezoneOffset() * 60000);
+  var date = utility.parseDatetime(d);
 
-  if (!(date instanceof Date) || isNaN(date.valueOf())) {
+  if (!utility.isValidDate(date)) {
     return d;
   }
 
   if (l && l.hasOwnProperty('utcFormat')) {
     // Use rebuilt locale formatter
     fmtr = l.utcFormat;
-    spec = p && p.indexOf('%') !== -1 ? p : utility.multiFormat(date);
+    spec = p ? p.indexOf('%') !== -1 ? p : utility.multiFormat(date) : '%Y';
   } else {
     // Ensure locality object has all needed properties
     // TODO: this is expensive so consider removing
     locale = utility.buildLocality(l);
-    fmtr = d3.timeFormatDefaultLocale(locale).utcFormat;
-    spec = p && p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date);
+    fmtr = d3.timeFormatLocale(locale).utcFormat;
+    spec = p ? p.indexOf('%') !== -1 ? p : locale[p] || utility.multiFormat(date) : '%Y';
     // TODO: if not explicit pattern provided, we should use .multi()
   }
-
   return fmtr(spec)(date);
 };
 
@@ -803,18 +982,16 @@ utility.buildLocality = function(l, d) {
         'y': '%Y'
       };
   var def;
-
   for (var key in locale) {
     if (l.hasOwnProperty(key)) {
       def = locale[key];
       definition[key] = !deep || !Array.isArray(def) ? def : unfer(def);
     }
   }
-
   return definition;
 };
 
-utility.displayNoData = function (hasData, container, label, x, y) {
+utility.displayNoData = function(hasData, container, label, x, y) {
   var data = hasData ? [] : [label];
   var noData_bind = container.selectAll('.sc-no-data').data(data);
   var noData_entr = noData_bind.enter().append('text')
@@ -834,6 +1011,5 @@ utility.displayNoData = function (hasData, container, label, x, y) {
     return false;
   }
 };
-
 
 export default utility;

@@ -314,6 +314,15 @@ tests("UNIT: multibarChart -", function(t) {
         assert.equal(_chart.yDomain(), val, "returns set value");
         t.register(assert, type);
     });
+    t.test("forceX: ", function(assert) {
+        assert.plan(2);
+        let def = [];
+        assert.deepEqual(_chart.forceX(), def, "returns a numeric array by default");
+        let val = [50];
+        _chart.forceX(val);
+        assert.equal(_chart.forceX(), val, "returns set value");
+        t.register(assert, type);
+    });
     t.test("forceY: ", function(assert) {
         assert.plan(2);
         let def = [0];
@@ -401,6 +410,24 @@ tests("UNIT: multibarChart -", function(t) {
         let val = true;
         _chart.reduceXTicks(val);
         assert.equal(_chart.reduceXTicks(), val, "returns set value");
+        t.register(assert, type);
+    });
+    t.test("xAxisLabel: ", function(assert) {
+        let def = null;
+        assert.equal(_chart.xAxisLabel(), def, "returns null as default value");
+        let val = "asdf";
+        _chart.xAxisLabel(val);
+        assert.equal(_chart.xAxisLabel(), val, "returns set value");
+        assert.end();
+        t.register(assert, type);
+    });
+    t.test("yAxisLabel: ", function(assert) {
+        let def = null;
+        assert.equal(_chart.yAxisLabel(), def, "returns null as default value");
+        let val = "asdf";
+        _chart.yAxisLabel(val);
+        assert.equal(_chart.yAxisLabel(), val, "returns set value");
+        assert.end();
         t.register(assert, type);
     });
 
@@ -500,7 +527,8 @@ tests("UNIT: multibarChart -", function(t) {
     t.test("gradient: ", function(assert) {
         assert.plan(2);
         let def = _chart.gradient();
-        assert.equal(def, null, "returns null by default");
+        let clg = sucrose.utility.colorLinearGradient;
+        assert.equal(def, clg, "returns colorLinearGradient by default");
         let val = function(){return 1;};
         _chart.gradient(val);
         assert.equal(_chart.gradient(), val, "returns set function");

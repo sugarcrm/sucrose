@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <title>Chart Time Compare Localization Libraries</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../../examples/css/examples.css">
+  <link rel="stylesheet" href="visual-tests.css">
+
+  <script src="../../examples/js/jquery.min.js"></script>
+  <script src="../../build/d3.min.js"></script>
+  <script src="../../build/sucrose.js"></script>
+
+  <script src="../../node_modules/cldrjs/dist/cldr.js"></script>
+  <script src="../../node_modules/cldrjs/dist/cldr/event.js"></script>
+  <script src="../../node_modules/cldrjs/dist/cldr/supplemental.js"></script>
+
+  <script src="../../node_modules/globalize/dist/globalize.js"></script>
+  <script src="../../node_modules/globalize/dist/globalize/number.js"></script>
+  <script src="../../node_modules/globalize/dist/globalize/plural.js"></script>
+  <script src="../../node_modules/globalize/dist/globalize/currency.js"></script>
+  <script src="../../node_modules/globalize/dist/globalize/date.js"></script>
+
+  <script src="../../node_modules/twitter_cldr/full/core.js"></script>
+  <script src="../../node_modules/twitter_cldr/full/en.js"></script>
+  <script>
+      var en_data = TwitterCldrDataBundle;
+  </script>
+  <script src="../../node_modules/twitter_cldr/full/ru.js"></script>
+  <script>
+      var ru_data = TwitterCldrDataBundle;
+  </script>
+</head>
+<body>
+  <div class="sc-demo sc-demo-locale">
+    <div class="page-header">
+      <h2>Chart Time Compare Localization Libraries</h2>
+    </div>
+    <button id="ru_RU_btn" class="btn-test active" data-lang="ru_RU">ru_RU</button>
+    <button id="en_US_btn" class="btn-test" data-lang="en_US">en_US</button>
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th id="lang_header" colspan="4">ru_RU</th>
+            </tr>
+            <tr>
+                <th>Skeleton</th>
+                <th>jQuery Globalize</th>
+                <th>D3 Locale timeFormat</th>
+                <th>Sucrose dateFormat</th>
+                <th>Twitter CLDR</th>
+            </tr>
+        </thead>
+        <tbody id="compare"></tbody>
+    </table>
+  </div>
+
+<script>
+//http://cldr.unicode.org/index
+//https://github.com/rxaviers/cldrjs
+//https://github.com/jquery/globalize
+//https://github.com/twitter/twitter-cldr-js
+//https://github.com/mbostock/d3/wiki/Time-Formatting
+//http://cldr.unicode.org/translation/number-patterns
+//https://rxaviers.github.io/javascript-globalization/
+//http://www.unicode.org/cldr/charts/28/by_type/numbers.number_formatting_patterns.html
+//https://lh.2xlibre.net/
+//http://www.localeplanet.com/icu/index.html
+//http://momentjs.com/
+//http://johnnyreilly.github.io/globalize-so-what-cha-want/#/?currency=true&date=true&message=false&number=true&plural=false&relativeTime=false&unit=false
+//http://www.globalbydesign.com/2011/12/08/how-to-localize-date-formats-using-globalize-js/
+//https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString
+//http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table
+//http://npm.taobao.org/browse/keyword/locale
+//https://www.branah.com/unicode-converter
+//https://github.com/globalizejs/globalize/issues/758
+//https://github.com/d3/d3-format/issues/34
+//http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table
+//https://www.hackcraft.net/web/datetime/#w3cdtf
+//https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse
+
+$(function () {
+
+    /* --------------------------------
+       Common Test Data Variables
+    -------------------------------- */
+
+    var dt = new Date('April 2, 2016, 4:01:08 AM');
+    var utc = new Date(
+        Date.UTC(
+            dt.getFullYear(),
+            dt.getMonth(),
+            dt.getDay(),
+            dt.getHours(),
+            dt.getMinutes(),
+            dt.getSeconds()
+        )
+    );
+
+    var ru_Locale = {
+        'decimal': ',',
+        'thousands': '\xa0',
+        'grouping': [3],
+        'currency': ['\u20BD', ''],
+        'dateTime': '%-d %B %Y \u0433., %X GMT%Z', //%c
+        'date': '%-d %b %Y \u0433.', //%x
+        'time': '%-H:%M:%S', //%X
+        'periods': ['AM', 'PM'],
+        'days': ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'],
+        'shortDays': ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'],
+        'months': ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+        'shortMonths': ['янв.', 'февр.', 'марта', 'апр.', 'мая', 'июня', 'июля', 'авг.', 'сент.', 'окт.', 'нояб.', 'дек.'],
+        // Custom patterns
+        'full': '%A, %c',
+        'long': '%c',
+        'medium': '%x, %X',
+        'short': '%d.%m.%y, %-H:%M',
+        'yMMMEd': '%a, %x',
+        'yMEd': '%a, %-d.%m.%Y \u0433.',
+        'yMMMMd': '%-d %B %Y \u0433.',
+        'yMMMd': '%x',
+        'yMd': '%d.%m.%Y',
+        'yMMMM': '%B %Y \u0433.',
+        'yMMM': '%b %Y \u0433.',
+        'MMMd': '%-d %b',
+        'MMMM': '%B',
+        'MMM': '%b',
+        'y': '%Y'
+    };
+
+    var en_Locale = {
+        'decimal': ',',
+        'thousands': ' ',
+        'grouping': [3],
+        'currency': ['$', ''],
+        'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
+        'date': '%b %-d, %Y', //%x
+        'time': '%-I:%M:%S', //%X
+        'periods': ['AM', 'PM'],
+        'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        // Custom patterns
+        'full': '%A, %c',
+        'long': '%c',
+        'medium': '%x, %X %p',
+        'short': '%-m/%-d/%y, %-I:%M %p',
+        'yMMMEd': '%a, %x',
+        'yMEd': '%a, %-m/%-d/%Y',
+        'yMMMMd': '%B %-d, %Y',
+        'yMMMd': '%x',
+        'yMd': '%-m/%-d/%Y',
+        'yMMMM': '%B %Y',
+        'yMMM': '%b %Y',
+        'MMMd': '%b %-d',
+        'MMMM': '%B',
+        'MMM': '%b',
+        'y': '%Y'
+    };
+
+    /* ---------------------------------------------------------
+       Twitter CLDR, D3 Locale and jQuery Globalize Test Data
+    --------------------------------------------------------- */
+
+    var skeletons = [
+        ['full', 's'],
+        ['long', 's'],
+        ['medium', 's'],
+        ['short', 's'],
+        ['yMMMEd', 'a'],
+        ['yMEd', 'a'],
+        ['yMMMMd', 'r'],
+        ['yMMMd', 'a'],
+        ['yMd', 'a'],
+        ['yMMMM', 'a'],
+        ['yMMM', 'a'],
+        ['MMMd', 'a'],
+        ['MMMM', 'r'],
+        ['MMM', 'a'],
+        ['y', 'a'],
+        ['yQQQQ', 'a'],
+        ['yQQQ', 'a']
+    ];
+    // console.log(JSON.stringify(
+    //     skeletons.map(function(d) {return [d[1], d[0]]; }), null, '  '
+    // ));
+
+    // use for generating specs for datetimeFormatTest.html
+    // var en_Spec = [
+    // ];
+    // var ru_Spec = [
+    // ];
+
+    var compareData = [];
+    generateComparison();
+
+    function displayComparison(lang) {
+        lang = lang || 'en_US';
+
+        d3.select('#compare').selectAll('tr').remove();
+        var trows = d3.select('#compare').selectAll('tr').data(compareData);
+
+        trows.enter().append('tr').html(function(d) {
+            var
+                html = '',
+                c3 = d[1] == d[3] ? 'pass' : 'fail',
+                c4 = d[2] == d[4] ? 'pass' : 'fail';
+                c5 = d[1] == d[5] ? 'pass' : 'fail';
+                c6 = d[2] == d[6] ? 'pass' : 'fail';
+                c7 = d[1] == d[7] ? 'pass' : 'fail';
+                c8 = d[2] == d[8] ? 'pass' : 'fail';
+
+                html += '<td><b>' + d[0] + '</b></td>'; //skeleton
+
+            if (lang === 'ru_RU') {
+                html += '<td><b>' + d[1] + '</b></td>'; //jquery russian
+                html += '<td class="' + c5 + '">' + (d[5] || '') + '</td>'; //d3 russian
+                html += '<td class="' + c7 + '">' + (d[7] || '') + '</td>'; //nvd3 russian
+                html += '<td class="' + c3 + '">' + d[3] + '</td>'; //twitter russian
+            } else {
+                html += '<td><b>' + d[2] + '</b></td>'; //jquery english
+                html += '<td class="' + c6 + '">' + (d[6] || '') + '</td>'; //d3 english
+                html += '<td class="' + c8 + '">' + (d[8] || '') + '</td>'; //nvd3 english
+                html += '<td class="' + c4 + '">' + d[4] + '</td>'; //twitter english
+            }
+
+            return html;
+        });
+
+        $('.btn-test').removeClass('active');
+        $('#' + lang + '_btn').addClass('active');
+        $('#lang_header').text(lang);
+    }
+
+    function generateComparison() {
+        // Use $.getJSON instead of $.get if your server is not configured to return the
+        // right MIME type for .json files.
+        $.when(
+          $.get('../../node_modules/cldr-data/main/en/numbers.json'),
+          $.get('../../node_modules/cldr-data/main/en/currencies.json'),
+          $.get('../../node_modules/cldr-data/main/en/ca-gregorian.json'),
+          $.get('../../node_modules/cldr-data/main/en/timeZoneNames.json'),
+          $.get('../../node_modules/cldr-data/main/ru/numbers.json'),
+          $.get('../../node_modules/cldr-data/main/ru/currencies.json'),
+          $.get('../../node_modules/cldr-data/main/ru/ca-gregorian.json'),
+          $.get('../../node_modules/cldr-data/main/ru/timeZoneNames.json'),
+          $.get('../../node_modules/cldr-data/supplemental/likelySubtags.json'),
+          $.get('../../node_modules/cldr-data/supplemental/numberingSystems.json'),
+          $.get('../../node_modules/cldr-data/supplemental/plurals.json'),
+          $.get('../../node_modules/cldr-data/supplemental/ordinals.json'),
+          $.get('../../node_modules/cldr-data/supplemental/currencyData.json'),
+          $.get('../../node_modules/cldr-data/supplemental/timeData.json'),
+          $.get('../../node_modules/cldr-data/supplemental/weekData.json')
+        )
+        .then(function() {
+            // Normalize $.get results, we only need the JSON, not the request statuses.
+            return [].slice.apply( arguments, [ 0 ] ).map(function( result ) {
+                return result[ 0 ];
+            });
+        })
+        .then( Globalize.load )
+        .then(function(globalize) {
+            /* -----------------------------
+               jQuery Globalize Test Data
+            ----------------------------- */
+
+            var fmtr_ru, fmtr_en;
+            var l10n_ru = Globalize('ru');
+            var l10n_en = Globalize('en');
+
+            globalize = [];
+
+            skeletons.forEach(function(skeleton) {
+                if (['yMMMMd'].indexOf(skeleton[0]) !== -1) {
+                    fmtr_ru = {raw: 'd MMMM Y \u0433.'};
+                    fmtr_en = {raw: 'MMMM d, y'};
+                } else if (skeleton[1] === 's') {
+                    fmtr_ru = {datetime: skeleton[0]};
+                    fmtr_en = {datetime: skeleton[0]};
+                } else if (skeleton[1] === 'r') {
+                    fmtr_ru = {raw: skeleton[0]};
+                    fmtr_en = {raw: skeleton[0]};
+                } else {
+                    fmtr_ru = {skeleton: skeleton[0]};
+                    fmtr_en = {skeleton: skeleton[0]};
+                }
+                globalize.push([
+                    skeleton[0],
+                    l10n_ru.dateFormatter(fmtr_ru)(dt),
+                    l10n_en.dateFormatter(fmtr_en)(dt)
+                ]);
+                // use for generating specs for datetimeFormatTest.html
+                // ru_Spec.push(l10n_ru.dateFormatter(fmtr_ru)(dt));
+                // en_Spec.push(l10n_en.dateFormatter(fmtr_en)(dt));
+            });
+
+            return globalize;
+        })
+        .then(function(twitter) {
+            /* -------------------------
+               Twitter CLDR Test Data
+            ------------------------- */
+
+            TwitterCldr.set_data(ru_data);
+
+            var fmt = new TwitterCldr.DateTimeFormatter();
+            var l = twitter.length;
+
+            twitter[0][3] = fmt.format(dt, {'type': 'full'});
+            twitter[1][3] = fmt.format(dt, {'type': 'long'});
+            twitter[2][3] = fmt.format(dt, {'type': 'medium'});
+            twitter[3][3] = fmt.format(dt, {'type': 'short'});
+
+            for (var i = 4; i < l; i += 1) {
+                twitter[i][3] = fmt.format(dt, {'format': 'additional', 'type': twitter[i][0]});
+            }
+
+            TwitterCldr.set_data(en_data);
+
+            twitter[0][4] = fmt.format(dt, {'type': 'full'});
+            twitter[1][4] = fmt.format(dt, {'type': 'long'});
+            twitter[2][4] = fmt.format(dt, {'type': 'medium'});
+            twitter[3][4] = fmt.format(dt, {'type': 'short'});
+
+            for (var i = 4; i < l; i += 1) {
+                twitter[i][4] = fmt.format(dt, {'format': 'additional', 'type': twitter[i][0]});
+            }
+
+            return twitter;
+        })
+        .then(function(d3locale) {
+
+            var l = d3locale.length;
+            var locale_ru = d3.timeFormatDefaultLocale(ru_Locale).format;
+            var locale_en = d3.timeFormatDefaultLocale(en_Locale).format;
+            var pattern, fmtr_ru, fmtr_en;
+
+            for (var i = 0; i < l; i += 1) {
+                pattern = d3locale[i][0];
+                fmtr_ru = ru_Locale[pattern];
+                fmtr_en = en_Locale[pattern];
+
+                if (fmtr_ru) {
+                    d3locale[i][5] = locale_ru(fmtr_ru)(dt);
+                }
+                if (fmtr_en) {
+                    d3locale[i][6] = locale_en(fmtr_en)(dt);
+                }
+            }
+
+            return d3locale;
+        })
+        .then(function(utility) {
+
+            utility.forEach(function(d, i) {
+                utility[i][7] = sucrose.utility.dateFormat(dt, d[0], ru_Locale);
+                utility[i][8] = sucrose.utility.dateFormat(dt, d[0], en_Locale);
+            });
+
+            return utility;
+        })
+        .then(function(compare) {
+            compareData = compare;
+            displayComparison('ru_RU');
+        });
+    }
+
+    $('.btn-test').on('click', function() {
+        var lang = $(this).data('lang');
+        displayComparison(lang);
+    });
+
+
+    /* ----------------------------------
+       Sugar User Preference Functions
+    ---------------------------------- */
+
+    function timePeriods(p) {
+      var period = p.indexOf(' A') !== -1 ?
+        [' AM', ' PM'] :
+          p.indexOf('A') !== -1 ?
+            ['AM', 'PM'] :
+              p.indexOf(' a') !== -1 ?
+                [' am', ' pm'] :
+                  p.indexOf('a') !== -1 ?
+                    ['am', 'pm'] :
+                      ['', ''];
+      return period;
+    }
+
+    function dateStringArray(arr) {
+      return arr.filter(function(d) { return d[0]; }).map(function(d) { return d[1]; });
+    }
+
+
+    /* --------------------------------
+       Javascript Datetime Test Data
+    -------------------------------- */
+
+    function generateJsTestData(d) {
+        console.log('d.toString(): ', d.toString()); // "Wed Dec 31 1969 19:00:00 GMT-0500 (EST)"
+        console.log('d.toLocaleString("en-US"): ', d.toLocaleString('en-US')); // "12/31/1969, 7:00:00 PM"
+        console.log('d.toLocaleString("ru-RU"): ', d.toLocaleString('ru-RU')); // "12/31/1969, 7:00:00 PM"
+        console.log('d.toGMTString(): ', d.toGMTString()); // "Thu, 01 Jan 1970 00:00:00 GMT"
+        console.log('d.toUTCString(): ', d.toUTCString()); // "Thu, 01 Jan 1970 00:00:00 GMT"
+        console.log('d.toISOString(): ', d.toISOString()); // "1970-01-01T00:00:00.000Z"
+    }
+    // generateJsTestData(dt);
+
+
+    /* -----------------------------
+       D3 Locale Format Test Data
+    ----------------------------- */
+
+    function generateD3TestData(myLocale) {
+        var d3_dates;
+
+        function addDataRow(d) {
+            d3_dates.push([
+                // d.getTime(),
+                // d.toUTCString(),
+                // locale.timeFormat.utc('%a, %d %b %Y %X GMT')(d),
+                locale.timeFormat.utc('%c')(d),
+                locale.timeFormat.utc('%x')(d),
+                locale.timeFormat.utc('%X')(d),
+                // locale.timeFormat.utc('%b %Y')(d),
+                // locale.timeFormat.utc('%B %Y')(d),
+                // locale.timeFormat.utc('%b %-d, %Y')(d),
+                // locale.timeFormat.utc('%B %-d, %Y')(d),
+                locale.timeFormat.utc('%a')(d),
+                locale.timeFormat.utc('%A')(d)
+            ]);
+        }
+
+        var locale = d3.locale(myLocale);
+        d3_dates = [];
+            d3_dates.push([
+                '%c',
+                '%x',
+                '%X',
+                // '%b %Y',
+                // '%B %Y',
+                // '%b %-d, %Y',
+                // '%B %-d, %Y',
+                '%a',
+                '%A'
+            ]);
+
+        for (var i = 1; i < 8; i += 1 ) {
+            var d = new Date(Date.UTC(1970, 0, i, 0, 0, 0, 0));
+            addDataRow(d);
+        }
+        console.table(d3_dates);
+    }
+    // generateD3TestData(en_Locale);
+    // generateD3TestData(ru_Locale);
+
+});
+</script>
+</body>
+</html>

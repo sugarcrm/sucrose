@@ -277,6 +277,25 @@ tests("UNIT: treemapChart -", function(t) {
         assert.equal(_chart.leafClick(), val, "returns set value");
         t.register(assert, type);
     });
+    t.test("seriesClick: ", function(assert) {
+        assert.plan(3);
+        var def = _chart.seriesClick();
+        assert.equal(typeof def, "function", "returns default function");
+        assert.equal(typeof _chart.seriesClick()(), "undefined", "returns default function value");
+        let val = function(){return "asdf";};
+        _chart.seriesClick(val);
+        assert.equal(_chart.seriesClick(), val, "returns set function");
+        t.register(assert, type);
+    });
+    t.test("textureFill: ", function(assert) {
+        assert.plan(2);
+        let def = false;
+        assert.equal(_chart.textureFill(), def, "returns default value");
+        let val = true;
+        _chart.textureFill(val);
+        assert.equal(_chart.textureFill(), val, "returns set value");
+        t.register(assert, type);
+    });
     t.test("getKey: ", function(assert) {
         assert.plan(3);
         let def = _chart.getKey();
@@ -300,7 +319,8 @@ tests("UNIT: treemapChart -", function(t) {
     t.test("gradient: ", function(assert) {
         assert.plan(2);
         let def = _chart.gradient();
-        assert.equal(def, null, "returns null by default");
+        let clg = sucrose.utility.colorLinearGradient;
+        assert.equal(def, clg, "returns colorLinearGradient by default");
         let val = function(){return 1;};
         _chart.gradient(val);
         assert.equal(_chart.gradient(), val, "returns set function");

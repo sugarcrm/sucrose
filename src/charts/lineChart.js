@@ -26,9 +26,28 @@ export default function lineChart() {
         noLabel: 'undefined'
       };
 
-  var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
+  var dispatch = d3.dispatch(
+        'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
+        'stateChange', 'changeState'
+      );
 
   var pointRadius = 3;
+
+  var xValueFormat = function(d, i, label, isDate, dateFormat) {
+        // If ordinal, label is provided so use it.
+        // If date or numeric use d.
+        var value = label || d;
+        if (isDate) {
+          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
+          return utility.dateFormat(value, dateFormat, chart.locality());
+        } else {
+          return value;
+        }
+      };
+
+  var yValueFormat = function(d, i, label, isCurrency, precision, si) {
+        return utility.numberFormatSIFixed(d, precision, isCurrency, chart.locality(), si);
+      };
 
   var tooltipContent = function(eo, properties) {
         var seriesName = properties.seriesLabel || 'Key';
@@ -45,9 +64,9 @@ export default function lineChart() {
         var valueName = yIsCurrency ? 'Amount' : 'Count';
         var y = eo.point.y;
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
-        // we can't use yValueFormat because it needs SI units
+        // we can't use yValueFormat because it needs SI units for axis
         // for tooltip, we want the full value
-        var valueLabel = utility.numberFormatRound(y, null, yIsCurrency, chart.locality());
+        var valueLabel = utility.numberFormat(y, null, yIsCurrency, chart.locality());
 
         var percent;
         var content = '';
@@ -58,28 +77,15 @@ export default function lineChart() {
 
         if (eo.group && Number.isFinite(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          percent = utility.numberFormatRound(percent, 2, false, chart.locality());
+          percent = utility.numberFormat(percent, 2, false, chart.locality());
           content += '<p>Percentage: <b>' + percent + '%</b></p>';
         }
 
         return content;
       };
 
-  var xValueFormat = function(d, i, label, isDate, dateFormat) {
-        // If ordinal, label is provided so use it.
-        // If date or numeric use d.
-        var value = label || d;
-        if (isDate) {
-          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(value, dateFormat, chart.locality());
-        } else {
-          return value;
-        }
-      };
-
-  var yValueFormat = function(d, i, label, isCurrency, precision) {
-        precision = isNaN(precision) ? 2 : precision;
-        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+  var seriesClick = function(data, eo, chart, labels) {
+        return;
       };
 
   //============================================================
@@ -96,12 +102,10 @@ export default function lineChart() {
 
   var showTooltip = function(eo, offsetElement, properties) {
         var content = tooltipContent(eo, properties);
-        var gravity = eo.value < 0 ? 'n' : 's';
+        var gravity = eo.value < 0 ?
+          'n' :
+          's';
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
-      };
-
-  var seriesClick = function(data, eo, chart, labels) {
-        return;
       };
 
   model
@@ -134,7 +138,7 @@ export default function lineChart() {
       var xIsDatetime = properties.xDataType === 'datetime' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
-      var groupData = properties.groups,
+      var groupData = properties.groups || properties.labels,
           hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
@@ -146,12 +150,6 @@ export default function lineChart() {
 
       var padding = (model.padData() ? pointRadius : 0);
       var singlePoint = false;
-
-          //TODO: allow formatter to be set by data
-      var xTickMaxWidth = 75,
-          xDateFormat = null,
-          xAxisFormat = null,
-          yAxisFormat = null;
 
       var controlsData = [
         {key: 'Linear', disabled: model.interpolate() !== 'linear'},
@@ -173,75 +171,76 @@ export default function lineChart() {
         });
       };
 
-      chart.clearActive = function() {
+      chart.clearActive = function(reset) {
         data.forEach(function(s) {
-          chart.setActiveState(s, '');
+          chart.setActiveState(s, reset || '');
         });
         delete state.active;
       };
 
-      chart.seriesActivate = function(series) {
-        // inactivate all series
-        data.forEach(function(s) {
-          chart.setActiveState(s, 'inactive');
-        });
-        // then activate the selected series
-        chart.setActiveState(series, 'active');
-        // set the state to a truthy map
-        state.active = data.map(function(s) {
-          return s.active === 'active';
-        });
-      };
-
+      // only accepts an event object with seriesIndex
       chart.cellActivate = function(eo) {
         // seriesClick is defined outside chart scope, so when it calls
         // cellActivate, it only has access to (data, eo, chart, labels)
         var cell = data[eo.seriesIndex].values[eo.pointIndex];
         var activeState;
-
         if (!cell) {
           return;
         }
-
         // store toggle active state
         activeState = (
             typeof cell.active === 'undefined' ||
             cell.active === 'inactive' ||
             cell.active === ''
           ) ? 'active' : '';
-
-        // unset entire active state
+        // unset entire active state first
         chart.clearActive();
-
         cell.active = activeState;
-
-        chart.render();
       };
 
-      chart.dataSeriesActivate = function(eo) {
+      // accepts either an event object with actual series data or seriesIndex
+      chart.seriesActivate = function(eo) {
         var series = eo.series || data[eo.seriesIndex];
         var activeState;
-
         if (!series) {
           return;
         }
+        // store toggle active state
+        activeState = (
+            typeof series.active === 'undefined' ||
+            series.active === 'inactive' ||
+            series.active === ''
+          ) ? 'active' : '';
+        // inactivate all series
+        chart.clearActive(activeState === 'active' ? 'inactive' : '');
+        // then activate the selected series
+        chart.setActiveState(series, activeState);
+        // set the state to a truthy map
+        state.active = data.map(function(s) {
+          return s.active === 'active';
+        });
+      };
 
+      // accepts either an event object with actual series data or seriesIndex
+      chart.dataSeriesActivate = function(eo) {
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+        if (!series) {
+          return;
+        }
         // toggle active state
         activeState = (
             typeof series.active === 'undefined' ||
             series.active === 'inactive' ||
             series.active === ''
           ) ? 'active' : 'inactive';
-
         if (activeState === 'active') {
           // if you have activated a data series,
-          chart.seriesActivate(series);
+          chart.seriesActivate(eo);
         } else {
           // if there are no active data series, unset entire active state
           chart.clearActive();
         }
-
-        chart.render();
       };
 
       chart.container = this;
@@ -323,7 +322,9 @@ export default function lineChart() {
             var label = typeof group.label === 'undefined' || group.label === '' ?
               strings.noLabel :
                 xIsDatetime ?
-                  new Date(group.label) :
+                  utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
+                    new Date(group.label) :
+                    new Date(group.label + ' GMT') :
                   group.label;
             group.group = g,
             group.label = label;
@@ -374,19 +375,59 @@ export default function lineChart() {
 
       }
 
-      // Configure axis format functions
-      if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(groupLabels);
-      }
 
-      xAxisFormat = function(d, i, selection, noEllipsis) {
-        var group = hasGroupLabels ? groupLabels[i] : d;
-        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
-        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
+      //------------------------------------------------------------
+      // Configure axis format functions
+
+          //TODO: allow formatter to be set by data
+      var xTickMaxWidth = 75,
+          xDateFormat = null,
+          xAxisFormat = null,
+          yAxisFormat = null;
+
+      var yAxisFormatProperties = {
+        axis: null,
+        maxmin: null
       };
 
-      yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, null, yIsCurrency, 2);
+      function setAxisFormatProperties(type, selection) {
+        // i.e., 100 | 200 | 300
+        var tickDatum = selection.map(function(t) {
+            return d3.select(t).datum();
+          });
+        // i.e., 1 | 1000 | 1000000
+        var decimal = d3.max(d3.extent(tickDatum), function(v) {
+            return utility.siDecimal(Math.abs(v));
+          });
+        var precision = d3.max(tickDatum, function(v) {
+            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+          });
+        if (type === 'maxmin' && yAxisFormatProperties.axis) {
+          precision = Math.max(yAxisFormatProperties.axis.precision, precision);
+        }
+        yAxisFormatProperties[type] = {
+          decimal: decimal,
+          precision: precision
+        };
+        return yAxisFormatProperties[type];
+      }
+
+      if (xIsDatetime) {
+        xDateFormat = utility.getDateFormatUTC(groupLabels);
+      }
+
+      xAxisFormat = function(d, i, selection, type) {
+        var group = hasGroupLabels ? groupLabels[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return type === 'no-ellipsis' ?
+          label :
+          utility.stringEllipsify(label, container, xTickMaxWidth);
+      };
+
+      yAxisFormat = function(d, i, selection, type) {
+        var props = yAxisFormatProperties[type] ||
+              setAxisFormatProperties(type, selection);
+        return yValueFormat(d, i, null, yIsCurrency, props.precision, props.decimal);
       };
 
 
@@ -428,6 +469,7 @@ export default function lineChart() {
         .sizeDomain([pointSize, pointSize]); //set to speed up calculation, needs to be unset if there is a custom size accessor
 
       if (singlePoint) {
+
         var xValues = d3.merge(modelData.map(function(d) {
                 return d.values.map(function(d, i) {
                   return model.x()(d, i);
@@ -463,7 +505,6 @@ export default function lineChart() {
 
         xAxis
           .orient('bottom')
-          .showMaxMin(false)
           .ticks(xValues.length)
           .tickValues(xValues)
           .highlightZero(false)
@@ -474,26 +515,30 @@ export default function lineChart() {
           .ticks(singlePoint ? 5 : null) //TODO: why 5?
           .highlightZero(false)
           .showMaxMin(false);
+
       } else {
+
         model
-          .xDomain(null)  //?why null?
-          .yDomain(null);
+          .xDomain(null)
+          .yDomain(null); //?why null? so scatter will be forced to calc
 
         xAxis
           .orient('bottom')
           //NOTE: be careful of this. If the x value is ordinal, then the values
           // should be [1...n]. If the x value is numeric, then the values are
           // zero indexed as [0..n-1]
-          .tickValues(hasGroupLabels ? d3.range(1, groupLabels.length + 1) : null)
-          .ticks(hasGroupLabels ? groupLabels.length : null)
-          .showMaxMin(xIsDatetime)
-          .highlightZero(false);
+          .tickValues(hasGroupLabels ? d3.range(1, groupCount + 1) : null)
+          .ticks(hasGroupLabels ? groupCount : null)
+          // .ticks(groupCount)
+          .highlightZero(false)
+          .showMaxMin(xIsDatetime);
 
         yAxis
           .orient('left')
           .ticks(null)
           .highlightZero(true)
           .showMaxMin(true);
+
       }
 
       xAxis
@@ -511,7 +556,8 @@ export default function lineChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
@@ -592,9 +638,19 @@ export default function lineChart() {
         //------------------------------------------------------------
         // Main Chart Component(s)
 
+        function getDimension(d) {
+          if (d === 'width') {
+            return innerWidth;
+          } else if (d === 'height') {
+            return innerHeight;
+          } else {
+            return 0;
+          }
+        }
+
         model
-          .width(innerWidth)
-          .height(innerHeight);
+          .width(getDimension('width'))
+          .height(getDimension('height'));
         model_wrap
           .datum(modelData)
           .call(model);
@@ -607,70 +663,56 @@ export default function lineChart() {
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
 
         function setInnerMargins() {
+          xAxisMargin = xAxis.margin();
+          yAxisMargin = yAxis.margin();
           innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
           innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
           innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
           innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+          setInnerDimensions();
         }
 
         function setInnerDimensions() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          model.width(innerWidth).height(innerHeight);
-          // This resets the scales for the whole chart
-          // unfortunately we can't call this without until line instance is called
-          model.scatter.resetDimensions(innerWidth, innerHeight);
+          model.resetDimensions(getDimension('width'), getDimension('height'));
         }
 
-        // Y-Axis
-        yAxis
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
-        // reset inner dimensions
-        yAxisMargin = yAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
+        function yAxisRender() {
+          yAxis
+            .tickSize(padding - innerWidth, 0)
+            .margin(innerMargin);
+          yAxis_wrap
+            .call(yAxis);
+          setInnerMargins();
+        }
 
-        // X-Axis
-        // resize ticks based on new dimensions
-        xAxis
-          .ticks(groupCount)
-          .tickSize(padding - innerHeight, 0)
-          .margin(innerMargin);
-        xAxis_wrap
-          .call(xAxis);
+        function xAxisRender() {
+          xAxis
+            .tickSize(padding - innerHeight, 0)
+            .margin(innerMargin);
+          xAxis_wrap
+            .call(xAxis);
+          setInnerMargins();
+        }
 
-        // reset inner dimensions
-        xAxisMargin = xAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
+        // initial Y-Axis call
+        yAxisRender();
+        // initial X-Axis call
+        xAxisRender();
 
-        // recall y-axis, x-axis and lines to set final size based on new dimensions
-        yAxis
-          .tickSize(padding - innerWidth, 0)
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
-
-        xAxis
-          .tickSize(padding - innerHeight, 0)
-          .margin(innerMargin);
-        xAxis_wrap
-          .call(xAxis);
-
-        model
-          .width(innerWidth)
-          .height(innerHeight);
-        model_wrap
-          .datum(modelData)
-          .call(model);
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
+        // recall X-axis to set final size based on new dimensions
+        xAxisRender();
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
 
         // final call to lines based on new dimensions
-        // model_wrap
-        //   .transition().duration(duration)
-        //     .call(model);
+        model_wrap
+          .transition().duration(duration)
+            .call(model);
 
 
         //------------------------------------------------------------
@@ -701,6 +743,7 @@ export default function lineChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
+      //TODO: change legendClick to menuClick
       header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
 
@@ -868,10 +911,15 @@ export default function lineChart() {
   chart.legend = header.legend;
   chart.controls = header.controls;
   chart.xAxis = xAxis;
+  chart.xAxisLabel = xAxis.axisLabel;
   chart.yAxis = yAxis;
+  chart.yAxisLabel = yAxis.axisLabel;
   chart.options = utility.optionsFunc.bind(chart);
 
-  utility.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  utility.rebind(chart, model,
+    'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge',
+    'color', 'fill', 'classes', 'gradient', 'locality'
+  );
   utility.rebind(chart, model, 'defined', 'isArea', 'interpolate', 'size', 'clipVoronoi', 'useVoronoi', 'interactive', 'nice');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   utility.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
@@ -879,16 +927,16 @@ export default function lineChart() {
   chart.colorData = function(_) {
     var type = arguments[0],
         params = arguments[1] || {};
-    var color = function(d, i) {
+    var color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-    var classes = function(d, i) {
+    var classes = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
-        color = function(d, i) {
+        color = function(d) {
           return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
@@ -896,28 +944,26 @@ export default function lineChart() {
         color = function() {
           return 'inherit';
         };
-        classes = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        classes = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
-        color = function(d, i) {
+        color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-        classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        classes = function(d) {
+          var i = d.seriesIndex;
+          return 'sc-series sc-series-' + i + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient()(d, d.seriesIndex);
-    };
-
     model.color(color);
-    model.fill(fill);
+    model.fill(color);
     model.classes(classes);
 
     // don't enable this since controls get a custom function
@@ -1005,12 +1051,6 @@ export default function lineChart() {
     return chart;
   };
 
-  chart.pointRadius = function(_) {
-    if (!arguments.length) { return pointRadius; }
-    pointRadius = _;
-    return chart;
-  };
-
   chart.xValueFormat = function(_) {
     if (!arguments.length) {
       return xValueFormat;
@@ -1030,6 +1070,12 @@ export default function lineChart() {
   chart.seriesClick = function(_) {
     if (!arguments.length) { return seriesClick; }
     seriesClick = _;
+    return chart;
+  };
+
+  chart.pointRadius = function(_) {
+    if (!arguments.length) { return pointRadius; }
+    pointRadius = _;
     return chart;
   };
 

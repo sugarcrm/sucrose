@@ -12,21 +12,21 @@ module.exports =
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {
-    show_values: '0'
+    show_values: 'false'
   },
   ui: {
     '[name=show_values]': {
       setChartOption: function (v, self) {
-        var value = isNaN(v) ? v : !!parseInt(v, 10);
+        var value = sucrose.utility.toBoolean(v);
         self.Chart.showValues(value);
       },
-      check: /0|1|start|middle|end|top|total/i,
+      check: /false|true|start|middle|end|top|total/i,
       events: 'change.my',
       title: 'Show Values',
       type: 'select',
       values: [
-        {value: '0', label: 'No'},
-        {value: '1', label: 'Yes'},
+        {value: 'false', label: 'No'},
+        {value: 'true', label: 'Yes'},
         {value: 'start', label: 'Start'},
         {value: 'middle', label: 'Middle'},
         {value: 'end', label: 'End'},

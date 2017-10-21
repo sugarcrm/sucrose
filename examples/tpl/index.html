@@ -6,13 +6,13 @@
     <title>Sucrose Chart - {{Type}}</title>
     <link rel="stylesheet" href="sucrose.min.css">
     <style>
-        .chart {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-        }
+      .chart {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
     </style>
   </head>
   <body>
@@ -20,56 +20,52 @@
       <svg class="sucrose sc-chart"></svg>
     </div>
 
-    <script src="d3.min.js"></script>
-    <!-- {{TopoJSON}} -->
-    <script src="sucrose.min.js"></script>
+<script src="d3.min.js"></script>
+{{TopoJSON}}
+<script src="sucrose.js"></script>
 
-    <script>
+<script>
 var type = '{{Type}}';
 var data = {{Data}};
 var config = {{Config}};
+
 var chart = sucrose.charts.{{Model}}();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
-{{Configure}}
-
 {{Format}}
 
-window.onload = function () {
+window.onload = function() {
+  // apply configuration
+  chart.options(config);
 
-    // remap d3v4 to d3
+  // format then render chart
+  format(chart, function() {
+    // Bind D3 chart to SVG element
+    d3.select('#chart_ svg')
+      .attr('class', 'sucrose sc-chart sc-chart-' + type)
+      .datum(data)
+        .call(chart);
 
-    // apply configuration
-    configure();
+    // Dismiss tooltips
+    d3.select('#chart_')
+      .on('click', function() {
+        if (chart.dispatch && chart.dispatch.chartClick) {
+          chart.dispatch.chartClick();
+        }
+      });
 
-    // format then render chart
-    format(function() {
-        // Bind D3 chart to SVG element
-        d3.select('#chart_ svg')
-            .attr('class', 'sucrose sc-chart sc-chart-' + type)
-            .datum(data)
-                .call(chart);
-
-        // Dismiss tooltips
-        d3.select('#chart_')
-            .on('click', function() {
-                if (chart.dispatch && chart.dispatch.chartClick) {
-                    chart.dispatch.chartClick();
-                }
-            });
-
-        // Rebind window resizer
-        window.addEventListener('resize', function() {
-            if (chart.render) {
-                chart.render();
-            } else if (chart.update) {
-                chart.update();
-            }
-        });
+    // Rebind window resizer
+    window.addEventListener('resize', function() {
+      if (chart.render) {
+        chart.render();
+      } else if (chart.update) {
+        chart.update();
+      }
     });
+  });
 };
-    </script>
+</script>
   </body>
 </html>

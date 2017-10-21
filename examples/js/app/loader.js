@@ -34,8 +34,8 @@ function loader(type, options) {
                 return this.bindControl(d, v, $o, this.loadChart);
               },
               values: [
-                {value: '0', label: 'No'},
-                {value: '1', label: 'Yes'}
+                {value: 'false', label: 'No'},
+                {value: 'true', label: 'Yes'}
               ]
             },
             false, // shallow copy

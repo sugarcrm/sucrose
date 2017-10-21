@@ -7,7 +7,7 @@ const tests = tapes(tape);
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-const d3 = require("d3"); // load d3.min.js because its custom bundle?
+const d3 = require("../../fixtures/build/d3.min.js");
 const sucrose = require("../../fixtures/build/sucrose.js");
 const data = require("../../files/pie_data.json");
 const json = JSON.stringify(data);
@@ -36,6 +36,11 @@ tests("DOM: pieChart -", function (t) {
         chart = sucrose.charts.pieChart().colorData("default");
         data = JSON.parse(json);
         dom = new JSDOM('<!DOCTYPE html><div id="c_"><svg class="sucrose sc-chart"></svg></div>');
+
+        global.window = dom.window;
+        global.document = global.window.document;
+        global.navigator = global.window.navigator;
+
         c_ = dom.window.document.querySelector("#c_ .sucrose");
         t.end();
     });

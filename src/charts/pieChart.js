@@ -18,6 +18,7 @@ export default function pieChart() {
       duration = 0,
       tooltips = true,
       state = {},
+      exclusiveActive = true,
       strings = {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -45,8 +46,8 @@ export default function pieChart() {
         var y = model.getValue()(eo);
         var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
         var yIsCurrency = properties.yDataType === 'currency';
-        var val = utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-        var percent = utility.numberFormatRound(x, 2, false, chart.locality());
+        var val = utility.numberFormat(y, 2, yIsCurrency, chart.locality());
+        var percent = utility.numberFormat(x, 2, false, chart.locality());
         return '<p>' + label + ': <b>' + key + '</b></p>' +
                '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
                '<p>Percent: <b>' + percent + '%</b></p>';
@@ -110,23 +111,48 @@ export default function pieChart() {
       //------------------------------------------------------------
       // Process data
 
-      chart.clearActive = function() {
-        data.map(function(d) {
-          d.active = '';
-          container.selectAll('.nv-series').classed('nv-inactive', false);
-          return d;
+      chart.setActiveState = function(series, state) {
+        series.active = state;
+      };
+
+      chart.clearActive = function(reset) {
+        data.forEach(function(s) {
+          chart.setActiveState(s, reset || '');
         });
+        delete state.active;
       };
 
+      // accepts either an event object with actual series data or seriesIndex
       chart.seriesActivate = function(eo) {
-        chart.dataSeriesActivate({series: data[eo.seriesIndex]});
+        var series = eo.series || data[eo.seriesIndex];
+        var activeState;
+        if (!series) {
+          return;
+        }
+        if (exclusiveActive) {
+          // store toggle active state
+          activeState = (
+              typeof series.active === 'undefined' ||
+              series.active === 'inactive' ||
+              series.active === ''
+            ) ? 'active' : '';
+          // inactivate all series
+          chart.clearActive(activeState === 'active' ? 'inactive' : '');
+          // then activate the selected series
+          chart.setActiveState(series, activeState);
+          // set the state to a truthy map
+          state.active = data.map(function(s) {
+            return s.active === 'active';
+          });
+        } else {
+          chart.dataSeriesActivate({series: series});
+        }
       };
 
+      // accepts either an event object with actual series data or seriesIndex
       chart.dataSeriesActivate = function(eo) {
         var series = eo.series;
-
         series.active = (!series.active || series.active === 'inactive') ? 'active' : 'inactive';
-
         // if you have activated a data series, inactivate the other non-active series
         if (series.active === 'active') {
           data
@@ -138,13 +164,10 @@ export default function pieChart() {
               return d;
             });
         }
-
         // if there are no active data series, inactivate them all
         if (!data.filter(function(d) { return d.active === 'active'; }).length) {
           chart.clearActive();
         }
-
-        container.call(chart);
       };
 
       // add series index to each data point for reference
@@ -160,7 +183,7 @@ export default function pieChart() {
         }
 
         s.values.forEach(function(p, j) {
-          p.index = j;
+          p.index = i;
           p.series = s;
           if (typeof p.value == 'undefined') {
             p.value = p.y;
@@ -205,10 +228,12 @@ export default function pieChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-background-wrap');
       var back_wrap = wrap.select('.sc-background-wrap');
@@ -441,14 +466,17 @@ export default function pieChart() {
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      return model.gradient()(d, d.seriesIndex);
+    var fill = !params.gradient ? color : function(d, i) {
+      return model.gradientFill(d, d.seriesIndex);
     };
 
     model.color(color);
     model.fill(fill);
     model.classes(classes);
 
+    // don't enable this since controls get a custom function
+    // controls.color(color);
+    // controls.classes(classes);
     header.legend.color(color);
     header.legend.classes(classes);
 

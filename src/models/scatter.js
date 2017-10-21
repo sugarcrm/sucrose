@@ -12,7 +12,7 @@ export default function scatter() {
       height = 500,
       margin = {top: 0, right: 0, bottom: 0, left: 0},
       color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); }, // chooses color
-      gradient = null,
+      gradient = utility.colorRadialGradient,
       fill = color,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; },
       x = d3.scaleLinear(),
@@ -87,7 +87,9 @@ export default function scatter() {
       // Setup Scales
 
       // remap and flatten the data for use in calculating the scales' domains
-      var seriesData = (xDomain && yDomain && zDomain) ? [] : // if we know xDomain and yDomain and zDomain, no need to calculate.... if Size is constant remember to set zDomain to speed up performance
+      // if we know xDomain and yDomain and zDomain, no need to calculate....
+      // if Size is constant remember to set zDomain to speed up performance
+      var seriesData = (xDomain && yDomain && zDomain) ? [] :
             d3.merge(
               data.map(function(d) {
                 return d.values.map(function(d, i) {
@@ -191,11 +193,7 @@ export default function scatter() {
       var wrap = container.select('.sc-wrap.sc-scatter').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
-
-      //set up the gradient constructor function
-      gradient = gradient || function(d, i) {
-        return utility.colorRadialGradient(d, id + '-' + i, {x: 0.5, y: 0.5, r: 0.5, s: 0, u: 'objectBoundingBox'}, color(d, i), wrap.select('defs'));
-      };
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
@@ -216,11 +214,25 @@ export default function scatter() {
         .attr('id', 'sc-points-clip-' + id)
         .attr('class', 'sc-point-clips');
 
-      wrap.select('#sc-edge-clip-' + id + ' rect')
+      defs.select('#sc-edge-clip-' + id + ' rect')
           .attr('width', availableWidth)
           .attr('height', availableHeight);
 
       wrap.attr('clip-path', clipEdge ? 'url(#sc-edge-clip-' + id + ')' : '');
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i) {
+        var gradientId = id + '-' + i;
+        var params = {
+          x: 0.5,
+          y: 0.5,
+          r: 0.5,
+          s: 0,
+          u: 'objectBoundingBox'
+        };
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Series

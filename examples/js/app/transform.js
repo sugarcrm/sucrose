@@ -128,18 +128,18 @@ function transformDataToD3(json, chartType, barType) {
       yDataType: json.properties[0].yDataType,
       xDataType: json.properties[0].xDataType,
       // bar group data (x-axis)
-      labels: chartType === 'line' && json.label ?
+      groups: chartType === 'line' && json.label ?
         json.label.map(function(d, i) {
           return {
             group: i + 1,
-            l: pickLabel(d)
+            label: pickLabel(d)
           };
         }) :
         json.values.filter(function(d) { return d.values.length; }).length ?
           json.values.map(function(d, i) {
             return {
               group: i + 1,
-              l: pickLabel(d.label)
+              label: pickLabel(d.label)
             };
           }) :
           [],
@@ -181,14 +181,14 @@ function transformDataToD3(json, chartType, barType) {
               return {
                 id: d.id,
                 x: d.date_closed,
-                y: Math.round(parseInt(d.likely_case, 10) / parseFloat(d.base_rate)),
+                y: Math.round(Math.floor(d.likely_case) / parseFloat(d.base_rate)),
                 shape: 'circle',
                 account_name: d.account_name,
                 assigned_user_name: d.assigned_user_name,
                 sales_stage: d.sales_stage,
                 sales_stage_short: salesStageMap[d.sales_stage] || d.sales_stage,
-                probability: parseInt(d.probability, 10),
-                base_amount: parseInt(d.likely_case, 10),
+                probability: Math.floor(d.probability),
+                base_amount: Math.floor(d.likely_case),
                 currency_symbol: '$'
               };
             }),
@@ -212,6 +212,7 @@ function transformDataToD3(json, chartType, barType) {
 
 function transformTableData(chartData, chartType, Chart) {
   var data = [],
+      strNoLabel = 'undefined',
       properties = chartData.properties || {};
 
   switch (chartType) {
@@ -258,7 +259,7 @@ function transformTableData(chartData, chartType, Chart) {
           count: d.count || null,
           disabled: d.disabled || false,
           series: d.series || i,
-          values: [{x: i + 1, y: Chart.y()(d)}]
+          values: [{x: i + 1, y: Chart.getValue()(d)}]
         };
       });
       break;
@@ -274,7 +275,9 @@ function transformTableData(chartData, chartType, Chart) {
       });
       properties.labels = properties.labels || d3.merge(chartData.data.map(function(d) {
           return d.values.map(function(d, i) {
-            return Chart.lines.x()(d, i);
+            return chartType === 'lines' ?
+              Chart.lines.x()(d, i) :
+              Chart.area.x()(d, i);
           });
         }))
         .reduce(function(p, c) {
@@ -349,8 +352,8 @@ function parseTreemapData(data) {
           children: [],
           x: 0,
           y: 0,
-          dx: parseInt(document.getElementById('chart').offsetWidth, 10),
-          dy: parseInt(document.getElementById('chart').offsetHeight, 10),
+          dx: Math.floor(document.getElementById('chart').offsetWidth),
+          dy: Math.floor(document.getElementById('chart').offsetHeight),
           depth: 0,
           colorIndex: '0root_Opportunities'
         },
@@ -396,7 +399,7 @@ function parseTreemapData(data) {
         }
         _.each(value2, function(record) {
           record.className = 'stage_' + record.sales_stage.toLowerCase().replace(' ', '');
-          record.value = parseInt(record.amount_usdollar, 10);
+          record.value = Math.floor(record.amount_usdollar);
           record.colorIndex = '2oppgroup_' + key2;
         });
         child.push({

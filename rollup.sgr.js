@@ -26,7 +26,12 @@ export default {
         '\'d3\'': '\'@sugarcrm\/d3-sugar\'',
       },
     }),
-    eslint(),
+    eslint({
+      throwOnError: true,
+      rules: {
+        'no-console': (process.env.DEV === 'false' ? 2 : 0)
+      }
+    }),
     resolve({
       jsnext: true,
       main: true,

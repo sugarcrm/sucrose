@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=320" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>Date Ranges</title>
-  <script src="../build/d3.min.js"></script>
+  <link rel="stylesheet" href="../../examples/css/examples.css">
+  <link rel="stylesheet" href="visual-tests.css">
+  <script src="../../build/d3.min.js"></script>
   <style>
   body {
     font-family: monospace;
@@ -13,8 +15,9 @@
   </style>
 </head>
 <body>
+  <div class="sc-demo sc-demo-locale">
+  </div>
 <script>
-
 var fiscalYear = new Date(2017, 0, 1, 0, 0, 0).toUTCString();
 var value;
 var spec;
@@ -534,7 +537,7 @@ function printf(l, v, s) {
   } else {
     p = '<p style="color:' + c + '">' + l + '</p>'
   }
-  document.getElementsByTagName('body')[0].innerHTML += p;
+  document.querySelector('.sc-demo').innerHTML += p;
 }
 
 </script>

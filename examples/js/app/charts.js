@@ -3,39 +3,29 @@ var sucroseCharts = function() {
 
   function getDefaultConfiguration(type, chart) {
     var config = {};
-    var defaultOptions = configs.default;
-    var chartOptions = configs[type];
+    var defaultConfig = configs.default;
+    var chartConfig = configs[type];
     var k;
-
-    for (k in defaultOptions) {
-      if (!defaultOptions.hasOwnProperty(k)) {
-        continue;
-      }
+    Object.each(defaultConfig, function(k, v) {
       if (!chart[k]) {
-        continue;
+        return;
       }
-      config[k] = defaultOptions[k];
-    }
-
-    for (k in chartOptions) {
-      if (!chartOptions.hasOwnProperty(k)) {
-        continue;
-      }
+      config[k] = sucrose.utility.toNative(v);
+    });
+    Object.each(chartConfig, function(k, v) {
       if (k.substr(0,1) === '_') {
-        continue;
+        return;
       }
-      config[k] = chartOptions[k];
-    }
-
+      config[k] = sucrose.utility.toNative(v);
+    });
     return config;
   }
 
-  function applyConfigurationSettings(config, settings) {
+  function applyConfigurationSettings(config, settings, chart) {
     var KEYMETHODMAP = {
           'allow_scroll': 'allowScroll',
           'auto_spin': 'autoSping',
           'color_data': 'colorData',
-          'color_options': 'colorOptions',
           'donut_ratio': 'donutRatio',
           'hole_label': 'holeLabel',
           'mirror_axis': 'mirrorAxis',
@@ -46,76 +36,63 @@ var sucroseCharts = function() {
           'show_title': 'showTitle',
           'show_values': 'showValues',
           'texture_fill': 'textureFill',
-          'tick_display': 'tickDisplay',
-          'tooltips': 'tooltips',
           'wrap_labels': 'wrapLabels'
         };
-    var k, m;
+    var BLOCKEDMETHODS = ['gradient', 'seriesClick'];
 
-    for (k in settings) {
-      if (!settings.hasOwnProperty(k)) {
-        continue;
+    Object.each(settings, function(k, v) {
+      var m = KEYMETHODMAP[k] || k;
+      if (BLOCKEDMETHODS.indexOf(m) !== -1) {
+        return;
       }
-
-      m = KEYMETHODMAP[k] || k;
-
-      config[m] = settings[k];
-    }
-
-    return config;
-  }
-
-  function configureChart(type, chart, config) {
-    var k, v;
-
-    for (k in config)
-    {
-      if (!config.hasOwnProperty(k)) {
-          continue;
-      }
-
-      switch (k)
+      v = sucrose.utility.toNative(v);
+      switch (m)
       {
-        case 'colorData':
-          if (!chart.colorData) {
-              continue;
-          }
-          chart.colorData(config.colorData, config.colorOptions);
-          break;
-
         case 'showLabels':
-          v = !!parseInt(config[k], 10);
-          if (chart.xAxis) {
-              chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
+          v = !!v;
+          if (chart.showLabels) {
+            config[m] = v;
+            break;
           }
-          if (chart.yAxis) {
-              chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
+          if (chart.xAxisLabel) {
+            config['xAxisLabel'] = v ? 'X-Axis Label' : null;
+          }
+          if (chart.yAxisLabel) {
+            config['yAxisLabel'] = v ? 'Y-Axis Label' : null;
           }
           break;
-
-        case 'tickDisplay':
-          v = config[k];
+        case 'tick_display':
           if (chart.wrapTicks) {
-              chart.wrapTicks(v.indexOf('wrap') !== -1)
+            config['wrapTicks'] = v.indexOf('wrap') !== -1
           }
           if (chart.staggerTicks) {
-              chart.staggerTicks(v.indexOf('stagger') !== -1)
+            config['staggerTicks'] = v.indexOf('stagger') !== -1
           }
           if (chart.rotateTicks) {
-              chart.rotateTicks(v.indexOf('rotate') !== -1);
+            config['rotateTicks'] = v.indexOf('rotate') !== -1
           }
           break;
-
+        case 'colorData':
+          if (settings.colorOptions) {
+            config['colorData'] = [v, settings.colorOptions];
+          } else {
+            config['colorData'] = v;
+          }
+          break;
         default:
-          if (!chart[k]) {
-              continue;
-          }
-          v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
-          if (chart[k]) {
-            chart[k](v);
-          }
+          config[m] = v;
       }
-    }
+    });
+
+    Object.each(config, function(k, v) {
+      if (!chart[k]) {
+        delete config[k];
+        return;
+      }
+      config[k] = sucrose.utility.toNative(v);
+    });
+
+    return config;
   }
 
   var configs = {
@@ -140,10 +117,11 @@ var sucroseCharts = function() {
         } else if (chart.dataSeriesActivate) {
           chart.dataSeriesActivate(eo);
         }
+        chart.render();
       },
-      showTitle: true,
-      showLegend: true,
-      showControls: true,
+      showTitle: 'true',
+      showLegend: 'true',
+      showControls: 'true',
       strings: {
         legend: {close: 'Hide legend', open: 'Show legend'},
         controls: {close: 'Hide controls', open: 'Show controls'},
@@ -151,8 +129,8 @@ var sucroseCharts = function() {
         noLabel: 'undefined'
       },
       // state: {},
-      textureFill: true,
-      tooltips: true,
+      textureFill: 'true',
+      tooltips: 'true',
       width: null
       // x: null,
       // xDomain: null,
@@ -160,8 +138,8 @@ var sucroseCharts = function() {
       // yDomain: null
     },
     area: {
-      tooltips: true,
-      useVoronoi: false,
+      tooltips: 'true',
+      useVoronoi: 'false',
       _format: function format(chart, callback) {
         callback(chart);
       }
@@ -181,7 +159,7 @@ var sucroseCharts = function() {
           .tooltipContent(function(eo, properties) {
             var point = eo.point;
             return '<p>Assigned: <b>' + point.assigned_user_name + '</b></p>' +
-                   '<p>Amount: <b>$' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
+                   '<p>Amount: <b>' + d3.format(',.2d')(point.opportunity) + '</b></p>' +
                    '<p>Close Date: <b>' + d3.timeFormat('%x')(d3.timeParse('%Y-%m-%d')(point.x)) + '</b></p>' +
                    '<p>Probability: <b>' + point.probability + '%</b></p>' +
                    '<p>Account: <b>' + point.account_name + '</b></p>';
@@ -192,7 +170,7 @@ var sucroseCharts = function() {
     funnel: {
       minLabelWidth: null,
       wrapLabels: null,
-      showControls: false,
+      showControls: 'false',
       _format: function format(chart, callback) {
         chart
           .fmtValue(function(d) {
@@ -208,112 +186,73 @@ var sucroseCharts = function() {
       ringWidth: 50,
       maxValue: 9,
       transitionMs: 4000,
-      showControls: false,
+      showControls: 'false',
       _format: function format(chart, callback) {
         callback(chart);
       }
     },
     globe: {
-      showTitle: false,
+      showTitle: 'false',
       _format: function format(chart, callback) {
         d3.queue()
           .defer(d3.json, 'data/geo/world-countries-topo-110.json')
           .defer(d3.json, 'data/geo/usa-states-topo-110.json')
           .defer(d3.json, 'data/geo/cldr_en.json')
           .await(function(error, world, country, labels) {
+            var worldMap, countryMap;
             if (error) {
               return;
             }
+            worldMap = topojson.feature(world, world.objects.countries).features;
+            countryMap = {'USA': topojson.feature(country, country.objects.states).features};
             chart
-              .worldMap(topojson.feature(world, world.objects.countries).features)
-              .countryMap({'USA': topojson.feature(country, country.objects.states).features})
+              .worldMap(worldMap)
+              .countryMap(countryMap)
               .countryLabels(labels);
             callback(chart);
           });
       }
     },
     line: {
-      useVoronoi: true,
-      clipEdge: false,
+      useVoronoi: 'true',
+      clipEdge: 'false',
       _format: function format(chart, callback) {
-        // chart
-        //   .tooltipContent(function(eo, properties) {
-        //     var key = eo.series.key;
-        //     var x = eo.point.x;
-        //     var y = eo.point.y;
-        //     var value = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
-        //     var group = xIsDatetime && eo.group ?
-        //           sucrose.utility.dateFormat(eo.group.label, '%x', chart.locality()) :
-        //           chart.xAxis.tickFormat()(x, eo.pointIndex, null, false);
-        //     var content = '<p>Key: <b>' + key + '</b></p>';
-        //         content += '<p>' + (xIsDatetime ? 'Date' : 'Group') + ': <b>' + group + '</b></p>';
-        //         content += '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + value + '</b></p>';
-        //     return content;
-        //   });
         callback(chart);
       }
     },
     multibar: {
-      stacked: true,
+      stacked: 'true',
       _format: function format(chart, callback) {
-        // chart
-        //   .valueFormat(function(d) {
-        //     return sucrose.utility.numberFormatRound(d, 2, yIsCurrency, chart.locality());
-        //   })
-          // .yValueFormat(function(d, i, label, isCurrency, precision) {
-          //   precision = isNaN(precision) ? 2 : precision;
-          //   return sucrose.utility.numberFormatRound(d, precision, yIsCurrency, chart.locality());
-          // })
-          // .tooltipContent(function(eo, properties) {
-          //   var key = eo.series.key;
-          //   var label = eo.group.label;
-          //   var y = eo.point.y;
-          //   var x = eo.point.x;
-          //   var value = sucrose.utility.numberFormatRound(y, 2, yIsCurrency, chart.locality());
-          //   var group = xIsDatetime ?
-          //         sucrose.utility.dateFormat(label, '%x', chart.locality()) :
-          //         chart.xAxis.tickFormat()(x, eo.pointIndex, null, false);
-          //   var percent;
-          //   var content = '<p>Key: <b>' + key + '</b></p>';
-          //       content += '<p>' + (xIsDatetime ? 'Date' : 'Group') + ': <b>' + group + '</b></p>';
-          //       content += '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + value + '</b></p>';
-          //   if (typeof eo.group._height !== 'undefined') {
-          //     percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          //     percent = sucrose.utility.numberFormatRound(percent, 2, false, chart.locality());
-          //     content += '<p>Percentage: <b>' + percent + '%</b></p>';
-          //   }
-
-          //   return content;
-          // });
-          //TODO: fix multibar overfolow handler
-          // .overflowHandler(function(d) {
-          //   var b = $('body');
-          //   b.scrollTop(b.scrollTop() + d);
-          // });
+        //TODO: fix multibar overfolow handler
+        // chart.overflowHandler(function(d) {
+        //   var b = $('body');
+        //   b.scrollTop(b.scrollTop() + d);
+        // });
         callback(chart);
       }
     },
     pareto: {
-      stacked: true,
-      clipEdge: false,
+      //TODO: this needs to be set by data
+      stacked: 'false',
+      clipEdge: 'false',
       _format: function format(chart, callback) {
         chart
           .valueFormat(function(d) {
             return sucrose.utility.numberFormatSI(d, 0, yIsCurrency, chart.locality());
           })
           .tooltipBar(function(key, x, y, e, graph) {
-            var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality()),
-                percent = sucrose.utility.numberFormatRound(x, 2, false, chart.locality());
+            var val = sucrose.utility.numberFormat(Math.floor(y), 2, yIsCurrency, chart.locality()),
+                percent = sucrose.utility.numberFormat(x, 2, false, chart.locality());
             return '<p><b>' + key + '</b></p>' +
                    '<p><b>' + val + '</b></p>' +
                    '<p><b>' + percent + '%</b></p>';
           })
           .tooltipLine(function(key, x, y, e, graph) {
-            var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+            var val = sucrose.utility.numberFormat(Math.floor(y), 2, yIsCurrency, chart.locality());
             return '<p><p>' + key + ': <b>' + val + '</b></p>';
           })
           .tooltipQuota(function(key, x, y, e, graph) {
-            var val = sucrose.utility.numberFormatRound(parseInt(y, 10), 2, yIsCurrency, chart.locality());
+            var val = sucrose.utility.numberFormat(Math.floor(y), 2, yIsCurrency, chart.locality());
             return '<p>' + e.key + ': <b>' + val + '</b></p>';
           })
           .seriesClick(function(data, eo, chart, container) {
@@ -350,12 +289,12 @@ var sucroseCharts = function() {
       }
     },
     pie: {
-      donut: true,
+      donut: 'true',
       donutRatio: 0.5,
-      pieLabelsOutside: true,
+      pieLabelsOutside: 'true',
       maxRadius: 250,
       minRadius: 100,
-      showControls: false,
+      showControls: 'false',
       // rotateDegrees: 0,
       // arcDegrees: 360,
       // fixedRadius: function(container, chart) {
@@ -368,98 +307,83 @@ var sucroseCharts = function() {
       }
     },
     tree: {
-      horizontal: false,
+      horizontal: 'false',
       duration: 500,
       _format: function format(chart, callback) {
         chart
+          .duration(500)
           .nodeSize({'width': 124, 'height': 56})
+          .zoomExtents({'min': 0.25, 'max': 4})
           .nodeRenderer(function(content, d, w, h) {
             var nodeData = d.data;
+            var node = content.append('g').attr('class', 'sc-org-node');
+            var container = d3.select('#chart_ svg');
             if (!nodeData.image || nodeData.image === '') {
               nodeData.image = 'user.svg';
             }
-            var container = d3.select('#chart_ svg');
-            var node = content.append('g').attr('class', 'sc-org-node');
-                node.append('rect').attr('class', 'sc-org-bkgd')
-                  .attr('x', 0)
-                  .attr('y', 0)
-                  .attr('rx', 2)
-                  .attr('ry', 2)
-                  .attr('width', w)
-                  .attr('height', h);
-                node.append('image').attr('class', 'sc-org-avatar')
-                  .attr('xlink:href', 'img/' + nodeData.image)
-                  .attr('width', '32px')
-                  .attr('height', '32px')
-                  .attr('transform', 'translate(3, 3)')
-                  .on('error', function() {
-                    d3.select(this).attr('xlink:href', 'img/user.svg');
-                  });
-                node.append('text').attr('class', 'sc-org-name')
-                  .attr('data-url', nodeData.url)
-                  .attr('transform', 'translate(38, 11)')
-                  .text(function() {
-                    return sucrose.utility.stringEllipsify(nodeData.name, container, 96);
-                  });
-                node.append('text').attr('class', 'sc-org-title')
-                  .attr('data-url', nodeData.url)
-                  .attr('transform', 'translate(38, 21)')
-                  .text(function() {
-                    return sucrose.utility.stringEllipsify(nodeData.title, container, 96);
-                  });
+
+            node.append('rect').attr('class', 'sc-org-bkgd')
+              .attr('x', 0)
+              .attr('y', 0)
+              .attr('rx', 2)
+              .attr('ry', 2)
+              .attr('width', w)
+              .attr('height', h);
+            node.append('image').attr('class', 'sc-org-avatar')
+              .attr('xlink:href', 'img/' + nodeData.image)
+              .attr('width', '32px')
+              .attr('height', '32px')
+              .attr('transform', 'translate(3, 3)')
+              .on('error', function() {
+                d3.select(this).attr('xlink:href', 'img/user.svg');
+              });
+            node.append('text').attr('class', 'sc-org-name')
+              .attr('data-url', nodeData.url)
+              .attr('transform', 'translate(38, 11)')
+              .text(function() {
+                return sucrose.utility.stringEllipsify(nodeData.name, container, 96);
+              });
+            node.append('text').attr('class', 'sc-org-title')
+              .attr('data-url', nodeData.url)
+              .attr('transform', 'translate(38, 21)')
+              .text(function() {
+                return sucrose.utility.stringEllipsify(nodeData.title, container, 96);
+              });
+
+            node
+              .on('mouseenter', function(d) {
+                d3.select(this)
+                  .select('.sc-org-name')
+                    .style('text-decoration', 'underline');
+              })
+              .on('mouseleave', function(d) {
+                d3.select(this)
+                  .select('.sc-org-name')
+                    .style('text-decoration', 'none');
+              });
+
             return node;
           })
-          .zoomExtents({'min': 0.25, 'max': 4})
           .nodeClick(function(d) {
-            alert(d.data.name + ' clicked!');
+            console.log(d.data.name + ' clicked!');
           })
-          .nodeCallback(function(nodes) {
-            var container = d3.select('#chart_ svg');
-            // nodes is the array of enter nodes
-            nodes
-              .on('mouseover', function(d) {
-                var useId = d3.select(this).attr('href');
-                container
-                  .select(useId)
-                  .select('.sc-org-name')
-                  .classed('hover', true);
-              })
-              .on('mouseout', function(d) {
-                var useId = d3.select(this).attr('href');
-                container
-                  .select(useId)
-                  .select('.sc-org-name')
-                  .classed('hover', false);
-              });
+          .nodeCallback(function(d, i) {
+            var node = d3.select(this);
           });
 
         callback(chart);
       }
     },
     treemap: {
-      showTitle: false,
-      showLegend: false,
-      showControls: false,
+      showTitle: 'false',
+      showLegend: 'false',
+      showControls: 'false',
       _format: function format(chart, callback) {
         chart
-          .leafClick(function(d) {
-            alert('leaf clicked');
+          .seriesClick(function(data, eo, chart) {
+            chart.cellActivate(eo);
           })
           .getValue(function(d) { return d.size; });
-          // .tooltipContent(function(point) {
-          //   var rep = (point.assigned_user_name) ? point.assigned_user_name : (point.className) ? point.parent.name : point.name,
-          //       stage = (point.sales_stage) ? point.sales_stage : (point.className) ? point.name : null,
-          //       account = (point.account_name) ? point.account_name : null;
-          //   var tt = '<p>Amount: <b>$' + d3.format(',.2s')(point.value) + '</b></p>' +
-          //            '<p>Sales Rep: <b>' + rep + '</b></p>';
-          //   if (stage) {
-          //     tt += '<p>Stage: <b>' + stage + '</b></p>';
-          //   }
-          //   if (account) {
-          //     tt += '<p>Account: <b>' + account + '</b></p>';
-          //   }
-          //   return tt;
-          // })
         callback(chart);
       }
     }
@@ -473,8 +397,8 @@ var sucroseCharts = function() {
       return sucrose.charts[this.getChartModel(type)]();
     },
     getConfig: function(type, chart, settings) {
-      var defaultConfig = getDefaultConfiguration(type, chart);
-      return applyConfigurationSettings(defaultConfig, settings);
+      var config = getDefaultConfiguration(type, chart);
+      return applyConfigurationSettings(config, settings, chart);
     },
     get: function(type, locality) {
       var settings = {
@@ -483,7 +407,7 @@ var sucroseCharts = function() {
       var chart = this.getChart(type);
       var config = this.getConfig(type, chart, settings);
 
-      configureChart(type, chart, config);
+      chart.options(config);
       configs[type]._format(chart, function(d) { return; });
 
       // chart.transition().duration(500)
@@ -492,14 +416,9 @@ var sucroseCharts = function() {
       return chart;
     },
     formatToString: function(type) {
-      return configs[type]._format.toString()
-        .replace(/format\([a-z,\s]*\)/, 'format(callback)')
-        .replace(/\n\s*/g, '\n');
-    },
-    configureToString: function() {
-      return configureChart.toString()
-        .replace(/configureChart\([a-z,\s]*\)/, 'configure()')
-        .replace(/\n\s*/g, '\n');
+      var f = configs[type]._format.toString();
+      var ast = UglifyJS.parse(f);
+      return ast.print_to_string({beautify: true, quote_style: 3});
     }
   };
 

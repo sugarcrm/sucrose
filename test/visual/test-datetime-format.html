@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="UTF-8">
+  <title>Chart Time Formatting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="../../examples/css/examples.css">
+  <link rel="stylesheet" href="visual-tests.css">
+
+  <script src="../../examples/js/jquery.min.js"></script>
+  <script src="../../build/d3.min.js"></script>
+  <script src="../../build/sucrose.js"></script>
+</head>
+<body>
+  <div class="sc-demo sc-demo-locale">
+    <div class="page-header">
+      <h2>Chart Date Format Test</h2>
+    </div>
+    <button id="en_US_btn" class="btn-test active" data-lang="en_US">en_US</button>&nbsp;
+    <button id="ru_RU_btn" class="btn-test" data-lang="ru_RU">ru_RU</button>
+    <select id="test_date">
+
+      <option value="1330837567000">
+        1330837567000 [Timestamp]</option>
+
+      <option value="Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)">
+        Sun Mar 04 2012 05:06:07 GMT+0000 (UTC) [ECMA-262]</option>
+      <option value="Sun Mar 04 2012 00:06:07 GMT-0500 (EST)">
+        Sun Mar 04 2012 00:06:07 GMT-0500 (EST) [ECMA-262 w/ TZO]</option>
+      <option value="Sun Mar 04 2012 00:06:07">
+        Sun Mar 04 2012 00:06:07 [ECMA-262 w/o TZO]</option>
+      <!-- <option value="Mar 04 2012">
+        Mar 04 2012 [ECMA-262 date only]</option> -->
+
+      <option value="2012-03-04T05:06:07.000Z">
+        2012-03-04T05:06:07.000Z [W3C DTF]</option>
+      <option value="2012-03-04T05:06:07.000Z">
+        2012-03-04T05:06:07.000Z [ISO 8601]</option>
+      <option value="2012-03-04T00:06:07.000-05:00">
+        2012-03-04T00:06:07.000-05:00 [ISO 8601 w/ TZO]</option>
+      <option value="2012-03-04T00:06:07.000">
+        2012-03-04T00:06:07.000 [ISO 8601 w/o TZO]</option>
+      <!-- <option value="2012-03-04">
+        2012-03-04 [ISO 8601 date only]</option> -->
+
+      <option value="Sun, 04 Mar 2012 05:06:07 GMT">
+        March 4, 2012, 5:06:07 AM GMT [RFC2822]</option>
+      <option value="Sun, 04 Mar 2012 00:06:07 -0500">
+        March 4, 2012, 5:06:07 AM GMT [RFC2822 w/ TZO]</option>
+
+      <option value="Sun, 04 Mar 2012 05:06:07 GMT">
+        Sun, 04 Mar 2012 05:06:07 GMT [RFC 2616 - rfc822]</option>
+      <option value="Sunday, 04-Mar-12 05:06:07 GMT">
+        Sunday, 04-Mar-12 05:06:07 GMT [RFC 2616 - rfc850]</option>
+      <option value="Sun Mar  4 05:06:07 2012">
+        Sun Mar  4 05:06:07 2012 [RFC 2616 - asctime]</option>
+
+      <option value="March 4, 2012, 5:06:07 AM GMT">
+        March 4, 2012, 5:06:07 AM GMT</option>
+      <option value="March 4, 2012, 0:06:07 AM">
+        March 4, 2012, 0:06:07 AM</option>
+
+      <!-- <option value="April 2, 2016, 6:01:08 AM">April 2, 2016, 6:01:08 AM</option> -->
+    </select>&nbsp;
+    <table>
+        <thead>
+            <tr>
+                <th></th>
+                <th id="lang_header" colspan="4">ru_RU</th>
+            </tr>
+            <tr>
+                <th>Skeleton</th>
+                <th>Test Spec</th>
+                <th>D3 timeFormatLocale</th>
+                <th>Sucrose dateFormat RAW</th>
+                <th>Sucrose dateFormat parseDatetime</th>
+            </tr>
+        </thead>
+        <tbody id="compare"></tbody>
+    </table>
+  </div>
+
+  <h3>Computation Date Formats</h3>
+  <p>The various datetime formatting standards in use today are a rogues gallery. Its a real drag. Through in a
+    plethora of time zone and daylight saving rules, the ability to consistently format datetime values as strings
+  is an utter mess. Let's start with at the beginning.</p>
+
+<table>
+<tr>
+    <td><a href="http://www.ecma-international.org/ecma-262/6.0/#sec-date.prototype.tostring">ECMA-262</a></td>
+    <td>Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)</td>
+</tr>
+<tr>
+    <td>ECMA-262 (with time zone offset)</td>
+    <td>Sun Mar 04 2012 00:06:07 GMT-0500 (EST)</td>
+</tr>
+<tr>
+    <td><a href="https://www.iso.org/iso-8601-date-and-time-format.html">ISO-8601</a></td>
+    <td>2012-03-04T05:06:07.000Z</td>
+</tr>
+<tr>
+    <td><a href="https://www.w3.org/TR/NOTE-datetime">W3C DTF</a> (aka ECMAScript 5 ISO-8601)</td>
+    <td>2012-03-04T05:06:07.000Z</td>
+</tr>
+<tr>
+    <td><a href="https://tools.ietf.org/html/rfc2822#section-3.3">RFC2822</a> (IETF date syntax)</td>
+    <td>Sun, 04 Mar 2012 05:06:07 GMT</td>
+</tr>
+<tr>
+    <td><a href="https://tools.ietf.org/html/rfc2822#section-3.3">RFC2822 (with time zone offset)</a></td>
+    <td>Sun, 04 Mar 2012 00:06:07 -0500</td>
+</tr>
+<tr>
+    <td><a href="https://www.ietf.org/rfc/rfc2616.txt">RFC 822, updated by RFC 1123 (RFC 2616)</a></td>
+    <td>Sun, 04 Mar 2012 05:06:07 GMT</td>
+</tr>
+<tr>
+    <td><a href="https://www.ietf.org/rfc/rfc2616.txt">RFC 850, updated by RFC 1036 (RFC 2616)</a></td>
+    <td>Sunday, 04-Mar-12 05:06:07 GMT
+    </td>
+</tr>
+<tr>
+    <td><a href="https://www.ietf.org/rfc/rfc2616.txt">asctime (RFC 2616)</a></td>
+    <td>Sun Mar  4 05:06:07 2012</td>
+</tr>
+</table>
+<!--
+https://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html
+      Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
+      Sunday, 06-Nov-94 08:49:37 GMT ; RFC 850, obsoleted by RFC 1036
+      Sun Nov  6 08:49:37 1994       ; ANSI C's asctime() format
+
+https://www.ietf.org/rfc/rfc2616.txt
+       HTTP-date    = rfc1123-date | rfc850-date | asctime-date
+       rfc1123-date = wkday "," SP date1 SP time SP "GMT"
+       rfc850-date  = weekday "," SP date2 SP time SP "GMT"
+       asctime-date = wkday SP date3 SP time SP 4DIGIT
+       date1        = 2DIGIT SP month SP 4DIGIT
+                      ; day month year (e.g., 02 Jun 1982)
+       date2        = 2DIGIT "-" month "-" 2DIGIT
+                      ; day-month-year (e.g., 02-Jun-82)
+       date3        = month SP ( 2DIGIT | ( SP 1DIGIT ))
+                      ; month day (e.g., Jun  2)
+       time         = 2DIGIT ":" 2DIGIT ":" 2DIGIT
+                      ; 00:00:00 - 23:59:59
+       wkday        = "Mon" | "Tue" | "Wed"
+                    | "Thu" | "Fri" | "Sat" | "Sun"
+       weekday      = "Monday" | "Tuesday" | "Wednesday"
+                    | "Thursday" | "Friday" | "Saturday" | "Sunday"
+       month        = "Jan" | "Feb" | "Mar" | "Apr"
+                    | "May" | "Jun" | "Jul" | "Aug"
+                    | "Sep" | "Oct" | "Nov" | "Dec" -->
+<script>
+$(function () {
+
+    /* ----------------------------------
+    // Test Specs for standard formats
+    ---------------------------------- */
+    // date format specifiers
+    var skeletons = [
+        ['full', 's'],
+        ['long', 's'],
+        ['medium', 's'],
+        ['short', 's'],
+        ['yMMMEd', 'a'],
+        ['yMEd', 'a'],
+        ['yMMMMd', 'r'],
+        ['yMMMd', 'a'],
+        ['yMd', 'a'],
+        ['yMMMM', 'a'],
+        ['yMMM', 'a'],
+        ['MMMd', 'a'],
+        ['MMMM', 'r'],
+        ['MMM', 'a'],
+        ['y', 'a'],
+        ['yQQQQ', 'a'],
+        ['yQQQ', 'a']
+    ];
+
+    // spec for ru locale
+    var ru_Spec = [
+      "суббота, 2 апреля 2016 г., 6:01:08 GMT-04:00",
+      "2 апреля 2016 г., 6:01:08 GMT-4",
+      "2 апр. 2016 г., 6:01:08",
+      "02.04.16, 6:01",
+      "сб, 2 апр. 2016 г.",
+      "сб, 2.04.2016 г.",
+      "2 апреля 2016 г.",
+      "2 апр. 2016 г.",
+      "02.04.2016",
+      "апреля 2016 г.",
+      "апр. 2016 г.",
+      "2 апр.",
+      "апреля",
+      "апр.",
+      "2016",
+      "2-й квартал 2016 г.",
+      "2-й кв. 2016 г."
+    ];
+
+    // spec for en locale
+    var en_Spec = [
+      "Saturday, March 4, 2012 at 5:06:07 AM GMT-04:00",
+      "March 4, 2012 at 5:06:07 AM GMT-4",
+      "Mar 4, 2012, 5:06:07 AM",
+      "3/4/12, 5:06 AM",
+      "Sun, Mar 4, 2012",
+      "Sun, 3/4/2012",
+      "March 4, 2012",
+      "Mar 4, 2012",
+      "3/4/2012",
+      "March 2012",
+      "Mar 2012",
+      "Mar 4",
+      "March",
+      "Mar",
+      "2012",
+      "1st quarter 2012",
+      "Q1 2012"
+    ];
+
+    /* -------------------------------
+       Localities for Running Tests
+    ------------------------------- */
+
+    var ru_Locale = {
+        'decimal': ',',
+        'thousands': '\xa0',
+        'grouping': [3],
+        'currency': ['\u20BD', ''],
+        'dateTime': '%-d %B %Y \u0433., %X GMT%Z', //%c
+        'date': '%-d %b %Y \u0433.', //%x
+        'time': '%-H:%M:%S', //%X
+        'periods': ['AM', 'PM'],
+        'days': ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'],
+        'shortDays': ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'],
+        'months': ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+        'shortMonths': ['янв.', 'февр.', 'марта', 'апр.', 'мая', 'июня', 'июля', 'авг.', 'сент.', 'окт.', 'нояб.', 'дек.'],
+        // Custom patterns
+        'full': '%A, %c',
+        'long': '%c',
+        'medium': '%x, %X',
+        'short': '%d.%m.%y, %-H:%M',
+        'yMMMEd': '%a, %x',
+        'yMEd': '%a, %-d.%m.%Y \u0433.',
+        'yMMMMd': '%-d %B %Y \u0433.',
+        'yMMMd': '%x',
+        'yMd': '%d.%m.%Y',
+        'yMMMM': '%B %Y \u0433.',
+        'yMMM': '%b %Y \u0433.',
+        'MMMd': '%-d %b',
+        'MMMM': '%B',
+        'MMM': '%b',
+        'y': '%Y'
+    };
+
+    var en_Locale = {
+        'decimal': ',',
+        'thousands': ' ',
+        'grouping': [3],
+        'currency': ['$', ''],
+        'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
+        'date': '%b %-d, %Y', //%x
+        'time': '%-I:%M:%S', //%X
+        'periods': ['AM', 'PM'],
+        'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+        'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+        'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        // Custom patterns
+        'full': '%A, %c',
+        'long': '%c',
+        'medium': '%x, %X %p',
+        'short': '%-m/%-d/%y, %-I:%M %p',
+        'yMMMEd': '%a, %x',
+        'yMEd': '%a, %-m/%-d/%Y',
+        'yMMMMd': '%B %-d, %Y',
+        'yMMMd': '%x',
+        'yMd': '%-m/%-d/%Y',
+        'yMMMM': '%B %Y',
+        'yMMM': '%b %Y',
+        'MMMd': '%b %-d',
+        'MMMM': '%B',
+        'MMM': '%b',
+        'y': '%Y'
+    };
+
+    /* ------------------------------------------------------------
+       D3 Locale and Sucrose dateFormat Test Data
+    ------------------------------------------------------------ */
+
+    var compareData = [];
+
+    $('.btn-test').on('click', function() {
+        var lang = $(this).data('lang');
+        displayComparison(lang);
+    });
+    $('#test_date').on('change', function() {
+        var lang = $('.btn-test.active').data('lang');
+        generateComparison(lang);
+    });
+
+    function displayComparison(lang) {
+        lang = lang || 'en_US';
+
+        d3.select('#compare').selectAll('tr').remove();
+        var trows = d3.select('#compare').selectAll('tr').data(compareData);
+        var loc_Spec = lang === 'en_US' ? en_Spec : ru_Spec;
+
+        trows.enter().append('tr').html(function(d, i) {
+            var html = '<td><b>' + d[0] + '</b></td>'; //skeleton
+            var c1 = loc_Spec[i] == d[1] ? 'pass' : 'fail';
+            var c2 = loc_Spec[i] == d[2] ? 'pass' : 'fail';
+            var c3 = loc_Spec[i] == d[3] ? 'pass' : 'fail';
+
+            html += '<td><b>' + loc_Spec[i] + '</b></td>'; //jquery russian
+            html += '<td class="' + c1 + '">' + (d[1] || '') + '</td>'; //d3.timeFormatLocale
+            html += '<td class="' + c2 + '">' + (d[2] || '') + '</td>'; //dateFormat Date
+            html += '<td class="' + c3 + '">' + (d[3] || '') + '</td>'; //dateFormat String
+
+            return html;
+        });
+
+        $('.btn-test').removeClass('active');
+        $('#' + lang + '_btn').addClass('active');
+        $('#lang_header').text(lang);
+    }
+
+    function generateComparison(lang) {
+        var pattern, fmtr;
+
+        var l = skeletons.length;
+        var testDate = $('#test_date').val();
+        // var dt = new Date(testDate);
+        var dt = sucrose.utility.parseDatetime(testDate);
+        var locale = lang === 'en_US' ? en_Locale : ru_Locale;
+        var locale_fmtr = d3.timeFormatLocale(locale).format;
+
+        compareData = skeletons.map(function(d, i) { return [d[0]]; });
+
+        for (var i = 0; i < l; i += 1) {
+            pattern = compareData[i];
+            fmtr = locale[pattern];
+
+            compareData[i][1] = locale_fmtr(fmtr)(dt);
+            compareData[i][2] = sucrose.utility.dateFormat(testDate, fmtr, locale);
+            compareData[i][3] = sucrose.utility.dateFormat(dt, fmtr, locale);
+        }
+
+        displayComparison(lang);
+    }
+
+    generateComparison('en_US');
+});
+</script>
+</body>
+</html>

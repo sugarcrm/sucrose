@@ -6,13 +6,13 @@
     <title>Sucrose Chart - tree</title>
     <link rel="stylesheet" href="../build/sucrose.min.css">
     <style>
-        .chart {
-            position: absolute;
-            top: 24px;
-            right: 0;
-            bottom: 0;
-            left: 0;
-        }
+      .chart {
+        position: absolute;
+        top: 24px;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
     </style>
   </head>
   <body>
@@ -25,11 +25,11 @@
       <svg class="sucrose sc-chart"></svg>
     </div>
 
-    <script src="../build/d3.min.js"></script>
-    <!-- {{TopoJSON}} -->
-    <script src="../build/sucrose.min.js"></script>
+<script src="../build/d3.min.js"></script>
 
-    <script>
+<script src="../build/sucrose.js"></script>
+
+<script>
 var type = 'tree';
 var data = {
   "id": 10000,
@@ -184,294 +184,82 @@ var config = {
   "width": null,
   "horizontal": false,
   "duration": 500,
-  "colorData": "default",
-  "gradient": [
-    "0",
-    "vertical",
-    "middle"
-  ],
-  "direction": "ltr",
-  "locale": "en",
-  "showTitle": 1,
-  "showLabels": "0",
-  "vertical": 1,
-  "showValues": "1",
-  "allowScroll": 1,
-  "tickDisplay": [
-    "wrap",
-    "stagger",
-    "rotate"
-  ],
-  "mirrorAxis": "lab",
-  "holeLabel": "0",
-  "donut": "1",
-  "donutRatio": "0.4",
-  "wrapLabels": "1",
-  "show_pointer": "1",
-  "controls": "",
-  "autoSping": 0,
-  "locality": {
-    "label": "English (US)",
-    "decimal": ".",
-    "thousands": ",",
-    "grouping": [
-      3
-    ],
-    "currency": [
-      "$",
-      ""
-    ],
-    "dateTime": "%B %-d, %Y at %-I:%M:%S %p GMT%Z",
-    "date": "%-m/%-d/%Y",
-    "time": "%-I:%M %p",
-    "periods": [
-      "AM",
-      "PM"
-    ],
-    "days": [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday"
-    ],
-    "shortDays": [
-      "Sun",
-      "Mon",
-      "Tue",
-      "Wed",
-      "Thu",
-      "Fri",
-      "Sat"
-    ],
-    "months": [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December"
-    ],
-    "shortMonths": [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec"
-    ],
-    "full": "%A, %B %-d, %Y at %-I:%M:%S %p GMT%Z",
-    "long": "%B %-d, %Y at %-I:%M:%S %p GMT%Z",
-    "medium": "%b %-d, %Y, %-I:%M:%S %p",
-    "short": "%-m/%-d/%y, %-I:%M %p",
-    "yMMMEd": "E, %b %-d, %Y",
-    "yMEd": "E, %-m/%-d/%Y",
-    "yMMMMd": "%b %-d, %Y",
-    "yMMMd": "%b %-d, %Y",
-    "yMd": "%-m/%-d/%Y",
-    "yMMMM": "%B %Y",
-    "yMMM": "%b %Y",
-    "MMMd": "%b %-d",
-    "EEEE": "%A",
-    "MMMM": "%B",
-    "MMM": "%b",
-    "M": "%-m",
-    "y": "%Y",
-    "d": "%-d",
-    "E": "%a"
-  },
-  "colorOptions": {}
+  "showLabels": false
 };
+
 var chart = sucrose.charts.treeChart();
 
 var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
-function configure() {
-var k, v;
-for (k in config)
-{
-if (!config.hasOwnProperty(k)) {
-continue;
-}
-switch (k)
-{
-case 'colorData':
-if (!chart.colorData) {
-continue;
-}
-chart.colorData(config.colorData, config.colorOptions);
-break;
-case 'showLabels':
-v = !!parseInt(config[k], 10);
-if (chart.xAxis) {
-chart.xAxis.axisLabel(v ? 'X-Axis Label' : null);
-}
-if (chart.yAxis) {
-chart.yAxis.axisLabel(v ? 'Y-Axis Label' : null);
-}
-break;
-case 'tickDisplay':
-v = config[k];
-if (chart.wrapTicks) {
-chart.wrapTicks(v.indexOf('wrap') !== -1)
-}
-if (chart.staggerTicks) {
-chart.staggerTicks(v.indexOf('stagger') !== -1)
-}
-if (chart.rotateTicks) {
-chart.rotateTicks(v.indexOf('rotate') !== -1);
-}
-break;
-default:
-if (!chart[k]) {
-continue;
-}
-v = isNaN(parseInt(config[k], 10)) ? config[k] : parseInt(config[k], 10);
-if (chart[k]) {
-chart[k](v);
-}
-}
-}
-}
-
-function format(callback) {
-chart
-.nodeSize({'width': 124, 'height': 56})
-.nodeRenderer(function(content, d, w, h) {
-var nodeData = d.data;
-if (!nodeData.image || nodeData.image === '') {
-nodeData.image = 'user.svg';
-}
-var container = d3.select('#chart_ svg');
-var node = content.append('g').attr('class', 'sc-org-node');
-node.append('rect').attr('class', 'sc-org-bkgd')
-.attr('x', 0)
-.attr('y', 0)
-.attr('rx', 2)
-.attr('ry', 2)
-.attr('width', w)
-.attr('height', h);
-node.append('image').attr('class', 'sc-org-avatar')
-.attr('xlink:href', 'img/' + nodeData.image)
-.attr('width', '32px')
-.attr('height', '32px')
-.attr('transform', 'translate(3, 3)')
-.on('error', function() {
-d3.select(this).attr('xlink:href', 'img/user.svg');
-});
-node.append('text').attr('class', 'sc-org-name')
-.attr('data-url', nodeData.url)
-.attr('transform', 'translate(38, 11)')
-.text(function() {
-return sucrose.utility.stringEllipsify(nodeData.name, container, 96);
-});
-node.append('text').attr('class', 'sc-org-title')
-.attr('data-url', nodeData.url)
-.attr('transform', 'translate(38, 21)')
-.text(function() {
-return sucrose.utility.stringEllipsify(nodeData.title, container, 96);
-});
-return node;
-})
-.zoomExtents({'min': 0.25, 'max': 4})
-.nodeClick(function(d) {
-alert(d.data.name + ' clicked!');
-})
-.nodeCallback(function(nodes) {
-var container = d3.select('#chart_ svg');
-// nodes is the array of enter nodes
-nodes
-.on('mouseover', function(d) {
-var useId = d3.select(this).attr('href');
-container
-.select(useId)
-.select('.sc-org-name')
-.classed('hover', true);
-})
-.on('mouseout', function(d) {
-var useId = d3.select(this).attr('href');
-container
-.select(useId)
-.select('.sc-org-name')
-.classed('hover', false);
-});
-});
-callback(chart);
-}
-
-window.onload = function () {
-
-    // remap d3v4 to d3
-
-    // apply configuration
-    configure();
-
-    // format then render chart
-    format(function() {
-        // Bind D3 chart to SVG element
-        d3.select('#chart_ svg')
-            .attr('class', 'sucrose sc-chart sc-chart-' + type)
-            .datum(data)
-                .call(chart);
-
-        // Dismiss tooltips
-        d3.select('#chart_')
-            .on('click', function() {
-                if (chart.dispatch && chart.dispatch.chartClick) {
-                    chart.dispatch.chartClick();
-                }
-            });
-
-        // Rebind window resizer
-        window.addEventListener('resize', function() {
-            if (chart.render) {
-                chart.render();
-            } else if (chart.update) {
-                chart.update();
-            }
+function format(chart, callback) {
+    chart.duration(500).nodeSize({
+        width: 124,
+        height: 56
+    }).zoomExtents({
+        min: .25,
+        max: 4
+    }).nodeRenderer(function(content, d, w, h) {
+        var nodeData = d.data;
+        var node = content.append("g").attr("class", "sc-org-node");
+        var container = d3.select("#chart_ svg");
+        if (!nodeData.image || nodeData.image === "") {
+            nodeData.image = "user.svg";
+        }
+        node.append("rect").attr("class", "sc-org-bkgd").attr("x", 0).attr("y", 0).attr("rx", 2).attr("ry", 2).attr("width", w).attr("height", h);
+        node.append("image").attr("class", "sc-org-avatar").attr("xlink:href", "img/" + nodeData.image).attr("width", "32px").attr("height", "32px").attr("transform", "translate(3, 3)").on("error", function() {
+            d3.select(this).attr("xlink:href", "img/user.svg");
         });
-
-        var toggleChart = function(evt) {
-            var button = evt.target;
-            //if icon clicked get parent button
-            switch (button.dataset.control) {
-                case 'orientation':
-                    chart.nodeSize({'width': 124, 'height': 56}).orientation();
-                    break;
-
-                case 'show-all-nodes':
-                    chart.showall();
-                    break;
-
-                case 'zoom-to-fit':
-                    chart.resetZoom();
-                    break;
-
-                default:
-            }
-        };
-
-        document.querySelectorAll('.toggle-control').forEach(function($el) {
-          $el.addEventListener('click', toggleChart);
+        node.append("text").attr("class", "sc-org-name").attr("data-url", nodeData.url).attr("transform", "translate(38, 11)").text(function() {
+            return sucrose.utility.stringEllipsify(nodeData.name, container, 96);
         });
-
+        node.append("text").attr("class", "sc-org-title").attr("data-url", nodeData.url).attr("transform", "translate(38, 21)").text(function() {
+            return sucrose.utility.stringEllipsify(nodeData.title, container, 96);
+        });
+        node.on("mouseenter", function(d) {
+            d3.select(this).select(".sc-org-name").style("text-decoration", "underline");
+        }).on("mouseleave", function(d) {
+            d3.select(this).select(".sc-org-name").style("text-decoration", "none");
+        });
+        return node;
+    }).nodeClick(function(d) {
+        console.log(d.data.name + " clicked!");
+    }).nodeCallback(function(d, i) {
+        var node = d3.select(this);
     });
+    callback(chart);
+}
+
+window.onload = function() {
+  // apply configuration
+  chart.options(config);
+
+  // format then render chart
+  format(chart, function() {
+    // Bind D3 chart to SVG element
+    d3.select('#chart_ svg')
+      .attr('class', 'sucrose sc-chart sc-chart-' + type)
+      .datum(data)
+        .call(chart);
+
+    // Dismiss tooltips
+    d3.select('#chart_')
+      .on('click', function() {
+        if (chart.dispatch && chart.dispatch.chartClick) {
+          chart.dispatch.chartClick();
+        }
+      });
+
+    // Rebind window resizer
+    window.addEventListener('resize', function() {
+      if (chart.render) {
+        chart.render();
+      } else if (chart.update) {
+        chart.update();
+      }
+    });
+  });
 };
-    </script>
+</script>
   </body>
 </html>

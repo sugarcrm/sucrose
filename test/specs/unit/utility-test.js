@@ -51,15 +51,23 @@ tests("UNIT: utility -", function(t) {
     });
 
     t.test("functor: returns function that returns d", function(assert) {
-        let f = sucrose.utility.functor("d");
-        assert.equal(f(), "d");
+        let fn = sucrose.utility.functor("d");
+        assert.equal(fn(), "d");
         assert.end();
         t.register(assert, type);
     });
 
     t.test("functor: returns function that returns f", function(assert) {
-        let f = sucrose.utility.functor(function(d) {return d;});
-        assert.equal(f("d"), "d");
+        let fn = sucrose.utility.functor(function(d) {return d;});
+        assert.equal(fn("d"), "d");
+        assert.end();
+        t.register(assert, type);
+    });
+
+    t.test("isFunction: returns true for functions", function(assert) {
+        let fn = function(d) {return d;};
+        assert.equal(sucrose.utility.isFunction(fn), true);
+        assert.equal(sucrose.utility.isFunction("adsf"), false);
         assert.end();
         t.register(assert, type);
     });
@@ -178,38 +186,101 @@ tests("UNIT: utility -", function(t) {
         t.register(assert, type);
     });
 
+    t.test("isNumeric: checks if a value is a finite number", function(assert) {
+        assert.equal(sucrose.utility.isNumeric(123), true);
+        assert.equal(sucrose.utility.isNumeric("123"), false);
+        assert.equal(sucrose.utility.isNumeric(1/0), false);
+        assert.equal(sucrose.utility.isNumeric("abc"), false);
+        assert.end();
+        t.register(assert, type);
+    });
+
+    t.test("toNative: translates string values to boolean or number", function(assert) {
+        assert.equal(sucrose.utility.toNative("false"), false);
+        assert.equal(sucrose.utility.toNative("true"), true);
+        assert.equal(sucrose.utility.toNative("1"), 1);
+        assert.equal(sucrose.utility.toNative("asdf"), "asdf");
+        assert.end();
+        t.register(assert, type);
+    });
+
+    t.test("toBoolean: translates number or string to truthy value", function(assert) {
+        assert.equal(sucrose.utility.toBoolean("false"), false);
+        assert.equal(sucrose.utility.toBoolean("true"), true);
+        assert.equal(sucrose.utility.toBoolean("1"), true);
+        assert.equal(sucrose.utility.toBoolean(0), false);
+        assert.equal(sucrose.utility.toBoolean("asdf"), "asdf");
+        assert.end();
+        t.register(assert, type);
+    });
+
+    t.test("countSigFigsAfter: returns the number of decimal places of a number", function(assert) {
+        assert.equal(sucrose.utility.countSigFigsAfter(123), 0);
+        assert.equal(sucrose.utility.countSigFigsAfter(123.345), 3);
+        assert.equal(sucrose.utility.countSigFigsAfter(123.340), 2);
+        assert.end();
+        t.register(assert, type);
+    });
+
+    t.test("countSigFigsBefore: returns the significant digits before the decimal", function(assert) {
+        assert.equal(sucrose.utility.countSigFigsBefore(123), 3);
+        assert.equal(sucrose.utility.countSigFigsBefore(123.345), 3);
+        assert.equal(sucrose.utility.countSigFigsBefore(1200.340), 2);
+        assert.end();
+        t.register(assert, type);
+    });
+
+    t.test("siValue: returns the exponential value of si unit", function(assert) {
+        assert.equal(sucrose.utility.siValue("k"), 1e3);
+        assert.equal(sucrose.utility.siValue("kilo"), 1e3);
+        assert.end();
+        t.register(assert, type);
+    });
+
+
+    t.test("siDecimal: returns the thousands magnitude of number", function(assert) {
+        assert.equal(sucrose.utility.siDecimal(10), 1e1);
+        assert.equal(sucrose.utility.siDecimal(1000), 1e3);
+        assert.equal(sucrose.utility.siDecimal(1234), 1e3);
+        assert.equal(sucrose.utility.siDecimal(1000000), 1e6);
+        assert.equal(sucrose.utility.siDecimal(1234567), 1e6);
+        assert.end();
+        t.register(assert, type);
+    });
+
+
     // Format tests
 
     t.test("buildLocality: returns a d3 locale options hashmap", function(assert) {
         let opts = {
-            'decimal': '.',
-            'thousands': ',',
-            'grouping': [3],
-            'currency': ['$', ''],
-            'periods': ['AM', 'PM'],
-            'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-            'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-            'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-            'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            'date': '%b %-d, %Y', //defines %x
-            'time': '%-I:%M:%S %p', //defines %X
-            'dateTime': '%B %-d, %Y at %X GMT%Z', //defines %c
+            "decimal": ".",
+            "thousands": ",",
+            "grouping": [3],
+            "currency": ["$", ""],
+            "periods": ["AM", "PM"],
+            "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+            "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+            "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+            "date": "%b %-d, %Y", //defines %x
+            "time": "%-I:%M:%S %p", //defines %X
+            "dateTime": "%B %-d, %Y at %X GMT%Z", //defines %c
             // Custom patterns
-            'full': '%A, %c',
-            'long': '%c',
-            'medium': '%x, %X',
-            'short': '%-m/%-d/%y, %-I:%M %p',
-            'yMMMEd': '%a, %x',
-            'yMEd': '%a, %-m/%-d/%Y',
-            'yMMMMd': '%B %-d, %Y',
-            'yMMMd': '%x',
-            'yMd': '%-m/%-d/%Y',
-            'yMMMM': '%B %Y',
-            'yMMM': '%b %Y',
-            'MMMd': '%b %-d',
-            'MMMM': '%B',
-            'MMM': '%b',
-            'y': '%Y'
+            "full": "%A, %c",
+            "long": "%c",
+            "medium": "%x, %X",
+            "short": "%-m/%-d/%y, %-I:%M %p",
+            "yMMMEd": "%a, %x",
+            "yMEd": "%a, %-m/%-d/%Y",
+            "yMMMMd": "%B %-d, %Y",
+            "yMMMd": "%x",
+            "yMd": "%-m/%-d/%Y",
+            "yMMMM": "%B %Y",
+            "yMMM": "%b %Y",
+            "MMMd": "%b %-d",
+            "MMMM": "%B",
+            "MMM": "%b",
+            "y": "%Y"
           };
         let locale = sucrose.utility.buildLocality();
         assert.deepEqual(locale, opts);
@@ -228,144 +299,184 @@ tests("UNIT: utility -", function(t) {
     //     t.register(assert, type);
     // });
 
-    t.test("numberFormatSI: formats numer in SI units", function(assert) {
+    t.test("numberFormatSI: formats number in SI units", function(assert) {
         const fmtr = sucrose.utility.numberFormatSI;
         let locale = {
-              'decimal': '.',
-              'thousands': ',',
-              'grouping': [3],
-              'currency': ['$', ''],
-              'dateTime': '%B %-d, %Y at %X %p GMT%Z', //%c
-              'date': '%b %-d, %Y', //%x
-              'time': '%-I:%M:%S', //%X
-              'periods': ['AM', 'PM'],
-              'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-              'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-              'months': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-              'shortMonths': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+              "decimal": ".",
+              "thousands": ",",
+              "grouping": [3],
+              "currency": ["$", ""],
+              "dateTime": "%B %-d, %Y at %X %p GMT%Z", //%c
+              "date": "%b %-d, %Y", //%x
+              "time": "%-I:%M:%S", //%X
+              "periods": ["AM", "PM"],
+              "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+              "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+              "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+              "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
               // Custom patterns
-              'full': '%A, %c',
-              'long': '%c',
-              'medium': '%x, %X %p',
-              'short': '%-m/%-d/%y, %-I:%M %p',
-              'yMMMEd': '%a, %x',
-              'yMEd': '%a, %-m/%-d/%Y',
-              'yMMMMd': '%B %-d, %Y',
-              'yMMMd': '%x',
-              'yMd': '%-m/%-d/%Y',
-              'yMMMM': '%B %Y',
-              'yMMM': '%b %Y',
-              'MMMd': '%b %-d',
-              'MMMM': '%B',
-              'MMM': '%b',
-              'y': '%Y'
+              "full": "%A, %c",
+              "long": "%c",
+              "medium": "%x, %X %p",
+              "short": "%-m/%-d/%y, %-I:%M %p",
+              "yMMMEd": "%a, %x",
+              "yMEd": "%a, %-m/%-d/%Y",
+              "yMMMMd": "%B %-d, %Y",
+              "yMMMd": "%x",
+              "yMd": "%-m/%-d/%Y",
+              "yMMMM": "%B %Y",
+              "yMMM": "%b %Y",
+              "MMMd": "%b %-d",
+              "MMMM": "%B",
+              "MMM": "%b",
+              "y": "%Y"
             };
         let currency = false;
         let precision = 0;
         assert.equal(fmtr(1, precision, currency, locale), "1");
-        assert.equal(fmtr(1, 2, true, locale), "$1.0");
-        assert.equal(fmtr(1, 2, false, locale), "1.0");
+        assert.equal(fmtr(1, 2, true, locale), "$1");
+        assert.equal(fmtr(1, 2, false, locale), "1");
         assert.equal(fmtr(10, 2, false, locale), "10");
         assert.equal(fmtr(100, 2, false, locale), "100");
-        assert.equal(fmtr(1000, 2, false, locale), "1,000");
+        assert.equal(fmtr(1000, 2, false, locale), "1k");
         assert.equal(fmtr(10000, 2, false, locale), "10k");
         assert.equal(fmtr(100000, 2, false, locale), "100k");
-        assert.equal(fmtr(1000000, 2, false, locale), "1.0M");
+        assert.equal(fmtr(1000000, 2, false, locale), "1M");
         assert.equal(fmtr(1000000, 0, false, locale), "1M");
         assert.equal(fmtr(100, 2, true, locale), "$100");
-        assert.equal(fmtr(100.24, 0, true, locale), "$100.24");
+        assert.equal(fmtr(100.24, 0, true, locale), "$100");
         // assert.equal(sucrose.utility.numberFormatSI(100.24, 2, true, locale), "$100.24");
         assert.end();
         t.register(assert, type);
     });
 
-    t.test("numberFormatRound: rounds and formats number with given precision, currency and locale", function(assert) {
-        const fmtr = sucrose.utility.numberFormatRound;
+    t.test("numberFormatSIFixed: formats number in SI units to a fixed position", function(assert) {
+        const fmtr = sucrose.utility.numberFormatSIFixed;
+        let locale = {
+              "decimal": ".",
+              "thousands": ",",
+              "grouping": [3],
+              "currency": ["$", ""],
+              "dateTime": "%B %-d, %Y at %X %p GMT%Z", //%c
+              "date": "%b %-d, %Y", //%x
+              "time": "%-I:%M:%S", //%X
+              "periods": ["AM", "PM"],
+              "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+              "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+              "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+              "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+              // Custom patterns
+              "full": "%A, %c",
+              "long": "%c",
+              "medium": "%x, %X %p",
+              "short": "%-m/%-d/%y, %-I:%M %p",
+              "yMMMEd": "%a, %x",
+              "yMEd": "%a, %-m/%-d/%Y",
+              "yMMMMd": "%B %-d, %Y",
+              "yMMMd": "%x",
+              "yMd": "%-m/%-d/%Y",
+              "yMMMM": "%B %Y",
+              "yMMM": "%b %Y",
+              "MMMd": "%b %-d",
+              "MMMM": "%B",
+              "MMM": "%b",
+              "y": "%Y"
+            };
+        let currency = false;
+        let precision = 0;
+        assert.equal(fmtr(1, precision, currency, locale), "1");
+        assert.equal(fmtr(1, 2, true, locale, 0), "$1.00");
+        assert.equal(fmtr(1, 2, false, locale), "1.00");
+        assert.equal(fmtr(10, 2, false, locale), "10.00");
+        assert.equal(fmtr(100, 2, false, locale), "100.00");
+        assert.equal(fmtr(1000, 2, false, locale, "k"), "1.00k");
+        assert.equal(fmtr(10000, 2, false, locale, 1000), "10.00k");
+        assert.equal(fmtr(100000, 2, false, locale, "kilo"), "100.00k");
+        assert.equal(fmtr(1000000, 2, false, locale, "M"), "1.00M");
+        assert.equal(fmtr(1000000, 0, false, locale, "M"), "1M");
+        assert.equal(fmtr(100, 2, true, locale), "$100.00");
+        assert.equal(fmtr(100.24, 0, true, locale), "$100");
+        // assert.equal(sucrose.utility.numberFormatSI(100.24, 2, true, locale), "$100.24");
+        assert.end();
+        t.register(assert, type);
+    });
+
+    t.test("numberFormat: rounds and formats number with given precision, currency and locale", function(assert) {
+        const fmtr = sucrose.utility.numberFormat;
         assert.equal(fmtr(Math.PI, 5, true), "$3.14159");
         assert.equal(fmtr(Math.PI, 4, true), "$3.1416");
         assert.equal(fmtr(Math.PI, 3, false), "3.142");
         assert.equal(fmtr(Math.PI, 2), "3.14");
+        assert.equal(fmtr(0, 2), "0");
+        assert.equal(fmtr(123.450, 2), "123.45");
+        assert.equal(fmtr(123.450, 3), "123.45");
         // yeah, i know it technically breaks unitized tests
         let locale = sucrose.utility.buildLocality({
-              'decimal': ',',
-              'thousands': ' '
+              "decimal": ",",
+              "thousands": " "
             });
         assert.equal(fmtr(Math.PI * 1000, 1, true, locale), "$3 141,6");
         assert.end();
         t.register(assert, type);
     });
 
-    t.test("dateFormat: formats datetime objects and strings", function(assert) {
-        const fmtr = sucrose.utility.dateFormat;
+    t.test("numberFormatFixed: formats number with given precision, currency and locale", function(assert) {
+        const fmtr = sucrose.utility.numberFormatFixed;
+        assert.equal(fmtr(Math.PI, 5, true), "$3.14159");
+        assert.equal(fmtr(Math.PI, 4, true), "$3.1416");
+        assert.equal(fmtr(Math.PI, 3, false), "3.142");
+        assert.equal(fmtr(Math.PI, 2), "3.14");
+        assert.equal(fmtr(0, 2), "0.00");
+        // yeah, i know it technically breaks unitized tests
+        let locale = sucrose.utility.buildLocality({
+              "decimal": ",",
+              "thousands": " "
+            });
+        assert.equal(fmtr(Math.PI * 1000, 1, true, locale), "$3 141,6");
+        assert.end();
+        t.register(assert, type);
+    });
 
-        assert.equal(fmtr(1994, "periods"), "AM,PM");
-        assert.equal(fmtr(1994, "days"), "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday");
-        assert.equal(fmtr(1994, "shortDays"), "Sun,Mon,Tue,Wed,Thu,Fri,Sat");
-        assert.equal(fmtr(1994, "months"), "January,February,March,April,May,June,July,August,September,October,November,December");
-        assert.equal(fmtr(1994, "shortMonths"), "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec");
-
-        assert.equal(fmtr(1994), "1994");
-        assert.equal(fmtr(1994, "date"), "Jan 1, 1994");
-        assert.equal(fmtr(1994, "yMMMd"), "Jan 1, 1994");
-        assert.equal(fmtr(1994, "%x"), "Jan 1, 1994");
-        assert.equal(fmtr(1994, "time"), "12:00:00 AM");
-        assert.equal(fmtr(1994, "%X"), "12:00:00 AM");
-        assert.equal(fmtr(1994, "dateTime"), "January 1, 1994 at 12:00:00 AM GMT+0000");
-        assert.equal(fmtr(1994, "%c"), "January 1, 1994 at 12:00:00 AM GMT+0000");
-        assert.equal(fmtr(1994, "long"), "January 1, 1994 at 12:00:00 AM GMT+0000");
-
-        assert.equal(fmtr(1994, "full"), "Saturday, January 1, 1994 at 12:00:00 AM GMT+0000");
-        assert.equal(fmtr(1994, "%A, %c"), "Saturday, January 1, 1994 at 12:00:00 AM GMT+0000");
-        assert.equal(fmtr(1994, "medium"), "Jan 1, 1994, 12:00:00 AM");
-        assert.equal(fmtr(1994, "%x, %X"), "Jan 1, 1994, 12:00:00 AM");
-        assert.equal(fmtr(1994, "short"), "1/1/94, 12:00 AM");
-        assert.equal(fmtr(1994, "%-m/%-d/%y, %-I:%M %p"), "1/1/94, 12:00 AM");
-        assert.equal(fmtr(1994, "yMMMEd"), "Sat, Jan 1, 1994");
-        assert.equal(fmtr(1994, "%a, %x"), "Sat, Jan 1, 1994");
-        assert.equal(fmtr(1994, "yMEd"), "Sat, 1/1/1994");
-        assert.equal(fmtr(1994, "%a, %-m/%-d/%Y"), "Sat, 1/1/1994");
-        assert.equal(fmtr(1994, "yMMMMd"), "January 1, 1994");
-        assert.equal(fmtr(1994, "%B %-d, %Y"), "January 1, 1994");
-        assert.equal(fmtr(1994, "yMd"), "1/1/1994");
-        assert.equal(fmtr(1994, "%-m/%-d/%Y"), "1/1/1994");
-        assert.equal(fmtr(1994, "yMMMM"), "January 1994");
-        assert.equal(fmtr(1994, "%B %Y"), "January 1994");
-        assert.equal(fmtr(1994, "yMMM"), "Jan 1994");
-        assert.equal(fmtr(1994, "%b %Y"), "Jan 1994");
-        assert.equal(fmtr(1994, "MMMd"), "Jan 1");
-        assert.equal(fmtr(1994, "%b %-d"), "Jan 1");
-        assert.equal(fmtr(1994, "MMMM"), "January");
-        assert.equal(fmtr(1994, "%B"), "January");
-        assert.equal(fmtr(1994, "MMM"), "Jan");
-        assert.equal(fmtr(1994, "%b"), "Jan");
-        assert.equal(fmtr(1994, "y"), "1994");
-        assert.equal(fmtr(1994, "%Y"), "1994");
-
+    t.test("parseDatetime: returns matching d3 date format specifier given array of datetime objects", function(assert) {
+        const fmtr = sucrose.utility.parseDatetime;
+        let expected = new Date("Fri Dec 31 1993 19:00:00 GMT-0500 (EST)").valueOf();
+        assert.equal(fmtr(1994).valueOf(), expected);
+        assert.equal(fmtr('1994').valueOf(), expected);
+        expected = new Date(1330837567000).valueOf();
+        assert.equal(fmtr(1330837567000).valueOf(), expected);
+        assert.equal(fmtr("1330837567000").valueOf(), expected);
+        assert.equal(fmtr("2012-03-04T05:06:07.000Z").valueOf(), expected);
+        assert.equal(fmtr("2012-03-04T00:06:07.000-05:00").valueOf(), expected);
+        assert.equal(fmtr("2012-03-04T05:06:07.000Z").valueOf(), expected);
+        assert.equal(fmtr("March 4, 2012, 5:06:07 AM").valueOf(), expected);
+        assert.equal(fmtr("March 4, 2012, 5:06:07 AM GMT").valueOf(), expected);
+        assert.equal(fmtr("Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)").valueOf(), expected);
+        assert.equal(fmtr("Sun Mar 04 2012 00:06:07 GMT-0500 (EST)").valueOf(), expected);
         assert.end();
         t.register(assert, type);
     });
 
     t.test("getDateFormat: returns matching d3 date format specifier given array of datetime objects", function(assert) {
         const fmtr = sucrose.utility.getDateFormat;
-        assert.equal(fmtr([new Date("1991-2-3, 4:05:06 AM")]), ":%S");
-        assert.equal(fmtr([new Date("1991-2-3, 4:05:00 AM")]), "%I:%M");
-        assert.equal(fmtr([new Date("1991-2-3, 4:00:00 AM")]), "%I %p");
+        assert.equal(fmtr([new Date("1991-2-3, 4:05:06 AM")]), "%x, %I:%M:%S %p");
+        assert.equal(fmtr([new Date("1991-2-3, 4:05:00 AM")]), "%x, %I:%M %p");
+        assert.equal(fmtr([new Date("1991-2-3, 4:00:00 AM")]), "%x, %I %p");
         assert.equal(fmtr([new Date("1991-2-3")]), "%x");
-        assert.equal(fmtr([new Date("1991-2-1")]), "%B");
+        assert.equal(fmtr([new Date("1991-2-1")]), "%B %Y");
         assert.equal(fmtr([new Date("1991-1-1")]), "%Y");
 
         assert.end();
         t.register(assert, type);
     });
 
-    t.test("getUTCDateFormat: returns matching d3 date format specifier given array of datetime objects", function(assert) {
-        const fmtr = sucrose.utility.getDateFormat;
-        assert.equal(fmtr([new Date("1991-2-3, 4:05:06 AM")]), ":%S");
-        assert.equal(fmtr([new Date("1991-2-3, 4:05:00 AM")]), "%I:%M");
-        assert.equal(fmtr([new Date("1991-2-3, 4:00:00 AM")]), "%I %p");
-        assert.equal(fmtr([new Date("1991-2-3")]), "%x");
-        assert.equal(fmtr([new Date("1991-2-1")]), "%B");
-        assert.equal(fmtr([new Date("1991-1-1")]), "%Y");
+    t.test("getDateFormatUTC: returns matching d3 date format specifier given array of datetime objects", function(assert) {
+        const fmtr = sucrose.utility.getDateFormatUTC;
+        assert.equal(fmtr([new Date("1991-2-3, 4:05:06 AM GMT")]), "%x, %I:%M:%S %p");
+        assert.equal(fmtr([new Date("1991-2-3, 4:05:00 AM GMT")]), "%x, %I:%M %p");
+        assert.equal(fmtr([new Date("1991-2-3, 4:00:00 AM GMT")]), "%x, %I %p");
+        assert.equal(fmtr([new Date("1991-2-3 GMT")]), "%x");
+        assert.equal(fmtr([new Date("1991-2-1 GMT")]), "%B %Y");
+        assert.equal(fmtr([new Date("1991-1-1 GMT")]), "%Y");
 
         assert.end();
         t.register(assert, type);
@@ -373,12 +484,65 @@ tests("UNIT: utility -", function(t) {
 
     t.test("multiFormat: returns matching d3 date format specifier given datetime object", function(assert) {
         const fmtr = sucrose.utility.multiFormat;
-        assert.equal(fmtr(new Date("2017-1-1")), "%Y");
-        assert.equal(fmtr(new Date("2017-2-1")), "%B");
-        assert.equal(fmtr(new Date("2017-2-13")), "%x");
-        assert.equal(fmtr(new Date("1/1/1994, 5:00 AM")), "%I %p");
-        // assert.equal(fmtr(new Date("1/1/1994, 5:02 AM")), "%I %p");
-        // assert.equal(fmtr(new Date(757400400001)), "%x");
+        assert.equal(fmtr(new Date("2017-1-1"), false), "%Y");
+        assert.equal(fmtr(new Date("2017-2-1"), false), "%B %Y");
+        assert.equal(fmtr(new Date("2017-2-13"), false), "%x");
+        assert.equal(fmtr(new Date("1/1/1994, 5:00 AM")), "%x, %I %p");
+        assert.equal(fmtr(new Date("1/1/1994, 5:02 AM")), "%x, %I:%M %p");
+        assert.equal(fmtr(new Date("1/1/1994, 5:02:45 AM")), "%x, %I:%M:%S %p");
+        assert.equal(fmtr(new Date(757400400001)), "%x, %I:%M:%S.%L %p");
+        assert.end();
+        t.register(assert, type);
+    });
+
+    t.test("dateFormat: formats datetime objects and strings", function(assert) {
+        const fmtr = sucrose.utility.dateFormat;
+        // let dto = new Date(1994, 0, 1);
+        let dto = 1994;
+
+        assert.equal(fmtr(dto, "periods"), "AM,PM");
+        assert.equal(fmtr(dto, "days"), "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday");
+        assert.equal(fmtr(dto, "shortDays"), "Sun,Mon,Tue,Wed,Thu,Fri,Sat");
+        assert.equal(fmtr(dto, "months"), "January,February,March,April,May,June,July,August,September,October,November,December");
+        assert.equal(fmtr(dto, "shortMonths"), "Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec");
+
+        assert.equal(fmtr(dto), "1994");
+        assert.equal(fmtr(dto, "date"), "Jan 1, 1994");
+        assert.equal(fmtr(dto, "yMMMd"), "Jan 1, 1994");
+        assert.equal(fmtr(dto, "%x"), "Jan 1, 1994");
+        assert.equal(fmtr(dto, "time"), "12:00:00 AM");
+        assert.equal(fmtr(dto, "%X"), "12:00:00 AM");
+        assert.equal(fmtr(dto, "dateTime"), "January 1, 1994 at 12:00:00 AM GMT+0000");
+        assert.equal(fmtr(dto, "%c"), "January 1, 1994 at 12:00:00 AM GMT+0000");
+        assert.equal(fmtr(dto, "long"), "January 1, 1994 at 12:00:00 AM GMT+0000");
+
+        assert.equal(fmtr(dto, "full"), "Saturday, January 1, 1994 at 12:00:00 AM GMT+0000");
+        assert.equal(fmtr(dto, "%A, %c"), "Saturday, January 1, 1994 at 12:00:00 AM GMT+0000");
+        assert.equal(fmtr(dto, "medium"), "Jan 1, 1994, 12:00:00 AM");
+        assert.equal(fmtr(dto, "%x, %X"), "Jan 1, 1994, 12:00:00 AM");
+        assert.equal(fmtr(dto, "short"), "1/1/94, 12:00 AM");
+        assert.equal(fmtr(dto, "%-m/%-d/%y, %-I:%M %p"), "1/1/94, 12:00 AM");
+        assert.equal(fmtr(dto, "yMMMEd"), "Sat, Jan 1, 1994");
+        assert.equal(fmtr(dto, "%a, %x"), "Sat, Jan 1, 1994");
+        assert.equal(fmtr(dto, "yMEd"), "Sat, 1/1/1994");
+        assert.equal(fmtr(dto, "%a, %-m/%-d/%Y"), "Sat, 1/1/1994");
+        assert.equal(fmtr(dto, "yMMMMd"), "January 1, 1994");
+        assert.equal(fmtr(dto, "%B %-d, %Y"), "January 1, 1994");
+        assert.equal(fmtr(dto, "yMd"), "1/1/1994");
+        assert.equal(fmtr(dto, "%-m/%-d/%Y"), "1/1/1994");
+        assert.equal(fmtr(dto, "yMMMM"), "January 1994");
+        assert.equal(fmtr(dto, "%B %Y"), "January 1994");
+        assert.equal(fmtr(dto, "yMMM"), "Jan 1994");
+        assert.equal(fmtr(dto, "%b %Y"), "Jan 1994");
+        assert.equal(fmtr(dto, "MMMd"), "Jan 1");
+        assert.equal(fmtr(dto, "%b %-d"), "Jan 1");
+        assert.equal(fmtr(dto, "MMMM"), "January");
+        assert.equal(fmtr(dto, "%B"), "January");
+        assert.equal(fmtr(dto, "MMM"), "Jan");
+        assert.equal(fmtr(dto, "%b"), "Jan");
+        assert.equal(fmtr(dto, "y"), "1994");
+        assert.equal(fmtr(dto, "%Y"), "1994");
+
         assert.end();
         t.register(assert, type);
     });
@@ -393,7 +557,9 @@ tests("UNIT: utility -", function(t) {
     });
 
     t.test("isValidDate: returns 29 for February 2016 and 31 for January 2017", function(assert) {
-        const validator = sucrose.utility.isValidDate;
+        const validator = function(d) {
+            return sucrose.utility.isValidDate(new Date(d));
+        };
         assert.equal(validator(1998), true);
         assert.equal(validator("1998-1-1"), true);
         assert.equal(validator("1998/1/1"), true);

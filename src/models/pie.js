@@ -22,7 +22,7 @@ export default function pie() {
       delay = 0,
       duration = 0,
       color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
-      gradient = null,
+      gradient = utility.colorRadialGradient,
       fill = color,
       textureFill = false,
       classes = function(d, i) { return 'sc-series sc-series-' + d.seriesIndex; };
@@ -61,7 +61,7 @@ export default function pie() {
         return d.startAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
       };
   var endAngle = function(d) {
-        return d.endAngle * arcDegrees / 360 + utility.angleToRadians(rotateDegrees);
+        return d.endAngle * (arcDegrees / 360) + utility.angleToRadians(rotateDegrees);
       };
 
   var fixedRadius = function(model) { return null; };
@@ -84,12 +84,6 @@ export default function pie() {
       var availableWidth = width - margin.left - margin.right,
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this);
-
-      //set up the gradient constructor function
-      gradient = gradient || function(d, i) {
-        var params = {x: 0, y: 0, r: pieRadius, s: (donut ? (donutRatio * 100) + '%' : '0%'), u: 'userSpaceOnUse'};
-        return utility.colorRadialGradient(d, id + '-' + i, params, color(d, i), wrap.select('defs'));
-      };
 
       //------------------------------------------------------------
       // recalculate width and height based on label length
@@ -114,6 +108,7 @@ export default function pie() {
       var wrap = container.select('.sc-wrap.sc-pie').merge(wrap_entr);
 
       var defs_entr = wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-group');
       var group_wrap = wrap.select('.sc-group');
@@ -129,6 +124,20 @@ export default function pie() {
       if (textureFill) {
         var mask = utility.createTexture(defs_entr, id, -availableWidth / 2, -availableHeight / 2);
       }
+
+      // set up the gradient constructor function
+      model.gradientFill = function(d, i) {
+        var gradientId = id + '-' + i;
+        var params = {
+          x: 0,
+          y: 0,
+          r: pieRadius,
+          s: (donut ? (donutRatio * 100) + '%' : '0%'),
+          u: 'userSpaceOnUse'
+        };
+        var c = color(d, i);
+        return gradient(d, gradientId, params, c, defs);
+      };
 
       //------------------------------------------------------------
       // Append major data series grouping containers
@@ -165,6 +174,7 @@ export default function pie() {
                 v.endAngle = s.endAngle;
                 v.padAngle = s.padAngle;
                 v.startAngle = s.startAngle;
+                v.index = i;
                 return v;
               });
             },
@@ -181,6 +191,7 @@ export default function pie() {
         });
 
       if (textureFill) {
+        // For on click active slices
         slice_entr.append('path')
           .attr('class', 'sc-texture')
           .each(function(d, i) {
@@ -242,7 +253,8 @@ export default function pie() {
           extHeights = [],
           verticalShift = 0,
           verticalReduction = doLabels ? 5 : 0,
-          horizontalReduction = leaderLength + textOffset;
+          horizontalReduction = leaderLength + textOffset,
+          holeOffset = 0;
 
       // side effect :: resets extWidths, extHeights
       slices.select('.sc-base').call(calcScalars, maxWidthRadius, maxHeightRadius);
@@ -251,18 +263,15 @@ export default function pie() {
       hole_wrap.call(holeFormat, hole ? [hole] : []);
 
       if (hole) {
-        var heightHoleHalf = hole_wrap.node().getBoundingClientRect().height * 0.30,
-            heightPieHalf = Math.abs(maxHeightRadius * d3.min(extHeights)),
-            holeOffset = Math.round(heightHoleHalf - heightPieHalf);
-
+        holeOffset = calcHoleOffset();
         if (holeOffset > 0) {
           verticalReduction += holeOffset;
           verticalShift -= holeOffset / 2;
         }
       }
 
-      var offsetHorizontal = availableWidth / 2,
-          offsetVertical = availableHeight / 2;
+      var offsetHorizontal = availableWidth / 2;
+      var offsetVertical = availableHeight / 2;
 
       //first adjust the leaderLength to be proportional to radius
       if (doLabels) {
@@ -274,12 +283,16 @@ export default function pie() {
         maxRadius = fixedRadius(model);
       }
 
-      var labelRadius = Math.min(Math.max(calcMaxRadius(), minRadius), maxRadius),
-          pieRadius = labelRadius - (doLabels ? leaderLength : 0);
+      var labelRadius = Math.min(Math.max(calcMaxRadius(), minRadius), maxRadius);
+      var pieRadius = labelRadius - (doLabels ? leaderLength : 0);
 
-      offsetVertical += ((d3.max(extHeights) - d3.min(extHeights)) / 2 + d3.min(extHeights)) * ((labelRadius + verticalShift) / offsetVertical);
-      offsetHorizontal += ((d3.max(extWidths) - d3.min(extWidths)) / 2 - d3.max(extWidths)) * (labelRadius / offsetHorizontal);
-      offsetVertical += verticalShift / 2;
+      var ovA = (d3.max(extHeights) - d3.min(extHeights)) / 2 + d3.min(extHeights);
+      var ovB = (labelRadius + verticalShift) / offsetVertical;
+      offsetVertical += ovA * ovB + verticalShift / 2;
+
+      var ohA = (d3.max(extWidths) - d3.min(extWidths)) / 2 - d3.max(extWidths);
+      var ohB = labelRadius / offsetHorizontal;
+      offsetHorizontal += ohA * ohB;
 
       group_wrap
         .attr('transform', 'translate(' + offsetHorizontal + ',' + offsetVertical + ')');
@@ -378,13 +391,15 @@ export default function pie() {
 
         slices
           .each(function(d, i) {
+            var theta, sin, labelLength, baseWidth, remainingWidth, label;
             if (labelLengths[i] > minRadius || labelRadius === minRadius) {
-              var theta = (startAngle(d) + endAngle(d)) / 2,
-                  sin = Math.abs(Math.sin(theta)),
-                  bW = labelRadius * sin + leaderLength + textOffset + labelLengths[i],
-                  rW = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - bW;
-              if (rW < 0) {
-                var label = utility.stringEllipsify(fmtKey(d), container, labelLengths[i] + rW);
+              theta = (startAngle(d) + endAngle(d)) / 2;
+              sin = Math.abs(Math.sin(theta));
+              labelLength = labelLengths[d.index];
+              baseWidth = labelRadius * sin + leaderLength + textOffset + labelLength;
+              remainingWidth = (availableWidth / 2 - offsetHorizontal) + availableWidth / 2 - baseWidth;
+              if (remainingWidth < 0) {
+                label = utility.stringEllipsify(fmtKey(d), container, labelLength + remainingWidth);
                 d3.select(this).select('text').text(label);
               }
             }
@@ -449,6 +464,7 @@ export default function pie() {
           count: getCount(d),
           data: d,
           series: d.series,
+          seriesIndex: d.series.seriesIndex,
           e: e
         };
       }
@@ -457,7 +473,6 @@ export default function pie() {
       function calcScalars(slices, maxWidth, maxHeight) {
         var widths = [],
             heights = [],
-            Pi = Math.PI,
             twoPi = 2 * Math.PI,
             north = 0,
             east = Math.PI / 2,
@@ -470,8 +485,8 @@ export default function pie() {
         }
 
         slices.each(function(d, i) {
-          var aStart = (startAngle(d) + twoPi) % twoPi,
-              aEnd = (endAngle(d) + twoPi) % twoPi;
+          var aStart = startAngle(d) === 0 ? 0 : (startAngle(d) + twoPi) % twoPi,
+              aEnd = endAngle(d) === 0 ? 0 : (endAngle(d) + twoPi) % twoPi;
 
           var wStart = Math.round(Math.sin(aStart) * 10000) / 10000,
               wEnd = Math.round(Math.sin(aEnd) * 10000) / 10000,
@@ -575,6 +590,13 @@ export default function pie() {
         var radius = d3.min(widthRadius.concat(heightRadius).concat([]), function(d) { return Math.abs(d); });
 
         return radius;
+      }
+
+      function calcHoleOffset() {
+        var heightHoleHalf = hole_wrap.node().getBoundingClientRect().height * 0.30;
+        var heightPieHalf = Math.abs(maxHeightRadius * d3.min(extHeights));
+        var holeOffset = Math.round(heightHoleHalf - heightPieHalf);
+        return holeOffset;
       }
 
       function labelOpacity(d) {

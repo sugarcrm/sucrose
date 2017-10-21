@@ -7,24 +7,40 @@
  *
  * Inspired by Rafael Xavier de Souza's
  * https://github.com/rxaviers/cldr-data-npm/tree/example-application
+ * with much learned from
+ * https://lh.2xlibre.net
+ * http://www.localeplanet.com
  */
-// Make sure you run `npm i cldr-data --save` in root of examples
-// to build locales, run `node < build_locales.js
 
-"use strict";
+// Usage:
+// Make sure you run:       `npm i cldr-data` in root of examples
+// to build locales, run:   `node < build_locales.js`
+// will make a hashmap of D3 localities in data/locales/locales.json
 
-var Loc = require("./loc.js");
-var locales = [['en', 'USD'], ['de', 'EUR'], ['ru', 'RUB']];
-var localeSettings = {};
+'use strict';
+
 var fs = require('fs');
+var Loc = require('./loc.js');
+
+// ICU Code, Language, Currency, CLDR, Label
+var locales = require('../../data/cldr-locales.json');
+//http://www.localeplanet.com/icu/currency.html
+
+var localeSettings = {};
+var localeJson;
 
 locales.forEach(function(l) {
-    var locale = new Loc(l[0], l[1]);
+    var icuc = l[0];
+    var lang = l[1];
+    var curr = l[2];
+    var file = l[3];
+    var name = l[4];
+    var locale = new Loc(file, curr);
     var settings = {
-        label: locale.language(l[0]),
+        label: locale.language(lang),
         decimal: locale.decimal(), // "."
         thousands: locale.thousands(), // ","
-        grouping: [3],
+        grouping: locale.grouping(), // [3]
         currency: locale.currency(), // ["$", ""]
         dateTime: locale.dateTime('long'), // "%a %b %e %X %Y",
         date: locale.date(), // "%m/%d/%Y",
@@ -44,7 +60,17 @@ locales.forEach(function(l) {
     localeSettings[l[0]] = settings;
 });
 
-fs.writeFile('../../data/locales/locales.json', JSON.stringify(localeSettings, null, '  '), function (err) {
+localeJson = JSON.stringify(localeSettings, null, '  ');
+
+fs.writeFile('../../data/locales.json', localeJson, function (err) {
   if (err) return console.log(err);
   console.log('Wrote localeSettings to file.');
 });
+
+// there are FOUR problems:
+
+// ar_SA should be ar_AR
+// el_EL should be el_GR
+// en_UK should be en_GB
+// it_it should be it_IT
+// es_LA is not a locale, should be es_419

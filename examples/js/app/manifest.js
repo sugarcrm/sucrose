@@ -11,7 +11,7 @@ var Manifest =
   // (will also be reset by chart type manifest)
   type: 'multibar',
   // ok, what's the deal here?
-  locale: 'en',
+  locale: 'en_US',
 
   // D3 chart
   Chart: null,
@@ -35,10 +35,10 @@ var Manifest =
   optionDefaults: {
     file: '',
     color_data: 'default',
-    gradient: ['0', 'vertical', 'middle'],
+    gradient: ['false', 'vertical', 'middle'],
     direction: 'ltr',
-    locale: 'en',
-    show_title: 1
+    locale: 'en_US',
+    show_title: 'true'
   },
 
   // UI elements
@@ -314,9 +314,9 @@ var Manifest =
 
   // Create option form row
   createOptionRow: function (k, v) {
-    var row = $('<div class="option-row"/>'),
-        name = this.getNameFromSelector(k),
-        control = this.createControlFromType(v.type, v.values, name);
+    var row = $('<div class="option-row"/>');
+    var name = this.getNameFromSelector(k);
+    var control = this.createControlFromType(v.type, v.values, name);
     row.append($('<span class="title">' + v.title + '</span>'));
     row.append($(control));
     return row;
@@ -367,22 +367,19 @@ var Manifest =
   selectControl: function (v, n) {
     var select = '<select name="' + n + '">';
     v.each(function (r) {
-      select += '<option value="' + r.value + '">' +
-        r.label + '</option>';
+      select += '<option value="' + r.value + '">' + r.label + '</option>';
     });
     select += '</select>';
     return select;
   },
   textareaControl: function (v, n) {
-    var value = v.map(function (o) { return o.value; }).join(' '),
-        textarea = '<textarea name="' + n + '">' +
-          value + '</textarea>';
+    var value = v.map(function (o) { return o.value; }).join(' ');
+    var textarea = '<textarea name="' + n + '">' + value + '</textarea>';
     return textarea;
   },
   textControl: function (v, n) {
-    var value = v.map(function (o) { return o.value; }).join(' '),
-        text = '<input type="text" name="' + n + '" value="' +
-          value + '">';
+    var value = v.map(function (o) { return o.value; }).join(' ');
+    var text = '<input type="text" name="' + n + '" value="' + value + '">';
     return text;
   },
   buttonControl: function (v, n) {
@@ -403,8 +400,8 @@ var Manifest =
   },
   // jQuery.my common method for initializing control
   initControl: function ($o) {
-    var k = $o.attr('name'),
-        v = this.getData(this.data, k);
+    var k = $o.attr('name');
+    var v = this.getData(this.data, k);
     this.setOption(this.data, k, v);
   },
   // jQuery.my common method for binding control
@@ -424,15 +421,12 @@ var Manifest =
     // First, lets update and store the option
     // in case it overrides a form preset value
     this.selectedOptions[k] = v;
-
     // Now, if the options is the default, lets remove it from display
     if (this.selectedOptions[k] === d[k].def) {
       delete this.selectedOptions[k];
     }
-
     chartStore.optionPresets = Object.clone(this.selectedOptions);
     store.set('example-' + this.type, chartStore);
-
     this.ui['[name=' + k + ']'].setChartOption(v, this);
   },
   setConfig: function (presets) {
@@ -454,8 +448,8 @@ var Manifest =
   },
   getLocaleOptions: function () {
     return localeData.keys().map(function(k) {
-        return {value: k, label: localeData[k].label};
-      });
+      return {value: k, label: localeData[k].label};
+    });
     // var locales = [];
     // Object.each(localeData, function (k, v) {
     //   locales.push({value: k, label: v.language});
@@ -465,6 +459,10 @@ var Manifest =
   getLocaleData: function (lang) {
     return localeData[lang];
   },
+  getTranslationData: function (lang) {
+    return translationData[lang];
+  },
+
 
   /* ------------------------
    * CHART functions -------- */
@@ -489,7 +487,8 @@ var Manifest =
     $chart.resizable({
       containment: 'parent',
       minHeight: 200,
-      minWidth: 200
+      minWidth: 200,
+      autoHide: true
     });
 
     // Rebind window resizer
@@ -521,20 +520,22 @@ var Manifest =
     series[k] = v;
   },
   updateColorModel: function (v) {
-    var color = this.getData(self.data, 'color_data'),
-        options = this.getColorOptions();
+    var color = this.getData(self.data, 'color_data');
+    var options = this.getColorOptions();
     if (!this.Chart.colorData) {
       return;
     }
     this.Chart.colorData(color, options);
   },
   getColorOptions: function () {
-    var options = {},
-        color = this.getData(self.data, 'color_data'),
-        gradient = this.getData(self.data, 'gradient'),
-        startColor = this.gradientStart,
-        stopColor = this.gradientStop,
-        lengthColor = self.colorLength;
+    var options, color, gradient, startColor, stopColor, lengthColor;
+
+    options = {};
+    color = this.getData(self.data, 'color_data');
+    gradient = this.getData(self.data, 'gradient');
+    startColor = this.gradientStart;
+    stopColor = this.gradientStop;
+    lengthColor = self.colorLength;
 
     if (this.type === 'globe') {
       if (color === 'graduated') {
@@ -555,7 +556,7 @@ var Manifest =
       options = {c1: startColor, c2: stopColor};
     }
 
-    if (color !== 'class' && this.gradientStop && gradient.filter('1').length) {
+    if (color !== 'class' && this.gradientStop && gradient.filter('true').length) {
       options.gradient = true;
       options.orientation = gradient.filter('horizontal').length ? 'horizontal' : 'vertical';
       options.position = gradient.filter('base').length ? 'base' : 'middle';
@@ -569,30 +570,23 @@ var Manifest =
 
   loadDataEditor: function (id, json) {
     this.unloadDataEditor(id);
-
-    switch (id) {
-      case 'data':
-        this.dataEditor = this.createEditor(id, json);
-        break;
-      case 'config':
-        this.configEditor = this.createEditor(id, json);
-        break;
+    if (id === 'data') {
+      this.dataEditor = this.createEditor(id, json);
+    } else if (id === 'config') {
+      this.configEditor = this.createEditor(id, json);
     }
   },
   unloadDataEditor: function (id) {
-    switch (id) {
-      case 'data':
-        $data.find('.CodeMirror').remove();
-        this.dataEditor = null;
-        break;
-      case 'config':
-        $config.find('.CodeMirror').remove();
-        this.configEditor = null;
-        break;
+    if (id === 'data') {
+      $data.find('.CodeMirror').remove();
+      this.dataEditor = null;
+    } else if (id === 'config') {
+      $config.find('.CodeMirror').remove();
+      this.configEditor = null;
     }
   },
   createEditor: function (id, json) {
-    var editor = CodeMirror(document.getElementById(id + '_'), {
+    var options = {
       value: JSON.stringify(json, null, '  '),
       mode:  'application/json',
       lint: {
@@ -608,7 +602,8 @@ var Manifest =
       lineNumbers: true,
       foldGutter: true,
       gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter', 'CodeMirror-lint-markers']
-    });
+    };
+    var editor = CodeMirror(document.getElementById(id + '_'), options);
     editor.focus();
     return editor;
   },
@@ -736,13 +731,14 @@ var Manifest =
 
   loadColor: function () {
     this.updateColorModel();
-    this.chartUpdater()();
+    this.loadChart();
+    // this.chartUpdater()();
   },
 
   loadLocale: function (locale) {
     this.locale = locale;
-
     this.Chart.locality(this.getLocaleData(locale));
+    this.Chart.strings(this.getTranslationData(locale));
     this.chartUpdater()();
   }
 };

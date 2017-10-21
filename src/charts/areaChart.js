@@ -27,16 +27,12 @@ export default function areaChart() {
         noLabel: 'undefined'
       };
 
+  var dispatch = d3.dispatch(
+        'chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
+        'stateChange', 'changeState'
+      );
+
   var pointRadius = 3;
-
-  var dispatch = d3.dispatch('chartClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
-
-  var tooltipContent = function(eo, properties) {
-        var key = eo.seriesKey;
-        var yIsCurrency = properties.yDataType === 'currency';
-        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
-        return '<p>' + key + ': ' + y + '</p>';
-      };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
@@ -55,6 +51,13 @@ export default function areaChart() {
         return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
       };
 
+  var tooltipContent = function(eo, properties) {
+        var key = eo.seriesKey;
+        var yIsCurrency = properties.yDataType === 'currency';
+        var y = yValueFormat(eo[1], eo.pointIndex, null, yIsCurrency, 2);
+        return '<p>' + key + ': ' + y + '</p>';
+      };
+
   //============================================================
   // Private Variables
   //------------------------------------------------------------
@@ -66,8 +69,8 @@ export default function areaChart() {
   var yAxis = axis();
   var guide = line();
 
-  var tt = null,
-      guidetips = null;
+  var tt = null;
+  var guidetips = null;
 
   model
     .clipEdge(true);
@@ -77,6 +80,7 @@ export default function areaChart() {
     .showLegend(true);
   guide
     .duration(0);
+
 
   //============================================================
 
@@ -101,7 +105,7 @@ export default function areaChart() {
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var groupData = properties.groups,
-          hasGroupData = Array.isArray(groupData) && groupData.length,
+          hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
           hasGroupLabels = false;
@@ -111,14 +115,6 @@ export default function areaChart() {
           totalAmount = 0;
 
       var padding = 0;
-      var singlePoint = false;
-      var showMaxMin = false;
-
-          //TODO: allow formatter to be set by data
-      var xTickMaxWidth = 75,
-          xDateFormat = null,
-          xAxisFormat = null,
-          yAxisFormat = null;
 
       var controlsData = [
         {key: 'Stacked', disabled: model.offset() !== 'zero'},
@@ -157,15 +153,6 @@ export default function areaChart() {
       //------------------------------------------------------------
       // Process data
 
-      function setGroupLabels(groupData) {
-        // Get simple array of group labels for ticks
-        groupLabels = groupData.map(function(group) {
-            return group.label;
-          });
-        groupCount = groupLabels.length;
-        hasGroupLabels = groupCount > 0;
-      }
-
       // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
@@ -201,36 +188,46 @@ export default function areaChart() {
       // -------------------------------------------
       // Get group data from properties or modelData
 
-      if (hasGroupData) {
+      function setGroupLabels(groupData) {
+        // Get simple array of group labels for ticks
+        groupLabels = groupData.map(function(group) {
+            return group.label;
+          });
+        groupCount = groupLabels.length;
+        hasGroupLabels = groupCount > 0;
+      }
 
-        groupData.forEach(function(group, g) {
-          var label = typeof group.label === 'undefined' || group.label === '' ?
-            strings.noLabel :
-              xIsDatetime ?
-                new Date(group.label) :
-                group.label;
-          group.group = g,
-          group.label = label;
-          group.total = 0;
-        });
+      if (hasGroupData) {
 
         // Calculate group totals and height
         // based on enabled data series
-        groupData.forEach(function(group, g) {
-          //TODO: only sum enabled series
-          // update group data with values
-          modelData
-            .forEach(function(series, s) {
-            //TODO: there is a better way with map reduce?
-              series.values
-                .filter(function(value, v) {
-                  return value.group === g;
-                })
-                .forEach(function(value, v) {
-                  group.total += value.y;
-                });
-            });
-        });
+        groupData
+          .forEach(function(group, g) {
+            var label = typeof group.label === 'undefined' || group.label === '' ?
+              strings.noLabel :
+                xIsDatetime ?
+                  utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
+                    new Date(group.label) :
+                    new Date(group.label + ' GMT') :
+                  group.label;
+            group.group = g,
+            group.label = label;
+            group.total = 0;
+
+            //TODO: only sum enabled series
+            // update group data with values
+            modelData
+              .forEach(function(series, s) {
+              //TODO: there is a better way with map reduce?
+                series.values
+                  .filter(function(value, v) {
+                    return value.group === g;
+                  })
+                  .forEach(function(value, v) {
+                    group.total += value.y;
+                  });
+              });
+          });
 
         setGroupLabels(groupData);
 
@@ -262,19 +259,59 @@ export default function areaChart() {
 
       }
 
-      // Configure axis format functions
-      if (xIsDatetime) {
-        xDateFormat = utility.getDateFormat(groupLabels);
-      }
 
-      xAxisFormat = function(d, i, selection, noEllipsis) {
-        var group = hasGroupLabels ? groupLabels[i] : d;
-        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
-        return noEllipsis ? label : utility.stringEllipsify(label, container, xTickMaxWidth);
+      //------------------------------------------------------------
+      // Configure axis format functions
+
+          //TODO: allow formatter to be set by data
+      var xTickMaxWidth = 75,
+          xDateFormat = null,
+          xAxisFormat = null,
+          yAxisFormat = null;
+
+      var yAxisFormatProperties = {
+        axis: null,
+        maxmin: null
       };
 
-      yAxisFormat = function(d, i, selection) {
-        return yValueFormat(d, i, null, yIsCurrency, 2);
+      function setAxisFormatProperties(type, selection) {
+        // i.e., 100 | 200 | 300
+        var tickDatum = selection.map(function(t) {
+            return d3.select(t).datum();
+          });
+        // i.e., 1 | 1000 | 1000000
+        var decimal = d3.max(d3.extent(tickDatum), function(v) {
+            return utility.siDecimal(Math.abs(v));
+          });
+        var precision = d3.max(tickDatum, function(v) {
+            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+          });
+        if (type === 'maxmin' && yAxisFormatProperties.axis) {
+          precision = Math.max(yAxisFormatProperties.axis.precision, precision);
+        }
+        yAxisFormatProperties[type] = {
+          decimal: decimal,
+          precision: precision
+        };
+        return yAxisFormatProperties[type];
+      }
+
+      if (xIsDatetime) {
+        xDateFormat = utility.getDateFormatUTC(groupLabels);
+      }
+
+      xAxisFormat = function(d, i, selection, type) {
+        var group = hasGroupLabels ? groupLabels[i] : d;
+        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        return type === 'no-ellipsis' ?
+          label :
+          utility.stringEllipsify(label, container, xTickMaxWidth);
+      };
+
+      yAxisFormat = function(d, i, selection, type) {
+        var props = yAxisFormatProperties[type] ||
+              setAxisFormatProperties(type, selection);
+        return yValueFormat(d, i, null, yIsCurrency, props.precision, props.decimal);
       };
 
 
@@ -306,20 +343,20 @@ export default function areaChart() {
         .orient('bottom')
         .ticks(null)
         .tickValues(null)
-        .showMaxMin(xIsDatetime)
-        .highlightZero(false)
         .scale(x)
         .tickPadding(6)
-        .valueFormat(xAxisFormat);
+        .valueFormat(xAxisFormat)
+        .highlightZero(false)
+        .showMaxMin(xIsDatetime);
 
       yAxis
         .orient('left')
         .ticks(null)
-        .showMaxMin(true)
-        .highlightZero(true)
         .scale(y)
         .tickPadding(6)
-        .valueFormat(yAxisFormat);
+        .valueFormat(yAxisFormat)
+        .highlightZero(true)
+        .showMaxMin(true);
 
       guide
         .id(model.id())
@@ -333,10 +370,12 @@ export default function areaChart() {
       // Main chart wrappers
 
       var wrap_bind = container.selectAll('g.sc-chart-wrap').data([modelData]);
-      var wrap_entr = wrap_bind.enter().append('g').attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
+      var wrap_entr = wrap_bind.enter().append('g')
+            .attr('class', 'sc-chart-wrap sc-chart-' + modelClass);
       var wrap = container.select('.sc-chart-wrap').merge(wrap_entr);
 
       wrap_entr.append('defs');
+      var defs = wrap.select('defs');
 
       wrap_entr.append('g').attr('class', 'sc-background-wrap');
       var back_wrap = wrap.select('.sc-background-wrap');
@@ -417,9 +456,19 @@ export default function areaChart() {
         //------------------------------------------------------------
         // Main Chart Component(s)
 
+        function getDimension(d) {
+          if (d === 'width') {
+            return innerWidth;
+          } else if (d === 'height') {
+            return innerHeight;
+          } else {
+            return 0;
+          }
+        }
+
         model
-          .width(innerWidth)
-          .height(innerHeight);
+          .width(getDimension('width'))
+          .height(getDimension('height'));
         model_wrap
           .datum(modelData)
           .call(model);
@@ -432,67 +481,57 @@ export default function areaChart() {
             xAxisMargin = {top: 0, right: 0, bottom: 0, left: 0};
 
         function setInnerMargins() {
+          xAxisMargin = xAxis.margin();
+          yAxisMargin = yAxis.margin();
           innerMargin.left = Math.max(xAxisMargin.left, yAxisMargin.left);
           innerMargin.right = Math.max(xAxisMargin.right, yAxisMargin.right);
           innerMargin.top = Math.max(xAxisMargin.top, yAxisMargin.top);
           innerMargin.bottom = Math.max(xAxisMargin.bottom, yAxisMargin.bottom);
+          setInnerDimensions();
         }
 
         function setInnerDimensions() {
           innerWidth = availableWidth - innerMargin.left - innerMargin.right;
           innerHeight = availableHeight - headerHeight - innerMargin.top - innerMargin.bottom;
           // Recalc chart dimensions and scales based on new inner dimensions
-          model.width(innerWidth).height(innerHeight);
-          // This resets the scales for the whole chart
-          // unfortunately we can't call this without until line instance is called
-          // model.scatter.resetDimensions(innerWidth, innerHeight);
-          x.range([0, innerWidth]);
-          y.range([innerHeight, 0]);
+          model.resetDimensions(getDimension('width'), getDimension('height'));
         }
 
-        // Y-Axis
-        yAxis
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
-        // reset inner dimensions
-        yAxisMargin = yAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
+        function yAxisRender() {
+          yAxis
+            .ticks(model.offset() === 'wiggle' ? 0 : null)
+            .tickSize(padding - innerWidth, 0)
+            .margin(innerMargin);
+          yAxis_wrap
+            .call(yAxis);
+          setInnerMargins();
+        }
 
-        // X-Axis
-        // resize ticks based on new dimensions
-        xAxis
-          .tickSize(padding - innerHeight, 0)
-          .margin(innerMargin);
-        xAxis_wrap
-          .call(xAxis);
+        function xAxisRender() {
+          xAxis
+            .tickSize(padding - innerHeight, 0)
+            .margin(innerMargin);
+          xAxis_wrap
+            .call(xAxis);
+          setInnerMargins();
+        }
 
-        // reset inner dimensions
-        xAxisMargin = xAxis.margin();
-        setInnerMargins();
-        setInnerDimensions();
+        // initial Y-Axis call
+        yAxisRender();
+        // initial X-Axis call
+        xAxisRender();
 
-        // recall y-axis, x-axis and lines to set final size based on new dimensions
-        yAxis
-          .ticks(model.offset() === 'wiggle' ? 0 : null)
-          .tickSize(padding - innerWidth, 0)
-          .margin(innerMargin);
-        yAxis_wrap
-          .call(yAxis);
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
+        // recall X-axis to set final size based on new dimensions
+        xAxisRender();
+        // recall Y-axis to set final size based on new dimensions
+        yAxisRender();
 
-        xAxis
-          .tickSize(padding - innerHeight, 0)
-          .margin(innerMargin);
-        xAxis_wrap
-          .call(xAxis);
-
-        model
-          .width(innerWidth)
-          .height(innerHeight);
+        // final call to lines based on new dimensions
         model_wrap
-          .datum(modelData)
-          .call(model);
+          .transition().duration(duration)
+            .call(model);
 
         //------------------------------------------------------------
         // Guide Line
@@ -603,6 +642,7 @@ export default function areaChart() {
       // Event Handling/Dispatching (in chart's scope)
       //------------------------------------------------------------
 
+      //TODO: change legendClick to menuClick
       header.legend.dispatch.on('legendClick', function(series, i) {
         series.disabled = !series.disabled;
 
@@ -755,10 +795,15 @@ export default function areaChart() {
   chart.legend = header.legend;
   chart.controls = header.controls;
   chart.xAxis = xAxis;
+  chart.xAxisLabel = xAxis.axisLabel;
   chart.yAxis = yAxis;
+  chart.yAxisLabel = yAxis.axisLabel;
   chart.options = utility.optionsFunc.bind(chart);
 
-  utility.rebind(chart, model, 'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge', 'color', 'fill', 'classes', 'gradient', 'locality');
+  utility.rebind(chart, model,
+    'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge',
+    'color', 'fill', 'classes', 'gradient', 'locality'
+  );
   utility.rebind(chart, model, 'offset', 'order', 'style');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   utility.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
@@ -766,16 +811,16 @@ export default function areaChart() {
   chart.colorData = function(_) {
     var type = arguments[0],
         params = arguments[1] || {};
-    var color = function(d, i) {
+    var color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-    var classes = function(d, i) {
+    var classes = function(d) {
           return 'sc-series sc-series-' + d.seriesIndex;
         };
 
     switch (type) {
       case 'graduated':
-        color = function(d, i) {
+        color = function(d) {
           return d3.interpolateHsl(d3.rgb(params.c1), d3.rgb(params.c2))(d.seriesIndex / params.l);
         };
         break;
@@ -783,25 +828,30 @@ export default function areaChart() {
         color = function() {
           return 'inherit';
         };
-        classes = function(d, i) {
-          var iClass = (d.seriesIndex * (params.step || 1)) % 14;
+        classes = function(d) {
+          var i = d.seriesIndex;
+          var iClass = (i * (params.step || 1)) % 14;
           iClass = (iClass > 9 ? '' : '0') + iClass;
-          return 'sc-series sc-series-' + d.seriesIndex + ' sc-fill' + iClass + ' sc-stroke' + iClass;
+          return 'sc-series sc-series-' + i + ' sc-fill' + iClass + ' sc-stroke' + iClass;
         };
         break;
       case 'data':
-        color = function(d, i) {
+        color = function(d) {
           return utility.defaultColor()(d, d.seriesIndex);
         };
-        classes = function(d, i) {
-          return 'sc-series sc-series-' + d.seriesIndex + (d.classes ? ' ' + d.classes : '');
+        classes = function(d) {
+          var i = d.seriesIndex;
+          return 'sc-series sc-series-' + i + (d.classes ? ' ' + d.classes : '');
         };
         break;
     }
 
-    var fill = (!params.gradient) ? color : function(d, i) {
-      var p = {orientation: params.orientation || 'horizontal', position: params.position || 'base'};
-      return model.gradient()(d, d.seriesIndex, p);
+    var fill = !params.gradient ? color : function(d, i) {
+      var p = {
+        orientation: params.orientation || 'horizontal',
+        position: params.position || 'base'
+      };
+      return model.gradientFill(d, d.seriesIndex, p);
     };
 
     model.color(color);
@@ -893,12 +943,6 @@ export default function areaChart() {
     return chart;
   };
 
-  chart.pointRadius = function(_) {
-    if (!arguments.length) { return pointRadius; }
-    pointRadius = _;
-    return chart;
-  };
-
   chart.xValueFormat = function(_) {
     if (!arguments.length) {
       return xValueFormat;
@@ -912,6 +956,12 @@ export default function areaChart() {
       return yValueFormat;
     }
     yValueFormat = _;
+    return chart;
+  };
+
+  chart.pointRadius = function(_) {
+    if (!arguments.length) { return pointRadius; }
+    pointRadius = _;
     return chart;
   };
 

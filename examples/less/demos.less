@@ -469,14 +469,10 @@ input.mindmup {
 
 /* Chart icons
 -------------------------------------------------- */
+
 .chart-selector {
   display: block;
-  position: relative;
-  max-height: 30px;
-  font-size: 0;
-  line-height: 0;
   z-index: 2;
-  overflow: hidden;
   button {
     display: none;
     width: 22px;
@@ -502,6 +498,42 @@ input.mindmup {
     margin-right: -2px;
   }
   menuitem {
+    display: block;
+  }
+  a {
+    line-height: 24px;
+  }
+  svg {
+    text-decoration: none;
+    display: inline-block;
+    vertical-align: middle;
+    width: 20px;
+    height: 20px;
+  }
+  span {
+    vertical-align: middle;
+    margin: 0 8px;
+  }
+}
+.rtl .chart-selector {
+  .wrapper {
+    float: left;
+    margin-left: -2px;
+    margin-right: 0;
+  }
+  button {
+    left: 0;
+    right: auto;
+  }
+}
+nav .chart-selector {
+  position: relative;
+  max-height: 30px;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+
+  menuitem {
     display: inline-block;
   }
   a {
@@ -519,22 +551,8 @@ input.mindmup {
       background-color: #fff;
     }
   }
-  svg {
-    text-decoration: none;
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-  }
-}
-.rtl .chart-selector {
-  .wrapper {
-    float: left;
-    margin-left: -2px;
-    margin-right: 0;
-  }
-  button {
-    left: 0;
-    right: auto;
+  span {
+    margin: 0;
   }
 }
 
@@ -719,14 +737,9 @@ a.success:hover { color: darken(@successText, 10%); }
         a {
           display: block;
         }
-        svg {
-          vertical-align: middle;
-        }
         span {
-          display: inline-block;
           font-size: 11px;
           line-height: 18px;
-          vertical-align: middle;
           margin: 0 8px;
         }
       }

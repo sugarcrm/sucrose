@@ -12,7 +12,7 @@ module.exports =
   // Set them to the default value as expected by sucrose
   // If the option remains the default value, the chart option will not be set
   optionDefaults: {
-    auto_spin: 0
+    auto_spin: 'false'
   },
   ui: {
     '[name=color_data]': {
@@ -43,16 +43,15 @@ module.exports =
     },
     '[name=auto_spin]': {
       setChartOption: function (v, self) {
-        var autoSpin = $.inArray('1', v) !== -1;
-        self.Chart
-          .autoSpin(autoSpin);
+        var value = sucrose.utility.toBoolean(v);
+        self.Chart.autoSpin(value);
       },
-      check: /1/i,
+      check: /true/i,
       events: 'change.my',
       title: 'Auto Spin',
       type: 'checkbox',
       values: [
-        {value: '1', label: 'Enable'}
+        {value: 'true', label: 'Enable'}
       ]
     },
     '[name=direction]': {

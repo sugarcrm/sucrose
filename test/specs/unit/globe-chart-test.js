@@ -251,6 +251,17 @@ tests("UNIT: globeChart -", function(t) {
         t.register(assert, type);
     });
 
+    t.test("seriesClick: ", function(assert) {
+        assert.plan(3);
+        var def = _chart.seriesClick();
+        assert.equal(typeof def, "function", "returns default function");
+        assert.equal(typeof _chart.seriesClick()(), "undefined", "returns default function value");
+        let val = function(){return "asdf";};
+        _chart.seriesClick(val);
+        assert.equal(_chart.seriesClick(), val, "returns set function");
+        t.register(assert, type);
+    });
+
     t.test("worldMap: ", function(assert) {
         assert.plan(2);
         let def = [];
