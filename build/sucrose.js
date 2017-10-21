@@ -21,7 +21,7 @@ limitations under the License.
 
 d3 = 'default' in d3 ? d3['default'] : d3;
 
-var version = "0.6.12";
+var version = "0.7.0";
 
 /*-------------------
       UTILITIES
