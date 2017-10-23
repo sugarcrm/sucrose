@@ -1,5 +1,4 @@
 # Build Locale Objects for D3js
-
 Npm module for generating D3 Locale settings files based on Unicode CLDR JSON data
 
 Inspired by Rafael Xavier de Souza's
@@ -21,15 +20,15 @@ where `xx_YY` is the locales.json key, `xx` is the ISO language code, `ZZZ` is t
 the language and locale (country).
 
 Then load the `build/locales.json` on your page into a `locales` variable and in Sucrose chart instantiation pass a locale object to set string/datetime/number formatting options:
-
+```javascript
     var myLocale = locales['en_US'];
     var chart = sucrose.chart.pieChart.locality(myLocale);
-
+```
 The default formatters in the charts and models will now have localized content.
 For instance, the pieChart tooltip uses a format utility function:
-
+```javascript
     var val = utility.numberFormat(y, 2, yIsCurrency, chart.locality());
-
+```
 With locales['en_US'] the display string for `1234.567` as currency will be `$1,234.57`
 while for locales['fr_FR'] the display string will be `1 234,57 €`.
 
@@ -57,6 +56,4 @@ https://github.com/globalizejs/globalize/issues/758
 https://github.com/d3/d3-format/issues/34
 
 ## License
-
-Copyright 2016 SugarCRM, Inc.
-Released under the MIT license
+Copyright 2017 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.
