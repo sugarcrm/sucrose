@@ -64,12 +64,26 @@ The Sucrose Charts example application is available at [sucrose.io](http://sucro
   - [Tree Chart](http://sucrose.io/index.html?type=tree)
   - [Globe Chart](http://sucrose.io/index.html?type=globe)
 
+To view the example application locally,
+1. From the root of the repo directory, run `make examples-prod`.
+1. Open a browser to `sucrose/examples/index.html`.
+1. The examples application is a stand-alone single page application which will run offline.
+1. Instruction for using the example application coming soon.
+
+To develop the example application,
+1. Follow the instructions below to verify the build environment is up and running.
+1. From the root of the repo directory, run `make examples-dev`.
+1. Open a browser to `sucrose/examples/index.html`.
+1. The application is cached in the browser with a manifest and appcache so you may need to clear the application storage cache when changing from production to development.
+1. Run `make help` from the `/examples` directory to see a full list of make commands for building specific code components.
+
+
 ## Building
 If you are developing new charts in Sucrose you can set a dev environment with:
 
 1. Clone this repo: `git clone git@github.com:sugarcrm/sucrose.git`
 1. Go to the cloned repo directory: `cd ./sucrose`
-1. Run `npm install` to install node modules needed for building source code
+1. Run `npm install` to install node modules needed for building source code.
 1. Run the make commands: `make clean` and then `make all`
 1. Verify that the following core Sucrose files are still in the /build directory:
   - `sucrose.js`
@@ -85,8 +99,8 @@ If you are developing new charts in Sucrose you can set a dev environment with:
   - `d3.min.js`
   - `topojson.js`
   - `topojson.min.js`
-1. Run `make sucrose` to just compile the sucrose library
-1. Run `make help` to see a full list of make commands for building specific code components
+1. Run `make sucrose` to just compile the sucrose library.
+1. Run `make help` to see a full list of make commands for building specific code components.
 
 ## Testing
 
