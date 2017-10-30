@@ -123,9 +123,11 @@ export default function bubbleChart() {
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var modelData,
+          nestedData,
           xDomain,
           yDomain,
-          yValues;
+          yValues,
+          maxBubbleSize;
 
       var xAxisFormat = function(d, i, selection, noEllipsis) {
             return xValueFormat(d, i, d, xIsDatetime, '%B');
@@ -211,7 +213,7 @@ export default function bubbleChart() {
 
         // Calculate y scale parameters
         var gHeight = 1000 / groupedData.length,
-            gOffset = gHeight * 0.25,
+            gOffset = maxBubbleSize,
             gDomain = [0, 1],
             gRange = [0, 1],
             gScale = d3.scaleLinear().domain(gDomain).range(gRange),
@@ -269,7 +271,7 @@ export default function bubbleChart() {
 
       // Now that group calculations are done,
       // group the data by filter so that legend filters
-      var nestedData = d3.nest()
+      nestedData = d3.nest()
         .key(filterBy)
         .entries(data);
 
@@ -285,6 +287,9 @@ export default function bubbleChart() {
           d.color = d.values[0].color;
           return d;
         });
+
+      maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI);
+
 
       //------------------------------------------------------------
       // Setup Scales and Axes
@@ -403,8 +408,6 @@ export default function bubbleChart() {
         back_wrap.select('.sc-background')
           .attr('width', renderWidth)
           .attr('height', renderHeight);
-
-        var maxBubbleSize = Math.sqrt(model.sizeRange()[1] / Math.PI);
 
 
         //------------------------------------------------------------

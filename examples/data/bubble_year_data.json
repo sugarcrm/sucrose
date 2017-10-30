@@ -10,7 +10,7 @@
       "sales_stage": "Id. Decision Makers",
       "sales_stage_short": "Id. Decision Makers",
       "probability": 40,
-      "base_amount": "7069.000000",
+      "base_amount": "7854.000000",
       "currency_symbol": "€",
       "currency_id": "8dc8d70d-e001-2c19-97f1-55c242e0ae35"
     },
@@ -38,7 +38,7 @@
       "sales_stage": "Qualification",
       "sales_stage_short": "Qualification",
       "probability": 20,
-      "base_amount": "6961.000000",
+      "base_amount": "7734.000000",
       "currency_symbol": "€",
       "currency_id": "8dc8d70d-e001-2c19-97f1-55c242e0ae35"
     },
@@ -80,7 +80,7 @@
       "sales_stage": "Id. Decision Makers",
       "sales_stage_short": "Id. Decision Makers",
       "probability": 40,
-      "base_amount": "5906.000000",
+      "base_amount": "6562.000000",
       "currency_symbol": "€",
       "currency_id": "8dc8d70d-e001-2c19-97f1-55c242e0ae35"
     },
@@ -108,7 +108,7 @@
       "sales_stage": "Closed Won",
       "sales_stage_short": "Closed Won",
       "probability": 100,
-      "base_amount": "5814.000000",
+      "base_amount": "10000.000000",
       "currency_symbol": "$",
       "currency_id": "-99"
     },
@@ -122,7 +122,7 @@
       "sales_stage": "Value Proposition",
       "sales_stage_short": "Value Proposition",
       "probability": 30,
-      "base_amount": "5332.000000",
+      "base_amount": "10000.000000",
       "currency_symbol": "$",
       "currency_id": "-99"
     },
@@ -136,7 +136,7 @@
       "sales_stage": "Closed Won",
       "sales_stage_short": "Closed Won",
       "probability": 100,
-      "base_amount": "5329.000000",
+      "base_amount": "5921.000000",
       "currency_symbol": "€",
       "currency_id": "8dc8d70d-e001-2c19-97f1-55c242e0ae35"
     }
