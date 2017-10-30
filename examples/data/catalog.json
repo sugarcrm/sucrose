@@ -8,6 +8,7 @@
         {"value": "bubble_data", "label": "Bubble Data"},
         {"value": "bubble_data_color", "label": "Bubble Data with Color"},
         {"value": "bubble_linear3_data", "label": "Linear Data"},
+        {"value": "bubble_vertical_data", "label": "Vertical Data"},
         {"value": "bubble_year_data", "label": "Year Data"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
