@@ -1,5 +1,5 @@
-var tape = require("tape"),
-    sucrose = require("../../../");
+const tape = require("tape");
+const sucrose = require("../../fixtures/build/sucrose.js");
 
 module.exports = function(moduleName) {
   var module = require(moduleName);

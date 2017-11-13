@@ -190,6 +190,7 @@ var sucroseCharts = function() {
         chart
           .x(function(d) { return d3.timeParse('%Y-%m-%d')(d.x); })
           .y(function(d) { return d.y; })
+          .size(function(d) { return Math.floor(d.base_amount); })
           .showControls(false)
           .groupBy(function(d) {
               return d.assigned_user_name;

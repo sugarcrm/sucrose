@@ -9,9 +9,11 @@ CSS_FILES = src/less/sucrose.less
 
 JS_MINIFIER = ./node_modules/uglify-js/bin/uglifyjs
 
+JS_BUNDLER = ./node_modules/rollup/bin/rollup
+
 CSS_COMPILER = ./node_modules/less/bin/lessc
 
-CSS_MINIFIER = ./node_modules/clean-css/bin/cleancss
+CSS_MINIFIER = ./node_modules/clean-css-cli/bin/cleancss
 
 HELP_MAKER = ./node_modules/make-help/bin/make-help
 
@@ -67,13 +69,13 @@ sucrose: sucrose.min.js
 # rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false --banner "[dollarsign](HEADER)"
 sucrose.js:
 	rm -f ./build/$@
-	rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:$(DEV) | cat ./src/header - > ./build/$@
+	$(JS_BUNDLER) -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:$(DEV) | cat ./src/header - > ./build/$@
 
 # - build then minify the sucrose Js library
 # uglifyjs --preamble "$(HEADER)" build/$^ -c negate_iife=false -m -o build/$@
 sucrose.min.js: sucrose.js
 	rm -f ./build/$@
-	uglifyjs build/$^ -c negate_iife=false -m | cat ./src/header - > ./build/$@
+	$(JS_MINIFIER) build/$^ -c negate_iife=false,unused=false -m | cat ./src/header - > ./build/$@
 
 # - remove all sucrose and D3 Js files
 clean-js:
@@ -99,15 +101,16 @@ d3-scr d3-sgr: d3-minify d3-topo
 # - build the D3 library Js file with components for target
 d3-bundle:
 	rm -f ./build/$(D3).js
-	rollup -c ./node_modules/d3/rollup.config.js -f umd -n $(subst -,,$(D3)) \
+	$(JS_BUNDLER) -c ./node_modules/d3/rollup.config.js -f umd -n $(subst -,,$(D3)) \
 		-i ./src/d3-rebundle/index_$(D3).js -o ./build/$(D3).js \
-		--banner ";$(shell cd ./node_modules/d3 && preamble)"
+		--banner ";$(shell cd ./node_modules/d3 && ../.bin/preamble)"
 
 # - build then minify the D3 custom bundle
 d3-minify: d3-bundle
 	rm -f ./build/$(D3).min.js
-	uglifyjs --preamble ";$(shell cd ./node_modules/d3 && preamble)" \
-		build/$(D3).js -c negate_iife=false -m -o build/$(D3).min.js
+	$(JS_MINIFIER) build/$(D3).js \
+		-b beautify=false,preamble='";$(shell cd ./node_modules/d3 && ../.bin/preamble)"' \
+		-c negate_iife=false,unused=false -m -o build/$(D3).min.js
 
 # - copy full D3 from node_modules to build directory
 d3-all: d3-topo
@@ -121,8 +124,7 @@ d3-topo:
 	cp ./node_modules/topojson/build/topojson.min.js build/topojson.min.js
 
 clean-d3:
-	rm -f ./build/$(D3).js
-	rm -f ./build/$(D3).min.js
+	rm -f ./build/$(D3)*.js
 	rm -f ./build/topojson*.js
 
 
@@ -149,7 +151,7 @@ clean-css:
 #-----
 # DATA
 
-data: clean-data
+data:
 	cp src/data/locales.json build/locales.json
 	cp src/data/translation.json build/translation.json
 
@@ -170,7 +172,7 @@ examples-prod: prod
 	cd examples && make prod
 
 # - install development package dependencies for sucrose library and generate examples application
-examples-dev: npm-dev
+examples-dev: dev
 	cd examples && make dev
 
 

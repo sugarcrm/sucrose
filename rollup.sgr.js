@@ -16,7 +16,7 @@ export default {
     '@sugarcrm/d3-sugar': 'd3sugar',
   },
   // sourceMap: 'inline',
-  // treeshake: false,
+  treeshake: false,
   plugins: [
     replace({
       exclude: 'node_modules/**',

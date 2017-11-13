@@ -54,7 +54,7 @@ CSS_COMPILER = \
 	../node_modules/less/bin/lessc
 
 CSS_MINIFIER = \
-	../node_modules/clean-css/bin/cleancss
+	../node_modules/clean-css-cli/bin/cleancss
 
 HELP_MAKER = \
 	./node_modules/make-help/bin/make-help
@@ -83,15 +83,14 @@ npm-prod:
 install-post: all index-prod
 
 # - copy sucrose and dependency files
-all: sucrose dependencies
+all: sucrose dependencies examples
 
 # - remove sucrose and dependency files
-clean: clean-sucrose clean-dependencies clean-examples clean-dev
+clean: clean-sucrose clean-dependencies clean-examples
 
 
 # - [*] copy sucrose js and css files
 sucrose: clean-sucrose
-	cd .. && make sucrose
 	cp ../build/sucrose.js js/sucrose.js
 	cp ../build/sucrose.min.js js/sucrose.min.js
 	cp ../build/sucrose.css css/sucrose.css
@@ -134,11 +133,14 @@ index-prod:
 # DEVELOPMENT
 
 # - install development environment [main dev]
-dev: npm-dev examples index-dev
+dev: npm-dev
+	make all
+	make index-dev
 
 # - install development npm packages and copy files
-npm-dev:
-	npm install
+npm-dev: clean-dev
+	npm install --ignore-scripts
+	# stops install-post which runs `all index-prod`
 	cp ../node_modules/less/dist/less.min.js js/less.min.js
 
 # - remove development environment
@@ -156,7 +158,7 @@ clean-examples: clean-app clean-lib clean-css
 # - [*] build the examples app js file
 app: clean-app
 	cat js/app/header $(APP_FILES) >> js/app.js
-	cat $(APP_FILES) | $(JS_MINIFIER) --preamble "$(HEADER)" >> js/app.min.js
+	cat $(APP_FILES) | $(JS_MINIFIER) -c negate_iife=false,unused=false -b beautify=false,preamble='"$(HEADER)"' >> js/app.min.js
 
 # - remove the examples app js file
 clean-app:
@@ -166,7 +168,7 @@ clean-app:
 # - concatenate, compress and copy all library files
 lib: clean-lib
 	# build lib js files
-	$(JS_MINIFIER) --self -c -m -o ./js/lib/uglifyjs.js
+	$(JS_MINIFIER) --self -c negate_iife=false,unused=false -m -o ./js/lib/uglifyjs.js
 	cat $(LIB_FILES) >> js/lib.js
 	cat $(LIB_FILES) | $(JS_MINIFIER) >> js/lib.min.js
 

@@ -23,6 +23,23 @@ dreams.sleep();
 dreams.tests("INT: utility -", function(t) {
 
   // String tests
+  t.skip("windowSize: returns the size of the browser window", function(assert) {
+    nightmare
+      .chart(options)
+      .config("default")
+      .render(null)
+      .evaluate(function() {
+        return sucrose.utility.windowSize();
+      })
+      .then(function(result) {
+        assert.plan(2);
+        assert.equal(result.height, 578)
+        assert.equal(result.width, 800);
+      })
+      .catch(function(msg) { dreams.error(msg, assert, nightmare); });
+  });
+
+  // String tests
   t.test("stringSetLengths: returns an array of string lengths given an array of strings", function(assert) {
     nightmare
       .chart(options)
