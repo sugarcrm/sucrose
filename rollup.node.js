@@ -1,6 +1,6 @@
-var fs = require("fs"),
-    rollup = require("rollup"),
-    dependencies = require("./package.json").dependencies;
+const fs = require("fs");
+const rollup = require("rollup");
+const dependencies = require("./package.json").dependencies;
 
 rollup.rollup({
   entry: "index.js",

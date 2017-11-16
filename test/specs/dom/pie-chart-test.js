@@ -41,7 +41,11 @@ tests("DOM: pieChart -", function (t) {
         global.document = global.window.document;
         global.navigator = global.window.navigator;
 
+        // jsdom 11.3.0 breaks SVG DOM manipulation.
+        // stick with 11.2.0 or change selector below to #c_ and let d3 modify the HTML DOM.
+        // Its not valid SVG but these are DOM manipulation unit tests.
         c_ = dom.window.document.querySelector("#c_ .sucrose");
+        console.log(c_);
         t.end();
     });
 

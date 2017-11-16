@@ -1,6 +1,6 @@
 const tape = require("tape");
 const sucrose = require("../../fixtures/build/sucrose.js");
-const testExports = require("./test-exports");
+// const testExports = require("./test-exports");
 
 tape("UNIT: sucrose - version matches package.json", function(test) {
     test.equal(sucrose.version, require("../../../package.json").version);

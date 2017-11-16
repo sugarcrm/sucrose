@@ -76,20 +76,22 @@ tests("UNIT: utility -", function(t) {
 
     t.test("getColor: returns the default color function", function(assert) {
         assert.equal(sucrose.utility.getColor()({}, 0), "#1f77b4");
+        assert.equal(sucrose.utility.getColor("#fff000")({}, 0), "#fff000");
+        assert.equal(sucrose.utility.getColor("#fff000")({color: "#000fff"}, 0), "#000fff");
         assert.end();
         t.register(assert, type);
     });
     t.test("getColor: returns indexed color of an array", function(assert) {
-        assert.plan(3);
         assert.equal(sucrose.utility.getColor(["#000", "#555", "#ddd"])({}, 0), "#000");
         assert.equal(sucrose.utility.getColor(["#000", "#555", "#ddd"])({}, 1), "#555");
         assert.equal(sucrose.utility.getColor(["#000", "#555", "#ddd"])({}, 3), "#000");
+        assert.end();
         t.register(assert, type);
     });
     t.test("getColor: returns data color or default color", function(assert) {
-        assert.plan(2);
         assert.equal(sucrose.utility.getColor("#000")({}), "#000");
         assert.equal(sucrose.utility.getColor("#000")({color: "#555"}), "#555");
+        assert.end();
         t.register(assert, type);
     });
     t.test("getColor: returns color function if provided", function(assert) {
@@ -98,21 +100,25 @@ tests("UNIT: utility -", function(t) {
         t.register(assert, type);
     });
     t.test("defaultColor: returns colors from the d3.schemeCategory20 range", function(assert) {
-        assert.plan(3);
         assert.equal(sucrose.utility.getColor()({}, 0), "#1f77b4");
         assert.equal(sucrose.utility.getColor()({}, 9), "#c5b0d5");
         assert.equal(sucrose.utility.getColor()({}, 20), "#1f77b4");
+        assert.end();
         t.register(assert, type);
     });
     t.test("getTextContrast: returns colors from the d3.schemeCategory20 range", function(assert) {
-        assert.plan(3);
         assert.equal(sucrose.utility.getTextContrast("#000"), "rgb(212, 212, 212)");
         assert.equal(sucrose.utility.getTextContrast("#369"), "rgb(246, 246, 246)");
         assert.equal(sucrose.utility.getTextContrast("#e95"), "rgb(6, 6, 6)");
+        let txt = sucrose.utility.getTextContrast("#e95", 0, function (b, t) {
+            assert.equal(b.toString(), "rgb(238, 153, 85)");
+            assert.equal(t.toString(), "rgb(6, 6, 6)");
+        });
+        assert.equal(txt, "rgb(6, 6, 6)");
+        assert.end();
         t.register(assert, type);
     });
     t.test("customTheme: returns colors from the d3.schemeCategory20 range", function(assert) {
-        assert.plan(10);
         let color = sucrose.utility.customTheme({
             "red": "rgb(255, 0, 0)",
             "blue": "rgb(0, 255, 0)",
@@ -140,6 +146,7 @@ tests("UNIT: utility -", function(t) {
         assert.equal(color("aaa"), "#69C");
         assert.equal(color("sss"), "#369");
         assert.equal(color("ddd"), "#036");
+        assert.end();
         t.register(assert, type);
     });
 
@@ -147,22 +154,22 @@ tests("UNIT: utility -", function(t) {
 
     t.test("NaNtoZero: returns a value that is undefined, null or NaN as zeros", function(assert) {
         let x = {};
-        assert.plan(4);
         assert.equal(sucrose.utility.NaNtoZero(x.y), 0);
         assert.equal(sucrose.utility.NaNtoZero(NaN), 0);
         assert.equal(sucrose.utility.NaNtoZero(null), 0);
         assert.equal(sucrose.utility.NaNtoZero(123), 123);
+        assert.end();
         t.register(assert, type);
     });
 
     t.test("polarToCartesian: converts polar coordinates to cartesian", function(assert) {
-        assert.plan(4);
         let cart = sucrose.utility.polarToCartesian(0, 0, 1, 0);
         assert.equal(cart[0], 1);
         assert.equal(cart[1], 0);
         cart = sucrose.utility.polarToCartesian(0, 0, 1, 45);
         assert.equal(cart[0], 0.7071067811865476);
         assert.equal(cart[1], 0.7071067811865475);
+        assert.end();
         t.register(assert, type);
     });
 
@@ -338,13 +345,25 @@ tests("UNIT: utility -", function(t) {
         assert.equal(fmtr(1, 2, false, locale), "1");
         assert.equal(fmtr(10, 2, false, locale), "10");
         assert.equal(fmtr(100, 2, false, locale), "100");
+        assert.equal(fmtr(100.23, 0, false, locale), "100");
+        assert.equal(fmtr(100.23, 1, false, locale), "100.2");
+        assert.equal(fmtr(100.23, 2, false, locale), "100.23");
         assert.equal(fmtr(1000, 2, false, locale), "1k");
         assert.equal(fmtr(10000, 2, false, locale), "10k");
         assert.equal(fmtr(100000, 2, false, locale), "100k");
         assert.equal(fmtr(1000000, 2, false, locale), "1M");
         assert.equal(fmtr(1000000, 0, false, locale), "1M");
         assert.equal(fmtr(100, 2, true, locale), "$100");
-        assert.equal(fmtr(100.24, 0, true, locale), "$100");
+        assert.equal(fmtr(100.23, 1, true, locale), "$100.20");
+        assert.equal(fmtr(100.23, 0, true, locale), "$100");
+        assert.equal(fmtr("asdf", 0, true, locale), "asdf");
+        assert.equal(fmtr(0.5, 0, true, locale), "$1");
+        assert.equal(fmtr(0.5, 0, false, locale), "1");
+        assert.equal(fmtr(0.5, 1, true, locale), "$0.50");
+        assert.equal(fmtr(0.559, 2, false, locale), "0.56");
+        assert.equal(fmtr(0.49, 0, false, locale), "500m");
+        assert.equal(fmtr(100), "100");
+
         // assert.equal(sucrose.utility.numberFormatSI(100.24, 2, true, locale), "$100.24");
         assert.end();
         t.register(assert, type);
@@ -396,6 +415,9 @@ tests("UNIT: utility -", function(t) {
         assert.equal(fmtr(1000000, 0, false, locale, "M"), "1M");
         assert.equal(fmtr(100, 2, true, locale), "$100.00");
         assert.equal(fmtr(100.24, 0, true, locale), "$100");
+        assert.equal(fmtr("asdf", 0, true, locale), "asdf");
+        assert.equal(fmtr(100), "100");
+        assert.equal(fmtr(100, null, true), "$100.00");
         // assert.equal(sucrose.utility.numberFormatSI(100.24, 2, true, locale), "$100.24");
         assert.end();
         t.register(assert, type);
@@ -426,7 +448,10 @@ tests("UNIT: utility -", function(t) {
         assert.equal(fmtr(Math.PI, 4, true), "$3.1416");
         assert.equal(fmtr(Math.PI, 3, false), "3.142");
         assert.equal(fmtr(Math.PI, 2), "3.14");
+        assert.equal(fmtr("asdf", 2), "asdf");
         assert.equal(fmtr(0, 2), "0.00");
+        assert.equal(fmtr(Math.PI, null, true), "$3.14");
+        assert.equal(fmtr(Math.PI, null, false), "3");
         // yeah, i know it technically breaks unitized tests
         let locale = sucrose.utility.buildLocality({
               "decimal": ",",
@@ -452,6 +477,7 @@ tests("UNIT: utility -", function(t) {
         assert.equal(fmtr("March 4, 2012, 5:06:07 AM GMT").valueOf(), expected);
         assert.equal(fmtr("Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)").valueOf(), expected);
         assert.equal(fmtr("Sun Mar 04 2012 00:06:07 GMT-0500 (EST)").valueOf(), expected);
+        assert.equal(fmtr("asdf"), "asdf");
         assert.end();
         t.register(assert, type);
     });
@@ -497,6 +523,9 @@ tests("UNIT: utility -", function(t) {
 
     t.test("dateFormat: formats datetime objects and strings", function(assert) {
         const fmtr = sucrose.utility.dateFormat;
+        let locale = sucrose.utility.buildLocality();
+        let localeFmtr = d3.timeFormatLocale(locale);
+
         // let dto = new Date(1994, 0, 1);
         let dto = 1994;
 
@@ -542,6 +571,11 @@ tests("UNIT: utility -", function(t) {
         assert.equal(fmtr(dto, "%b"), "Jan");
         assert.equal(fmtr(dto, "y"), "1994");
         assert.equal(fmtr(dto, "%Y"), "1994");
+        assert.equal(fmtr("asdf", "%Y"), "asdf");
+        assert.equal(fmtr(dto, "%Y", localeFmtr), "1994");
+        assert.equal(fmtr(dto, null, localeFmtr), "1994");
+        assert.equal(fmtr(dto, "multi", localeFmtr), "1994");
+        assert.equal(fmtr(dto, "multi"), "1994");
 
         assert.end();
         t.register(assert, type);
@@ -567,6 +601,7 @@ tests("UNIT: utility -", function(t) {
         assert.equal(validator("January 1998"), true);
         assert.equal(validator("January 1, 1994"), true);
         assert.equal(validator("asdf"), false);
+        assert.equal(validator(sucrose.utility.isValidDate(null)), true);
         assert.end();
         t.register(assert, type);
     });

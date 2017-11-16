@@ -70,28 +70,26 @@ utility.optionsFunc = function(args) {
 // Window functions
 utility.windowSize = function() {
   // Sane defaults
-  var size = {width: 640, height: 480};
-
-  // Earlier IE uses Doc.body
-  if (document.body && document.body.offsetWidth) {
+  var size = {};
+  if (window.innerWidth && window.innerHeight) {
+    // most recent browsers use
+    size.width = window.innerWidth;
+    size.height = window.innerHeight;
+  } else if (document.body && document.body.offsetWidth) {
+    // earlier IE uses Doc.body
     size.width = document.body.offsetWidth;
     size.height = document.body.offsetHeight;
-  }
-
-  // IE can use depending on mode it is in
-  if (document.compatMode === 'CSS1Compat' &&
+  } else if (document.compatMode === 'CSS1Compat' &&
+    // IE can use depending on mode it is in
     document.documentElement &&
     document.documentElement.offsetWidth ) {
     size.width = document.documentElement.offsetWidth;
     size.height = document.documentElement.offsetHeight;
+  } else {
+    // default
+    size.width = 640;
+    size.height = 480;
   }
-
-  // Most recent browsers use
-  if (window.innerWidth && window.innerHeight) {
-    size.width = window.innerWidth;
-    size.height = window.innerHeight;
-  }
-
   return (size);
 };
 
@@ -277,11 +275,9 @@ utility.createLinearGradient = function(id, params, defs, stops) {
   for (var i = 0; i < stops.length; i += 1) {
     attrs = stops[i];
     stop = grad.append('stop');
-    for (var a in attrs) {
-      if (attrs.hasOwnProperty(a)) {
-        stop.attr(a, attrs[a]);
-      }
-    }
+    Object.getOwnPropertyNames(attrs).forEach(function(val) {
+      stop.attr(val, attrs[val]);
+    });
   }
 };
 
@@ -309,11 +305,9 @@ utility.createRadialGradient = function(id, params, defs, stops) {
   for (var i = 0; i < stops.length; i += 1) {
     attrs = stops[i];
     stop = grad.append('stop');
-    for (var a in attrs) {
-      if (attrs.hasOwnProperty(a)) {
-        stop.attr(a, attrs[a]);
-      }
-    }
+    Object.getOwnPropertyNames(attrs).forEach(function(val) {
+      stop.attr(val, attrs[val]);
+    });
   }
 };
 
@@ -982,12 +976,12 @@ utility.buildLocality = function(l, d) {
         'y': '%Y'
       };
   var def;
-  for (var key in locale) {
-    if (l.hasOwnProperty(key)) {
-      def = locale[key];
-      definition[key] = !deep || !Array.isArray(def) ? def : unfer(def);
-    }
-  }
+
+  Object.getOwnPropertyNames(locale).forEach(function(key) {
+    def = locale[key];
+    definition[key] = !deep || !Array.isArray(def) ? def : unfer(def);
+  });
+
   return definition;
 };
 

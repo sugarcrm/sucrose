@@ -16,7 +16,7 @@ export default {
     'd3': 'd3',
   },
   // sourceMap: 'inline',
-  // treeshake: false,
+  treeshake: false,
   plugins: [
     replace({
       exclude: 'node_modules/**',
