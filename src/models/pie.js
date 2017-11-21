@@ -93,9 +93,8 @@ export default function pie() {
 
       if (doLabels) {
         labelLengths = utility.stringSetLengths(
-            data,
+            data.map(fmtKey),
             container,
-            fmtKey,
             'sc-label'
           );
       }

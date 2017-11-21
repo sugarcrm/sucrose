@@ -37,8 +37,10 @@ export default function multibarChart() {
       hideEmptyGroups = true,
       overflowHandler = function(d) { return; };
 
-  var valueFormat = function(d, i, label, isCurrency, precision) {
-        return utility.numberFormatSI(d, precision, isCurrency, chart.locality());
+  var valueFormat = function(value, i, label, isCurrency, precision) {
+        return label && label.length ?
+          label :
+          utility.numberFormatSI(value, precision, isCurrency, chart.locality());
       };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
@@ -251,6 +253,10 @@ export default function multibarChart() {
 
       chart.container = this;
 
+      // we want the bar value label to not show decimals (confirm) with SI
+      model.valueFormat(function(value, v) {
+        return valueFormat(value, v, value.label, yIsCurrency, 0);
+      });
 
       //------------------------------------------------------------
       // Private method for displaying no data message.
@@ -285,8 +291,8 @@ export default function multibarChart() {
               x: value.x,
               y: value.y
             };
-            if (value.label) {
-              d.label = value.label; //formated valuedLabel, not group label
+            if (typeof value.label !== 'undefined') {
+              d.label = value.label;
             }
             if (value.active) {
               d.active = value.active;
@@ -320,11 +326,13 @@ export default function multibarChart() {
           series.values = series._values.map(function(value, v) {
               var d = {
                 x: value.x,
-                y: value.y,
-                active: value.active || '',
+                y: value.y
               };
               if (typeof value.label !== 'undefined') {
                 d.label = value.label;
+              }
+              if (value.active) {
+                d.active = value.active;
               }
               d.groupIndex = v;
               d.seriesIndex = series.seriesIndex;
@@ -493,11 +501,6 @@ export default function multibarChart() {
       if (xIsDatetime) {
         xDateFormat = utility.getDateFormatUTC(groupLabels);
       }
-
-      // we want the bar value label to not show decimals (confirm) with SI
-      model.valueFormat(function(d, i) {
-        return valueFormat(d, i, null, yIsCurrency, 0);
-      });
 
       xAxisFormat = function(d, i, selection, type) {
         //TODO: isn't there always groupLabels?

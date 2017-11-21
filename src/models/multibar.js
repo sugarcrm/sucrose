@@ -15,13 +15,14 @@ export default function multibar() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
+      valueFormat = function(value) { return value; },
+      getLabel = function(d) { return d.label || valueFormat(d.y); },
       locality = utility.buildLocality(),
       forceX = [],
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
       stacked = true,
       disabled, // used in conjunction with barColor to communicate to multibarChart what series are disabled
       showValues = false,
-      valueFormat = function(d) { return d; },
       withLine = false,
       vertical = true,
       baseDimension = 60,
@@ -59,7 +60,6 @@ export default function multibar() {
           availableHeight = height - margin.top - margin.bottom,
           dimX = vertical ? 'width' : 'height',
           dimY = vertical ? 'height' : 'width',
-          dimLabel = vertical ? 'width' : 'height',
           valX = vertical ? 'x' : 'y',
           valY = vertical ? 'y' : 'x',
           seriesCount = 0,
@@ -67,102 +67,80 @@ export default function multibar() {
           minSeries = 0,
           maxSeries = data.length - 1,
           verticalLabels = false,
+          useWidth = false,
           labelPosition = showValues,
+          labelsOutside = false,
           labelLengths = [],
           labelThickness = 0,
           labelData = [],
-          seriesData = [];
+          seriesData = [],
+          groupTotals = [];
 
-      function barLength(d, i) {
-        return Math.max(Math.round(Math.abs(y(getY(d, i)) - y(0))), 0);
-      }
-      function barThickness() {
-        return x.bandwidth() / (stacked ? 1 : data.length);
-      }
       function sign(bool) {
         return bool ? 1 : -1;
       }
+      function unique(x) {
+        return x.reverse()
+                .filter(function (e, i, x) { return x.indexOf(e, i + 1) === -1; })
+                .reverse();
+      }
 
-      if (stacked) {
-        // var stack = d3.stack()
-        //      .offset('zero')
-        //      .keys(data.map(function(d) { return d.key; }))
-        //      .value(function(d) { return d.key; });
-        // data = stack(data);
-        // stacked bars can't have label position 'top'
-        if (labelPosition === 'top' || labelPosition === true) {
-          labelPosition = 'end';
-        }
-      } else if (labelPosition) {
-        // grouped bars can't have label position 'total'
-        if (labelPosition === 'total') {
-          labelPosition = 'top';
-        } else if (labelPosition === true) {
-          labelPosition = 'end';
+      if (labelPosition) {
+        if (stacked) {
+          // var stack = d3.stack()
+          //      .offset('zero')
+          //      .keys(data.map(function(d) { return d.key; }))
+          //      .value(function(d) { return d.key; });
+          // data = stack(data);
+          // stacked bars can't have label position 'top'
+          if (labelPosition === 'top' || labelPosition === true) {
+            labelPosition = 'end';
+          }
+        } else {
+          // grouped bars can't have label position 'total'
+          if (labelPosition === 'total') {
+            labelPosition = 'top';
+          } else if (labelPosition === true) {
+            labelPosition = 'end';
+          }
         }
         verticalLabels = vertical;
+        labelsOutside = labelPosition === 'total' || labelPosition === 'top';
       }
 
       //------------------------------------------------------------
       // HACK for negative value stacking
       if (stacked) {
-        var groupTotals = [];
+        groupTotals = [];
         data[0].values.map(function(d, i) {
-          var posBase = 0,
-              negBase = 0;
+          var pos = 0;
+          var neg = 0;
           data.map(function(d) {
             var f = d.values[i];
             f.size = Math.abs(f.y);
             if (f.y < 0) {
-              f.y0 = negBase - (vertical ? 0 : f.size);
-              negBase -= f.size;
+              f.y0 = neg - (vertical ? 0 : f.size);
+              neg -= f.size;
             } else {
-              f.y0 = posBase + (vertical ? f.size : 0);
-              posBase += f.size;
+              f.y0 = pos + (vertical ? f.size : 0);
+              pos += f.size;
             }
           });
-          groupTotals[i] = {neg: negBase, pos: posBase};
+          groupTotals[i] = {
+            neg: {
+              label: valueFormat(neg),
+              y: neg
+            },
+            pos: {
+              label: valueFormat(pos),
+              y: pos
+            }
+          };
         });
       }
 
       //------------------------------------------------------------
       // Setup Scales
-
-      // remap and flatten the data for use in calculating the scales' domains
-      seriesData = d3.merge(data.map(function(d) {
-          return d.values.map(function(d, i) {
-            return {x: getX(d, i), y: getY(d, i), y0: d.y0};
-          });
-        }));
-
-      seriesCount = data.length;
-      groupCount = data[0].values.length;
-
-      if (showValues) {
-        labelData = labelPosition === 'total' && stacked ?
-          groupTotals.map(function(d) { return d.neg; }).concat(
-            groupTotals.map(function(d) { return d.pos; })
-          ) :
-          seriesData.map(getY);
-
-        var seriesExtents = d3.extent(data.map(function(d, i) { return d.seriesIndex; }));
-        minSeries = seriesExtents[0];
-        maxSeries = seriesExtents[1];
-
-        labelLengths = utility.stringSetLengths(
-            labelData,
-            container,
-            valueFormat,
-            'sc-label-value'
-          );
-
-        labelThickness = utility.stringSetThickness(
-            ['Xy'],
-            container,
-            valueFormat,
-            'sc-label-value'
-          )[0];
-      }
 
       model.resetDimensions = function(w, h) {
         width = w;
@@ -172,10 +150,37 @@ export default function multibar() {
         resetScale();
       };
 
-      function unique(x) {
-        return x.reverse()
-                .filter(function (e, i, x) { return x.indexOf(e, i + 1) === -1; })
-                .reverse();
+      if (showValues) {
+        data.forEach(function(series, s) {
+          series.values.forEach(function(value, v) {
+            value.label = getLabel(value);
+          });
+        });
+      }
+
+      // remap and flatten the data for use in calculating the scales' domains
+      seriesData = d3.merge(data.map(function(d) {
+          return d.values;
+        }));
+
+      seriesCount = data.length;
+      groupCount = data[0].values.length;
+
+      if (showValues) {
+
+        // this must be total because that is the only option that requires summing
+        labelData = labelPosition === 'total' ?
+          d3.merge(groupTotals.map(function(d) {
+            return [d.neg, d.pos];
+          })) :
+          seriesData;
+
+        labelLengths = utility.stringSetLengths(labelData.map(function(d) { return d.label; }), container, 'sc-label-value');
+        labelThickness = utility.stringSetThickness(['Xy'], container, 'sc-label-value')[0];
+
+        var seriesExtents = d3.extent(data.map(function(d, i) { return d.seriesIndex; }));
+        minSeries = seriesExtents[0];
+        maxSeries = seriesExtents[1];
       }
 
       function resetScale() {
@@ -193,64 +198,68 @@ export default function multibar() {
           .paddingOuter(outerPadding);
 
         var yDomain = yDomain || d3.extent(seriesData.map(function(d) {
-                var posOffset = (vertical ? 0 : d.y),
-                    negOffset = (vertical ? d.y : 0);
-                return stacked ? (d.y > 0 ? d.y0 + posOffset : d.y0 + negOffset) : d.y;
+                var posOffset = d.y0 + (vertical ? 0 : d.y);
+                var negOffset = d.y0 + (vertical ? d.y : 0);
+                return stacked ? (d.y > 0 ? posOffset : negOffset) : d.y;
               }).concat(forceY));
+        var yRange = vertical ? [maxY, 0] : [0, maxY];
 
-        var yRange = vertical ? [availableHeight, 0] : [0, availableWidth];
-
-        // initial set of y scale based on full dimension
         y .domain(yDomain)
           .range(yRange);
 
-
         if (showValues) {
-          // this must go here because barThickness varies
-          if (vertical && stacked && d3.max(labelLengths) + 8 > barThickness()) {
-            verticalLabels = true;
-          }
-          //       vlbl   hlbl
-          // vrt:   N      Y
-          // hrz:   N      N
-          dimLabel = vertical && !verticalLabels ? 'labelHeight' : 'labelWidth';
+          // this must go here because barThickness varies based on x.bandwidth()
+          verticalLabels = vertical && d3.max(labelLengths) + 8 > barThickness();
+          useWidth = verticalLabels || !vertical;
         }
 
         //------------------------------------------------------------
         // recalculate y.range if grouped and show values
 
-        if (labelPosition === 'top' || labelPosition === 'total') {
-          var maxBarLength = maxY,
-              minBarLength = 0,
-              maxValuePadding = 0,
-              minValuePadding = 0;
+        if (labelsOutside) {
+          var minBarY = 0, // top
+              maxBarY = maxY, // bottom
+              negValuePadding = 0,
+              posValuePadding = 0;
 
           gap = vertical ? verticalLabels ? 2 : -2 : 2;
 
-          labelData.forEach(function(d, i) {
-            var labelDim = labelPosition === 'total' && stacked && vertical && !verticalLabels ? labelThickness : labelLengths[i];
-            if (vertical && d > 0 || !vertical && d < 0) {
-              if (y(d) - labelDim < minBarLength) {
-                minBarLength = y(d) - labelDim;
-                minValuePadding = labelDim;
+          labelData.forEach(function(label, l) {
+            var labelDimension = useWidth ?
+                  labelLengths[l] :
+                  labelThickness;
+            var value = parseFloat(label.y);
+
+            // this the vertical pixel position of the bar top (or bottom for negative values)
+            var labelY = y(value);
+            var offset = 0;
+
+            // d is sometimes numeric but sometimes a string
+            // minBarY = 0 unless there are negative values
+            if (vertical && value > 0 || !vertical && value < 0) {
+              offset = labelY - labelDimension;
+              if (offset < minBarY) {
+                posValuePadding = labelDimension;
+                minBarY = offset; // min because top of graph has y = 0
               }
             } else {
-              if (y(d) + labelDim > maxBarLength) {
-                maxBarLength = y(d) + labelDim;
-                maxValuePadding = labelDim;
+              offset = labelY + labelDimension;
+              if (offset > maxBarY) {
+                negValuePadding = labelDimension;
+                maxBarY = offset; // max because top of graph has y = height
               }
             }
           });
 
           if (vertical) {
             y.range([
-              maxY - (y.domain()[0] < 0 ? maxValuePadding + gap + 2 : 0),
-                      y.domain()[1] > 0 ? minValuePadding + gap : 0
+              maxY - (y.domain()[0] < 0 ? negValuePadding + gap + 2 : 0),
+                      y.domain()[1] > 0 ? posValuePadding + gap : 0
             ]);
           } else {
             y.range([
-                      y.domain()[0] < 0 ? minValuePadding + gap + 4 : 0,
-              maxY - (y.domain()[1] > 0 ? maxValuePadding + gap : 0)
+                      y.domain()[0] < 0 ? posValuePadding + gap + 4 : 0,
+              maxY - (y.domain()[1] > 0 ? negValuePadding + gap : 0)
             ]);
           }
         }
@@ -265,7 +274,6 @@ export default function multibar() {
 
       resetScale();
 
-
       //------------------------------------------------------------
       // Setup containers and skeleton of model
 
@@ -277,7 +285,6 @@ export default function multibar() {
       var defs = wrap.select('defs');
 
       wrap.attr('transform', utility.translation(margin.left, margin.top));
-
 
       //------------------------------------------------------------
       // Definitions
@@ -376,34 +383,47 @@ export default function multibar() {
         .style('fill', 'transparent')
         .style('stroke-width', 0)
         .style('fill-opacity', 0);
+      var barBox = bars.select('.sc-label-box');
 
       // For label text
-      // TODO: should this be inside labelPosition?
-      var barText_entr = bars_entr.append('text').attr('class', 'sc-label-value');
-      var barText = bars.select('.sc-label-value').merge(barText_entr);
+      bars_entr.append('text').attr('class', 'sc-label-value');
+      var barText = bars.select('.sc-label-value');
 
       //------------------------------------------------------------
+
+      function barLength(d, i) {
+        return Math.max(Math.round(Math.abs(y(getY(d, i)) - y(0))), 0);
+      }
+      function barThickness() {
+        return x.bandwidth() / (stacked ? 1 : data.length);
+      }
+      function barTransform(d, i) {
+        var trans;
+        if (stacked) {
+          trans = {
+            x: Math.round(x(getX(d, i))),
+            y: Math.round(y(d.y0))
+          };
+        } else {
+          trans = {
+            x: Math.round(d.seri * barThickness() + x(getX(d, i))),
+            y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
+          };
+        }
+        return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
+      }
+      function barTextureFill(d, i) {
+        var backColor = fill(d),
+            foreColor = utility.getTextContrast(backColor, i);
+        return foreColor;
+      }
 
       bars
         .attr('class', function(d, i) {
           return 'sc-bar ' + (getY(d, i) < 0 ? 'negative' : 'positive');
         })
         .classed('sc-active', function(d) { return d.active === 'active'; })
-        .attr('transform', function(d, i) {
-          var trans;
-          if (stacked) {
-            trans = {
-              x: Math.round(x(getX(d, i))),
-              y: Math.round(y(d.y0))
-            };
-          } else {
-            trans = {
-              x: Math.round(d.seri * barThickness() + x(getX(d, i))),
-              y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
-            };
-          }
-          return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
-        })
+        .attr('transform', barTransform)
         .style('display', function(d, i) {
           return barLength(d, i) !== 0 ? 'inline' : 'none';
         });
@@ -418,11 +438,230 @@ export default function multibar() {
           .attr(valX, 0)
           .attr(dimY, barLength)
           .attr(dimX, barThickness)
-          .style('fill', function(d, i) {
-            var backColor = fill(d),
-                foreColor = utility.getTextContrast(backColor, i);
-            return foreColor;
-          });
+          .style('fill', barTextureFill);
+      }
+
+      //------------------------------------------------------------
+      // Bar text: begin, middle, end, top
+
+      function getLabelText(d, i) {
+        // this must be total because that is the only option that requires summing
+        var value = labelPosition === 'total' ?
+          groupTotals[i][getY(d, i) < 0 ? 'neg' : 'pos'] :
+          d;
+        return getLabel(value);
+      }
+      function setLabelDimensions(d, i) {
+        var bbox = this.getBoundingClientRect();
+        var width = Math.floor(bbox.width);
+        var height = Math.floor(bbox.height);
+        d.labelWidth = d.labelWidth || (verticalLabels ? height : width) + 4;
+        d.labelHeight = d.labelHeight || (verticalLabels ? width : height);
+        d.barLength = barLength(d, i);
+        d.barThickness = barThickness();
+      }
+      function getLabelAnchor(d, i) {
+        var anchor = 'middle',
+            negative = getY(d, i) < 0;
+        if (useWidth) {
+          switch (labelPosition) {
+            case 'start':
+              anchor = negative ? 'end' : 'start';
+              break;
+            case 'middle':
+              anchor = 'middle';
+              break;
+            case 'end':
+              anchor = negative ? 'start' : 'end';
+              break;
+            case 'top':
+            case 'total':
+              anchor = negative ? 'end' : 'start';
+              break;
+          }
+          anchor = direction === 'rtl' && anchor !== 'middle' ? anchor === 'start' ? 'end' : 'start' : anchor;
+        } else {
+          anchor = 'middle';
+        }
+        return anchor;
+      }
+      function getLabelX(d, i) {
+        var offset = 0,
+            negative = getY(d, i) < 0 ? -1 : 1,
+            shift = negative < 0;
+
+        var padding = (4 + useWidth * 2) * negative;
+
+        if (vertical && !verticalLabels) {
+          offset = d.barThickness / 2;
+        } else {
+          switch (labelPosition) {
+            case 'start':
+              // vrt: neg 0 , pos -1
+              // hrz: neg 1 , pos  0
+              offset = d.barLength * (shift - verticalLabels) + padding;
+              break;
+            case 'middle':
+              offset = d.barLength * (verticalLabels ? -1 : 1) / 2;
+              break;
+            case 'end':
+              // vrt: neg -1 , pos 0.
+              // hrz: neg  0 , pos 1;
+              offset = d.barLength * (!verticalLabels - shift) - padding;
+              break;
+            case 'top':
+            case 'total':
+              offset = d.barLength * (!verticalLabels - shift) + 2 * negative;
+              break;
+          }
+        }
+        return offset;
+      }
+      function getLabelY(d, i) {
+        var offset = 0,
+            negative = getY(d, i) < 0 ? -1 : 1,
+            shift = negative < 0;
+
+        var padding = (
+              d.labelHeight / 2 +
+              (4 + verticalLabels * 2) * !labelsOutside
+            ) * negative;
+
+        if (useWidth) {
+          offset = d.barThickness / 2;
+        } else {
+          switch (labelPosition) {
+            case 'start':
+              offset = d.barLength * (1 - shift) - padding;
+              break;
+            case 'middle':
+              offset = d.barLength / 2;
+              break;
+            case 'end':
+              offset = d.barLength * (0 + shift) + padding;
+              break;
+            case 'top':
+            case 'total':
+              offset = d.barLength * (0 + shift) - padding;
+              break;
+          }
+        }
+        return offset;
+      }
+      function getLabelFill(d, i, j) {
+        if (labelsOutside) {
+          return '#000';
+        }
+        var backColor = fill(d),
+            textColor = utility.getTextContrast(backColor, i);
+        return textColor;
+      }
+      function getLabelOpacity(d, i) {
+        if (labelsOutside) {
+          if (labelPosition === 'total' & d.seriesIndex !== minSeries && d.seriesIndex !== maxSeries) {
+            return 0;
+          }
+          return 1;
+          // var y = getY(d, i);
+          // return (y <  0 && groupTotals[i].neg.y === d.y0 + (vertical ? y : 0)) ||
+          //        (y >= 0 && groupTotals[i].pos.y === d.y0 + (vertical ? 0 : y)) ? 1 : 0;
+        } else {
+          var lengthOverlaps = d.barLength < (useWidth ? d.labelWidth : d.labelHeight) + 8;
+          var thicknessOverlaps = d.barThickness < (useWidth ? d.labelHeight : d.labelWidth) + 4;
+          return lengthOverlaps || thicknessOverlaps ? 0 : 1;
+        }
+      }
+
+      function getLabelBoxX(d, i) {
+        return getLabelBoxOffset(d, i, true);
+      }
+      function getLabelBoxY(d, i) {
+        return getLabelBoxOffset(d, i, false);
+      }
+      function getLabelBoxOffset(d, i, isX) {
+        var offset, pos, gap, shift, labelDim, barLength, isY;
+        // if x, isX is true and gap is 4
+        // if y, isX is false and gap is -4
+        offset = 0;
+        pos = getY(d, i) >= 0;
+        gap = 4 * sign(isX) * sign(pos);
+
+        //    neg  pos
+        // x:  1    0
+        // y:  0    1
+        shift = isX === pos ? 0 : 1;
+
+        // if get x and vertical or get y and horizontal
+        if (!isX ^ vertical) {
+          offset = (d.barThickness - (useWidth ? d.labelHeight : d.labelWidth)) / 2;
+        } else {
+          //       vert lbl    horz lbl
+          // x:    height      width
+          // y:    width       height
+          // label width is bbox.w+4
+          barLength = d.barLength - (useWidth ? d.labelWidth : d.labelHeight);
+
+          switch (labelPosition) {
+            case 'start':
+              offset = barLength * (0 + shift) + gap;
+              break;
+            case 'middle':
+              offset = barLength / 2;
+              break;
+            case 'end':
+              offset = barLength * (1 - shift) - gap;
+              break;
+            case 'top':
+            case 'total':
+              labelDim = verticalLabels === isX ? d.labelHeight : d.labelWidth;
+              offset = d.barLength * (1 - shift) - labelDim * (0 + shift);
+              break;
+          }
+        }
+
+        return offset;
+      }
+      function getLabelBoxWidth(d) {
+        return verticalLabels ? d.labelHeight : d.labelWidth;
+      }
+      function getLabelBoxHeight(d) {
+        return verticalLabels ? d.labelWidth : d.labelHeight;
+      }
+      function getLabelBoxFill(d, i) {
+        return labelsOutside ? '#fff' : fill(d, i);
+      }
+
+      if (showValues) {
+
+        barText
+          .text(getLabelText)
+          .attr('transform', 'rotate(' + (0 - 90 * verticalLabels) + ')')
+          .each(setLabelDimensions);
+
+        barText
+          .attr('dy', '0.35em')
+          .attr('text-anchor', getLabelAnchor)
+          .attr('x', getLabelX)
+          .attr('y', getLabelY)
+          .style('fill', getLabelFill)
+          .style('fill-opacity', getLabelOpacity);
+
+        barBox
+          .attr('x', getLabelBoxX)
+          .attr('y', getLabelBoxY)
+          .attr('width', getLabelBoxWidth)
+          .attr('height', getLabelBoxHeight)
+          .style('fill', getLabelBoxFill)
+          .style('fill-opacity', getLabelOpacity);
+
+      } else {
+        barText
+          .text('')
+          .style('fill-opacity', 0);
+
+        bars
+          .select('rect.label-box')
+            .style('fill-opacity', 0);
       }
 
       //------------------------------------------------------------
@@ -463,213 +702,6 @@ export default function multibar() {
           var eo = buildEventObject(d3.event, d, i);
           dispatch.call('elementDblClick', this, eo);
         });
-
-      //------------------------------------------------------------
-      // Bar text: begin, middle, end, top
-
-      function getLabelBoxOffset(d, i, s, gap) {
-        var offset = 0,
-            negative = getY(d, i) < 0 ? -1 : 1,
-            shift = s === negative < 0 ? 1 : 0,
-            barLength = d.barLength - d[dimLabel];
-        if (s ? vertical : !vertical) {
-          offset = (d.barThickness - (verticalLabels === s ? d.labelHeight : d.labelWidth)) / 2;
-        } else {
-          switch (labelPosition) {
-            case 'start':
-              offset = barLength * (0 + shift) + gap * negative;
-              break;
-            case 'middle':
-              offset = barLength / 2;
-              break;
-            case 'end':
-              offset = barLength * (1 - shift) - gap * negative;
-              break;
-            case 'top':
-              offset = d.barLength * (1 - shift) - d.labelWidth * (0 + shift);
-              break;
-            case 'total':
-              offset = d.barLength * (1 - shift) - (verticalLabels === s ? d.labelHeight : d.labelWidth) * (0 + shift);
-              break;
-          }
-        }
-
-        return offset;
-      }
-
-      if (showValues) {
-
-          barText
-            .text(function(d, i) {
-              var val = labelPosition === 'total' && stacked ?
-                getY(d, i) < 0 ?
-                  groupTotals[i].neg :
-                  groupTotals[i].pos :
-                getY(d, i);
-              return valueFormat(val);
-            })
-            .each(function(d, i) {
-              var bbox = this.getBoundingClientRect();
-              d.labelWidth = Math.floor(bbox.width) + 4;
-              d.labelHeight = Math.floor(bbox.height);
-              d.barLength = barLength(d, i);
-              d.barThickness = barThickness();
-            });
-
-          barText
-            .attr('dy', '0.35em')
-            .attr('text-anchor', function(d, i) {
-              var anchor = 'middle',
-                  negative = getY(d, i) < 0;
-              if (vertical && !verticalLabels) {
-                anchor = 'middle';
-              } else {
-                switch (labelPosition) {
-                  case 'start':
-                    anchor = negative ? 'end' : 'start';
-                    break;
-                  case 'middle':
-                    anchor = 'middle';
-                    break;
-                  case 'end':
-                    anchor = negative ? 'start' : 'end';
-                    break;
-                  case 'top':
-                  case 'total':
-                    anchor = negative ? 'end' : 'start';
-                    break;
-                }
-                anchor = direction === 'rtl' && anchor !== 'middle' ? anchor === 'start' ? 'end' : 'start' : anchor;
-              }
-              return anchor;
-            })
-            .attr('transform', 'rotate(' + (verticalLabels ? -90 : 0) + ' 0,0)')
-            .attr('x', function(d, i) {
-              var offset = 0,
-                  negative = getY(d, i) < 0 ? -1 : 1,
-                  shift = negative < 0,
-                  padding = (4 + (verticalLabels || !vertical) * 2) * negative;
-
-              if (vertical && !verticalLabels) {
-                offset = d.barThickness / 2;
-              } else {
-                switch (labelPosition) {
-                  case 'start':
-                    // vrt: neg 0 , pos -1
-                    // hrz: neg 1 , pos  0
-                    offset = d.barLength * (shift - verticalLabels) + padding;
-                    break;
-                  case 'middle':
-                    offset = d.barLength * (verticalLabels ? -1 : 1) / 2;
-                    break;
-                  case 'end':
-                    // vrt: neg -1 , pos 0.
-                    // hrz: neg  0 , pos 1;
-                    offset = d.barLength * (!verticalLabels - shift) - padding;
-                    break;
-                  case 'top':
-                  case 'total':
-                    offset = d.barLength * (!verticalLabels - shift) + 2 * negative;
-                    break;
-                }
-              }
-              return offset;
-            })
-            .attr('y', function(d, i) {
-              var offset = 0,
-                  negative = getY(d, i) < 0 ? -1 : 1,
-                  shift = negative < 0,
-                  padding = (d.labelHeight / 2 + (4 + verticalLabels * 2) * (labelPosition === 'total' ? 0 : 1)) * negative;
-
-              if (vertical && !verticalLabels) {
-                switch (labelPosition) {
-                  case 'start':
-                    offset = d.barLength * (1 - shift) - padding;
-                    break;
-                  case 'middle':
-                    offset = d.barLength / 2;
-                    break;
-                  case 'end':
-                    offset = d.barLength * (0 + shift) + padding;
-                    break;
-                  case 'total':
-                    offset = d.barLength * (0 + shift) + padding * -1;
-                    break;
-                }
-              } else {
-                offset = d.barThickness / 2;
-              }
-              return offset;
-            })
-            .style('fill', function(d, i, j) {
-              if (labelPosition === 'top' || labelPosition === 'total') {
-                return '#000';
-              }
-              // var backColor = d3.select(this.previousSibling).style('fill'),
-              var backColor = fill(d),
-                  textColor = utility.getTextContrast(backColor, i);
-              return textColor;
-            })
-            .style('fill-opacity', function(d, i) {
-              if (labelPosition === 'total') {
-                if (d.seriesIndex !== minSeries && d.seriesIndex !== maxSeries) {
-                  return 0;
-                }
-                var y = getY(d, i);
-                return (y <  0 && groupTotals[i].neg === d.y0 + (vertical ? y : 0)) ||
-                       (y >= 0 && groupTotals[i].pos === d.y0 + (vertical ? 0 : y)) ? 1 : 0;
-              } else {
-                var lengthOverlaps = d.barLength < (!vertical || verticalLabels ? d.labelWidth : d.labelHeight) + 8,
-                    thicknessOverlaps = d.barThickness < (!vertical || verticalLabels ? d.labelHeight : d.labelWidth) + 4;
-                return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
-              }
-            });
-
-          //------------------------------------------------------------
-          // Label background box
-          // bars.filter(function(d, i) {
-          //     return labelPosition === 'total' && stacked ? (d.seriesIndex !== minSeries && d.seriesIndex !== maxSeries) : false;
-          //   })
-          //   .select('rect.sc-label-box')
-          //       .style('fill-opacity', 0);
-          if (labelPosition === 'total' && stacked) {
-            bars.select('rect.sc-label-box')
-              .style('fill-opacity', 0);
-          }
-          bars.filter(function(d, i) {
-              return labelPosition === 'total' && stacked ? (d.seriesIndex === minSeries || d.seriesIndex === maxSeries) : true;
-            })
-            .select('rect.sc-label-box')
-                .attr('x', function(d, i) {
-                  return getLabelBoxOffset(d, i, true, 4);
-                })
-                .attr('y', function(d, i) {
-                  return getLabelBoxOffset(d, i, false, -4);
-                })
-                .attr('width', function(d, i) {
-                  return verticalLabels ? d.labelHeight : d.labelWidth;
-                })
-                .attr('height', function(d, i) {
-                  return verticalLabels ? d.labelWidth : d.labelHeight;
-                })
-                .style('fill', function(d, i) {
-                  return labelPosition === 'top' || labelPosition === 'total' ? '#fff' : fill(d, i);
-                })
-                .style('fill-opacity', function(d, i) {
-                  var lengthOverlaps = d.barLength < (!vertical || verticalLabels ? d.labelWidth : d.labelHeight) + 8,
-                      thicknessOverlaps = d.barThickness < (!vertical || verticalLabels ? d.labelHeight : d.labelWidth) + 4;
-                  return labelPosition !== 'top' && (lengthOverlaps || thicknessOverlaps) ? 0 : 1;
-                });
-
-      } else {
-        barText
-          .text('')
-          .style('fill-opacity', 0);
-
-        bars
-          .select('rect.label-box')
-            .style('fill-opacity', 0);
-      }
 
       // TODO: fix way of passing in a custom color function
       // if (barColor) {
