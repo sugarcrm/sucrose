@@ -68,7 +68,8 @@
         {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
         {"value": "pie_data_single", "label": "Test Single Slice Data"},
         {"value": "data_null", "label": "Test Null Data"},
-        {"value": "pie_data_rpt-395", "label": "Test Single Active Series"}
+        {"value": "pie_data_rpt-395", "label": "Test Single Active Series"},
+        {"value": "pie_data_colors", "label": "Color Wheel"}
     ],
     "tree": [
         {"value": "tree_data", "label": "Organization"}
