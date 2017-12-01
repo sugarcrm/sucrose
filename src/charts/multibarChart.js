@@ -83,7 +83,7 @@ export default function multibarChart() {
         content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
         content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
 
-        if (eo.group && Number.isFinite(eo.group._height)) {
+        if (eo.group && utility.isNumeric(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
           percent = utility.numberFormat(percent, 2, false, chart.locality());
           content += '<p>Percentage: <b>' + percent + '%</b></p>';

@@ -82,7 +82,7 @@ export default function axis() {
       });
 
       // test to see if rotateTicks was passed as a boolean
-      if (rotateTicks && !isFinite(String(rotateTicks))) {
+      if (rotateTicks && !utility.isNumeric(String(rotateTicks))) {
         rotateTicks = 30;
       }
 
