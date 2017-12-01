@@ -22,7 +22,7 @@ limitations under the License.
 d3 = 'default' in d3 ? d3['default'] : d3;
 
 var name = "sucrose";
-var version = "0.7.3";
+var version = "0.7.4";
 var description = "Interactive Charts for Business Applications";
 var keywords = ["charts","d3","visualization","svg","mobile","canvas"];
 var homepage = "http://sucrose.io/";
