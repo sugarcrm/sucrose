@@ -31,7 +31,7 @@ export default function menu() {
       },
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getKey = function(d) {
-        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
+        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && utility.isNumeric(d.key)) ? d.key : legend.strings().noLabel;
       },
       color = function(d) {
         return utility.defaultColor()(d, d.seriesIndex);

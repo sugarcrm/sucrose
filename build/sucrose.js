@@ -565,7 +565,7 @@ utility.translation = function(x, y) {
 };
 
 utility.isNumeric = function(value) {
-  return !isNaN(value) && Number.isFinite(value);
+  return !isNaN(value) && typeof value === 'number' && isFinite(value);
 };
 
 utility.toNative = function(value) {
@@ -609,7 +609,7 @@ utility.countSigFigsBefore = function(value) {
 };
 
 utility.siDecimal = function(n) {
-  return Math.pow(10, Math.floor(Math.log10(n)));
+  return Math.pow(10, Math.floor(Math.log(n) * Math.LOG10E));
   // return Math.pow(1000, Math.floor((Math.round(parseFloat(n)).toString().length - 1) / 3));
 };
 
@@ -688,7 +688,7 @@ utility.numberFormatSI = function(d, p, c, l) {
     return d;
   }
   c = typeof c === 'boolean' ? c : false;
-  p = Number.isFinite(p) ? p : 0;
+  p = utility.isNumeric(p) ? p : 0;
   f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
   m = utility.countSigFigsAfter(d);
   s = c ? '$,' : ',';
@@ -1770,7 +1770,7 @@ function axis() {
       });
 
       // test to see if rotateTicks was passed as a boolean
-      if (rotateTicks && !isFinite(String(rotateTicks))) {
+      if (rotateTicks && !utility.isNumeric(String(rotateTicks))) {
         rotateTicks = 30;
       }
 
@@ -4067,7 +4067,7 @@ function menu() {
       },
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getKey = function(d) {
-        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && isFinite(d.key)) ? d.key : legend.strings().noLabel;
+        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && utility.isNumeric(d.key)) ? d.key : legend.strings().noLabel;
       },
       color = function(d) {
         return utility.defaultColor()(d, d.seriesIndex);
@@ -12877,7 +12877,7 @@ function lineChart() {
         content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
         content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
 
-        if (eo.group && Number.isFinite(eo.group._height)) {
+        if (eo.group && utility.isNumeric(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
           percent = utility.numberFormat(percent, 2, false, chart.locality());
           content += '<p>Percentage: <b>' + percent + '%</b></p>';
@@ -13963,7 +13963,7 @@ function multibarChart() {
         content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
         content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
 
-        if (eo.group && Number.isFinite(eo.group._height)) {
+        if (eo.group && utility.isNumeric(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
           percent = utility.numberFormat(percent, 2, false, chart.locality());
           content += '<p>Percentage: <b>' + percent + '%</b></p>';

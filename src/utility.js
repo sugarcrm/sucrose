@@ -526,7 +526,7 @@ utility.translation = function(x, y) {
 };
 
 utility.isNumeric = function(value) {
-  return !isNaN(value) && Number.isFinite(value);
+  return !isNaN(value) && typeof value === 'number' && isFinite(value);
 };
 
 utility.toNative = function(value) {
@@ -570,7 +570,7 @@ utility.countSigFigsBefore = function(value) {
 };
 
 utility.siDecimal = function(n) {
-  return Math.pow(10, Math.floor(Math.log10(n)));
+  return Math.pow(10, Math.floor(Math.log(n) * Math.LOG10E));
   // return Math.pow(1000, Math.floor((Math.round(parseFloat(n)).toString().length - 1) / 3));
 };
 
@@ -649,7 +649,7 @@ utility.numberFormatSI = function(d, p, c, l) {
     return d;
   }
   c = typeof c === 'boolean' ? c : false;
-  p = Number.isFinite(p) ? p : 0;
+  p = utility.isNumeric(p) ? p : 0;
   f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
   m = utility.countSigFigsAfter(d);
   s = c ? '$,' : ',';
