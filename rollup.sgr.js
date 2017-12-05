@@ -1,6 +1,7 @@
 import replace from 'rollup-plugin-replace';
-import resolve from 'rollup-plugin-node-resolve';
 import eslint from 'rollup-plugin-eslint';
+import resolve from 'rollup-plugin-node-resolve';
+const version = require('./package.json').version;
 
 export default {
   moduleName: 'sucrose',
@@ -21,8 +22,9 @@ export default {
     replace({
       exclude: 'node_modules/**',
       values: {
-        ENV_DEV: (process.env.DEV || true),
+        ENV_VERSION: version,
         ENV_BUILD: 'sgr',
+        ENV_DEV: (process.env.DEV || false),
         '\'d3\'': '\'@sugarcrm\/d3-sugar\'',
       },
     }),

@@ -24,7 +24,9 @@
     "extends": "stylelint-config-standard"
   },
   "browserslist": [
-    "> 5%"
+    "> 1%",
+    "last 2 versions",
+    "ie 11"
   ],
   "repository": {
     "type": "git",
@@ -43,6 +45,7 @@
     "test-unit": "tape test/specs/unit/*-test.js",
     "test-dom": "tape test/specs/dom/*-test.js",
     "test-int": "tape test/specs/int/*-test.js",
+    "lint": "eslint ./src/**/*.js",
     "lintcss": "stylelint \"src/less/**/*.less\" --syntax less",
     "package": "json2module package.json > build/package.js"
   },
@@ -67,6 +70,8 @@
     "cldrjs": "^0.5.0",
     "clean-css-cli": "^4.1.10",
     "codecov": "^3.0.0",
+    "eslint-plugin-compat": "^2.1.0",
+    "eslint-plugin-es5": "^1.1.0",
     "extend-tape": "^1.2.0",
     "faucet": "^0.0.1",
     "istanbul": "^0.4.5",
