@@ -41,6 +41,7 @@
     ],
     "multibar": [
         {"value": "multibar_data", "label": "Forecasting for Q1"},
+        {"value": "multibar_data_discrete", "label": "Discrete"},
         {"value": "multibar_data_color", "label": "Forecasting for Q2 (color data)"},
         {"value": "multibar_data_negative", "label": "Forecasting for Q1 (negative)"},
         {"value": "multibar_data_wide", "label": "Opportunities by Industry (wide)"},

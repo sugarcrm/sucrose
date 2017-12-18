@@ -1,3 +1,4 @@
+/* global $, d3, $demo, $form, $table, $title, $chart, $example, $options, $data, $config, Config, Data, chartData, tableData, store, chartStore, CodeMirror, localeData */
 
 // jQuery.my manifest
 var Manifest =
@@ -680,7 +681,7 @@ var Manifest =
     } else {
       // raw data from Report API
       if (!json.data) {
-        Data = transformDataToD3(json, this.type);
+        Data = transformDataToD3(json, this.type, 'stacked');
       }
       this.colorLength = Data.properties.colorLength || Data.data.length;
       postProcessData(Data, this.type, this.Chart);

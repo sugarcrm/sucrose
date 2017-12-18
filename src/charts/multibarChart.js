@@ -64,7 +64,7 @@ export default function multibarChart() {
         var seriesLabel = eo.series.key;
 
         var xIsDatetime = properties.xDataType === 'datetime';
-        var groupName = properties.groupName || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
+        var groupName = properties.groupLabel || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
         // the event object group is set by event dispatcher if x is ordinal
         var group = eo.group || {};
         var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
@@ -149,13 +149,15 @@ export default function multibarChart() {
           availableHeight = height;
 
       var xIsDatetime = properties.xDataType === 'datetime' || false,
+          xIsNumeric = properties.xDataType === 'numeric' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
-          hasGroupLabels = false;
+          hasGroupLabels = false,
+          isDiscrete = false;
 
       var modelData = [],
           seriesCount = 0,
@@ -279,38 +281,41 @@ export default function multibarChart() {
       //------------------------------------------------------------
       // Process data
 
+      function getSeriesValues(value, i) {
+        var d = {
+          x: value.x,
+          y: value.y
+        };
+        if (typeof value.label !== 'undefined') {
+          d.label = value.label;
+        }
+        if (value.active) {
+          d.active = value.active;
+        }
+        return d;
+      }
+
       // add series index to each data point for reference
       // and disable data series if total is zero
-      data.forEach(function(series, s) {
-        // make sure untrimmed values array exists
-        // and set immutable series values
-        // x & y are the only attributes allowed in values (TODO: array?)
-        if (!series._values) {
-          series._values = series.values.map(function(value, v) {
-            var d = {
-              x: value.x,
-              y: value.y
-            };
-            if (typeof value.label !== 'undefined') {
-              d.label = value.label;
-            }
-            if (value.active) {
-              d.active = value.active;
-            }
-            return d;
+      data
+        .forEach(function(series, s) {
+          // make sure untrimmed values array exists
+          // and set immutable series values
+          // 'x' & 'y', 'label' and 'active' are the only attributes allowed in values
+          if (!series._values) {
+            series._values = series.values.map(getSeriesValues);
+          }
+
+          series.seriesIndex = s;
+          series.key = series.key || strings.noLabel;
+          series.total = d3.sum(series._values, function(value, v) {
+            return value.y;
           });
-        }
 
-        series.seriesIndex = s;
-        series.key = series.key || strings.noLabel;
-        series.total = d3.sum(series._values, function(value, v) {
-          return value.y;
+          // disabled if all values in series are zero
+          // or the series was disabled by the legend
+          series.disabled = series.disabled || series.total === 0;
         });
-
-        // disabled if all values in series are zero
-        // or the series was disabled by the legend
-        series.disabled = series.disabled || series.total === 0;
-      });
 
       // Remove disabled series data
       modelData = data
@@ -318,27 +323,16 @@ export default function multibarChart() {
           return !series.disabled;
         })
         .map(function(series, s) {
-          // this is the iterative index, not the data index
+          // this is the iterative index, not the data index called seriesIndex
           series.seri = s;
 
-          // reconstruct values referencing series attributes
-          // and stack
+          // reconstruct values referencing series attributes and stack
           series.values = series._values.map(function(value, v) {
-              var d = {
-                x: value.x,
-                y: value.y
-              };
-              if (typeof value.label !== 'undefined') {
-                d.label = value.label;
-              }
-              if (value.active) {
-                d.active = value.active;
-              }
-              d.groupIndex = v;
+              var d = getSeriesValues(value, v);
+              d.groupIndex = xIsDatetime || xIsNumeric ? v : value.x - 1;
               d.seriesIndex = series.seriesIndex;
               d.seri = series.seri;
               d.color = series.color || '';
-              d.y0 = value.y + (s > 0 ? data[series.seriesIndex - 1]._values[v].y0 : 0);
               return d;
             });
 
@@ -370,14 +364,17 @@ export default function multibarChart() {
         // based on enabled data series
         groupData
           .forEach(function(group, g) {
-            var label = typeof group.label === 'undefined' || group.label === '' ?
-              strings.noLabel :
-                xIsDatetime ?
-                  utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
+            var label;
+            if (typeof group.label === 'undefined' || group.label === '') {
+              label = strings.noLabel;
+            } else if (xIsDatetime) {
+              label = utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
                     new Date(group.label) :
-                    new Date(group.label + ' GMT') :
-                  group.label;
-            group.group = g,
+                    new Date(group.label + ' GMT');
+            } else {
+              label = group.label;
+            }
+            group.group = g;
             group.label = label;
             group.total = 0;
             group._height = 0;
@@ -403,53 +400,84 @@ export default function multibarChart() {
               _height: 0
             };
           });
-
       }
+
+      setGroupLabels(groupData);
+
+      isDiscrete = groupData.length === modelData.length &&
+        modelData
+          .reduce(function(a, c, i) {
+            return a &&
+              Array.isArray(c.values) &&
+              c.values.length === 1 &&
+              c.key === groupLabels[i];
+          }, true);
 
       // Calculate group totals and height
       // based on enabled data series
-      groupData.forEach(function(group, g) {
-        //TODO: only sum enabled series
-        // update group data with values
-        modelData
-          .forEach(function(series, s) {
-            //TODO: there is a better way with map reduce?
-            series.values
-              .filter(function(value, v) {
-                return value.groupIndex === g;
-              })
-              .forEach(function(value, v) {
-                group.total += value.y;
-                group._height += Math.abs(value.y);
-              });
-          });
-      });
+      groupData
+        .forEach(function(group, g) {
+          var pos = 0;
+          var neg = 0;
 
-      setGroupLabels(groupData);
+          //TODO: only sum enabled series
+          // update group data with values
+          modelData
+            .forEach(function(series, s) {
+              //TODO: there is a better way with map reduce?
+              series.values
+                .filter(function(value, v) {
+                  return value.groupIndex === g;
+                })
+                .forEach(function(value, v) {
+                  value.size = Math.abs(value.y);
+                  group._height += value.size;
+                  group.total += value.y;
+                  if (value.y < 0) {
+                    value.y0 = neg - (vertical ? 0 : value.size);
+                    neg -= value.size;
+                  } else {
+                    value.y0 = pos + (vertical ? value.size : 0);
+                    pos += value.size;
+                  }
+                });
+            });
+
+          group.neg = {
+              label: valueFormat(neg),
+              y: neg
+            };
+          group.pos = {
+              label: valueFormat(pos),
+              y: pos
+            };
+        });
 
       if (hideEmptyGroups) {
         // build a trimmed array for active group only labels
         setGroupLabels(groupData.filter(function(group, g) {
-            return group._height !== 0;
+          return group._height !== 0;
         }));
 
         // build a discrete array of data values for the multibar
         // based on enabled data series
         // referencing the groupData
-        modelData.forEach(function(series, s) {
-          // reset series values to exlcude values for
-          // groups that have all zero values
-          series.values = series.values
-            .filter(function(value, v) {
-              return groupData[v]._height !== 0;
-            })
-            .map(function(value, v) {
-              // this is the new iterative index, not the data index
-              // value.seri = series.seri;
-              return value;
-            });
-          return series;
-        });
+        modelData
+          .forEach(function(series, s) {
+            // reset series values to exlcude values for
+            // groups that have all zero values
+            // this is why we need to preserve series._values
+            series.values = series.values
+              .filter(function(value, v) {
+                return groupData[value.groupIndex]._height !== 0;
+              })
+              .map(function(value, v) {
+                // this is the new iterative index, not the data index
+                // value.seri = series.seri;
+                return value;
+              });
+            return series;
+          });
 
         // Display No Data message if there's nothing to show.
         if (displayNoData(modelData)) {

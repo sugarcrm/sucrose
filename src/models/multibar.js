@@ -109,37 +109,6 @@ export default function multibar() {
       }
 
       //------------------------------------------------------------
-      // HACK for negative value stacking
-      if (stacked) {
-        groupTotals = [];
-        data[0].values.map(function(d, i) {
-          var pos = 0;
-          var neg = 0;
-          data.map(function(d) {
-            var f = d.values[i];
-            f.size = Math.abs(f.y);
-            if (f.y < 0) {
-              f.y0 = neg - (vertical ? 0 : f.size);
-              neg -= f.size;
-            } else {
-              f.y0 = pos + (vertical ? f.size : 0);
-              pos += f.size;
-            }
-          });
-          groupTotals[i] = {
-            neg: {
-              label: valueFormat(neg),
-              y: neg
-            },
-            pos: {
-              label: valueFormat(pos),
-              y: pos
-            }
-          };
-        });
-      }
-
-      //------------------------------------------------------------
       // Setup Scales
 
       model.resetDimensions = function(w, h) {
@@ -150,14 +119,6 @@ export default function multibar() {
         resetScale();
       };
 
-      if (showValues) {
-        data.forEach(function(series, s) {
-          series.values.forEach(function(value, v) {
-            value.label = getLabel(value);
-          });
-        });
-      }
-
       // remap and flatten the data for use in calculating the scales' domains
       seriesData = d3.merge(data.map(function(d) {
           return d.values;
@@ -167,6 +128,12 @@ export default function multibar() {
       groupCount = data[0].values.length;
 
       if (showValues) {
+        data.forEach(function(series, s) {
+          series.values.forEach(function(value, v) {
+            // reset label if not defined
+            value.label = getLabel(value);
+          });
+        });
 
         // this must be total because that is the only option that requires summing
         labelData = labelPosition === 'total' ?
@@ -407,6 +374,7 @@ export default function multibar() {
         } else {
           trans = {
             x: Math.round(d.seri * barThickness() + x(getX(d, i))),
+            //TODO: clean this up
             y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
           };
         }

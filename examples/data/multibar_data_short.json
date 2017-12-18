@@ -9,8 +9,9 @@
       {"label": "Yellow"},
       {"label": "Green"}
     ],
-    "seriesName": "Fruit",
-    "groupName": "Color"
+    "label": "Fruit",
+    "seriesLabel": "Type",
+    "groupLabel": "Color"
   },
   "data": [
     {
