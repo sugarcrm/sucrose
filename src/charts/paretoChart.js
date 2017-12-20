@@ -233,7 +233,6 @@ export default function paretoChart() {
             })
             .map(function(series, s) {
               series.seriesIndex = s;
-
               series.values = series._values.map(function(value, v) {
                   return {
                       'group': v,
@@ -245,7 +244,13 @@ export default function paretoChart() {
                       'active': typeof series.active !== 'undefined' ? series.active : '' // do not eval d.active because it can be false
                     };
                 });
-
+              series.key = series.key || strings.noLabel;
+              series.total = d3.sum(series._values, function(value, v) {
+                return value.y;
+              });
+              // disabled if all values in series are zero
+              // or the series was disabled by the legend
+              series.disabled = series.disabled || series.total === 0;
               return series;
             })
             .filter(function(d) {
@@ -259,7 +264,10 @@ export default function paretoChart() {
                 });
               return series;
             });
-      barData = barData.length ? barData : [{values: []}];
+
+      if (displayNoData(barData)) {
+        return chart;
+      }
 
       var lineData = data
             .filter(function(d) {
@@ -312,7 +320,6 @@ export default function paretoChart() {
                 });
               return series;
             });
-      lineData = lineData.length ? lineData : [{values: []}];
 
       var groupData = properties.groupData,
           groupLabels = groupData.map(function(d) {
@@ -337,6 +344,7 @@ export default function paretoChart() {
             .filter(function(d) {
               return d.type === 'line';
             });
+
       lineLegendData.push({
         'key': quotaLabel,
         'type': 'dash',
@@ -344,6 +352,7 @@ export default function paretoChart() {
         'seriesIndex': lineLegendData.length,
         'values': {'seriesIndex': lineLegendData.length, 'x': 0, 'y': 0}
       });
+
       if (targetQuotaValue > 0) {
         lineLegendData.push({
           'key': targetQuotaLabel,

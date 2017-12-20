@@ -59,7 +59,8 @@
         {"value": "pareto_data_salesrep_stage", "label": "Sales Rep Worksheet by Sales Stage"},
         {"value": "pareto_data_salesrep", "label": "Sales Rep Worksheet"},
         {"value": "pareto_data_manager", "label": "Manager Worksheet"},
-        {"value": "data_null", "label": "Test Null Data"}
+        {"value": "data_null", "label": "Test Null Data"},
+        {"value": "pareto_data_all_zeros", "label": "Test All Zeros Data"}
     ],
     "pie": [
         {"value": "pie_data", "label": "All Opportunities by Lead Source"},
