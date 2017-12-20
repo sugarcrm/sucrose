@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=320" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Visualizing Text/Background Color Contrast</title>
+  <script>
+    less = {
+      globalVars: {
+        // color palette
+        // PALETTE: [
+        //   {'name': 'red',     'color': '#e61718'},
+        //   {'name': 'orange',  'color': '#cc3314'},
+        //   {'name': 'yellow',  'color': '#e5a117'},
+        //   {'name': 'army',    'color': '#6a800d'},
+        //   {'name': 'green',   'color': '#33800d'},
+        //   {'name': 'mint',    'color': '#0d8046'},
+        //   {'name': 'teal',    'color': '#0d806c'},
+        //   {'name': 'pacific', 'color': '#0f7799'},
+        //   {'name': 'ocean',   'color': '#1378bf'},
+        //   {'name': 'blue',    'color': '#176de5'},
+        //   {'name': 'night',   'color': '#1f12b3'},
+        //   {'name': 'purple',  'color': '#6d17e5'},
+        //   {'name': 'pink',    'color': '#e5176d'},
+        //   {'name': 'coral',   'color': '#ff6fcf'},
+        //   {'name': 'gray',    'color': '#555555'}
+        // ],
+        PALETTE: [
+          { color: '#de3839', name: 'red' },
+          { color: '#f19547', name: 'orange' },
+          { color: '#f3cc25', name: 'yellow' },
+          { color: '#3c910e', name: 'army' },
+          { color: '#61d523', name: 'green' },
+          { color: '#2fdbca', name: 'mint' },
+          { color: '#24e7f4', name: 'teal' },
+          { color: '#3ab5f5', name: 'pacific' },
+          { color: '#166e90', name: 'ocean' },
+          { color: '#1285d5', name: 'blue' },
+          { color: '#09467c', name: 'night' },
+          { color: '#956cd6', name: 'purple' },
+          { color: '#da8ee5', name: 'pink' },
+          { color: '#d35db1', name: 'coral' },
+          { color: '#555555', name: 'gray' }
+        ],
+        // number of swatches per gradient
+        SWATCHCOUNT: 21,
+        // height of gradient row
+        ROWHEIGHT: '48px',
+        tooltipArrowWidth: '5px',
+        tooltipArrowColor: '#000'
+      }
+    };
+  </script>
+  <style type="text/less">
+
+    body {
+      padding: 0 10px 10px;
+      margin: 0;
+      font: normal 12px/18px Helvetica, Arial, sans-serif;
+      color: #555;
+      background-color: #FFF;
+      -webkit-box-sizing: border-box;
+         -moz-box-sizing: border-box;
+              box-sizing: border-box;
+    }
+
+    h1 {
+      font-size: 15px;
+      display: inline-block;
+    }
+
+    .toggle {
+      display: inline-block;
+      margin: 0 0 0 20px;
+      background-color: #fff;
+      padding: 4px;
+      cursor: pointer;
+      border: none;
+      color: blue;
+      &:hover {
+        text-decoration: underline;
+        color: purple;
+      }
+    }
+
+    .gradient {
+      height: @ROWHEIGHT;
+      span {
+        display: block;
+        line-height: 12px;
+      }
+      div {
+        height: @ROWHEIGHT;
+        float: left;
+        text-align: center;
+        font-size: 10px;
+        font-weight: bold;
+        -webkit-box-sizing: border-box;
+           -moz-box-sizing: border-box;
+                box-sizing: border-box;
+        &.label {
+          padding-top: (@ROWHEIGHT - 20) / 2;
+          width: 6%;
+        }
+        &.swatches-wrap {
+          position: relative;
+          width: 94%;
+        }
+        &.swatch {
+          @width:  ~"100% / @{SWATCHCOUNT}";
+          width: -moz-calc(@width);
+          width: -webkit-calc(@width);
+          width: calc(@width);
+          padding-top: (@ROWHEIGHT - 12) / 2;
+        }
+        &.sparkline {
+          position: absolute;
+          width: 100%;
+          top: 0;
+          left: 0;
+          z-index: 1;
+          background-color: transparent;
+          pointer-events: none;
+          &.show {
+            display: block;
+          }
+          &.hide {
+            display: none;
+          }
+        }
+      }
+    }
+
+    .sparkline-chart {
+      display: block;
+      width: 100%;
+      height: 100%;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      path.nv-line,
+      .nv-point-paths path {
+        fill: none;
+        stroke-width: 1px;
+      }
+      .nv-point-clips circle {
+        fill: transparent;
+      }
+    }
+
+    // Base class
+    .tooltip {
+        position: absolute;
+        z-index: 1000;
+        display: block;
+        visibility: visible;
+        padding: 5px;
+        font-size: 14px;
+        opacity: 1;
+        text-shadow: none;
+        font-weight: normal;
+        word-wrap: break-word;
+        &.in {
+            opacity: 0.8;
+        }
+        &.top {
+            margin-top: -3px;
+            .tooltip-arrow {
+                bottom: 0;
+                left: 50%;
+                margin-left: -@tooltipArrowWidth;
+                border-width: @tooltipArrowWidth @tooltipArrowWidth 0;
+                border-top-color: @tooltipArrowColor;
+            }
+        }
+        &.right {
+            margin-left: 3px;
+            .tooltip-arrow {
+                top: 50%;
+                left: 0;
+                margin-top: -@tooltipArrowWidth;
+                border-width: @tooltipArrowWidth @tooltipArrowWidth @tooltipArrowWidth 0;
+                border-right-color: @tooltipArrowColor;
+            }
+        }
+        &.bottom {
+            margin-top: 3px;
+            .tooltip-arrow {
+                top: 0;
+                left: 50%;
+                margin-left: -@tooltipArrowWidth;
+                border-width: 0 @tooltipArrowWidth @tooltipArrowWidth;
+                border-bottom-color: @tooltipArrowColor;
+            }
+        }
+        &.left {
+            margin-left: -3px;
+            .tooltip-arrow {
+                top: 50%;
+                right: 0;
+                margin-top: -@tooltipArrowWidth;
+                border-width: @tooltipArrowWidth 0 @tooltipArrowWidth @tooltipArrowWidth;
+                border-left-color: @tooltipArrowColor;
+            }
+        }
+        div, span, a { color: #ddd; }
+    }
+
+    // Wrapper for the tooltip content
+    .tooltip-inner {
+        max-width: 200px;
+        padding: 3px 8px;
+        color: #fff;
+        text-align: center;
+        text-decoration: none;
+        background-color: #000;
+        border-radius: 3px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        &> div {
+            text-align: left;
+        }
+        &> p {
+            margin: 0;
+        }
+        h3 {
+            font-size: 13px;
+            color: #fff;
+            line-height: normal;
+            margin: 3px 0;
+        }
+    }
+
+    // Arrows
+    .tooltip-arrow {
+        position: absolute;
+        width: 0;
+        height: 0;
+        border-color: transparent;
+        border-style: solid;
+    }
+  </style>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.3/less.min.js"></script>
+  <script src="../../build/d3.js"></script>
+  <script src="../../build/sucrose.js"></script>
+</head>
+<body>
+<!-- Maintain equidistant text contrast against background palette gradients -->
+<h1>Visualizing Text/Background Color Contrast</h1>
+<button class="toggle" onclick="toggleGraph(event)" data-state="hide">toggle graph</button>
+<div class="palette"></div>
+
+<script>
+
+var config = less.globalVars;
+var tooltip = null;
+
+function getTextContrast(c, callback) {
+    var back = c,
+        backLab = d3.lab(back),
+        backLumen = backLab.l;
+
+    var grayLighter = backLab.brighter(4 + (18 - backLumen) / 25).l, // (0..50)[3..1]
+        grayDarker = backLab.darker(4 + (backLumen - 75) / 25).l; // (50..100)[1 to 3]
+
+    var textLumen = backLumen > 60 ? grayDarker : grayLighter,
+        textLab = d3.lab(textLumen, 0, 0),
+        text = textLab.toString();
+
+    callback(backLumen, textLumen);
+
+    return text;
+}
+
+function windowResize(fun) {
+    if (window.attachEvent) {
+        window.attachEvent('onresize', fun);
+    } else if (window.addEventListener) {
+        window.addEventListener('resize', fun, true);
+    }
+}
+
+function tooltipContent(d) {
+     return '<p><i>Back Lumen: </i>' + Math.round(d.backLumen, 2) + '</p>' +
+            '<p><i>Text Lumen: </i>' + Math.round(d.textLumen, 2) + '</p>' +
+            '<p><i>Back Color: </i>' + d.backColor + '</p>' +
+            '<p><i>Text Color: </i>' + d.textColor + '</p>';
+}
+
+function showTooltip(e, offsetElement) {
+    var left = e.pos[0],
+        top = e.pos[1],
+        content = tooltipContent(e.point);
+    tooltip = sucrose.tooltip.show([left, top], content, 'n', null, offsetElement);
+}
+
+// chart main
+function renderChart(viz, data) {
+    var width = parseInt(d3.select('.swatches-wrap').style('width'), 10),
+        swatchHalfWidth = width / config.SWATCHCOUNT / 2;
+
+    // reset chart width and margin to align points with swatch center
+    sparkline
+        .width(width)
+        .margin({top: 5, right: swatchHalfWidth, bottom: 5, left: swatchHalfWidth});
+console.log(data);
+    // instantiate chart
+    viz
+        .datum(data)
+        .call(sparkline);
+}
+
+// hide/show visualization
+function toggleGraph(e) {
+    var el = e.srcElement,
+        s = el.dataset.state === 'show' ? 'hide' : 'show';
+    el.dataset.state = s;
+    d3.selectAll('.sparkline').classed('hide', s === 'hide');
+}
+
+    // for converting swatch index to lumen
+var scalar = d3.scaleLinear()
+        .domain([0, config.SWATCHCOUNT - 1])
+        .range([0, 100]);
+
+    // sparkline model
+var sparkline = sucrose.models.line()
+        .x(function(d) { return d[0]; })
+        .y(function(d) { return d[1]; })
+        .height(parseInt(config.ROWHEIGHT, 10));
+
+var palette = d3.select('.palette');
+
+    // a gradient row for each color in palette
+var gradients = palette.selectAll('.gradient')
+        .data(config.PALETTE)
+        .enter().append('div')
+        .attr('class', 'gradient');
+
+
+// for each swatch row
+gradients.each(function(d, i) {
+        // color data stores for visualization
+    var backValues = [],
+        textValues = [],
+        colorData = [];
+
+        // setup color gradient based on background-color
+    var colors = d3.scaleLinear()
+            //.range(['#33800d', '#e5a117', '#e61718'])
+            .range(['#000000', d.color, '#FFFFFF'])
+            .domain([0, 50, 100])
+            .interpolate(d3.interpolateLab);
+
+        // build current gradient row
+    var gradient = d3.select(this);
+        // gradient details
+    var label = gradient.append('div')
+            .attr('class', 'label')
+            .html('<span>@' + d.name + '</span><span>' + d.color + '</span>');
+        // container for swatches
+    var swatchesWrap = gradient.append('div')
+            .attr('class', 'swatches-wrap');
+        // sparkline container initially hidden
+    var sparklineWrap = swatchesWrap.append('div')
+            .attr('class', 'sparkline hide');
+
+        // create new swatches
+    var swatches = swatchesWrap.selectAll('.swatch')
+            .data(d3.range(0, config.SWATCHCOUNT))
+            .enter().append('div')
+                .attr('class', 'swatch')
+                .html('<span>TEXT</span>');
+
+        // sparkline svg
+    var sparkline = sparklineWrap.append('svg')
+            .attr('class', 'sparkline-chart')
+            .attr('id', 'sparkline-' + i);
+
+    // for each swatch
+    swatches.each(function(d, i) {
+        var data = {};
+            // get back color from color array
+        data.backColor = colors(scalar(i));
+        // data.backColor = '#9467bd';
+            // calculate text color based on back color lumen
+        data.textColor = getTextContrast(data.backColor, function(b, t) {
+                // store color values for visualization
+                data.backLumen = b;
+                data.textLumen = t;
+                backValues.push([i, b]);
+                textValues.push([i, t]);
+            });
+        // set background and text color
+        d3.select(this).datum(data)
+            .style('background-color', data.backColor)
+                .select('span')
+                .style('color', data.textColor);
+    });
+
+    colorData = [
+          {'key': d.name, 'values': backValues, 'color': '#00f2ff'}, //cyan ,
+          {'key': 'text', 'values': textValues, 'color': '#ff00ca'} //magenta
+      ];
+
+    renderChart(sparkline, colorData);
+
+    // rerender chart on window resize
+    windowResize(function() {
+        renderChart(vizColor, colorData);
+    });
+
+});
+
+
+var dispatch = d3.dispatch('elementMouseover', 'elementMouseout', 'elementMousemove');
+
+d3.selectAll('.swatch')
+    .on('mouseover', function(d, i) {
+        d3.select(this).classed('hover', true);
+        dispatch.call('elementMouseover', this, {
+            point: d,
+            pointIndex: i,
+            e: d3.event,
+            pos: [d3.event.pageX, d3.event.pageY]
+        });
+    })
+    .on('mousemove', function(d, i) {
+        dispatch.call('elementMousemove', this, {
+            point: d,
+            pointIndex: i,
+            e: d3.event,
+            pos: [d3.event.pageX, d3.event.pageY]
+        });
+    })
+    .on('mouseout', function(d, i) {
+        d3.select(this).classed('hover', false);
+        dispatch.call('elementMouseout', this, {
+            point: d,
+            pointIndex: i,
+            e: d3.event
+        });
+    });
+
+dispatch.on('elementMouseover.tooltip', function(e) {
+    showTooltip(e, palette.node());
+});
+
+dispatch.on('elementMousemove.tooltip', function(e) {
+    if (tooltip) {
+        sucrose.tooltip.position(tooltip, e.pos);
+    }
+});
+
+dispatch.on('elementMouseout.tooltip', function(e) {
+    if (tooltip) {
+      sucrose.tooltip.cleanup();
+    }
+});
+
+</script>
+
+</body>
+</html>

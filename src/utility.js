@@ -406,8 +406,8 @@ utility.createTexture = function(defs, id, x, y) {
 };
 
 // String functions
-
-utility.stringSetLengths = function(_data, _container, _format, classes, styles) {
+// Deprecated: _format param is ignored. _data is expected to be already formated.
+utility.stringSetLengths = function(_data, _container, classes, styles) {
   var lengths = [];
   var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -416,14 +416,15 @@ utility.stringSetLengths = function(_data, _container, _format, classes, styles)
   txt.classed(classes, true);
   txt.style('display', 'inline');
   _data.forEach(function(d, i) {
-      txt.text(_format(d, i));
+      txt.text(d);
       lengths.push(txt.node().getBoundingClientRect().width);
     });
   txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');
   return lengths;
 };
 
-utility.stringSetThickness = function(_data, _container, _format, classes, styles) {
+// Deprecated: _format param is ignored. _data is expected to be already formated.
+utility.stringSetThickness = function(_data, _container, classes, styles) {
   var thicknesses = [];
   var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -432,7 +433,7 @@ utility.stringSetThickness = function(_data, _container, _format, classes, style
   txt.classed(classes, true);
   txt.style('display', 'inline');
   _data.forEach(function(d, i) {
-      txt.text(_format(d, i));
+      txt.text(d);
       thicknesses.push(txt.node().getBoundingClientRect().height);
     });
   txt.text('').attr('class', 'tmp-text-strings').style('display', 'none');

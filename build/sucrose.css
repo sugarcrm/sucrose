@@ -33,13 +33,6 @@ limitations under the License.
   overflow: hidden;
   position: relative;
 }
-.sc-print {
-  visibility: hidden;
-  position: absolute !important;
-  left: -10000px;
-  width: 720px;
-  height: 480px;
-}
 .sc-image-canvas {
   visibility: hidden;
   position: absolute;
@@ -52,7 +45,9 @@ svg.sc-chart,
 .sc-chart svg {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
-  user-select: none;
+  -moz-user-select: none;
+   -ms-user-select: none;
+       user-select: none;
   display: block;
   width: 100%;
   height: 100%;
@@ -120,170 +115,170 @@ svg.sc-chart .calc-text-strings,
 * Colors
 */
 .sc-fill-green {
-  fill: #33800d;
-  background-color: #33800d;
+  fill: #61d523;
+  background-color: #61d523;
 }
 .sc-fill-red {
-  fill: #e61718;
-  background-color: #e61718;
+  fill: #de3839;
+  background-color: #de3839;
 }
 .sc-fill-blue {
-  fill: #176de5;
-  background-color: #176de5;
+  fill: #1285d5;
+  background-color: #1285d5;
 }
 .sc-fill00 {
-  fill: #e61718;
-  background-color: #e61718;
+  fill: #1285d5;
+  background-color: #1285d5;
 }
 .sc-fill01 {
-  fill: #cc3314;
-  background-color: #cc3314;
+  fill: #2fdbca;
+  background-color: #2fdbca;
 }
 .sc-fill02 {
-  fill: #e5a117;
-  background-color: #e5a117;
+  fill: #de3839;
+  background-color: #de3839;
 }
 .sc-fill03 {
-  fill: #6a800d;
-  background-color: #6a800d;
+  fill: #f3cc25;
+  background-color: #f3cc25;
 }
 .sc-fill04 {
-  fill: #33800d;
-  background-color: #33800d;
+  fill: #956cd6;
+  background-color: #956cd6;
 }
 .sc-fill05 {
-  fill: #0d8046;
-  background-color: #0d8046;
+  fill: #da8ee5;
+  background-color: #da8ee5;
 }
 .sc-fill06 {
-  fill: #0d806c;
-  background-color: #0d806c;
+  fill: #3c910e;
+  background-color: #3c910e;
 }
 .sc-fill07 {
-  fill: #0f7799;
-  background-color: #0f7799;
+  fill: #61d523;
+  background-color: #61d523;
 }
 .sc-fill08 {
-  fill: #1378bf;
-  background-color: #1378bf;
+  fill: #d35db1;
+  background-color: #d35db1;
 }
 .sc-fill09 {
-  fill: #176de5;
-  background-color: #176de5;
+  fill: #166e90;
+  background-color: #166e90;
 }
 .sc-fill10 {
-  fill: #1f12b3;
-  background-color: #1f12b3;
+  fill: #f19547;
+  background-color: #f19547;
 }
 .sc-fill11 {
-  fill: #6d17e5;
-  background-color: #6d17e5;
+  fill: #3ab5f5;
+  background-color: #3ab5f5;
 }
 .sc-fill12 {
-  fill: #e5176d;
-  background-color: #e5176d;
+  fill: #24e7f4;
+  background-color: #24e7f4;
 }
 .sc-fill13 {
-  fill: #ff6fcf;
-  background-color: #ff6fcf;
+  fill: #09467c;
+  background-color: #09467c;
 }
 .sc-legend .sc-fill00 {
-  stroke: #e61718;
+  stroke: #1285d5;
 }
 .sc-legend .sc-fill01 {
-  stroke: #cc3314;
+  stroke: #2fdbca;
 }
 .sc-legend .sc-fill02 {
-  stroke: #e5a117;
+  stroke: #de3839;
 }
 .sc-legend .sc-fill03 {
-  stroke: #6a800d;
+  stroke: #f3cc25;
 }
 .sc-legend .sc-fill04 {
-  stroke: #33800d;
+  stroke: #956cd6;
 }
 .sc-legend .sc-fill05 {
-  stroke: #0d8046;
+  stroke: #da8ee5;
 }
 .sc-legend .sc-fill06 {
-  stroke: #0d806c;
+  stroke: #3c910e;
 }
 .sc-legend .sc-fill07 {
-  stroke: #0f7799;
+  stroke: #61d523;
 }
 .sc-legend .sc-fill08 {
-  stroke: #1378bf;
+  stroke: #d35db1;
 }
 .sc-legend .sc-fill09 {
-  stroke: #176de5;
+  stroke: #166e90;
 }
 .sc-legend .sc-fill10 {
-  stroke: #1f12b3;
+  stroke: #f19547;
 }
 .sc-legend .sc-fill11 {
-  stroke: #6d17e5;
+  stroke: #3ab5f5;
 }
 .sc-legend .sc-fill12 {
-  stroke: #e5176d;
+  stroke: #24e7f4;
 }
 .sc-legend .sc-fill13 {
-  stroke: #ff6fcf;
+  stroke: #09467c;
 }
 .sc-stroke00 {
-  stroke: #e61718;
-  color: #e61718;
+  stroke: #1285d5;
+  color: #1285d5;
 }
 .sc-stroke01 {
-  stroke: #cc3314;
-  color: #cc3314;
+  stroke: #2fdbca;
+  color: #2fdbca;
 }
 .sc-stroke02 {
-  stroke: #e5a117;
-  color: #e5a117;
+  stroke: #de3839;
+  color: #de3839;
 }
 .sc-stroke03 {
-  stroke: #6a800d;
-  color: #6a800d;
+  stroke: #f3cc25;
+  color: #f3cc25;
 }
 .sc-stroke04 {
-  stroke: #33800d;
-  color: #33800d;
+  stroke: #956cd6;
+  color: #956cd6;
 }
 .sc-stroke05 {
-  stroke: #0d8046;
-  color: #0d8046;
+  stroke: #da8ee5;
+  color: #da8ee5;
 }
 .sc-stroke06 {
-  stroke: #0d806c;
-  color: #0d806c;
+  stroke: #3c910e;
+  color: #3c910e;
 }
 .sc-stroke07 {
-  stroke: #0f7799;
-  color: #0f7799;
+  stroke: #61d523;
+  color: #61d523;
 }
 .sc-stroke08 {
-  stroke: #1378bf;
-  color: #1378bf;
+  stroke: #d35db1;
+  color: #d35db1;
 }
 .sc-stroke09 {
-  stroke: #555;
-  color: #555;
+  stroke: #166e90;
+  color: #166e90;
 }
 .sc-stroke10 {
-  stroke: #1f12b3;
-  color: #1f12b3;
+  stroke: #f19547;
+  color: #f19547;
 }
 .sc-stroke11 {
-  stroke: #6d17e5;
-  color: #6d17e5;
+  stroke: #3ab5f5;
+  color: #3ab5f5;
 }
 .sc-stroke12 {
-  stroke: #e5176d;
-  color: #e5176d;
+  stroke: #24e7f4;
+  color: #24e7f4;
 }
 .sc-stroke13 {
-  stroke: #ff6fcf;
-  color: #ff6fcf;
+  stroke: #09467c;
+  color: #09467c;
 }
 /**********
 * Tooltips

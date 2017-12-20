@@ -8,138 +8,132 @@
   <link rel="stylesheet" href="../../build/sucrose.min.css">
   <link rel="stylesheet" href="../../examples/css/examples.min.css">
   <link rel="stylesheet" href="visual-tests.css">
+  <script src="../../build/d3.js" type="text/javascript"></script>
   <style>
-  body {
-    padding: 20px;
-  }
+    body { padding: 20px; }
   </style>
 </head>
 <body class="full-screen">
   <div class="sc-demo sc-demo-locale">
-
-    <div class="default">
+    <div id="new_colors" class="default">
       <h2>Default</h2>
-
-      <div class="swatch label"></div>
-      <div class="swatch label">@red<br>#E61718;<br>@gray00</div>
-      <div class="swatch label">@orange<br>#cc3314;<br>@gray01</div>
-      <div class="swatch label">@yellow<br>#e5a117;<br>@gray02</div>
-      <div class="swatch label">@army<br>#6a800d;<br>@gray03</div>
-      <div class="swatch label">@green<br>#33800d;<br>@gray04</div>
-      <div class="swatch label">@mint<br>#0d8046;<br>@gray05</div>
-      <div class="swatch label">@teal<br>#0d806c;<br>@gray06</div>
-      <div class="swatch label">@pacific<br>#0f7799;<br>@gray07</div>
-      <div class="swatch label">@ocean<br>#1378bf;<br>@gray08</div>
-      <div class="swatch label">@blue<br>#176de5;<br>@gray09</div>
-      <div class="swatch label">@night<br>#1f12b3;<br>@gray10</div>
-      <div class="swatch label">@purple<br>#6d17e5;<br>@gray11</div>
-      <div class="swatch label">@pink<br>#e5176d;<br>@gray12</div>
-      <div class="swatch label">@coral<br>#ff6fcf;<br>@gray13</div>
-      <div style="clear:both"></div>
-
-      <div class="swatch">Single Step</div>
-      <div class="swatch sc-fill00"></div>
-      <div class="swatch sc-fill01"></div>
-      <div class="swatch sc-fill02"></div>
-      <div class="swatch sc-fill03"></div>
-      <div class="swatch sc-fill04"></div>
-      <div class="swatch sc-fill05"></div>
-      <div class="swatch sc-fill06"></div>
-      <div class="swatch sc-fill07"></div>
-      <div class="swatch sc-fill08"></div>
-      <div class="swatch sc-fill09"></div>
-      <div class="swatch sc-fill10"></div>
-      <div class="swatch sc-fill11"></div>
-      <div class="swatch sc-fill12"></div>
-      <div class="swatch sc-fill13"></div>
-      <div style="clear:both"></div>
-
-      <div class="swatch label"></div>
-      <div class="swatch label">@red<br>#E61718;<br>@gray00</div>
-      <div class="swatch label">@yellow<br>#e5a117;<br>@gray02</div>
-      <div class="swatch label">@green<br>#33800d;<br>@gray04</div>
-      <div class="swatch label">@teal<br>#0d806c;<br>@gray06</div>
-      <div class="swatch label">@ocean<br>#1378bf;<br>@gray08</div>
-      <div class="swatch label">@night<br>#1f12b3;<br>@gray10</div>
-      <div class="swatch label">@pink<br>#e5176d;<br>@gray12</div>
-      <div class="swatch label">@orange<br>#cc3314;<br>@gray01</div>
-      <div class="swatch label">@army<br>#6a800d;<br>@gray03</div>
-      <div class="swatch label">@mint<br>#0d8046;<br>@gray05</div>
-      <div class="swatch label">@pacific<br>#0f7799;<br>@gray07</div>
-      <div class="swatch label">@blue<br>#176de5;<br>@gray09</div>
-      <div class="swatch label">@purple<br>#6d17e5;<br>@gray11</div>
-      <div class="swatch label">@coral<br>#ff6fcf;<br>@gray13</div>
-      <div style="clear:both"></div>
-
-      <div class="swatch">Double Step</div>
-      <div class="swatch sc-fill00"></div>
-      <div class="swatch sc-fill02"></div>
-      <div class="swatch sc-fill04"></div>
-      <div class="swatch sc-fill06"></div>
-      <div class="swatch sc-fill08"></div>
-      <div class="swatch sc-fill10"></div>
-      <div class="swatch sc-fill12"></div>
-
-      <div class="swatch sc-fill01"></div>
-      <div class="swatch sc-fill03"></div>
-      <div class="swatch sc-fill05"></div>
-      <div class="swatch sc-fill07"></div>
-      <div class="swatch sc-fill09"></div>
-      <div class="swatch sc-fill11"></div>
-      <div class="swatch sc-fill13"></div>
     </div>
-
-    <div style="clear:both"></div>
-
-    <h2>Monochrome Test</h2>
-    <div class="monochrome">
-      <div class="swatch gray00"></div>
-      <div class="swatch gray02"></div>
-      <div class="swatch gray04"></div>
-      <div class="swatch gray06"></div>
-      <div class="swatch gray08"></div>
-      <div class="swatch gray10"></div>
-      <div class="swatch gray12"></div>
-      <div class="swatch gray14"></div>
-      <div class="swatch gray16"></div>
-      <div class="swatch gray18"></div>
-
-      <div class="swatch gray01"></div>
-      <div class="swatch gray03"></div>
-      <div class="swatch gray05"></div>
-      <div class="swatch gray07"></div>
-      <div class="swatch gray09"></div>
-      <div class="swatch gray11"></div>
-      <div class="swatch gray13"></div>
-      <div class="swatch gray15"></div>
-      <div class="swatch gray17"></div>
-      <div class="swatch gray19"></div>
-
-      <div style="clear:both"></div>
-
-      <div class="swatch gray00"></div>
-      <div class="swatch gray01"></div>
-      <div class="swatch gray02"></div>
-      <div class="swatch gray03"></div>
-      <div class="swatch gray04"></div>
-      <div class="swatch gray05"></div>
-      <div class="swatch gray06"></div>
-      <div class="swatch gray07"></div>
-      <div class="swatch gray08"></div>
-      <div class="swatch gray09"></div>
-
-      <div class="swatch gray10"></div>
-      <div class="swatch gray11"></div>
-      <div class="swatch gray12"></div>
-      <div class="swatch gray13"></div>
-      <div class="swatch gray14"></div>
-      <div class="swatch gray15"></div>
-      <div class="swatch gray16"></div>
-      <div class="swatch gray17"></div>
-      <div class="swatch gray18"></div>
-      <div class="swatch gray19"></div>
-    </div>
-
   </div>
+  <script>
+// @fill00: #1285d5; //@blue (new)
+// @fill01: #2fdbca; //@mint (new)
+// @fill02: #3c910e; //@army (new)
+// @fill03: #61d523; //@green
+// @fill04: #956cd6; //@purple
+// @fill05: #da8ee5; //@pink (new)
+// @fill06: #de3839; //@red
+// @fill07: #f3cc25; //@yellow (new)
+// @fill08: #d35db1; //@coral
+// @fill09: #166e90; //@ocean
+// @fill10: #f19547; //@orange (new)
+// @fill11: #3ab5f5; //@pacific (new)
+// @fill12: #24e7f4; //@teal (new)
+// @fill13: #09467c; //@night (new)
+//
+// // Default chart stroke colors
+// // -------------------------
+// @stroke00: #0679c8; //@blue (new)
+// @stroke01: #17dbc7; //@mint (new)
+// @stroke02: #318105; //@army (new)
+// @stroke03: #54cb14; //@green
+// @stroke04: #854edb; //@purple
+// @stroke05: #da72e8; //@pink (new)
+// @stroke06: #e61718; //@red
+// @stroke07: #ffcf00; //@yellow (new)
+// @stroke08: #da3eac; //@coral
+// @stroke09: #0c6181; //@ocean
+// @stroke10: #fb8724; //@orange (new)
+// @stroke11: #17b0ff; //@pacific (new)
+// @stroke12: #00f0ff; //@teal (new)
+// @stroke13: #02396a; //@night (new)
+  var colors = [
+      { c: '#0679c8', v: '@blue' },
+      { c: '#17dbc7', v: '@mint' },
+
+      { c: '#e61718', v: '@red' },
+      { c: '#ffcf00', v: '@yellow' },
+
+      { c: '#854edb', v: '@purple' },
+      { c: '#da72e8', v: '@pink' },
+
+      { c: '#318105', v: '@army' },
+      { c: '#54cb14', v: '@green' },
+
+      { c: '#da3eac', v: '@coral' },
+      { c: '#0c6181', v: '@ocean' },
+
+      { c: '#fb8724', v: '@orange' },
+      { c: '#17b0ff', v: '@pacific' },
+
+      { c: '#00f0ff', v: '@teal' },
+      { c: '#02396a', v: '@night' }
+  ];
+  var newColors = [];
+
+  colors.forEach(function(d, i) {
+    d.i = i < 10 ? '0' + i : i;
+    var bc = d3.hsl(d.c);
+    bc.s -= 0.1;
+    bc.l += 0.05;
+    var rgb = d3.rgb(bc);
+    d.h = rgbToHex(rgb.r, rgb.g, rgb.b);
+    newColors.push('@fill' + d.i + ': ' + d.h);
+  });
+  console.log(JSON.stringify(newColors, null, '  '));
+
+  var dubstep = colors.filter(function(d) {
+    return parseInt(d.i, 10) % 2 === 0;
+  }).concat(colors.filter(function(d) {
+    return parseInt(d.i, 10) % 2 === 1;
+  }));
+
+  function rgbToHex(r, g, b) {
+    return "#" + Math.round((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  function displayHeader(tbl, colors) {
+    var l = document.createElement('div');
+    l.className = 'swatch';
+    tbl.appendChild(l);
+    colors.forEach(function(c) {
+      var r = document.createElement('div');
+      r.className = 'swatch label';
+      r.innerHTML = c.v + '<br>' + c.h + '<br>' + '@fill' + c.i;
+      tbl.appendChild(r);
+    });
+  }
+  function displayRow(tbl, colors, label) {
+    var lbl = document.createElement('div');
+    lbl.className = 'swatch';
+    lbl.innerText = label;
+    tbl.appendChild(lbl);
+    colors.forEach(function(c) {
+      var r = document.createElement('div');
+      r.className = ('swatch x-sc-fill' + c.i);
+      r.style.backgroundColor = c.h;
+      tbl.appendChild(r);
+    });
+  }
+  function appendBreak(t) {
+    var b = document.createElement('div');
+    b.style.clear = 'both';
+    t.appendChild(b);
+  }
+
+  var tbl = document.querySelector('#new_colors');
+
+  displayHeader(tbl, colors);
+  appendBreak(tbl);
+  displayRow(tbl, colors, 'single step');
+  appendBreak(tbl);
+  displayHeader(tbl, dubstep);
+  appendBreak(tbl);
+  displayRow(tbl, dubstep, 'double step');
+  </script>
 </body>
 </html>

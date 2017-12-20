@@ -1,10 +1,11 @@
 // ENV_DEV & ENV_BUILD are substitution variables for rollup
-var dev = ENV_DEV; // set false when in production
+var version = 'ENV_VERSION'; // set by rollup script from package.json
 var build = 'ENV_BUILD'; // set scr for sucrose and sgr for Sugar
+var development = ENV_DEV; // set false when in production
 
-export {dev as development};
+export {version as version};
 export {build as build};
-export {version} from '../build/package';
+export {development as development};
 export {default as utility} from './utility.js';
 export {default as utils} from './utility.js';
 export {default as tooltip} from './tooltip.js';
