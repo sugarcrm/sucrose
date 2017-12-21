@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# Version 0.7.0
+# Version 0.7.5
 
 CACHE:
 
@@ -48,12 +48,14 @@ data/multibar_data_opportunities.json
 data/multibar_data_raw.json
 data/multibar_data_short.json
 data/multibar_data_wide.json
+data/pareto_data_all_zeros.json
 data/pareto_data_manager.json
 data/pareto_data_salesrep.json
 data/pareto_data_salesrep_probability.json
 data/pareto_data_salesrep_stage.json
 data/pie_data.json
 data/pie_data_color.json
+data/pie_data_colors.json
 data/pie_data_quarters.json
 data/pie_data_rpt-395.json
 data/pie_data_single.json

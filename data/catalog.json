@@ -8,6 +8,7 @@
         {"value": "bubble_data", "label": "Bubble Data"},
         {"value": "bubble_data_color", "label": "Bubble Data with Color"},
         {"value": "bubble_linear3_data", "label": "Linear Data"},
+        {"value": "bubble_vertical_data", "label": "Vertical Data"},
         {"value": "bubble_year_data", "label": "Year Data"},
         {"value": "data_null", "label": "Test Null Data"}
     ],
@@ -58,7 +59,8 @@
         {"value": "pareto_data_salesrep_stage", "label": "Sales Rep Worksheet by Sales Stage"},
         {"value": "pareto_data_salesrep", "label": "Sales Rep Worksheet"},
         {"value": "pareto_data_manager", "label": "Manager Worksheet"},
-        {"value": "data_null", "label": "Test Null Data"}
+        {"value": "data_null", "label": "Test Null Data"},
+        {"value": "pareto_data_all_zeros", "label": "Test All Zeros Data"}
     ],
     "pie": [
         {"value": "pie_data", "label": "All Opportunities by Lead Source"},
@@ -67,7 +69,8 @@
         {"value": "sugar_data_grouped", "label": "Test Grouped Data"},
         {"value": "pie_data_single", "label": "Test Single Slice Data"},
         {"value": "data_null", "label": "Test Null Data"},
-        {"value": "pie_data_rpt-395", "label": "Test Single Active Series"}
+        {"value": "pie_data_rpt-395", "label": "Test Single Active Series"},
+        {"value": "pie_data_colors", "label": "Color Wheel"}
     ],
     "tree": [
         {"value": "tree_data", "label": "Organization"}
