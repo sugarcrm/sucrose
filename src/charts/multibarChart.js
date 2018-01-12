@@ -477,7 +477,7 @@ export default function multibarChart() {
       };
 
       function setAxisFormatProperties(type, selection) {
-        // i.e., 100 | 200 | 300
+        // i.e., [100, 200, 300]
         var tickDatum = selection.map(function(t) {
             return d3.select(t).datum();
           });
@@ -485,8 +485,10 @@ export default function multibarChart() {
         var decimal = d3.max(d3.extent(tickDatum), function(v) {
             return utility.siDecimal(Math.abs(v));
           });
+        // number of significant figures after the decimal
         var precision = d3.max(tickDatum, function(v) {
-            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+            var numberString = d3.formatPrefix('.2s', decimal)(v);
+            return utility.countSigFigsAfter(numberString);
           });
         if (type === 'maxmin' && yAxisFormatProperties.axis) {
           precision = Math.max(yAxisFormatProperties.axis.precision, precision);
@@ -513,8 +515,7 @@ export default function multibarChart() {
       };
 
       yAxisFormat = function(d, i, selection, type) {
-        var props = yAxisFormatProperties[type] ||
-              setAxisFormatProperties(type, selection);
+        var props = yAxisFormatProperties[type] || setAxisFormatProperties(type, selection);
         return yValueFormat(d, i, null, yIsCurrency, props.precision, props.decimal);
       };
 

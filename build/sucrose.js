@@ -582,9 +582,14 @@ utility.round = function(x, n) {
 utility.countSigFigsAfter = function(value) {
   // consider: d3.precisionFixed(value);
   // if value has decimals
-  return (Math.floor(value) !== parseFloat(value) ) ?
-    parseFloat(value).toString().split('.').pop().length || 0 :
-    0;
+  // compare "$123.45k"
+  var re = /^[^\d]*([\d\.\,\s]+)[^\d]*$/;
+  var digits = value.toString().match(re)[1].replace(/[,\s]/, '.');
+  var sigfigs = 0;
+  if (Math.floor(digits) !== parseFloat(digits)) {
+    sigfigs = parseFloat(digits).toString().split('.').pop().length || 0;
+  }
+  return sigfigs;
 };
 
 utility.countSigFigsBefore = function(value) {
@@ -14371,7 +14376,7 @@ function multibarChart() {
       };
 
       function setAxisFormatProperties(type, selection) {
-        // i.e., 100 | 200 | 300
+        // i.e., [100, 200, 300]
         var tickDatum = selection.map(function(t) {
             return d3.select(t).datum();
           });
@@ -14379,8 +14384,10 @@ function multibarChart() {
         var decimal = d3.max(d3.extent(tickDatum), function(v) {
             return utility.siDecimal(Math.abs(v));
           });
+        // number of significant figures after the decimal
         var precision = d3.max(tickDatum, function(v) {
-            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+            var numberString = d3.formatPrefix('.2s', decimal)(v);
+            return utility.countSigFigsAfter(numberString);
           });
         if (type === 'maxmin' && yAxisFormatProperties.axis) {
           precision = Math.max(yAxisFormatProperties.axis.precision, precision);
@@ -14407,8 +14414,7 @@ function multibarChart() {
       };
 
       yAxisFormat = function(d, i, selection, type) {
-        var props = yAxisFormatProperties[type] ||
-              setAxisFormatProperties(type, selection);
+        var props = yAxisFormatProperties[type] || setAxisFormatProperties(type, selection);
         return yValueFormat(d, i, null, yIsCurrency, props.precision, props.decimal);
       };
 

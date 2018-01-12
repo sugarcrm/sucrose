@@ -225,6 +225,13 @@ tests("UNIT: utility -", function(t) {
         assert.equal(sucrose.utility.countSigFigsAfter(123), 0);
         assert.equal(sucrose.utility.countSigFigsAfter(123.345), 3);
         assert.equal(sucrose.utility.countSigFigsAfter(123.340), 2);
+        assert.equal(sucrose.utility.countSigFigsAfter("123.340"), 2);
+        assert.equal(sucrose.utility.countSigFigsAfter("123.340"), 2);
+        assert.equal(sucrose.utility.countSigFigsAfter("$123.340"), 2);
+        assert.equal(sucrose.utility.countSigFigsAfter("$123.343"), 3);
+        assert.equal(sucrose.utility.countSigFigsAfter("$123.34k"), 2);
+        assert.equal(sucrose.utility.countSigFigsAfter("$123,34k"), 2);
+        assert.equal(sucrose.utility.countSigFigsAfter("$123 34k"), 2);
         assert.end();
         t.register(assert, type);
     });
