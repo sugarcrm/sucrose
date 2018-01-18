@@ -37,26 +37,27 @@ export default function multibarChart() {
       hideEmptyGroups = true,
       overflowHandler = function(d) { return; };
 
-  var valueFormat = function(value, i, label, isCurrency, precision) {
-        return label && label.length ?
-          label :
-          utility.numberFormatSI(value, precision, isCurrency, chart.locality());
+  var locale = {};
+
+  var valueFormat = function(d, i, label, isCurrency) {
+        return label || utility.numberFormatSI(d, 0, isCurrency, locale);
       };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
         // If date or numeric use d.
         var value = label || d;
+        var formatter;
         if (isDate) {
-          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(value, dateFormat, chart.locality());
+          formatter = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
+          return utility.dateFormat(value, formatter, locale);
         } else {
           return value;
         }
       };
 
-  var yValueFormat = function(d, i, label, isCurrency, precision, si) {
-        return utility.numberFormatSIFixed(d, precision, isCurrency, chart.locality(), si);
+  var yValueFormat = function(d, i, isCurrency, precision, si) {
+        return utility.numberFormatSIFixed(d, precision, isCurrency, locale, si);
       };
 
   var tooltipContent = function(eo, properties) {
@@ -76,7 +77,7 @@ export default function multibarChart() {
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units for axis
         // for tooltip, we want the full value
-        var valueLabel = utility.numberFormat(y, null, yIsCurrency, chart.locality());
+        var valueLabel = utility.numberFormat(y, null, yIsCurrency, locale);
 
         var percent;
         var content = '';
@@ -87,7 +88,7 @@ export default function multibarChart() {
 
         if (eo.group && utility.isNumeric(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          percent = utility.numberFormat(percent, 2, false, chart.locality());
+          percent = utility.numberFormat(percent, 2, false, locale);
           content += '<p>Percentage: <b>' + percent + '%</b></p>';
         }
 
@@ -122,11 +123,6 @@ export default function multibarChart() {
               vertical ? 's' : 'w';
         return tooltip.show(eo.e, content, gravity, null, offsetElement);
       };
-
-  header
-    .showTitle(true)
-    .showControls(true)
-    .showLegend(true);
 
 
   //============================================================
@@ -253,11 +249,6 @@ export default function multibarChart() {
 
       chart.container = this;
 
-      // we want the bar value label to not show decimals (confirm) with SI
-      model.valueFormat(function(value, v) {
-        return valueFormat(value, v, value.label, yIsCurrency, 0);
-      });
-
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
@@ -278,6 +269,8 @@ export default function multibarChart() {
 
       //------------------------------------------------------------
       // Process data
+
+      locale = chart.locality();
 
       // add series index to each data point for reference
       // and disable data series if total is zero
@@ -463,13 +456,14 @@ export default function multibarChart() {
 
 
       //------------------------------------------------------------
-      // Configure axis format functions
+      // Configure axis and bar format functions
 
           //TODO: allow formatter to be set by data
       var xTickMaxWidth = 75,
           xDateFormat = null,
           xAxisFormat = null,
-          yAxisFormat = null;
+          yAxisFormat = null,
+          barFormat = null;
 
       var yAxisFormatProperties = {
         axis: null,
@@ -504,19 +498,23 @@ export default function multibarChart() {
         xDateFormat = utility.getDateFormatUTC(groupLabels);
       }
 
-      xAxisFormat = function(d, i, selection, type) {
+      xAxisFormat = function(value, v, selection, type) {
         //TODO: isn't there always groupLabels?
-        // var group = hasGroupLabels ? groupLabels[i] : d;
-        var group = groupLabels[i];
-        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+        // var groupLabel = hasGroupLabels ? groupLabels[i] : d;
+        var groupLabel = groupLabels[v];
+        var label = xValueFormat(value, v, groupLabel, xIsDatetime, xDateFormat);
         return type === 'no-ellipsis' ?
           label :
           utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
-      yAxisFormat = function(d, i, selection, type) {
+      yAxisFormat = function(value, v, selection, type) {
         var props = yAxisFormatProperties[type] || setAxisFormatProperties(type, selection);
-        return yValueFormat(d, i, null, yIsCurrency, props.precision, props.decimal);
+        return yValueFormat(value, v, yIsCurrency, props.precision, props.decimal);
+      };
+
+      barFormat = function(value, v, label) {
+        return valueFormat(value, v, label, yIsCurrency);
       };
 
 
@@ -529,13 +527,20 @@ export default function multibarChart() {
 
 
       //------------------------------------------------------------
-      // Setup Scales and Axes
+      // Set component attributes
 
       header
+        .showTitle(true)
+        .showControls(true)
+        .showLegend(true)
         .chart(chart)
         .title(properties.title)
         .controlsData(controlsData)
         .legendData(data);
+
+      // we want the bar value label to not show decimals (confirm) with SI
+      model
+        .valueFormat(barFormat);
 
       // any time orient is called it resets the d3-axis model and has to be reconfigured
       xAxis
@@ -979,7 +984,7 @@ export default function multibarChart() {
     'id', 'x', 'y', 'xScale', 'yScale', 'xDomain', 'yDomain', 'forceX', 'forceY', 'clipEdge',
     'color', 'fill', 'classes', 'gradient', 'locality'
   );
-  utility.rebind(chart, model, 'stacked', 'showValues', 'valueFormat', 'nice', 'textureFill');
+  utility.rebind(chart, model, 'stacked', 'showValues', 'nice', 'textureFill');
   utility.rebind(chart, header, 'showTitle', 'showControls', 'showLegend');
   utility.rebind(chart, xAxis, 'rotateTicks', 'reduceXTicks', 'staggerTicks', 'wrapTicks');
 
@@ -1114,6 +1119,14 @@ export default function multibarChart() {
     if (!arguments.length) { return delay; }
     delay = _;
     model.delay(_);
+    return chart;
+  };
+
+  chart.valueFormat = function(_) {
+    if (!arguments.length) {
+      return valueFormat;
+    }
+    valueFormat = _;
     return chart;
   };
 

@@ -15,8 +15,8 @@ export default function multibar() {
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
-      valueFormat = function(value) { return value; },
-      getLabel = function(d) { return d.label || valueFormat(d.y); },
+      valueFormat = function(value, i, label) { return label || value; },
+      getLabel = function(d, i) { return valueFormat(d.y, i, d.label); },
       locality = utility.buildLocality(),
       forceX = [],
       forceY = [0], // 0 is forced by default.. this makes sense for the majority of bar graphs... user can always do model.forceY([]) to remove
@@ -128,11 +128,11 @@ export default function multibar() {
           });
           groupTotals[i] = {
             neg: {
-              label: valueFormat(neg),
+              label: valueFormat(neg, i),
               y: neg
             },
             pos: {
-              label: valueFormat(pos),
+              label: valueFormat(pos, i),
               y: pos
             }
           };
@@ -150,13 +150,14 @@ export default function multibar() {
         resetScale();
       };
 
-      if (showValues) {
-        data.forEach(function(series, s) {
-          series.values.forEach(function(value, v) {
-            value.label = getLabel(value);
-          });
-        });
-      }
+//TODO: question, should we set the d.label if not defined? Maybe do it in the loop above
+      // if (showValues) {
+      //   data.forEach(function(series, s) {
+      //     series.values.forEach(function(value, v) {
+      //       value.label = getLabel(value);
+      //     });
+      //   });
+      // }
 
       // remap and flatten the data for use in calculating the scales' domains
       seriesData = d3.merge(data.map(function(d) {
@@ -167,7 +168,6 @@ export default function multibar() {
       groupCount = data[0].values.length;
 
       if (showValues) {
-
         // this must be total because that is the only option that requires summing
         labelData = labelPosition === 'total' ?
           d3.merge(groupTotals.map(function(d) {
@@ -175,7 +175,7 @@ export default function multibar() {
           })) :
           seriesData;
 
-        labelLengths = utility.stringSetLengths(labelData.map(function(d) { return d.label; }), container, 'sc-label-value');
+        labelLengths = utility.stringSetLengths(labelData.map(getLabel), container, 'sc-label-value');
         labelThickness = utility.stringSetThickness(['Xy'], container, 'sc-label-value')[0];
 
         var seriesExtents = d3.extent(data.map(function(d, i) { return d.seriesIndex; }));

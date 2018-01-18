@@ -224,6 +224,10 @@ var sucroseCharts = function() {
     multibar: {
       stacked: 'true',
       _format: function format(chart, callback) {
+        chart
+          .valueFormat(function(d, i, label, isCurrency) {
+            return sucrose.utility.numberFormatSI(d, 0, isCurrency, chart.locality());
+          });
         //TODO: fix multibar overfolow handler
         // chart.overflowHandler(function(d) {
         //   var b = $('body');
