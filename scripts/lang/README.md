@@ -5,19 +5,19 @@ Inspired by Rafael Xavier de Souza's
 https://github.com/rxaviers/cldr-data-npm/tree/example-application
 
 ## Usage
-Make sure you run in root of sucrose:
+Make sure you run in root of sucrose (should already exist if you ran `npm i` earlier):
     `npm i cldr cldr-data cldrjs`
-to build locales, in /src/scripts/lang run:
-    `node < build_locales.js`
+To build locales, in root of sucrose run:
+    `node ./scripts/lang/build_locales.js` or `make locales`
 which will make a hashmap of D3 localities in:
-    `src/data/locales/locales.json`.
+    `build/locales.json`.
 The build command will copy the locales file to the build folder.
 
-To add or remove locales, edit the `src/scripts/lang/cldr-locales.json` file using the pattern:
+To add or remove locales, edit the `src/data/cldr-locales.json` file using the pattern:
     `["xx_YY", "xx", "ZZZ", "xx-YY", "Klingon (Klinzhai)"]`
 where `xx_YY` is the locales.json key, `xx` is the ISO language code, `ZZZ` is the ISO currency code,
 `xx-YY` is the `node_modules/cldr/main/xx-YY` data folder, followed by an english translation of
-the language and locale (country).
+the language and locale (country) like `"Klingon (Klinzhai)"`.
 
 Then load the `build/locales.json` on your page into a `locales` variable and in Sucrose chart instantiation pass a locale object to set string/datetime/number formatting options:
 ```javascript

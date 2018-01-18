@@ -13,9 +13,9 @@
  */
 
 // Usage:
-// Make sure you run:       `npm i cldr-data` in root of examples
-// to build locales, run:   `node < build_locales.js`
-// will make a hashmap of D3 localities in data/locales/locales.json
+// Make sure you have the following packages installed: `cldr`, `cldr-data`, `cldrjs`
+// to build locales, run:   `node ./scripts/lang/build_locales.js`
+// will make a hashmap of D3 localities in build/locales.json
 
 'use strict';
 
@@ -23,7 +23,7 @@ let fs = require('fs');
 let Loc = require('./loc.js');
 
 // ICU Code, Language, Currency, CLDR, Label
-let locales = require('../../data/cldr-locales.json');
+let locales = require('../../src/data/cldr-locales.json');
 //http://www.localeplanet.com/icu/currency.html
 
 let localeSettings = {};
@@ -64,7 +64,7 @@ locales.forEach(function(l) {
 
 localeJson = JSON.stringify(localeSettings, null, '  ');
 
-fs.writeFile('../../data/locales.json', localeJson, function (err) {
+fs.writeFile('./build/locales.json', localeJson, function (err) {
   if (err) {
     return console.log(err);
   }

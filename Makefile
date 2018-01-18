@@ -151,8 +151,8 @@ clean-css:
 #-----
 # DATA
 
-data:
-	cp src/data/locales.json build/locales.json
+locales: clean-data
+	node ./scripts/lang/build_locales.js
 	cp src/data/translation.json build/translation.json
 
 clean-data:
