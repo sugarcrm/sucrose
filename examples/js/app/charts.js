@@ -185,7 +185,6 @@ var sucroseCharts = function() {
     },
     gauge: {
       ringWidth: 50,
-      maxValue: 9,
       transitionMs: 4000,
       showControls: 'false',
       _format: function format(chart, callback) {

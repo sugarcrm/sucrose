@@ -12,10 +12,10 @@ export default function gauge() {
       height = null,
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getX = function(d) { return d.key; },
-      getY = function(d) { return d.y; },
-      getKey = function(d) { return typeof d.key === 'undefined' ? d : d.key; },
-      getValue = function(d, i) { return isNaN(d.value) ? d : d.value; },
-      getCount = function(d, i) { return isNaN(d.count) ? d : d.count; },
+      getY = function(d) { return utility.isNumeric(d.y) ? parseFloat(d.y) : null; },
+      getKey = function(d) { return d.hasOwnProperty('key') ? d.key : d; },
+      getValue = function(d) { return utility.isNumeric(d.value) ? d.value : getY(d); },
+      getCount = function(d) { return utility.isNumeric(d.count) ? d.count : d; },
       fmtKey = function(d) { return getKey(d); },
       fmtValue = function(d) { return getValue(d); },
       fmtCount = function(d) { return (' (' + getCount(d) + ')').replace(' ()', ''); },
@@ -38,7 +38,7 @@ export default function gauge() {
       pointerHeadLength = 90,
       pointerValue = 0,
       minValue = 0,
-      maxValue = 10,
+      maxValue = 0,
       minAngle = -90,
       maxAngle = 90,
       labelInset = 10;
@@ -58,21 +58,8 @@ export default function gauge() {
       var radius = Math.min((availableWidth / 2), availableHeight) / ((100 + labelInset) / 100),
           range = maxAngle - minAngle,
           scale = d3.scaleLinear().range([0, 1]).domain([minValue, maxValue]),
-          previousTick = 0,
-          arcData = data.map( function(d, i){
-            var rtn = {
-                  key: d.key,
-                  seriesIndex: d.seriesIndex,
-                  y0: previousTick,
-                  y1: d.y,
-                  color: d.color,
-                  classes: d.classes,
-                  values: d.values
-                };
-            previousTick = d.y;
-            return rtn;
-          }),
           prop = function(d) { return d * radius / 100; };
+
 
       //------------------------------------------------------------
       // Setup containers and skeleton of model
@@ -120,7 +107,7 @@ export default function gauge() {
 
       group_wrap.attr('transform', centerTx);
 
-      var series_bind = group_wrap.selectAll('.sc-series').data(arcData);
+      var series_bind = group_wrap.selectAll('.sc-series').data(data);
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series');
       series_bind.exit().remove();
       var series = group_wrap.selectAll('.sc-series').merge(series_entr);
@@ -152,13 +139,7 @@ export default function gauge() {
             .endAngle(endAngle);
 
       var slice_bind = series.selectAll('g.sc-slice').data(
-            function(s, i) {
-              return s.values.map(function(v, j) {
-                v.y0 = s.y0;
-                v.y1 = s.y1;
-                return v;
-              });
-            },
+            function(s) { return s.values; },
             function(d) { return d.seriesIndex; }
           );
       slice_bind.exit().remove();
@@ -166,31 +147,31 @@ export default function gauge() {
       var slices = series.selectAll('g.sc-slice').merge(slice_entr);
 
       slice_entr.append('path')
-          .attr('class', 'sc-base')
-          .attr('d', pieArc)
-          .on('mouseover', function(d, i) {
-            d3.select(this).classed('hover', true);
-            var eo = buildEventObject(d3.event, d, i);
-            dispatch.call('elementMouseover', this, eo);
-          })
-          .on('mousemove', function(d, i) {
-            var e = d3.event;
-            dispatch.call('elementMousemove', this, e);
-          })
-          .on('mouseout', function(d, i) {
-            d3.select(this).classed('hover', false);
-            dispatch.call('elementMouseout', this);
-          })
-          .on('click', function(d, i) {
-            d3.event.stopPropagation();
-            var eo = buildEventObject(d3.event, d, i);
-            dispatch.call('elementClick', this, eo);
-          })
-          .on('dblclick', function(d, i) {
-            d3.event.stopPropagation();
-            var eo = buildEventObject(d3.event, d, i);
-            dispatch.call('elementDblClick', this, eo);
-          });
+        .attr('class', 'sc-base')
+        .attr('d', pieArc)
+        .on('mouseover', function(d, i) {
+          d3.select(this).classed('hover', true);
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementMouseover', this, eo);
+        })
+        .on('mousemove', function(d, i) {
+          var e = d3.event;
+          dispatch.call('elementMousemove', this, e);
+        })
+        .on('mouseout', function(d, i) {
+          d3.select(this).classed('hover', false);
+          dispatch.call('elementMouseout', this);
+        })
+        .on('click', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementClick', this, eo);
+        })
+        .on('dblclick', function(d, i) {
+          d3.event.stopPropagation();
+          var eo = buildEventObject(d3.event, d, i);
+          dispatch.call('elementDblClick', this, eo);
+        });
 
       slices.select('.sc-base')
         .attr('d', pieArc)
@@ -208,9 +189,9 @@ export default function gauge() {
       //------------------------------------------------------------
       // Gauge labels
 
-      var labelData = data.map(function(d) {
+      var labelData = [{x: 0, y: minValue, y0: minValue, y1: minValue}].concat(data.map(function(d) {
         return d.values[0];
-      });
+      }));
 
       labels_wrap.attr('transform', centerTx);
 
@@ -221,9 +202,11 @@ export default function gauge() {
 
       labels
         .attr('transform', function(d) {
-          return 'rotate(' + newAngle(d.y) + ') translate(0,' + (prop(-1.5) - radius) + ')';
+          return 'rotate(' + newAngle(d.y1) + ') translate(0,' + (prop(-1.5) - radius) + ')';
         })
-        .text(getY)
+        .text(function(d) {
+          return d.y1;
+        })
         .style('fill-opacity', labelOpacity)
         .style('text-anchor', 'middle')
         .style('font-size', prop(0.6) + 'em');
@@ -326,9 +309,9 @@ export default function gauge() {
         return 'translate(' + radius + ',' + radius + ')';
       }
 
-      function labelOpacity(d) {
+      function labelOpacity(d, i) {
         var percent = (endAngle(d) - startAngle(d)) / (2 * Math.PI);
-        return percent > labelThreshold ? 1 : 0;
+        return i === 0 || percent > labelThreshold ? 1 : 0;
       }
 
       model.setGaugePointer = setGaugePointer;

@@ -32,21 +32,23 @@ export default function lineChart() {
       );
 
   var pointRadius = 3;
+  var locale = {};
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
         // If date or numeric use d.
         var value = label || d;
+        var formatter;
         if (isDate) {
-          dateFormat = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
-          return utility.dateFormat(value, dateFormat, chart.locality());
+          formatter = !dateFormat || dateFormat.indexOf('%') !== 0 ? '%x' : dateFormat;
+          return utility.dateFormat(value, formatter, locale);
         } else {
           return value;
         }
       };
 
-  var yValueFormat = function(d, i, label, isCurrency, precision, si) {
-        return utility.numberFormatSIFixed(d, precision, isCurrency, chart.locality(), si);
+  var yValueFormat = function(d, i, isCurrency, precision, si) {
+        return utility.numberFormatSIFixed(d, precision, isCurrency, locale, si);
       };
 
   var tooltipContent = function(eo, properties) {
@@ -66,7 +68,7 @@ export default function lineChart() {
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units for axis
         // for tooltip, we want the full value
-        var valueLabel = utility.numberFormat(y, null, yIsCurrency, chart.locality());
+        var valueLabel = utility.numberFormat(y, null, yIsCurrency, locale);
 
         var percent;
         var content = '';
@@ -77,7 +79,7 @@ export default function lineChart() {
 
         if (eo.group && utility.isNumeric(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          percent = utility.numberFormat(percent, 2, false, chart.locality());
+          percent = utility.numberFormat(percent, 2, false, locale);
           content += '<p>Percentage: <b>' + percent + '%</b></p>';
         }
 
@@ -138,7 +140,7 @@ export default function lineChart() {
       var xIsDatetime = properties.xDataType === 'datetime' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
-      var groupData = properties.groups || properties.labels,
+      var groupData = properties.groups,
           hasGroupData = Array.isArray(groupData) && groupData.length > 0,
           groupLabels = [],
           groupCount = 0,
@@ -267,6 +269,8 @@ export default function lineChart() {
       //------------------------------------------------------------
       // Process data
 
+      locale = chart.locality();
+
       // add series index to each data point for reference
       // and disable data series if total is zero
       data.forEach(function(series, s) {
@@ -391,7 +395,7 @@ export default function lineChart() {
       };
 
       function setAxisFormatProperties(type, selection) {
-        // i.e., 100 | 200 | 300
+        // i.e., [100, 200, 300]
         var tickDatum = selection.map(function(t) {
             return d3.select(t).datum();
           });
@@ -399,8 +403,10 @@ export default function lineChart() {
         var decimal = d3.max(d3.extent(tickDatum), function(v) {
             return utility.siDecimal(Math.abs(v));
           });
+        // number of significant figures after the decimal
         var precision = d3.max(tickDatum, function(v) {
-            return utility.countSigFigsAfter(d3.formatPrefix('.2s', decimal)(v));
+            var numberString = d3.formatPrefix('.2s', decimal)(v);
+            return utility.countSigFigsAfter(numberString);
           });
         if (type === 'maxmin' && yAxisFormatProperties.axis) {
           precision = Math.max(yAxisFormatProperties.axis.precision, precision);
@@ -416,18 +422,19 @@ export default function lineChart() {
         xDateFormat = utility.getDateFormatUTC(groupLabels);
       }
 
-      xAxisFormat = function(d, i, selection, type) {
-        var group = hasGroupLabels ? groupLabels[i] : d;
-        var label = xValueFormat(d, i, group, xIsDatetime, xDateFormat);
+      xAxisFormat = function(value, v, selection, type) {
+        //TODO: isn't there always groupLabels?
+        // var groupLabel = hasGroupLabels ? groupLabels[i] : d;
+        var groupLabel = groupLabels[v];
+        var label = xValueFormat(value, v, groupLabel, xIsDatetime, xDateFormat);
         return type === 'no-ellipsis' ?
           label :
           utility.stringEllipsify(label, container, xTickMaxWidth);
       };
 
-      yAxisFormat = function(d, i, selection, type) {
-        var props = yAxisFormatProperties[type] ||
-              setAxisFormatProperties(type, selection);
-        return yValueFormat(d, i, null, yIsCurrency, props.precision, props.decimal);
+      yAxisFormat = function(value, v, selection, type) {
+        var props = yAxisFormatProperties[type] || setAxisFormatProperties(type, selection);
+        return yValueFormat(value, v, yIsCurrency, props.precision, props.decimal);
       };
 
 
@@ -440,7 +447,7 @@ export default function lineChart() {
 
 
       //------------------------------------------------------------
-      // Setup Scales and Axes
+      // Set component attributes
 
       header
         .chart(chart)
@@ -531,7 +538,7 @@ export default function lineChart() {
           .ticks(hasGroupLabels ? groupCount : null)
           // .ticks(groupCount)
           .highlightZero(false)
-          .showMaxMin(xIsDatetime);
+          .showMaxMin(false);
 
         yAxis
           .orient('left')

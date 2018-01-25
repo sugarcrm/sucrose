@@ -36,12 +36,7 @@ export default function multibarChart() {
       scrollEnabled = true,
       hideEmptyGroups = true,
       overflowHandler = function(d) { return; };
-
   var locale = {};
-
-  var valueFormat = function(d, i, label, isCurrency) {
-        return label || utility.numberFormatSI(d, 0, isCurrency, locale);
-      };
 
   var xValueFormat = function(d, i, label, isDate, dateFormat) {
         // If ordinal, label is provided so use it.
@@ -58,6 +53,10 @@ export default function multibarChart() {
 
   var yValueFormat = function(d, i, isCurrency, precision, si) {
         return utility.numberFormatSIFixed(d, precision, isCurrency, locale, si);
+      };
+
+  var valueFormat = function(d, i, label, isCurrency) {
+        return label || utility.numberFormatSI(d, 0, isCurrency, locale);
       };
 
   var tooltipContent = function(eo, properties) {
@@ -253,6 +252,7 @@ export default function multibarChart() {
       };
 
       chart.container = this;
+
 
       //------------------------------------------------------------
       // Private method for displaying no data message.

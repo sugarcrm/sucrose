@@ -13,19 +13,19 @@
   "data": [
     {
       "key": "Range 1",
-      "y": 3
+      "value": 3
     },
     {
       "key": "Range 2",
-      "y": 5
+      "value": 2
     },
     {
       "key": "Range 3",
-      "y": 7
+      "value": 2
     },
     {
       "key": "Range 4",
-      "y": 9
+      "value": 2
     }
   ]
 }

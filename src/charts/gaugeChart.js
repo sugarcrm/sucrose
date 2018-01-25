@@ -40,10 +40,10 @@ export default function gaugeChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
-        var key = model.fmtKey()(eo.point.series);
+        var k = model.fmtKey()(eo.point.series);
         var x = model.getCount()(eo.point.series);
-        var y = model.getValue()(eo.point.y1 - eo.point.y0);
-        return '<h3>' + key + '</h3>' +
+        var y = model.getValue()(eo.point.series);
+        return '<h3>' + k + '</h3>' +
                '<p>' + y + ' on ' + x + '</p>';
       };
 
@@ -104,40 +104,40 @@ export default function gaugeChart() {
       //------------------------------------------------------------
       // Process data
 
+      var previousTick = 0;
+      model.minValue(previousTick);
+
       // add series index to each data point for reference
       data.forEach(function(s, i) {
-        var y = model.y();
+        var y = model.getValue()(s);
         s.seriesIndex = i;
-        s.value = y(s);
 
-        if (!s.value && !s.values) {
+        if (!y && !s.values) {
           s.values = [];
-        } else if (!isNaN(s.value)) {
-          s.values = [{x: 0, y: parseInt(s.value, 10)}];
+        } else if (utility.isNumeric(s.value)) {
+          s.values = [{x: 0, y: y}];
         }
         s.values.forEach(function(p, j) {
           p.index = j;
           p.series = s;
-          if (typeof p.value == 'undefined') {
-            p.value = y(p);
-          }
+          p.y0 = previousTick;
+          p.y1 = previousTick + y;
         });
 
-        s.value = s.value || d3.sum(s.values, function(p) { return p.value; });
+        s.value = y || d3.sum(s.values, function(p) { return model.getValue()(p); });
         s.count = s.count || s.values.length;
         s.disabled = s.disabled || s.value === 0;
+
+        previousTick += y;
       });
 
       // only sum enabled series
       var modelData = data.filter(function(d, i) { return !d.disabled; });
 
-      if (!modelData.length) {
-        modelData = [{values: []}]; // safety array
-      }
-
       properties.count = d3.sum(modelData, function(d) { return d.count; });
 
-      properties.total = d3.sum(modelData, function(d) { return d.value; });
+      // no need for d3.max since previousTick holds this
+      model.maxValue(previousTick);
 
       //set state.disabled
       state.disabled = data.map(function(d) { return !!d.disabled; });
@@ -145,8 +145,7 @@ export default function gaugeChart() {
       //------------------------------------------------------------
       // Display No Data message if there's nothing to show.
 
-      if (!properties.total) {
-        displayNoData();
+      if (displayNoData(modelData)) {
         return chart;
       }
 
@@ -242,7 +241,7 @@ export default function gaugeChart() {
           .transition().duration(duration)
             .call(model);
 
-        model.setPointer(properties.total);
+        model.setPointer(properties.value);
       };
 
       //============================================================
