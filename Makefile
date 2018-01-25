@@ -1,28 +1,41 @@
 # --------------------------------------------------
-# Sucrose.io - Example application build scripts
+# Sucrose.io - Library and dependency build scripts
 #
 # Copyright (c) 2017 SugarCRM Inc.
 # Licensed by SugarCRM under the Apache 2.0 license.
 # --------------------------------------------------
 
-CSS_FILES = src/less/sucrose.less
+SHELL=/bin/bash -o pipefail
 
-JS_MINIFIER = ./node_modules/uglify-js/bin/uglifyjs
+CSS_FILES := src/less/sucrose.less
 
-JS_BUNDLER = ./node_modules/rollup/bin/rollup
+JS_MINIFIER := ./node_modules/.bin/uglifyjs
 
-CSS_COMPILER = ./node_modules/less/bin/lessc
+JS_BUNDLER := ./node_modules/.bin/rollup
 
-CSS_MINIFIER = ./node_modules/clean-css-cli/bin/cleancss
+CSS_COMPILER := ./node_modules/.bin/lessc
 
-HELP_MAKER = ./node_modules/make-help/bin/make-help
+CSS_MINIFIER := ./node_modules/.bin/cleancss
+
+HELP_MAKER := ./node_modules/.bin/make-help
 
 HEADER = $(shell cat src/header)
 
 .DEFAULT_GOAL := help
 
-.PHONY: prod dev all scr sgr sucrose css data \
-	clean clean-js clean-css clean-data \
+WARN_COLOR := \x1b[33;01m
+ERR_COLOR := \x1b[31;01m
+OK_COLOR := \x1b[32;01m
+NO_COLOR := \x1b[0m
+define printgo
+	@printf "\n$(WARN_COLOR)%s$(NO_COLOR)\n" $(1)
+endef
+define printok
+	@printf "%s...$(OK_COLOR)[OK]$(NO_COLOR)\n" $(1)
+endef
+
+.PHONY: prod dev all scr sgr sucrose css locales \
+	clean clean-js clean-css clean-locales \
 	d3-scr d3-sgr d3-bundle d3-minify d3-all clean-d3 \
 	examples examples-prod examples-dev \
 	pack npm-sugar cover help list md
@@ -32,21 +45,25 @@ HEADER = $(shell cat src/header)
 
 # - install production npm packages [main]
 prod:
-	npm install --production
+	@printf "\n$(WARN_COLOR)Install production NPM dependencies for Sucrose.$(NO_COLOR)\n"
+	@npm install --production
+	@printf "NPM dependencies installed...$(OK_STRING)\n"
 
 #------------
 # DEVELOPMENT
 
 # - install development npm packages and build all [main dev]
 dev:
-	npm install
-	make all
+	@printf "\n$(OK_COLOR)Install development NPM dependencies for Sucrose.$(NO_COLOR)\n"
+	@npm install
+	@printf "NPM dependencies installed...$(OK_STRING)\n"
+	@make all
 
 # - compile sucrose Js and Css files
-all: scr css data
+all: scr css locales
 
 # - remove sucrose Js and Css files
-clean: clean-d3 clean-js clean-css clean-data
+clean: clean-d3 clean-js clean-css clean-locales
 
 
 # SUCROSE BUILD TARGETS
@@ -60,26 +77,43 @@ scr: TAR = scr
 # - [*] build selected sucrose modules and D3 custom bundle for Sugar
 sgr: TAR = sgr
 
-scr sgr: pack sucrose d3
+scr sgr: pack d3 sucrose
 
-# - [*] build default sucrose Js library
+# - compile a Node compliant entry file and create a Js version of package.json for Sucrose
+pack:
+	$(call printgo,"Compile a Node compliant entry file and create a Js version of package.json for Sucrose:")
+	@node ./scripts/pack.$(TAR).js
+	npm run package
+	@node ./scripts/rollup.node.js
+	$(call printok,"Node entry and Js package file compiled to build")
+
+# - [*] build default Sucrose Js library
 sucrose: sucrose.min.js
+	@printf "\n$(OK_COLOR)Sucrose '$(TAR)' build complete.$(NO_COLOR)\n"
 
-# - build the sucrose Js library with components for target
-# rollup -c rollup.$(TAR).js --environment BUILD:$(TAR),DEV:false --banner "[dollarsign](HEADER)"
+# - build the Sucrose Js library with components for target
+# $(JS_BUNDLER) -c scripts/rollup.$(TAR).js --environment BUILD:$(TAR),DEV:$(DEV) --banner '$(HEADER)' -o ./build/$@
+# $(JS_BUNDLER) -c scripts/rollup.$(TAR).js --environment BUILD:$(TAR),DEV:$(DEV) | cat ./src/header - > ./build/$@
 sucrose.js:
-	rm -f ./build/$@
-	$(JS_BUNDLER) -c scripts/rollup.$(TAR).js --environment BUILD:$(TAR),DEV:$(DEV) | cat ./src/header - > ./build/$@
+	$(call printgo,"Compile the Sucrose '$(TAR)' library bundle:")
+	@rm -f ./build/$@
+	$(JS_BUNDLER) -c scripts/rollup.$(TAR).js --environment BUILD:$(TAR),DEV:$(DEV) -o ./build/tmp
+	@cat ./src/header ./build/tmp > ./build/$@
+	@rm ./build/tmp
+	$(call printok,"Sucrose bundle compiled to build")
 
-# - build then minify the sucrose Js library
+# - build then minify the Sucrose Js library
 # uglifyjs --preamble "$(HEADER)" build/$^ -c negate_iife=false -m -o build/$@
 sucrose.min.js: sucrose.js
-	rm -f ./build/$@
+	$(call printgo,"Minify Sucrose library file:")
+	@rm -f ./build/$@
 	$(JS_MINIFIER) build/$^ -c negate_iife=false,unused=false -m | cat ./src/header - > ./build/$@
+	$(call printok,"Sucrose file minified in build")
 
-# - remove all sucrose and D3 Js files
+# - remove all Sucrose and D3 Js files
 clean-js:
-	rm -f ./build/sucrose*.js
+	@rm -f ./build/sucrose*.js
+	$(call printok,"Sucrose files removed from build")
 
 
 # D3 BUILD TARGETS
@@ -88,7 +122,8 @@ D3 = d3
 
 # - [*] build default D3 bundle
 d3:
-	make d3-$(TAR)
+	@make d3-$(TAR)
+	@printf "\n$(OK_COLOR)Custom 'D3-$(TAR)' build complete.$(NO_COLOR)\n"
 
 # - build custom D3 bundle with just required components for Sucrose
 d3-scr: D3 = d3
@@ -100,32 +135,40 @@ d3-scr d3-sgr: d3-minify d3-topo
 
 # - build the D3 library Js file with components for target
 d3-bundle:
-	rm -f ./build/$(D3).js
+	$(call printgo,"Compile the custom 'D3-$(TAR)' library bundle:")
+	@rm -f ./build/$(D3).js
 	$(JS_BUNDLER) -c ./node_modules/d3/rollup.config.js -f umd -n $(subst -,,$(D3)) \
-		-i ./src/d3-rebundle/index_$(D3).js -o ./build/$(D3).js \
+		-i ./scripts/d3-rebundle/index_$(D3).js -o ./build/$(D3).js \
 		--banner ";$(shell cd ./node_modules/d3 && ../.bin/preamble)"
+	$(call printok,"D3 bundle compiled to build")
 
 # - build then minify the D3 custom bundle
 d3-minify: d3-bundle
-	rm -f ./build/$(D3).min.js
+	$(call printgo,"Minify custom library file:")
+	@rm -f ./build/$(D3).min.js
 	$(JS_MINIFIER) build/$(D3).js \
 		-b beautify=false,preamble='";$(shell cd ./node_modules/d3 && ../.bin/preamble)"' \
 		-c negate_iife=false,unused=false -m -o build/$(D3).min.js
+	$(call printok,"D3 file minified in build")
 
 # - copy full D3 from node_modules to build directory
 d3-all: d3-topo
-	rm -f ./build/d3*.js
-	echo ";" | cat - ./node_modules/d3/build/d3.js >> ./build/d3.js
-	echo ";" | cat - ./node_modules/d3/build/d3.min.js >> ./build/d3.min.js
+	@rm -f ./build/d3*.js
+	@echo ";" | cat - ./node_modules/d3/build/d3.js >> ./build/d3.js
+	@echo ";" | cat - ./node_modules/d3/build/d3.min.js >> ./build/d3.min.js
+	$(call printok,"Full D3 library files copied to build")
 
 d3-topo:
-	rm -f ./build/topojson*.js
-	cp ./node_modules/topojson/build/topojson.js build/topojson.js
-	cp ./node_modules/topojson/build/topojson.min.js build/topojson.min.js
+	$(call printgo,"Copy TopoJson library files from node_modules:")
+	@rm -f ./build/topojson*.js
+	@cp ./node_modules/topojson/build/topojson.js build/topojson.js
+	@cp ./node_modules/topojson/build/topojson.min.js build/topojson.min.js
+	$(call printok,"TopoJson files copied to build")
 
 clean-d3:
-	rm -f ./build/$(D3)*.js
-	rm -f ./build/topojson*.js
+	@rm -f ./build/$(D3)*.js
+	@rm -f ./build/topojson*.js
+	$(call printok,"D3 & TopoJson files removed from build")
 
 
 # STYLESHEETS
@@ -135,57 +178,58 @@ css: sucrose.min.css
 
 # - compile LESS files with lessc
 sucrose.css: $(CSS_FILES)
-	rm -f ./build/$@
+	@rm -f ./build/$@
 	@node $(CSS_COMPILER) $(CSS_FILES) --autoprefix | cat ./src/header - > ./build/$@
+	$(call printok,"LESS files compiled to build")
 
 # - compile and then minify Css file
 sucrose.min.css: sucrose.css
-	rm -f ./build/$@
-	node $(CSS_MINIFIER) ./build/$^ | cat ./src/header - > ./build/$@
+	$(call printgo,"Compile and compress sucrose library LESS source files into CSS:")
+	@rm -f ./build/$@
+	@node $(CSS_MINIFIER) ./build/$^ | cat ./src/header - > ./build/$@
+	$(call printok,"CSS file minified in build")
 
-# - remove sucrose Css files
+# - remove Sucrose Css files
 clean-css:
-	rm -f ./build/sucrose*.css
+	@rm -f ./build/sucrose*.css
+	$(call printok,"CSS file removed from build")
 
 
-#-----
-# DATA
+#--------
+# Locales
 
-locales: clean-data
-	node ./scripts/lang/build_locales.js
-	cp src/data/translation.json build/translation.json
+locales: clean-locales
+	$(call printgo,"Build Sucrose locale resource files:")
+	@node ./scripts/lang/build_locales.js
+	@cp src/data/translation.json build/translation.json
+	$(call printok,"Locale resource files copied to build")
 
-clean-data:
-	rm -f build/locales.json
-	rm -f build/translation.json
+clean-locales:
+	@rm -f build/locales.json
+	@rm -f build/translation.json
+	$(call printok,"Locale resource files removed from build")
 
 
 #---------
 # EXAMPLES
 
-# - [*] build and copy the sucrose Js and Css files to the example application
+# - [*] build and copy the Sucrose Js and Css files to the example application
 examples: all
 	cd examples && make sucrose && make dependencies && make examples
 
-# - install production package dependencies for sucrose library and generate examples application
+# - install production package dependencies for Sucrose library and generate examples application
 examples-prod: prod
 	cd examples && make prod
 
-# - install development package dependencies for sucrose library and generate examples application
+# - install development package dependencies for Sucrose library and generate examples application
 examples-dev: dev
 	cd examples && make dev
 
 
-#----
-# NPM
+#-----
+# MISC
 
-# - compile a Node compliant entry file and create a js version of json package for sucrose
-pack:
-	node scripts/pack.$(TAR).js
-	npm run-script package
-	node scripts/rollup.node
-
-# - publish the custom sugar build of sucrose
+# - publish the custom sugar build of Sucrose
 npm-sugar:
 	git branch -D sugar
 	git checkout -b sugar
@@ -199,6 +243,10 @@ npm-sugar:
 cover: sucrose.js
 	npm run instrument
 
+test-data:
+	make sucrose.js DEV=true
+	npm run instrument
+	npm run test-data
 
 #-----
 # HELP

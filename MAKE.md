@@ -6,8 +6,8 @@
   Targets: for installing and developing Sucrose
     all            - compile sucrose Js and Css files
     clean          - remove sucrose Js and Css files
-    clean-css      - remove sucrose Css files
-    clean-js       - remove all sucrose and D3 Js files
+    clean-css      - remove Sucrose Css files
+    clean-js       - remove all Sucrose and D3 Js files
     cover          - create the instrumented build file for code coverage analysis
     css            - [*] compile and compress sucrose library LESS source files into Css
     d3             - [*] build default D3 bundle
@@ -17,18 +17,18 @@
     d3-scr         - build custom D3 bundle with just required components for Sucrose
     d3-sgr         - build custom D3 bundle with just required components for Sugar
     dev            - install development npm packages and build all [main dev]
-    examples       - [*] build and copy the sucrose Js and Css files to the example application
-    examples-dev   - install development package dependencies for sucrose library and generate examples application
-    examples-prod  - install production package dependencies for sucrose library and generate examples application
+    examples       - [*] build and copy the Sucrose Js and Css files to the example application
+    examples-dev   - install development package dependencies for Sucrose library and generate examples application
+    examples-prod  - install production package dependencies for Sucrose library and generate examples application
     help           - show some help [default]
     list           - just list the make targets
     md             - generate a MAKE.md from help
-    npm-sugar      - publish the custom sugar build of sucrose
-    pack           - compile a Node compliant entry file and create a js version of json package for sucrose
+    npm-sugar      - publish the custom sugar build of Sucrose
+    pack           - compile a Node compliant entry file and create a Js version of package.json for Sucrose
     prod           - install production npm packages [main]
     scr            - [*] build full sucrose library and D3 custom bundle
     sgr            - [*] build selected sucrose modules and D3 custom bundle for Sugar
-    sucrose        - [*] build default sucrose Js library
+    sucrose        - [*] build default Sucrose Js library
  
 --------------------------------------
  

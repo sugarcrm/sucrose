@@ -562,7 +562,7 @@ utility.countSigFigsAfter = function(value) {
   // consider: d3.precisionFixed(value);
   // if value has decimals
   // compare "$123.45k"
-  var re = /^[^\d]*([\d\.\,\s]+)[^\d]*$/;
+  var re = /^[^\d]*([\d.,\s]+)[^\d]*$/;
   var digits = value.toString().match(re)[1].replace(/[,\s]/, '.');
   var sigfigs = 0;
   if (Math.floor(digits) !== parseFloat(digits)) {

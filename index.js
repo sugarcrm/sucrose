@@ -1,14 +1,11 @@
 export {
-  version
-} from './build/package';
-
-export {
-  development,
-  utility,
-  tooltip,
-  models,
   charts,
+  development,
+  models,
+  tooltip,
   transform,
+  utility,
+  version,
 } from 'sucrose';
 //INFO: why doesn't require('sucrose') work?
 //  index.js is declared as module (jsnext:main) in package.json

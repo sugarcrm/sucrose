@@ -23,20 +23,20 @@
       "error",
       "unix"
     ],
-    "quotes": [
-      "error",
-      "single"
-    ],
-    "semi": [
-      "error",
+    "no-extra-boolean-cast": [
+      "off",
       "always"
     ],
     "no-unused-vars": [
       "off",
       "always"
     ],
-    "no-extra-boolean-cast": [
-      "off",
+    "quotes": [
+      "error",
+      "single"
+    ],
+    "semi": [
+      "error",
       "always"
     ]
   }
