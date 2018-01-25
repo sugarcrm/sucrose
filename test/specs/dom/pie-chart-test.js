@@ -19,6 +19,7 @@ tests("DOM: pieChart -", function (t) {
     let data;
     let dom;
     let c_;
+    let s;
 
     function getElement(selector) {
         return c_.querySelector(selector) || dom.window.document.createElement("div");
@@ -36,7 +37,8 @@ tests("DOM: pieChart -", function (t) {
         chart = sucrose.charts.pieChart().colorData("default");
         data = JSON.parse(json);
         // eslint-disable-next-line quotes
-        dom = new JSDOM('<!DOCTYPE html><div id="c_"><svg class="sucrose sc-chart"></svg></div>');
+        // dom = new JSDOM('<!DOCTYPE html><div id="c_"><svg class="sucrose sc-chart"></svg></div>');
+        dom = new JSDOM('<!DOCTYPE html><div id="c_"></div>');
 
         global.window = dom.window;
         global.document = global.window.document;
@@ -45,13 +47,15 @@ tests("DOM: pieChart -", function (t) {
         // jsdom 11.3.0 breaks SVG DOM manipulation.
         // stick with 11.2.0 or change selector below to #c_ and let d3 modify the HTML DOM.
         // Its not valid SVG but these are DOM manipulation unit tests.
-        c_ = dom.window.document.querySelector("#c_ .sucrose");
-        console.log(c_);
+        // c_ = dom.window.document.querySelector("#c_ .sucrose");
+        c_ = dom.window.document.querySelector("#c_");
+        s = d3.select(c_).append("svg").attr("class", "sucrose sc-chart");
         t.end();
     });
 
     t.afterEach(function (t) {
         // do some tear down for each test
+        s = null;
         c_ = null;
         dom = null;
         data = null;
@@ -61,19 +65,19 @@ tests("DOM: pieChart -", function (t) {
     });
 
     t.test("data: renders no data message if data is empty", function(assert) {
-        d3.select(c_).datum([]).call(chart);
+        s.datum([]).call(chart);
         target = getElement(".sc-no-data");
         assert.equal(target.innerHTML, "No Data Available.");
         assert.end();
     });
     t.test("data: does not render no data message if data is not empty", function(assert) {
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = c_.querySelector(".sc-no-data");
         assert.equal(target, null);
         assert.end();
     });
     t.test("data: renders chart if data is not empty", function(assert) {
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-chart-pie");
         assert.ok(target);
         assert.end();
@@ -81,7 +85,7 @@ tests("DOM: pieChart -", function (t) {
 
     // Title
     t.test("title: renders title by default", function(assert) {
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getInnerHtml(".sc-title-wrap text");
         assert.equal(target, "Test pie chart");
         assert.end();
@@ -89,14 +93,14 @@ tests("DOM: pieChart -", function (t) {
     t.test("title: does not render title if no title in properties", function(assert) {
         chart.showTitle(true);
         delete data.properties.title;
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getInnerHtml(".sc-title-wrap");
         assert.equal(target, "");
         assert.end();
     });
     t.test("title: does not render title if showTitle set to 'false'", function(assert) {
         chart.showTitle(false);
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getInnerHtml(".sc-title");
         assert.equal(target, "");
         assert.end();
@@ -104,20 +108,20 @@ tests("DOM: pieChart -", function (t) {
 
     // Menues
     t.test("menu: renders legend by default", function(assert) {
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-legend-wrap");
         assert.notEqual(target.innerHTML, "");
         assert.end();
     });
     t.test("menu: does not render legend if showLegend set to 'false'", function(assert) {
         chart.showLegend(false);
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-legend-wrap");
         assert.equal(target.innerHTML, "");
         assert.end();
     });
     t.test("menu: does not render controls ever", function(assert) {
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = c_.querySelector(".sc-controls-wrap").innerHTML;
         assert.equal(target, "");
         assert.end();
@@ -125,7 +129,7 @@ tests("DOM: pieChart -", function (t) {
 
     // Color
     t.test("color: palette is category20 by default", function(assert) {
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-series-0");
         assert.equal(target.getAttribute("class"), "sc-series sc-series-0");
         assert.equal(target.getAttribute("fill"), "#1f77b4");
@@ -133,7 +137,7 @@ tests("DOM: pieChart -", function (t) {
     });
     t.test("color: palette uses classnames if colorData set to 'class'", function(assert) {
         chart.colorData("class");
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-series-0");
         assert.equal(target.getAttribute("class"), "sc-series sc-series-0 sc-fill00 sc-stroke00");
         assert.equal(target.getAttribute("fill"), "inherit");
@@ -142,7 +146,7 @@ tests("DOM: pieChart -", function (t) {
     t.test("color: palette controlled by color attribute of series Data", function(assert) {
         chart.colorData("data");
         data.data[0].color = "#000";
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-series-0");
         assert.equal(target.getAttribute("class"), "sc-series sc-series-0");
         assert.equal(target.getAttribute("fill"), "#000");
@@ -151,7 +155,7 @@ tests("DOM: pieChart -", function (t) {
     t.test("color: palette graduated on gray scale", function(assert) {
         chart.colorData("graduated", {c1: "#FFF", c2: "#000", l: 4});
         data.data[0].color = "#000";
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-series-0");
         assert.equal(target.getAttribute("fill"), "rgb(255, 255, 255)");
         target = getElement(".sc-series-3");
@@ -162,7 +166,7 @@ tests("DOM: pieChart -", function (t) {
     // Dimensions
     t.test("dimensions: margins can be defined", function(assert) {
         chart.margin({top: 20, right: 10, bottom: 30, left: 40});
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-background");
         assert.equal(target.getAttribute("x"), "-40");
         assert.equal(target.getAttribute("y"), "-20");
@@ -171,7 +175,7 @@ tests("DOM: pieChart -", function (t) {
         assert.end();
     });
     t.test("dimensions: default to fixed dimensions if outer container is indeterminate", function(assert) {
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-background");
         assert.equal(target.getAttribute("width"), "960");
         assert.equal(target.getAttribute("height"), "400");
@@ -180,7 +184,7 @@ tests("DOM: pieChart -", function (t) {
     t.test("dimensions: width and height can be defined", function(assert) {
         assert.plan(2);
         chart.width(400).height(300);
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-background");
         assert.equal(target.getAttribute("width"), "400");
         assert.equal(target.getAttribute("height"), "300");
@@ -198,14 +202,14 @@ tests("DOM: pieChart -", function (t) {
             noLabel: "asdf"
         });
         data.data[0].key = "";
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-series-0 .sc-label text");
         assert.equal(target.innerHTML, "asdf");
 
         target = getElement(".sc-legend-wrap .sc-menu-link");
         assert.equal(target.innerHTML, "asdf");
 
-        d3.select(c_).datum([]).call(chart);
+        s.datum([]).call(chart);
         target = getElement(".sc-no-data");
         assert.equal(target.innerHTML, "asdf");
     });
@@ -214,26 +218,26 @@ tests("DOM: pieChart -", function (t) {
     t.test("direction: setting direction changes position of title", function(assert) {
         assert.plan(2);
         chart.showTitle(true);
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-title");
         assert.equal(target.getAttribute("x"), "0");
 
         chart.direction("rtl");
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-title");
         assert.notEqual(target.getAttribute("x"), "0");
     });
 
     // Texture fill
     t.test("texture fill: texture fill elements are not rendered by default", function(assert) {
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = c_.querySelector(".sc-series-0 .sc-texture");
         assert.equal(target, null);
         assert.end();
     });
     t.test("texture fill: setting texture fill to true renders texture elements", function(assert) {
         chart.textureFill(true);
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-series-0 .sc-texture");
         assert.notEqual(target, null);
         assert.end();
@@ -241,7 +245,7 @@ tests("DOM: pieChart -", function (t) {
     t.test("series click: setting active state of series sets active class on element", function(assert) {
         chart.textureFill(true);
         data.data[0].active = "active";
-        d3.select(c_).datum(data).call(chart);
+        s.datum(data).call(chart);
         target = getElement(".sc-series-0");
         assert.equal(target.getAttribute("class"), "sc-series sc-series-0 sc-active");
         assert.end();

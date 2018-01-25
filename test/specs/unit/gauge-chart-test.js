@@ -262,7 +262,7 @@ tests("UNIT: gaugeChart -", function(t) {
         assert.plan(5);
         var def = _chart.x();
         assert.equal(typeof def, "function", "returns default function");
-        assert.equal(typeof _chart.y()({}), "undefined", "returns undefined if value is undefined");
+        assert.equal(_chart.y()({}), null, "returns null if value is undefined");
         assert.equal(_chart.y()({y: 1}), 1, "returns value if value is defined");
         let val = function(d){return d.y * 2;};
         _chart.y(val);
@@ -415,7 +415,7 @@ tests("UNIT: gaugeChart -", function(t) {
     });
     t.test("maxValue: ", function(assert) {
         assert.plan(2);
-        let def = 10;
+        let def = 0;
         assert.equal(_chart.maxValue(), def, "returns default value");
         let val = 1;
         _chart.maxValue(val);

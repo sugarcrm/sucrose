@@ -14,17 +14,13 @@
     {
       "label": "Series 0",
       "values": [
-        3,
-        7,
-        5
+        3, 7, 5
       ]
     },
     {
       "label": "Series 1",
       "values": [
-        4,
-        8,
-        6
+        4, 8, 6
       ]
     }
   ]

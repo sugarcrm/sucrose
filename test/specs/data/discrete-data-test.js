@@ -9,14 +9,14 @@ const spec = require("../../files/transform/spec.json");
 let type = "transform";
 
 function loadSource(name) {
-  let contents = fs.readFileSync("./test/files/transform/" + name + ".json");
+  let contents = fs.readFileSync("./test/files/transform/discrete/" + name + ".json");
   return JSON.parse(contents);
 }
 
 // --------------------
 // Discrete Data Transform Tests
 
-tests("DATA: transform -", function(t) {
+tests("-------------------------\nDATA: transform -", function(t) {
     t.methods(type, [
         "transform", //requires browser
     ]);

@@ -9,14 +9,14 @@ const spec = require("../../files/transform/spec.json");
 let type = "transform";
 
 function loadSource(name) {
-  let contents = fs.readFileSync("./test/files/transform/" + name + ".json");
+  let contents = fs.readFileSync("./test/files/transform/basic/" + name + ".json");
   return JSON.parse(contents);
 }
 
 // --------------------
 // Basic Data Transform Tests
 
-tests("DATA: transform -", function(t) {
+tests("----------------------\nDATA: transform - basic:", function(t) {
     t.methods(type, [
         "transform", //requires browser
     ]);
@@ -27,7 +27,7 @@ tests("DATA: transform -", function(t) {
 
     // CSV
 
-    t.test("basic: csv: datetime object", function(assert) {
+    t.test("csv: datetime object", function(assert) {
         let source = loadSource("basic_csv_datetime_object");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime;
@@ -35,7 +35,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: csv: datetime string", function(assert) {
+    t.test("csv: datetime string", function(assert) {
         let source = loadSource("basic_csv_datetime_string");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime_string;
@@ -43,7 +43,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: csv: datetime year", function(assert) {
+    t.test("csv: datetime year", function(assert) {
         let source = loadSource("basic_csv_datetime_year");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime;
@@ -51,7 +51,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: csv: datetime value", function(assert) {
+    t.test("csv: datetime value", function(assert) {
         let source = loadSource("basic_csv_datetime");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime;
@@ -59,7 +59,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: csv: numeric", function(assert) {
+    t.test("csv: numeric", function(assert) {
         let source = loadSource("basic_csv_numeric");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.numeric;
@@ -67,7 +67,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: csv: ordinal", function(assert) {
+    t.test("csv: ordinal", function(assert) {
         let source = loadSource("basic_csv_ordinal");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.ordinal;
@@ -77,7 +77,7 @@ tests("DATA: transform -", function(t) {
 
     // Arrays
 
-    t.test("basic: arrays: datetime object", function(assert) {
+    t.test("arrays: datetime object", function(assert) {
         let source = loadSource("basic_arrays_datetime_object");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime;
@@ -85,7 +85,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: arrays: datetime string", function(assert) {
+    t.test("arrays: datetime string", function(assert) {
         let source = loadSource("basic_arrays_datetime_string");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime_string;
@@ -93,7 +93,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: arrays: datetime year", function(assert) {
+    t.test("arrays: datetime year", function(assert) {
         let source = loadSource("basic_arrays_datetime_year");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime;
@@ -101,7 +101,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: arrays: datetime value", function(assert) {
+    t.test("arrays: datetime value", function(assert) {
         let source = loadSource("basic_arrays_datetime");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime;
@@ -109,7 +109,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: arrays: numeric", function(assert) {
+    t.test("arrays: numeric", function(assert) {
         let source = loadSource("basic_arrays_numeric");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.numeric;
@@ -117,7 +117,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: arrays: ordinal", function(assert) {
+    t.test("arrays: ordinal", function(assert) {
         let source = loadSource("basic_arrays_ordinal");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.ordinal;
@@ -127,7 +127,7 @@ tests("DATA: transform -", function(t) {
 
     // Objects
 
-    t.test("basic: objects: datetime object", function(assert) {
+    t.test("objects: datetime object", function(assert) {
         let source = loadSource("basic_objects_datetime_object");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime;
@@ -135,7 +135,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: objects: datetime string", function(assert) {
+    t.test("objects: datetime string", function(assert) {
         let source = loadSource("basic_objects_datetime_string");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime_string;
@@ -143,7 +143,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: objects: datetime year", function(assert) {
+    t.test("objects: datetime year", function(assert) {
         let source = loadSource("basic_objects_datetime_year");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime;
@@ -151,7 +151,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: objects: datetime value", function(assert) {
+    t.test("objects: datetime value", function(assert) {
         let source = loadSource("basic_objects_datetime");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.datetime;
@@ -159,7 +159,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: objects: numeric", function(assert) {
+    t.test("objects: numeric", function(assert) {
         let source = loadSource("basic_objects_numeric");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.numeric;
@@ -167,7 +167,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: objects: ordinal", function(assert) {
+    t.test("objects: ordinal", function(assert) {
         let source = loadSource("basic_objects_ordinal");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.ordinal;
@@ -175,7 +175,7 @@ tests("DATA: transform -", function(t) {
         assert.end();
     });
 
-    t.test("basic: objects: multiple ordinal", function(assert) {
+    t.test("objects: multiple ordinal", function(assert) {
         let source = loadSource("basic_objects_ordinal_multiple");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.ordinal;
@@ -185,20 +185,10 @@ tests("DATA: transform -", function(t) {
 
     // Sugar
 
-    t.test("basic: sugar: ordinal", function(assert) {
+    t.test("sugar: ordinal", function(assert) {
         let source = loadSource("basic_sugar_ordinal");
         let actual = sucrose.transform(source, "multibar", "basic");
         let expect = spec.basic.ordinal;
-        assert.deepEqual(actual, expect);
-        assert.end();
-    });
-
-    // Pie
-
-    t.test("basic: objects: ordinal: pie", function(assert) {
-        let source = loadSource("grouped_objects_ordinal");
-        let actual = sucrose.transform(source, "pie");
-        let expect = spec.pie.ordinal;
         assert.deepEqual(actual, expect);
         assert.end();
     });

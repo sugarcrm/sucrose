@@ -357,7 +357,7 @@ dreams.tests("INT: multibarChart -", function(t) {
         return document.querySelector(".tooltip").getAttribute("class");
       })
       .then(function(result) {
-        assert.equal(result, "tooltip xy-tooltip in top");
+        assert.equal(result, "sc-tooltip tooltip xy-tooltip in top");
         assert.end();
       })
       .catch(function(msg) { dreams.error(msg, assert, nightmare); });
