@@ -1,35 +1,59 @@
 import d3 from 'd3';
+import utility from './utility.js';
 
 var transform = function(json, chartType, barType) {
-  var data = [],
-      properties = json.properties ? Array.isArray(json.properties) ? json.properties[0] : json.properties : {},
-      value = 0,
-      strNoLabel = 'Undefined',
-      valuesAreArrays = false,
+  var properties = json.properties ? Array.isArray(json.properties) ? json.properties[0] : json.properties : {},
+      seriesData = [],
+      data = [],
+      groupData = [];
+
+  var valuesAreArrays = false,
       valuesAreObjects = false,
-      valuesAreValues = false,
-      valuesAreDiscrete = false,
-      groups = [];
+      valuesAreDiscrete = false;
 
   var xIsDatetime = properties.xDataType === 'datetime' || false,
-      xIsOrdinal = properties.xDataType === 'ordinal' || false,
-      xIsNumeric = properties.xDataType === 'numeric' || false,
-      yIsCurrency = properties.yDataType === 'currency' || false;
+      xIsNumeric = properties.xDataType === 'numeric' || false;
 
-  var getX, getY, formatX, formatY;
+  var xIsOrdinal = false;
 
-  // var isDiscreteData = hasValues && Array.isArray(json.label) &&
-  //         json.label.length === json.values.length &&
-  //         json.values.reduce(function(a, c, i) {
-  //             return a && Array.isArray(c.values) && c.values.length === 1 &&
-  //                 pickLabel(c.label) === pickLabel(json.label[i]);
-  //         }, true);
-  //
+  //TODO: needs to get chart.strings().noLabel
+  var strNoLabel = 'Undefined';
+
+  var getX, getY, parseX, parseY;
+
+
+  //============================================================
+  // Common Functions
+  //------------------------------------------------------------
+  //TODO: make these public methods for reuse/testing
 
   function pickLabel(d) {
     // d can be {label:'abc'} ['abc'] or 'abc'
     // var l = [].concat(label)[0];
-    return String(d.hasOwnProperty('label') ? d.label : d) || strNoLabel;
+    return typeof d !== 'undefined' && String(d.hasOwnProperty('label') ? d.label : d) || strNoLabel;
+  }
+
+  function getKey(d) {
+    return typeof d !== 'undefined' && d.hasOwnProperty('key') ? String(d.key) : pickLabel(d);
+  }
+
+  function getArrayX(d) {
+    return d[0];
+  }
+  function getArrayY(d) {
+    return d[1];
+  }
+  function getObjectX(d) {
+    return d.x;
+  }
+  function getObjectY(d) {
+    return d.y;
+  }
+  function getIndexX(d, i) {
+    return i;
+  }
+  function getValueY(d) {
+    return d;
   }
 
   // build group from faw Sugar data values values
@@ -40,63 +64,175 @@ var transform = function(json, chartType, barType) {
     };
     // raw data values [20, 40, 60] get summed
     if (d.values) {
-      g.total = sumValues(d.values);
+      g.total = sumValues(d);
     }
     return g;
   }
 
-  function getKey(d) {
-    return d.key || pickLabel(d);
-  }
-
-  function sumValues(values) {
+  function sumValues(d) {
+    var sum = 0;
+    if (d.hasOwnProperty('value')) {
+      sum = d.value;
+    } else if (d.hasOwnProperty('y')) {
+      sum = d.y;
+    } else if (d.hasOwnProperty('values')) {
+      sum = d3.sum(d.values, parseY);
+    } else if (utility.isNumeric(d)) {
+      sum = d;
+    }
+    return sum;
     // 0 is default value if reducing an empty list
-    return values ? values.reduce(function(a, b) { return a + parseFloat(b); }, 0) : 0;
+    // return d.values ? d.values.reduce(function(a, b) { return a + parseFloat(b); }, 0) : 0;
   }
 
-  function hasValues(data) {
+  function hasValue(d) {
     //true => [{}, {}] || [[], []]
-    return data && data.filter(function(d) { return d.values && d.values.length; }).length > 0;
+    return d.hasOwnProperty('value') || d.hasOwnProperty('y');
+  }
+
+  function hasValues(series) {
+    //true => [{}, {}] || [[], []]
+    return Array.isArray(series.values) && series.values.length;
+  }
+
+  function hasSingleValue(series) {
+    return hasValues(series) && series.values.length === 1;
   }
 
   function dataHasValues(type, data) {
-      var valueTypes = ['multibar', 'line', 'area', 'pie', 'funnel', 'gauge'];
-      return valueTypes.indexOf(type) !== -1 && hasValues(data);
+    var valuesTypes = ['multibar', 'line', 'area', 'pie', 'funnel', 'gauge'];
+    return valuesTypes.indexOf(type) !== -1 &&
+      Array.isArray(data) &&
+      data.filter(function(series) {
+        return hasValues(series) || hasValue(series);
+      }).length > 0;
   }
 
   function dataHasGroups(type, groups) {
-      var valueTypes = ['multibar', 'line', 'area'];
-      return valueTypes.indexOf(type) !== -1 && groups.length;
+    var valueTypes = ['multibar', 'line', 'area'];
+    return valueTypes.indexOf(type) !== -1 && Array.isArray(groups) && groups.length > 0;
   }
 
-  function isArrayOfArrays(data) {
-    return Array.isArray(data) && data.length && Array.isArray(data[0]);
+  function isArrayOfArrays(values) {
+    return Array.isArray(values) && values.length > 0 && Array.isArray(values[0]);
   }
 
-  function isArrayOfObjects(data) {
-    return Array.isArray(data) && data.length && data[0].hasOwnProperty('y');
+  function isArrayOfObjects(values) {
+    return Array.isArray(values) && values.length > 0 && hasValue(values[0]);
   }
 
-  function areDiscreteValues(data) {
-    return d3.max(data, function(d) { return d.values.length; }) === 1;
+  function xIsUnique(series) {
+    return series.reduce(function(aS, cS) {
+      return cS.values.reduce(function(aV, cV) {
+        var x = getX(cV);
+        if (aV.indexOf(x) === -1) {
+          aV.push(x);
+        }
+        return aV;
+      }, aS);
+    }, []).length === series.length;
   }
 
-  function getCSVData(properties, csv) {
+  function seriesKeyMatchesGroupLabel(series, group) {
+    return xIsOrdinal ? getKey(series) === pickLabel(group) : false;
+  }
+
+  function areValuesDiscrete(series, groups) {
+    var uniqueX = null;
+    function xValuesAreUnique(s) {
+      return uniqueX === null ? xIsUnique(s) : uniqueX;
+    }
+    return series.reduce(function(a, c, i) {
+      if (!a) {
+        return false;
+      }
+      return hasValue(c) || (
+        hasSingleValue(c) && (
+          seriesKeyMatchesGroupLabel(c, groups[i]) || xValuesAreUnique(series)
+        )
+      );
+    }, true);
+  }
+
+  function valueMap(v, i) {
+    var vo = valuesAreObjects ? v : {};
+    vo.x = parseX(v, i);
+    vo.y = parseY(v, i);
+    return vo;
+  }
+
+  // update x and y in value
+  function valueReduce(a, c) {
+    return c.values.map(function(value, v) {
+      var vo = valuesAreObjects ? value : {};
+      var y = getY(value, v) + getY(a.values[v], v);
+      vo.x = parseX(value, v);
+      vo.y = parseFloat(y);
+      return vo;
+    });
+  }
+
+  function preserveAttributes(series, data) {
+    if (series.hasOwnProperty('disabled')) {
+      data.disabled = series.disabled;
+    }
+    if (series.hasOwnProperty('color')) {
+      data.color = series.color;
+    }
+    if (series.hasOwnProperty('classes')) {
+      data.classes = series.classes;
+    }
+  }
+
+  function seriesMap(series) {
+    var d, values;
+    values = series.values.map(valueMap);
+    d = {
+      key: getKey(series),
+      values: values
+    };
+    preserveAttributes(series, d);
+    return d;
+  }
+
+  function discreteMap(series, i, data) {
+    var d, values;
+    values = data.map(function(v, j) {
+      var value = v.values[0];
+      if (i === j) {
+        return valueMap(value, j);
+      } else {
+        return {
+          x: parseX(value, j),
+          y: 0
+        };
+      }
+    });
+    d = {
+      key: getKey(series),
+      values: values
+    };
+    preserveAttributes(series, d);
+    return d;
+  }
+
+  function processCSVData(properties, csv) {
     // json.values => [
     //   ["Year", "A", "B", "C"],
     //   [1970, 0.3, 2, 0.1],
     //   [1971, 0.5, 2, 0.1],
     //   [1972, 0.7, 3, 0.2]
     // ]
-    var seriesKeys, seriesData, groupData, data;
+    var seriesKeys, transposeData;
 
     // the first row is a row of strings
     // then extract first row header labels as series keys
-    seriesKeys = properties.keys || csv.splice(0, 1)[0].splice(1);
+    seriesKeys = properties.keys || csv.shift().splice(1);
     // keys => ["A", "B", "C"]
 
     // reset groupData because it will be rebuilt from values
     //artifact, boo
+    //TODO: should we set group total to gvalue?
     groupData = [];
     // something like:
     // groupData => ["One", "Two", "Three"]
@@ -106,24 +242,26 @@ var transform = function(json, chartType, barType) {
     //   [1971, 0.5, 2, 0.1],
     //   [1972, 0.7, 3, 0.2]
     // ]
-    seriesData = d3.transpose(
+    transposeData = d3.transpose(
         csv.map(function(row, i) {
           // this is a row => [1970, 0.7, 3, 0.2]
           // this is a row => ["One", 0.7, 3, 0.2]
 
           // extract first column as x value
-          var x = row.splice(0, 1)[0];
+          // var x = row.splice(0, 1)[0];
+          var x = row.shift();
 
-          if (xIsOrdinal) {
+          if (!xIsDatetime && !xIsNumeric) {
             // extract the first column into the properties category label array
             // {group: i, label: x}
             groupData.push(getGroup(x, i));
+            // not needed
+            // xIsOrdinal = true;
           }
 
-          return row.map(function(value, j) {
+          return row.map(function(value) {
               // row => [0.7, 3, 0.2]]
               // first column is datetime or is numeric
-              //TODO: use valueMaps?
               if (xIsDatetime || xIsNumeric) {
                 // if x is an integer date then treating as integer
                 // is ok because xDataType will force formatting on render
@@ -132,90 +270,65 @@ var transform = function(json, chartType, barType) {
               }
               // ... or is ordinal
               // increment
-              else if (xIsOrdinal)
-              {
+              else {
                 return [i + 1, value];
               }
             });
         })
       );
 
-    data = seriesKeys.map(function(key, i) {
+    seriesData = seriesKeys.map(function(key, i) {
         return {
           key: key,
-          values: seriesData[i]
+          values: transposeData[i]
         };
       });
-
-    if (groupData.length) {
-      properties.groups = groupData;
-    }
-    properties.colorLength = data[0].values.length;
-
-    return data;
   }
 
-  function valueMap(v, i) {
-    var vo = valuesAreObjects ? v : {};
-    vo.x = formatX(v, i);
-    vo.y = formatY(v, i);
-    return vo;
-  }
 
-  // update x and y in value
-  function valueReduce(a, c, i) {
-    return c.values.map(function(v, j) {
-      var vo = valuesAreObjects ? v : {};
-      var y = getY(v, j) + getY(a.values[j], j);
-      vo.x = formatX(v, j);
-      vo.y = parseFloat(y);
-      return vo;
-    });
-  }
+  //============================================================
+  // Parse Json data
 
-  // process CSV values
   // json.values = [[],[],[]]
   if (isArrayOfArrays(json.values)) {
-    data = getCSVData(properties, json.values);
+    // process CSV values with seriesData and groupData artifacts
+    processCSVData(properties, json.values);
   } else {
-    data = json.data || json.values;
-    groups = properties.groups || json.label || properties.labels || properties.label || [];
-    if (dataHasGroups(chartType, groups)) {
-      properties.groups = groups.map(getGroup);
+    if (json.values) {
+      // process Sugar report data
+      seriesData = json.values;
+      groupData = json.label || [];
     } else {
-      delete properties.groups;
+      // process Standard Data Model (SDM)
+      seriesData = json.data;
+      groupData = properties.groups || properties.labels || properties.label || [];
     }
   }
 
-  if (dataHasValues(chartType, data)) {
-    // json.values => [[0,20],[1,20]] or [{x:1,y:20},{x:2,y:40}] or [20,40]
-    valuesAreArrays = isArrayOfArrays(data[0].values);
-    valuesAreObjects = isArrayOfObjects(data[0].values);
-    valuesAreValues = !valuesAreArrays && !valuesAreObjects;
-    valuesAreDiscrete = areDiscreteValues(data);
+  xIsOrdinal = dataHasGroups(chartType, groupData);
+  // Wrong!! true for line but not discrete multibar
+   // && groupData.length === seriesData[0].values.length;
 
-    getX = valuesAreArrays ?
-      function(d) {
-        return d[0];
-      } : valuesAreObjects ?
-      function(d) {
-        return d.x;
-      } :
+
+  //============================================================
+  // Main
+
+  if (dataHasValues(chartType, seriesData)) {
+    // json.values => [[0,20],[1,20]]
+    valuesAreArrays = isArrayOfArrays(seriesData[0].values);
+    // or SDM => [{x:1,y:20},{x:2,y:40}]
+    valuesAreObjects = isArrayOfObjects(seriesData[0].values);
+    getX = valuesAreArrays ? getArrayX : valuesAreObjects ? getObjectX : getIndexX;
+    getY = valuesAreArrays ? getArrayY : valuesAreObjects ? getObjectY : getValueY;
+    valuesAreDiscrete = areValuesDiscrete(seriesData, groupData);
+
+    parseX = xIsOrdinal ?
+      // expand x for each series
+      // [['a'],['b'],['c']] =>
+      // [[0,'a'],[1,'b'],[2,'c']]
       function(d, i) {
-        return i;
-      };
-    getY = valuesAreArrays ?
-      function(d) {
-        return d[1];
-      } : valuesAreObjects ?
-      function(d) {
-        return d.y;
-      } :
-      function(d) {
-        return d;
-      };
-
-    formatX = xIsDatetime ?
+        return i + 1;
+      } : xIsDatetime ?
       function(d, i) {
         var x, dateString, date;
         x = getX(d, i);
@@ -230,14 +343,7 @@ var transform = function(json, chartType, barType) {
           dateString += ' GMT';
         }
         date = new Date(dateString);
-        return date.toUTCString();
-      } : xIsOrdinal ?
-      // valuesAreDiscrete ?
-      // expand x for each series
-      // [['a'],['b'],['c']] =>
-      // [[0,'a'],[1,'b'],[2,'c']]
-      function(d, i) {
-        return i + 1;
+        return date.valueOf();
       } : xIsNumeric ?
       // convert flat array to indexed arrays
       // [['a','b'],['c','d']] => [[[0,'a'],[1,'b']],[[0,'c'],[1,'d']]]
@@ -250,8 +356,7 @@ var transform = function(json, chartType, barType) {
       function(d, i) {
         return getX(d, i);
       };
-
-    formatY = function(d, i) {
+    parseY = function(d, i) {
       return parseFloat(getY(d, i));
     };
 
@@ -261,15 +366,11 @@ var transform = function(json, chartType, barType) {
 
         // basic
         if (barType === 'basic') {
-          if (data.length === 1) {
+          if (seriesData.length === 1) {
             // json = [
             //   {key: 'series1', values: [{x:1, y:5}, {x:2, y:8}, {x:3, y:1}]}
             // ]
-            data = data.map(function(d, i) {
-              d.key = getKey(d) || 'Series ' + i;
-              d.values = d.values.map(valueMap);
-              return d;
-            });
+            data = seriesData.map(seriesMap);
           } else {
             // json = [
             //   {key: 'series1', values: [{x:1, y:5}, {x:2, y:8}, {x:3, y:1}]},
@@ -277,7 +378,7 @@ var transform = function(json, chartType, barType) {
             // ]
             data = [{
               key: properties.key || 'Series 0',
-              values: data.reduce(valueReduce)
+              values: seriesData.reduce(valueReduce)
             }];
           }
           properties.colorLength = data[0].values.length;
@@ -288,117 +389,58 @@ var transform = function(json, chartType, barType) {
           //   {key: series1, values: [{x:1, y:5}]},
           //   {key: series2, values: [{x:2, y:8}]}
           // ]
-          data = data.map(function(d, i) {
-            return {
-              key: getKey(d),
-              values: data.map(function(v, j) {
-                var value = v.values[0];
-                if (i === j) {
-                  return valueMap(value, j);
-                } else {
-                  return {
-                    x: formatX(value, j),
-                    y: 0
-                  };
-                }
-              })
-            };
-          });
-          properties.colorLength = data.length;
+          data = seriesData.map(discreteMap);
         }
         // all others
         else {
-          data = data.map(function(d, i) {
-            d.key = getKey(d);
-            d.values = d.values.map(valueMap);
-            return d;
-          });
-          properties.colorLength = data.length;
+          data = seriesData.map(seriesMap);
         }
 
         break;
 
+      case 'gauge':
       case 'pie':
-        data = data.map(function(d, i) {
-            var data = {
-                key: getKey(d),
-                // can be:
-                // values: [20, 40, 60]
-                // values: [{y:20}, {y:40}, {y:60}]
-                value: sumValues(d.values.map(getY))
+        data = seriesData.map(function(series) {
+            var d;
+            d = {
+              key: getKey(series),
+              // can be:
+              // values: [20, 40, 60]
+              // values: [{y:20}, {y:40}, {y:60}]
+              value: sumValues(series)
             };
-            if (d.hasOwnProperty('disabled')) {
-              data.disabled = d.disabled;
-            }
-            if (d.hasOwnProperty('color')) {
-              data.color = d.color;
-            }
-            if (d.hasOwnProperty('classes')) {
-              data.classes = d.classes;
-            }
-            return data;
+            preserveAttributes(series, d);
+            return d;
           });
-        properties.colorLength = data.length;
         break;
 
       case 'funnel':
-        data = data.reverse().map(function(d, i) {
-            return {
-                key: getKey(d),
-                disabled: d.disabled || false,
-                values: [{
-                  series: i,
-                  // label: d.valuelabels[0] ? d.valuelabels[0] : d.values[0],
-                  x: 0,
-                  y: d3.sum(d.values, getY),
-                  y0: 0
-                }]
+        data = seriesData.reverse().map(function(series, s) {
+            var y, d;
+            y = d3.sum(series.values, getY);
+            d = {
+              key: getKey(series),
+              values: [{
+                series: s,
+                x: 0,
+                y: y,
+                y0: 0
+              }]
             };
-        });
-        properties.colorLength = data.length;
+            preserveAttributes(series, d);
+            return d;
+          });
         break;
 
       case 'area':
       case 'line':
         // convert array of arrays into array of objects
-        data.forEach(function(s, i) {
-          s.seriesIndex = i;
-          s.key = getKey(s);
-          //TODO: use valueMap
-          s.values = valuesAreArrays ?
-            // d => [[0,13],[1,18]]
-            s.values.map(function(v, j) {
-              return {x: formatX(v[0], i, j), y: parseFloat(v[1])};
-            }) :
-            // d => [{x:0,y:13},{x:1,y:18}]
-            s.values.map(function(v, j) {
-              v.x = formatX(v.x, i, j);
-              v.y = parseFloat(v.y);
-              return v;
-            });
-          s.total = d3.sum(s.values, function(d) { return d.y; });
-          if (!s.total) {
-            s.disabled = true;
-          }
-        });
-        properties.colorLength = data.length;
-        break;
-
-      case 'gauge':
-        value = json.values.shift().gvalue;
-        var y0 = 0;
-        data = data.map(function(d, i) {
-            var values = {
-                key: pickLabel(d),
-                y: parseFloat(d.values[0]) + y0
-            };
-            y0 += parseFloat(d.values[0]);
-            return values;
-        });
-        properties.groups = [{group: 1, label: 'Sum', total: value}];
-        properties.colorLength = groups.length;
+        data = seriesData.map(seriesMap);
         break;
     }
+
+    getX = getObjectX;
+    getY = getObjectY;
 
     // Multibar process data routine
       // // add series index to each data point for reference
@@ -415,7 +457,6 @@ var transform = function(json, chartType, barType) {
       //       };
       //     });
       //   }
-      //   series.seriesIndex = s;
       //   series.values = series._values.map(function(value, v) {
       //       return {
       //         'seriesIndex': series.seriesIndex,
@@ -427,21 +468,28 @@ var transform = function(json, chartType, barType) {
       //         'active': typeof series.active !== 'undefined' ? series.active : ''
       //       };
       //     });
-      //   series.total = d3.sum(series.values, function(value, v) {
-      //       return value.y;
-      //     });
-      //   // disabled if all values in series are zero
-      //   // or the series was disabled by the legend
-      //   series.disabled = series.disabled || series.total === 0;
-      //   // inherit values from series
-      //   series.values.forEach(function(value, v) {
-      //     // do not eval d.active because it can be false
-      //     value.active = typeof series.active !== 'undefined' ? series.active : '';
-      //   });
     // });
 
     // don't override json.properties entirely, just modify/append
-    // properties.colorLength = data.length;
+    if (dataHasGroups(chartType, groupData)) {
+      properties.groups = groupData.map(getGroup);
+    } else {
+      delete properties.groups;
+    }
+    if (!properties.hasOwnProperty('colorLength')) {
+      properties.colorLength = data.length;
+    }
+
+    // post process data for total and disabled states
+    data.forEach(function(series, s) {
+      series.seriesIndex = s;
+      series.total = sumValues(series);
+      // disabled if all values in series are zero
+      // or the series was disabled by the legend
+      if (!series.total) {
+        series.disabled = true;
+      }
+    });
 
   } else {
 
@@ -449,16 +497,18 @@ var transform = function(json, chartType, barType) {
       case 'bubble':
         if (!json.data) {
           var salesStageMap = {
-                  'Negotiation/Review': 'Negotiat./Review',
-                  'Perception Analysis': 'Percept. Analysis',
-                  'Proposal/Price Quote': 'Proposal/Quote',
-                  'Id. Decision Makers': 'Id. Deciders'
-                };
-          // var colorLength = d3.nest()
-          //       .key(function(d){return d.probability;})
-          //       .entries(chartData.data).length;
-          data = {
-            data: json.records.map(function (d) {
+                'Negotiation/Review': 'Negotiat./Review',
+                'Perception Analysis': 'Percept. Analysis',
+                'Proposal/Price Quote': 'Proposal/Quote',
+                'Id. Decision Makers': 'Id. Deciders'
+              };
+          properties = {
+              title: 'Bubble Chart Data',
+              yDataType: 'string',
+              xDataType: 'datetime',
+              colorLength: json.records.length
+            };
+          data = json.records.map(function (d) {
               return {
                 id: d.id,
                 x: d.date_closed,
@@ -472,18 +522,23 @@ var transform = function(json, chartType, barType) {
                 base_amount: parseInt(d.likely_case, 10),
                 currency_symbol: '$'
               };
-            }),
-            properties: {
-              title: 'Bubble Chart Data',
-              yDataType: 'string',
-              xDataType: 'datetime',
-              colorLength: json.records.length
-            }
-          };
+            });
+        } else {
+          properties = json.properties;
+          data = json.data;
         }
+        break;
+
+      case 'pareto':
+        properties = json.properties;
+        data = json.data;
         break;
     }
   }
+
+
+  //============================================================
+  // Return chart data
 
   return {
     properties: properties,
