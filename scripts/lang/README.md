@@ -56,4 +56,4 @@ https://github.com/globalizejs/globalize/issues/758
 https://github.com/d3/d3-format/issues/34
 
 ## License
-Copyright 2017 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.
+Copyright 2018 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.

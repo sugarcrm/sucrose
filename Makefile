@@ -1,7 +1,7 @@
 # --------------------------------------------------
 # Sucrose.io - Library and dependency build scripts
 #
-# Copyright (c) 2017 SugarCRM Inc.
+# Copyright (c) 2018 SugarCRM Inc.
 # Licensed by SugarCRM under the Apache 2.0 license.
 # --------------------------------------------------
 

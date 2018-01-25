@@ -129,4 +129,4 @@ Everyone is welcome to contribute to Sucrose!  If you make a contribution, then 
 Please check out our [Contribution Guidelines](CONTRIBUTING.md) for requirements that will allow us to accept your pull request.
 
 ## License
-Copyright 2017 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.
+Copyright 2018 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.
