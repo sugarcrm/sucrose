@@ -49,7 +49,7 @@ export default function menu() {
   var useScroll = false,
       scrollEnabled = true,
       scrollOffset = 0,
-      overflowHandler = function(d) { return; };
+      overflowHandler = function() { return; };
 
   //============================================================
 
@@ -73,7 +73,7 @@ export default function menu() {
 
       // enforce existence of series for static legend keys
       var iSeries = data.filter(function(d) { return d.hasOwnProperty('seriesIndex'); }).length;
-      data.filter(function(d) { return !d.hasOwnProperty('seriesIndex'); }).map(function(d, i) {
+      data.filter(function(d) { return !d.hasOwnProperty('seriesIndex'); }).map(function(d) {
         d.seriesIndex = iSeries;
         iSeries += 1;
       });
@@ -113,13 +113,13 @@ export default function menu() {
       var series_bind = g.selectAll('.sc-series').data(utility.identity, function(d) { return d.seriesIndex; });
       series_bind.exit().remove();
       var series_entr = series_bind.enter().append('g').attr('class', 'sc-series')
-            .on('mouseover', function(d, i) {
+            .on('mouseover', function(d) {
               dispatch.call('legendMouseover', this, d);
             })
-            .on('mouseout', function(d, i) {
+            .on('mouseout', function(d) {
               dispatch.call('legendMouseout', this, d);
             })
-            .on('click', function(d, i) {
+            .on('click', function(d) {
               d3.event.preventDefault();
               d3.event.stopPropagation();
               dispatch.call('legendClick', this, d);
@@ -183,7 +183,7 @@ export default function menu() {
         .attr('height', 0)
         .style('opacity', 0)
         .style('pointer-events', 'all')
-        .on('click', function(d, i) {
+        .on('click', function() {
           d3.event.stopPropagation();
         });
 
@@ -215,7 +215,7 @@ export default function menu() {
 
         g.style('display', 'inline');
 
-        texts.each(function(d, i) {
+        texts.each(function() {
           var textWidth = d3.select(this).node().getBoundingClientRect().width;
           keyWidths.push(Math.max(Math.floor(textWidth), (type === 'line' ? 50 : 20)));
         });
@@ -388,7 +388,7 @@ export default function menu() {
 
           mask
             .attr('clip-path', 'none')
-            .attr('transform', function(d, i) {
+            .attr('transform', function() {
               var xpos = shift + margin.left + (inline ? radius * sign(!rtl) : 0),
                   ypos = margin.top + menuMargin.top;
               return 'translate(' + xpos + ',' + ypos + ')';
@@ -445,7 +445,7 @@ export default function menu() {
           texts
             .attr('dy', inline ? '.36em' : '.71em')
             .attr('text-anchor', position)
-            .attr('transform', function(d) {
+            .attr('transform', function() {
               var xpos = inline ? (radius + textGap) * sign(!rtl) : 0,
                   ypos = inline ? 0 : (diameter + lineSpacing) / 2;
               return 'translate(' + xpos + ',' + ypos + ')';
@@ -481,7 +481,7 @@ export default function menu() {
             .style('display', legendOpen ? 'inline' : 'none');
 
           link
-            .attr('transform', function(d, i) {
+            .attr('transform', function() {
               var xpos = align === 'left' ? 0.5 : 0.5 + legend.width(),
                   ypos = margin.top + radius;
               return 'translate(' + xpos + ',' + ypos + ')';
@@ -490,7 +490,7 @@ export default function menu() {
 
           mask
             .attr('clip-path', 'url(#sc-edge-clip-' + id + ')')
-            .attr('transform', function(d, i) {
+            .attr('transform', function() {
               var xpos = menuMargin.left + radius,
                   ypos = legend.height() + menuMargin.top + radius;
               return 'translate(' + xpos + ',' + ypos + ')';
@@ -499,7 +499,7 @@ export default function menu() {
           g
             .style('opacity', legendOpen)
             .style('display', legendOpen ? 'inline' : 'none')
-            .attr('transform', function(d, i) {
+            .attr('transform', function() {
               var xpos = rtl ? d3.max(keyWidths) + radius : 0;
               return 'translate(' + xpos + ',0)';
             });
@@ -538,7 +538,7 @@ export default function menu() {
           texts
             .attr('text-anchor', 'start')
             .attr('dy', '.36em')
-            .attr('transform', function(d) {
+            .attr('transform', function() {
               var xpos = (radius + textGap) * sign(!rtl);
               return 'translate(' + xpos + ',0)';
             });
@@ -623,13 +623,13 @@ export default function menu() {
           .text(legendOpen === 1 ? legend.strings().close : legend.strings().open);
       }
 
-      dispatch.on('toggleMenu', function(d) {
+      dispatch.on('toggleMenu', function() {
         d3.event.stopPropagation();
         legendOpen = 1 - legendOpen;
         displayMenu();
       });
 
-      dispatch.on('closeMenu', function(d) {
+      dispatch.on('closeMenu', function() {
         if (legendOpen === 1) {
           legendOpen = 0;
           displayMenu();
@@ -733,7 +733,7 @@ export default function menu() {
     return legend;
   };
 
-  legend.collapsed = function(_) {
+  legend.collapsed = function() {
     return collapsed;
   };
 

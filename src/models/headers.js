@@ -31,7 +31,7 @@ export default function headers() {
 
 
   function model(selection) {
-    selection.each(function(chartData) {
+    selection.each(function() {
 
       var container = d3.select(this);
       var wrap = container.select('.sc-chart-wrap');

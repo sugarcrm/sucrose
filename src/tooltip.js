@@ -19,7 +19,7 @@ tooltip.show = function(evt, content, gravity, dist, container, classes) {
   wrapper.style.left = 0;
   wrapper.style.top = -1000;
   wrapper.style.opacity = 0;
-  wrapper.className = 'tooltip xy-tooltip in';
+  wrapper.className = (classes || 'sc-tooltip') + ' tooltip xy-tooltip in';
 
   wrapper.appendChild(inner);
   wrapper.appendChild(arrow);

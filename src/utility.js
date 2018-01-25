@@ -216,7 +216,7 @@ utility.customTheme = function(dictionary, getKey, defaultColors) {
   getKey = getKey || function(series) { return series.key; }; // use default series.key if getKey is undefined
   defaultColors = defaultColors || d3.scaleOrdinal(d3.schemeCategory20).range(); //default color function
   defIndex = defaultColors.length; //current default color (going in reverse)
-  return function(series, index) {
+  return function(series) {
     var key = getKey(series);
 
     if (!defIndex) {
@@ -407,7 +407,7 @@ utility.createTexture = function(defs, id, x, y) {
 
 // String functions
 // Deprecated: _format param is ignored. _data is expected to be already formated.
-utility.stringSetLengths = function(_data, _container, classes, styles) {
+utility.stringSetLengths = function(_data, _container, classes) {
   var lengths = [];
   var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -415,7 +415,7 @@ utility.stringSetLengths = function(_data, _container, classes, styles) {
   }
   txt.classed(classes, true);
   txt.style('display', 'inline');
-  _data.forEach(function(d, i) {
+  _data.forEach(function(d) {
       txt.text(d);
       lengths.push(txt.node().getBoundingClientRect().width);
     });
@@ -424,7 +424,7 @@ utility.stringSetLengths = function(_data, _container, classes, styles) {
 };
 
 // Deprecated: _format param is ignored. _data is expected to be already formated.
-utility.stringSetThickness = function(_data, _container, classes, styles) {
+utility.stringSetThickness = function(_data, _container, classes) {
   var thicknesses = [];
   var txt = _container.select('.tmp-text-strings').select('text');
   if (txt.empty()) {
@@ -432,7 +432,7 @@ utility.stringSetThickness = function(_data, _container, classes, styles) {
   }
   txt.classed(classes, true);
   txt.style('display', 'inline');
-  _data.forEach(function(d, i) {
+  _data.forEach(function(d) {
       txt.text(d);
       thicknesses.push(txt.node().getBoundingClientRect().height);
     });
@@ -740,7 +740,7 @@ utility.isValidDate = function(d) {
 // 'Sun Mar 04 2012 05:06:07 GMT+0000 (UTC)',
 // 'Sun Mar 04 2012 00:06:07 GMT-0500 (EST)'
 utility.parseDatetime = function(d) {
-  var date, m;
+  var date;
   // only for 1991 or '1991'
   if (utility.isNumeric(Math.floor(d)) && d.toString().length === 4) {
     // date.setUTCMilliseconds(date.getUTCMilliseconds() - date.getTimezoneOffset() * 60000);
@@ -920,8 +920,6 @@ utility.multiFormat = function(date, utc) {
 // expects string or date object
 utility.dateFormat = function(d, p, l) {
   var locale, fmtr, spec;
-  var dateString = d.toString();
-
   var date = utility.parseDatetime(d);
 
   if (!utility.isValidDate(date)) {
