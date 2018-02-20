@@ -398,23 +398,6 @@ export default function scatter() {
             })
           );
 
-          if (clipVoronoi) {
-            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle').data(vertices);
-            var clips_entr = clips_bind.enter().append('circle');
-            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle').merge(clips_entr);
-
-            clips
-              .attr('cx', function(d) { return d[0]; })
-              .attr('cy', function(d) { return d[1]; })
-              .attr('r', function(d, i) {
-                return circleRadius(d[2], i);
-              });
-            clips_bind.exit().remove();
-
-            paths_wrap
-                .attr('clip-path', 'url(#sc-points-clip-' + id + ')');
-          }
-
           if (vertices.length <= 3) {
             // Issue #283 - Adding 2 dummy points to the voronoi b/c voronoi requires min 3 points to work
             vertices.push([x.range()[0] - 20, y.range()[0] - 20, null, null, null, null]);
@@ -423,28 +406,53 @@ export default function scatter() {
             vertices.push([x.range()[1] + 20, y.range()[1] - 20, null, null, null, null]);
           }
 
-          var voronoi = d3.voronoi()
-                .extent([[-10, -10], [width + 10, height + 10]])
-                .polygons(vertices)
-                .map(function(d, i) {
-                  return {
-                    'data': d,
-                    'seriesIndex': vertices[i][3],
-                    'groupIndex': vertices[i][4],
-                    'pointIndex': vertices[i][5]
-                  };
-                })
-                .filter(function(d) { return d.seriesIndex !== null; });
+          try {
+            var voronoi = d3.voronoi()
+                  .extent([[-10, -10], [width + 10, height + 10]])
+                  .polygons(vertices)
+                  .map(function(d, i) {
+                    return {
+                      'data': d,
+                      'seriesIndex': vertices[i][3],
+                      'groupIndex': vertices[i][4],
+                      'pointIndex': vertices[i][5]
+                    };
+                  })
+                  .filter(function(d) { return d.seriesIndex !== null; });
+          } catch (e) {
+            useVoronoi = false;
+            // eslint-disable-next-line
+            console.warn('Sucrose: [ERROR] D3 Voronoi paths in line chart are disabled due to error.');
+          }
+
+        }
+
+        if (useVoronoi) {
+
+          if (clipVoronoi) {
+            var clips_bind = wrap.select('#sc-points-clip-' + id).selectAll('circle').data(vertices);
+            var clips_entr = clips_bind.enter().append('circle');
+            var clips = wrap.select('#sc-points-clip-' + id).selectAll('circle').merge(clips_entr);
+            clips_bind.exit().remove();
+
+            clips
+              .attr('cx', function(d) { return d[0]; })
+              .attr('cy', function(d) { return d[1]; })
+              .attr('r', function(d, i) {
+                return circleRadius(d[2], i);
+              });
+
+            paths_wrap
+                .attr('clip-path', 'url(#sc-points-clip-' + id + ')');
+          }
 
           var paths_bind = paths_wrap.selectAll('path').data(voronoi);
           var paths_entr = paths_bind.enter().append('path').attr('class', function(d, i) { return 'sc-path-' + i; });
           var paths = paths_wrap.selectAll('path').merge(paths_entr);
-
-          paths
-            .attr('d', function(d) { return d ? 'M' + d.data.join('L') + 'Z' : null; });
           paths_bind.exit().remove();
 
           paths
+            .attr('d', function(d) { return d ? 'M' + d.data.join('L') + 'Z' : null; })
             .on('mouseover', function(d) {
               var s = data[d.seriesIndex];
               var i = d.pointIndex;
