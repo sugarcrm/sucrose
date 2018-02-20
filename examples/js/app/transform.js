@@ -7,32 +7,30 @@ function postProcessData(chartData, chartType, Chart) {
   }
 
   switch (chartType) {
+    //TODO: handle z
+    // case 'area':
+    // case 'line':
+    //   if (chartData.data.length) {
+    //     if (Array.isArray(chartData.data[0].values) && Array.isArray(chartData.data[0].values[0])) {
+    //       // Convert array data to objects
+    //       chartData.data.forEach(function(d, i) {
+    //         d.values = d.values.map(function(g, j) {
+    //           var value = {x: g[0], y: g[1]};
+    //           if (g[2]) {
+    //             value.z = g[2];
+    //           }
+    //           return value;
+    //       });
+    //       });
+    //     }
+    //         }
+    //     break;
 
-    case 'area':
-    case 'line':
-      if (chartData.data.length) {
-        if (Array.isArray(chartData.data[0].values) && Array.isArray(chartData.data[0].values[0])) {
-          // Convert array data to objects
-          chartData.data.forEach(function(d, i) {
-            d.values = d.values.map(function(g, j) {
-              var value = {x: g[0], y: g[1]};
-              if (g[2]) {
-                value.z = g[2];
-              }
-              return value;
-            });
-          });
-        }
-      }
-      break;
-
+    //TODO: handle inside multibarChart
     case 'multibar':
-      Chart.stacked(chartData.properties.stacked === false ? false : true);
-      break;
-
     case 'pareto':
-      Chart.stacked(chartData.properties.stacked);
-      break;
+      Chart.stacked(chartData.properties.stacked === false ? false : true);
+        break;
   }
 }
 
@@ -43,15 +41,15 @@ function transformTableData(chartData, chartType, Chart) {
 
   switch (chartType) {
     case 'multibar':
-      data = chartData.data.map(function(d, i) {
+      data = chartData.data.map(function (d, i) {
         var series = {
           key: d.key || strNoLabel,
           count: d.count || null,
           disabled: d.disabled || false,
           series: d.series || i,
-          values: (d._values || d.values).map(function(k) {
-              return {x: k.x, y: (isNaN(k.value) ? k.y : k.value)};
-            })
+          values: (d._values || d.values).map(function (k) {
+            return {x: k.x, y: (isNaN(k.value) ? k.y : k.value)};
+          })
         };
         if (d.type) {
           series.type = d.type;
@@ -66,20 +64,20 @@ function transformTableData(chartData, chartType, Chart) {
       });
       break;
     case 'funnel':
-      data = chartData.data.map(function(d, i) {
+      data = chartData.data.map(function (d, i) {
         return {
           key: d.key || strNoLabel,
           count: d.count || null,
           disabled: d.disabled || false,
           series: d.series || i,
-          values: d.values.map(function(k) {
-              return {x: k.x, y: (isNaN(k.value) ? k.y : k.value)};
-            })
+          values: d.values.map(function (k) {
+            return {x: k.x, y: (isNaN(k.value) ? k.y : k.value)};
+          })
         };
       });
       break;
     case 'pie':
-      data = chartData.data.map(function(d, i) {
+      data = chartData.data.map(function (d, i) {
         return {
           key: d.key || strNoLabel,
           count: d.count || null,
@@ -91,7 +89,7 @@ function transformTableData(chartData, chartType, Chart) {
       break;
     case 'area':
     case 'line':
-      data = chartData.data.map(function(d, i) {
+      data = chartData.data.map(function (d, i) {
         return {
           key: d.key || strNoLabel,
           disabled: d.disabled || false,
@@ -99,21 +97,21 @@ function transformTableData(chartData, chartType, Chart) {
           values: d.values
         };
       });
-      properties.labels = properties.labels || d3.merge(chartData.data.map(function(d) {
-          return d.values.map(function(d, i) {
+      properties.labels = properties.labels || d3.merge(chartData.data.map(function (d) {
+          return d.values.map(function (d, i) {
             return chartType === 'lines' ?
               Chart.lines.x()(d, i) :
               Chart.area.x()(d, i);
           });
         }))
-        .reduce(function(p, c) {
+        .reduce(function (p, c) {
           if (p.indexOf(c) < 0) p.push(c);
           return p;
         }, [])
-        .sort(function(a, b) {
+        .sort(function (a, b) {
           return a - b;
         })
-        .map(function(d, i) {
+        .map(function (d, i) {
           return {group: i + 1, l: Chart.xAxis.tickFormat()(d)};
         });
       break;
@@ -159,7 +157,7 @@ function parseTreemapData(data) {
       // Filter for 30 days from now.
       var d2 = new Date(model.date_closed || '1970-01-01');
       return (d2 - d1) / day_ms <= 30;
-    }).map(function(d) {
+    }).map(function (d) {
       // Include properties to be included in leaves
       return {
         assigned_user_name: d.assigned_user_name,
@@ -170,23 +168,23 @@ function parseTreemapData(data) {
       };
     });
 
-    data = _.groupBy(data, function(m) {
+    data = _.groupBy(data, function (m) {
       return m.assigned_user_name;
     });
 
-    _.each(data, function(value, key, list) {
-      list[key] = _.groupBy(value, function(m) {
+    _.each(data, function (value, key, list) {
+      list[key] = _.groupBy(value, function (m) {
         return m.sales_stage;
       });
     });
 
-    _.each(data, function(value1, key1) {
+    _.each(data, function (value1, key1) {
       var child = [];
-      _.each(value1, function(value2, key2) {
+      _.each(value1, function (value2, key2) {
         if (colorIndices.indexOf('2oppgroup_' + key2) === -1) {
           colorIndices.push('2oppgroup_' + key2);
         }
-        _.each(value2, function(record) {
+        _.each(value2, function (record) {
           record.className = 'stage_' + record.sales_stage.toLowerCase().replace(' ', '');
           record.value = Math.floor(record.amount_usdollar);
           record.colorIndex = '2oppgroup_' + key2;
@@ -210,7 +208,7 @@ function parseTreemapData(data) {
 
     function accumulate(d) {
       if (d.children) {
-        return d.value = d.children.reduce(function(p, v) { return p + accumulate(v); }, 0);
+        return d.value = d.children.reduce(function (p, v) { return p + accumulate(v); }, 0);
       }
       return d.value;
     }

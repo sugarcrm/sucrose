@@ -4,7 +4,7 @@ const fs = require("fs");
 const tape = require("tape");
 const sucrose = require("../../fixtures/build/sucrose.js");
 const tests = require("../../lib/twine.js");
-const spec = require("../../files/transform/spec.json");
+const spec = require("./spec.json");
 
 let type = "transform";
 

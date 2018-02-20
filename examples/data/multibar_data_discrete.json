@@ -1,0 +1,36 @@
+{
+  "properties": {
+    "title": "Total is {{total}}",
+    "total": "$1,890.00",
+    "yDataType": "currency",
+    "xDataType": "ordinal",
+    "groups": [
+      {"label": "Apples"},
+      {"label": "Oranges"},
+      {"label": "Pears"}
+    ],
+    "label": "Fruit",
+    "seriesLabel": "Type",
+    "groupLabel": "Type"
+  },
+  "data": [
+    {
+      "key": "Apples",
+      "values": [
+        {"label": "$89", "x": 1, "y": 89}
+      ]
+    },
+    {
+      "key": "Oranges",
+      "values": [
+        {"label": "($1,234)", "x": 2, "y": -1234}
+      ]
+    },
+    {
+      "key": "Pears",
+      "values": [
+        {"label": "$567", "x": 3, "y": 567}
+      ]
+    }
+  ]
+}

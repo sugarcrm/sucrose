@@ -5,7 +5,6 @@ var sucroseCharts = function() {
     var config = {};
     var defaultConfig = configs.default;
     var chartConfig = configs[type];
-    var k;
     Object.each(defaultConfig, function(k, v) {
       if (!chart[k]) {
         return;
@@ -63,7 +62,7 @@ var sucroseCharts = function() {
           break;
         case 'tick_display':
           if (chart.wrapTicks) {
-            config['wrapTicks'] = v.indexOf('wrap') !== -1
+            config['wrapTicks'] = v.indexOf('wrap') !== -1;
           }
           if (chart.staggerTicks) {
             config['staggerTicks'] = v.indexOf('stagger') !== -1

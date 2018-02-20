@@ -27,7 +27,6 @@
     "Word of mouth",
     "Email",
     "Campaign",
-    "Support Portal User Registration",
     "Other"
   ],
   "color": [
@@ -252,20 +251,6 @@
       ],
       "valuelabels": [
         "10"
-      ],
-      "links": [
-        ""
-      ]
-    },
-    {
-      "label": [
-        "Support Portal User Registration"
-      ],
-      "values": [
-        8
-      ],
-      "valuelabels": [
-        "8"
       ],
       "links": [
         ""

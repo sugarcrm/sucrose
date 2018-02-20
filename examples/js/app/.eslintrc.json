@@ -1,0 +1,66 @@
+{
+  "env": {
+    "browser": true,
+    "es6": false
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "globals": {
+    "sucrose": false,
+    "$": false,
+    "d3": false,
+    "topojson": false,
+    "UglifyJS": false,
+    "CodeMirror": false,
+    "JSZip": false,
+    "saveAs": false,
+    "$demo": true,
+    "$form": true,
+    "$index": true,
+    "$table": true,
+    "$title": true,
+    "$chart": true,
+    "$example": true,
+    "$options": true,
+    "$data": true,
+    "$picker": true,
+    "$config": true,
+    "$menu": true,
+    "Manifest": true,
+    "Config": true,
+    "Data": true,
+    "chartType": true,
+    "chartData": true,
+    "tableData": true,
+    "loader": true,
+    "translationData": true,
+    "postProcessData": true,
+    "transformTableData": true,
+    "store": true,
+    "chartStore": true,
+    "localeData": true,
+    "xIsDatetime": true,
+    "yIsCurrency": true,
+    "sucroseCharts": true,
+    "sucroseTable": true,
+    "generatePackage": true,
+    "generateData": true,
+    "generateConfig": true,
+    "generateImage": true,
+    "touchstart": true,
+    "tooltip": true,
+    "baseUI": true,
+    "fileCatalog": true
+  },
+  "rules": {
+    "no-unused-vars": [
+      "off",
+      "always"
+    ],
+    "no-console": [
+      "off",
+      "always"
+    ]
+  }
+}
