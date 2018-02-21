@@ -1,6 +1,7 @@
 import d3 from 'd3';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import language from '../language.js';
 import headers from '../models/headers.js';
 import line from '../models/line.js';
 import axis from '../models/axis.js';
@@ -19,12 +20,7 @@ export default function lineChart() {
       duration = 0,
       tooltips = true,
       state = {},
-      strings = {
-        legend: {close: 'Hide legend', open: 'Show legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      };
+      strings = language();
 
   var dispatch = d3.dispatch(
         'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
@@ -52,38 +48,32 @@ export default function lineChart() {
       };
 
   var tooltipContent = function(eo, properties) {
-        var seriesName = properties.seriesLabel || 'Key';
-        var seriesLabel = eo.series.key;
-
-        var xIsDatetime = properties.xDataType === 'datetime';
-        var groupName = properties.groupName || (xIsDatetime ? 'Date' : 'Group'); // Set in properties
         // the event object group is set by event dispatcher if x is ordinal
         var group = eo.group || {};
-        var x = eo.point.x; // this is the ordinal index [0+1..n+1] or value index [0..n]
-        var groupLabel = xValueFormat(x, eo.pointIndex, group.label, xIsDatetime, '%x');
-
-        var yIsCurrency = properties.yDataType === 'currency';
-        var valueName = yIsCurrency ? 'Amount' : 'Count';
+        // this is the ordinal index [0+1..n+1] or value index [0..n]
+        var x = eo.point.x;
         var y = eo.point.y;
+        var xIsDatetime = properties.xDataType === 'datetime';
+        var yIsCurrency = properties.yDataType === 'currency';
         // var value = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units for axis
         // for tooltip, we want the full value
-        var valueLabel = utility.numberFormat(y, null, yIsCurrency, locale);
+        var point = {
+          seriesName: properties.seriesName || strings.tooltip.key,
+          seriesLabel: eo.series.key,
+          groupName: properties.groupName || (xIsDatetime ? strings.tooltip.date : strings.tooltip.group),
+          groupLabel: xValueFormat(x, eo.pointIndex, group.label, xIsDatetime, '%x'),
+          valueName: yIsCurrency ? strings.tooltip.amount : strings.tooltip.count,
+          valueLabel: utility.numberFormat(y, null, yIsCurrency, locale)
+        };
 
         var percent;
-        var content = '';
-
-        content += '<p>' + seriesName + ': <b>' + seriesLabel + '</b></p>';
-        content += '<p>' + groupName + ': <b>' + groupLabel + '</b></p>';
-        content += '<p>' + valueName + ': <b>' + valueLabel + '</b></p>';
-
         if (eo.group && utility.isNumeric(eo.group._height)) {
           percent = Math.abs(y * 100 / eo.group._height).toFixed(1);
-          percent = utility.numberFormat(percent, 2, false, locale);
-          content += '<p>Percentage: <b>' + percent + '%</b></p>';
+          point.percent = utility.numberFormat(percent, 2, false, locale);
         }
 
-        return content;
+        return tooltip.multi(point, strings);
       };
 
   var seriesClick = function(data, eo, chart, labels) {
@@ -1025,11 +1015,7 @@ export default function lineChart() {
 
   chart.strings = function(_) {
     if (!arguments.length) { return strings; }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
+    strings = language(_);
     header.strings(strings);
     return chart;
   };

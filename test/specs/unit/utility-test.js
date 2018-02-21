@@ -195,7 +195,7 @@ tests("UNIT: utility -", function(t) {
 
     t.test("isNumeric: checks if a value is a finite number", function(assert) {
         assert.equal(sucrose.utility.isNumeric(123), true);
-        assert.equal(sucrose.utility.isNumeric("123"), false);
+        assert.equal(sucrose.utility.isNumeric("123"), true);
         assert.equal(sucrose.utility.isNumeric(1/0), false);
         assert.equal(sucrose.utility.isNumeric("abc"), false);
         assert.end();

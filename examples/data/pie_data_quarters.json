@@ -3,7 +3,7 @@
     "title": "Count by Quarter",
     "yDataType": "numeric",
     "xDataType": "datetime",
-    "seriesLabel": "Quarter"
+    "seriesName": "Quarter"
   },
   "data": [
     {

@@ -1,6 +1,7 @@
 import d3 from 'd3';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import language from '../language.js';
 
 export default function globeChart() {
 
@@ -36,12 +37,7 @@ export default function globeChart() {
       initialTilt = 0,
       initialRotate = 100,
       state = {},
-      strings = {
-        legend: {close: 'Hide legend', open: 'Show legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      },
+      strings = language(),
       showLabels = true,
       autoSpin = false,
       showGraticule = true,
@@ -558,11 +554,7 @@ export default function globeChart() {
     if (!arguments.length) {
       return strings;
     }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
+    strings = language(_);
     return chart;
   };
 

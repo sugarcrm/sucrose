@@ -1,6 +1,7 @@
 import d3 from 'd3';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import language from '../language.js';
 import headers from '../models/headers.js';
 import funnel from '../models/funnel.js';
 
@@ -19,12 +20,7 @@ export default function funnelChart() {
       tooltips = true,
       state = {},
       exclusiveActive = true,
-      strings = {
-        legend: {close: 'Hide legend', open: 'Show legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      };
+      strings = language();
 
   var dispatch = d3.dispatch('chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove', 'stateChange', 'changeState');
 
@@ -41,16 +37,17 @@ export default function funnelChart() {
   var tt = null;
 
   var tooltipContent = function(eo, properties) {
-        var key = model.fmtKey()(eo);
-        var label = properties.seriesLabel || 'Key';
+        // var name = properties.seriesName || strings.tooltip.key;
         var y = model.getValue()(eo);
         var x = properties.total ? (y * 100 / properties.total).toFixed(1) : 100;
         var yIsCurrency = properties.yDataType === 'currency';
-        var val = utility.numberFormat(y, 2, yIsCurrency, chart.locality());
-        var percent = utility.numberFormat(x, 2, false, chart.locality());
-        return '<p>' + label + ': <b>' + key + '</b></p>' +
-               '<p>' + (yIsCurrency ? 'Amount' : 'Count') + ': <b>' + val + '</b></p>' +
-               '<p>Percent: <b>' + percent + '%</b></p>';
+        var point = {
+          key: model.fmtKey()(eo),
+          label: yIsCurrency ? strings.tooltip.amount : strings.tooltip.count,
+          value: utility.numberFormat(y, 2, yIsCurrency, chart.locality()),
+          percent: utility.numberFormat(x, 2, false, chart.locality())
+        };
+        return tooltip.single(point, strings);
       };
 
   var showTooltip = function(eo, offsetElement, properties) {
@@ -529,11 +526,7 @@ export default function funnelChart() {
 
   chart.strings = function(_) {
     if (!arguments.length) { return strings; }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
+    strings = language(_);
     header.strings(strings);
     return chart;
   };

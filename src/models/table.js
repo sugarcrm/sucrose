@@ -1,5 +1,6 @@
 import d3 from 'd3';
 import utility from '../utility.js';
+import language from '../language.js';
 
 export default function table() {
 
@@ -12,12 +13,7 @@ export default function table() {
       height = 0,
       getX = function (d) { return d.x; },
       getY = function (d) { return d.y; },
-      strings = {
-        legend: {close: 'Hide legend', open: 'Show legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      },
+      strings = language(),
       color = utility.getColor(['#000']);
 
   //============================================================
@@ -236,52 +232,47 @@ export default function table() {
   //------------------------------------------------------------
 
   table.margin = function (_) {
-    if (!arguments.length) return margin;
-    margin.top    = typeof _.top    != 'undefined' ? _.top    : margin.top;
-    margin.right  = typeof _.right  != 'undefined' ? _.right  : margin.right;
-    margin.bottom = typeof _.bottom != 'undefined' ? _.bottom : margin.bottom;
-    margin.left   = typeof _.left   != 'undefined' ? _.left   : margin.left;
-    return table;
-  };
-
-  table.width = function (_) {
-    if (!arguments.length) return width;
-    width = _;
-    return table;
-  };
-
-  table.height = function (_) {
-    if (!arguments.length) return height;
-    height = _;
-    return table;
-  };
-
-  table.x = function (_) {
-    if (!arguments.length) return getX;
-    getX = utility.functor(_);
-    return table;
-  };
-
-  table.y = function (_) {
-    if (!arguments.length) return getY;
-    getY = utility.functor(_);
-    return table;
-  };
-
-  table.strings = function (_) {
-    if (!arguments.length) {
-      return strings;
-    }
+    if (!arguments.length) { return margin; }
     for (var prop in _) {
       if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
+        margin[prop] = _[prop];
       }
     }
     return table;
   };
 
+  table.width = function (_) {
+    if (!arguments.length) { return width; }
+    width = _;
+    return table;
+  };
+
+  table.height = function (_) {
+    if (!arguments.length) { return height; }
+    height = _;
+    return table;
+  };
+
+  table.x = function (_) {
+    if (!arguments.length) { return getX; }
+    getX = utility.functor(_);
+    return table;
+  };
+
+  table.y = function (_) {
+    if (!arguments.length) { return getY; }
+    getY = utility.functor(_);
+    return table;
+  };
+
+  table.strings = function (_) {
+    if (!arguments.length) { return strings; }
+    strings = language(_);
+    return table;
+  };
+
   table.color = function (_) {
-    if (!arguments.length) return color;
+    if (!arguments.length) { return color; }
     color = utility.getColor(_);
     return table;
   };

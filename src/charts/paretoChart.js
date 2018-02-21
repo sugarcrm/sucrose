@@ -1,6 +1,7 @@
 import d3 from 'd3';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import language from '../language.js';
 import multibar from '../models/multibar.js';
 import line from '../models/line.js';
 import axis from '../models/axis.js';
@@ -22,13 +23,10 @@ export default function paretoChart() {
       delay = 0, // transition
       duration = 0, // transition
       state = {},
-      strings = {
+      strings = language({
         barlegend: {close: 'Hide bar legend', open: 'Show bar legend'},
-        linelegend: {close: 'Hide line legend', open: 'Show line legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      },
+        linelegend: {close: 'Hide line legend', open: 'Show line legend'}
+      }),
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       locality = utility.buildLocality();
@@ -1146,11 +1144,7 @@ export default function paretoChart() {
 
   chart.strings = function(_) {
     if (!arguments.length) { return strings; }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
+    strings = language(_);
     barLegend.strings(strings.barlegend);
     lineLegend.strings(strings.linelegend);
     return chart;

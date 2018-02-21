@@ -1,5 +1,6 @@
 import d3 from 'd3';
 import utility from './utility.js';
+import language from './language.js';
 
 var transform = function(json, chartType, barType) {
   var properties = json.properties ? Array.isArray(json.properties) ? json.properties[0] : json.properties : {},
@@ -17,7 +18,7 @@ var transform = function(json, chartType, barType) {
   var xIsOrdinal = false;
 
   //TODO: needs to get chart.strings().noLabel
-  var strNoLabel = 'Undefined';
+  var strNoLabel = language().translate('noLabel');
 
   var getX, getY, parseX, parseY;
 

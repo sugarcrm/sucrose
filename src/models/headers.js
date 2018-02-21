@@ -1,5 +1,6 @@
 import d3 from 'd3';
 import utility from '../utility.js';
+import language from '../language.js';
 import menu from '../models/menu.js';
 
 export default function headers() {
@@ -22,12 +23,7 @@ export default function headers() {
   var alignLegend = 'right';
 
   var direction = 'ltr';
-  var strings = {
-        legend: {close: 'Hide legend', open: 'Show legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      };
+  var strings = language();
 
 
   function model(selection) {
@@ -252,11 +248,7 @@ export default function headers() {
 
   model.strings = function(_) {
     if (!arguments.length) { return strings; }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
+    strings = language(_);
     legend.strings(strings.legend);
     controls.strings(strings.controls);
     return model;

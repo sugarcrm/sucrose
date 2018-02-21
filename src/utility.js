@@ -527,7 +527,8 @@ utility.translation = function(x, y) {
 };
 
 utility.isNumeric = function(value) {
-  return !isNaN(value) && typeof value === 'number' && isFinite(value);
+  var v = parseFloat(value);
+  return !isNaN(v) && typeof v === 'number' && isFinite(v);
 };
 
 utility.toNative = function(value) {
@@ -621,16 +622,24 @@ utility.siValue = function(si) {
   return units[si] || 0;
 };
 
-utility.numberFormat = function(d, p, c, l) {
-  var f, s, m;
-  c = typeof c === 'boolean' ? c : false;
+utility.numberFormat = function(number, precision, currency, locale) {
+  var d, p, c, f, s, m;
+  d = parseFloat(number);
+  p = Math.floor(precision);
+  c = typeof currency === 'boolean' ? currency : false;
   if (!utility.isNumeric(d) || (d === 0 && !c)) {
-    return d.toString();
+    return number.toString();
   }
-  p = utility.isNumeric(p) ? p : c ? 2 : 0;
+  p = utility.isNumeric(p)
+    ? p
+    : typeof locale !== 'undefined'
+      ? locale.precision
+      : c
+        ? 2
+        : 0;
   m = utility.countSigFigsAfter(d);
   p = m && c ? p : Math.min(p, m);
-  f = typeof l === 'undefined' ? d3.format : d3.formatLocale(l).format;
+  f = typeof locale === 'undefined' ? d3.format : d3.formatLocale(locale).format;
   s = c ? '$,' : ',';
   s += m ? ('.' + p + 'f') : '';
   return f(s)(d);
@@ -713,6 +722,16 @@ utility.numberFormatSIFixed = function(d, p, c, l, si) {
   s = c ? '$,' : ',';
   s += '.' + p + 's';
   return f(s, si)(d);
+};
+
+utility.numberFormatPercent = function(number, total, locale) {
+  var t, n, d;
+  t = parseFloat(total);
+  n = utility.isNumeric(t) && t > 0 ? (number * 100 / t) : 100;
+  d = utility.numberFormat(n, locale.precision, false, locale);
+  //TODO: d3.format does not support locale percent formatting (boo)
+  //Some countries have space between number and symbol and some countries put symbol at the beginning
+  return d + '%';
 };
 
 // Date functions
@@ -979,10 +998,9 @@ utility.buildLocality = function(l, d) {
         'MMM': '%b',
         'y': '%Y'
       };
-  var def;
 
   Object.getOwnPropertyNames(locale).forEach(function(key) {
-    def = locale[key];
+    var def = locale[key];
     definition[key] = !deep || !Array.isArray(def) ? def : unfer(def);
   });
 

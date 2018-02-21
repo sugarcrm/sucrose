@@ -1,5 +1,5 @@
 /*
-Copyright 2017 SugarCRM, Inc.
+Copyright 2018 SugarCRM, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -298,11 +298,9 @@ svg.sc-chart .calc-text-strings,
   padding: 5px;
   pointer-events: none;
   opacity: 0;
-  filter: alpha(opacity=0);
 }
 .tooltip.in {
   opacity: 1;
-  filter: alpha(opacity=100);
 }
 .tooltip.top {
   margin-top: -3px;
@@ -357,13 +355,6 @@ svg.sc-chart .calc-text-strings,
   border-color: transparent;
   border-style: solid;
 }
-.tooltip-status {
-  margin-top: 5px;
-  padding-top: 2px;
-  border-top: 1px solid #7b7b7b;
-  color: #dddddd;
-  font-style: italic;
-}
 .tooltip.top .tooltip-arrow {
   bottom: 0;
   left: 50%;
@@ -391,6 +382,51 @@ svg.sc-chart .calc-text-strings,
   margin-left: -5px;
   border-width: 0 5px 5px;
   border-bottom-color: #000;
+}
+.sc-tooltip .tooltip-inner {
+  background-color: #555;
+  border: 1px solid #000;
+  text-align: left;
+  max-width: 220px;
+  padding: 3px 6px;
+  box-shadow: 2px 2px 4px 1px rgba(0, 0, 0, 0.2);
+}
+.sc-tooltip .tooltip-header {
+  padding-bottom: 3px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid #7b7b7b;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.sc-tooltip .tooltip-grid {
+  display: table;
+}
+.sc-tooltip .tooltip-grid p {
+  display: table-row;
+}
+.sc-tooltip .tooltip-grid span {
+  display: table-cell;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 170px;
+}
+.sc-tooltip .tooltip-grid span:first-child {
+  color: #dddddd;
+  padding-right: 6px;
+  text-align: right;
+  max-width: 50px;
+}
+.sc-tooltip .tooltip-status {
+  padding-top: 2px;
+  margin-top: 3px;
+  border-top: 1px solid #7b7b7b;
+  color: #dddddd;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 /**********
 *  Legend

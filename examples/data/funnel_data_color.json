@@ -4,7 +4,7 @@
     "total": 675,
     "scale": 1000,
     "yDataType": "currency",
-    "seriesLabel": "Stage"
+    "seriesName": "Stage"
   },
   "data": [
     {

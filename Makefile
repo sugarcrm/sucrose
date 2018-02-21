@@ -243,9 +243,13 @@ npm-sugar:
 cover: sucrose.js
 	npm run instrument
 
-test-data:
+instrument:
 	make sucrose.js DEV=true
 	npm run instrument
+
+test: instrument
+	npm test
+test-data: instrument
 	npm run test-data
 
 #-----

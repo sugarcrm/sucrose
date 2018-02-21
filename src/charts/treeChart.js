@@ -1,5 +1,6 @@
 import d3 from 'd3';
 import utility from '../utility.js';
+import language from '../language.js';
 
 export default function treeChart() {
   // issues: 1. zoom slider doesn't zoom on chart center

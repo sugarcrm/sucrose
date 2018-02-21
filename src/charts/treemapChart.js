@@ -1,6 +1,7 @@
 import d3 from 'd3';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import language from '../language.js';
 import headers from '../models/headers.js';
 import treemap from '../models/treemap.js';
 
@@ -21,12 +22,7 @@ export default function treemapChart() {
       //create a clone of the d3 array
       colorArray = d3.scaleOrdinal(d3.schemeCategory20).range().map(utility.identity),
       state = {},
-      strings = {
-        legend: {close: 'Hide legend', open: 'Show legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      };
+      strings = language();
 
   var dispatch = d3.dispatch(
         'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
@@ -445,11 +441,7 @@ export default function treemapChart() {
 
   chart.strings = function(_) {
     if (!arguments.length) { return strings; }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
+    strings = language(_);
     header.strings(strings);
     return chart;
   };

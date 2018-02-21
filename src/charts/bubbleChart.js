@@ -1,6 +1,7 @@
 import d3 from 'd3';
 import utility from '../utility.js';
 import tooltip from '../tooltip.js';
+import language from '../language.js';
 import headers from '../models/headers.js';
 import scatter from '../models/scatter.js';
 import axis from '../models/axis.js';
@@ -19,12 +20,7 @@ export default function bubbleChart() {
       duration = 0,
       tooltips = true,
       state = {},
-      strings = {
-        legend: {close: 'Hide legend', open: 'Show legend'},
-        controls: {close: 'Hide controls', open: 'Show controls'},
-        noData: 'No Data Available.',
-        noLabel: 'undefined'
-      };
+      strings = language();
 
   var dispatch = d3.dispatch(
         'chartClick', 'elementClick', 'tooltipShow', 'tooltipHide', 'tooltipMove',
@@ -733,11 +729,7 @@ export default function bubbleChart() {
 
   chart.strings = function(_) {
     if (!arguments.length) { return strings; }
-    for (var prop in _) {
-      if (_.hasOwnProperty(prop)) {
-        strings[prop] = _[prop];
-      }
-    }
+    strings = language(_);
     header.strings(strings);
     return chart;
   };

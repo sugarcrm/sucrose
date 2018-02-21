@@ -1,5 +1,6 @@
 import d3 from 'd3';
 import utility from '../utility.js';
+import language from '../language.js';
 
 export default function menu() {
 
@@ -24,11 +25,7 @@ export default function menu() {
       collapsed = false,
       rowsCount = 3, //number of rows to display if showAll = false
       enabled = false,
-      strings = {
-        close: 'Hide legend',
-        type: 'Show legend',
-        noLabel: 'undefined'
-      },
+      strings = language(),
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getKey = function(d) {
         return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && utility.isNumeric(d.key)) ? d.key : legend.strings().noLabel;
@@ -773,6 +770,7 @@ export default function menu() {
     if (!arguments.length) {
       return strings;
     }
+    // strings = language(_);
     strings = _;
     return legend;
   };
