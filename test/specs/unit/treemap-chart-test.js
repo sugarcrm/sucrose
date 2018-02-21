@@ -34,7 +34,7 @@ tests("UNIT: treemapChart -", function(t) {
         assert.plan(4);
         let opts = {
             width: 100,
-            id: function(){return "asdf";},
+            id: function(){ return "asdf"; },
             showTitle: false,
             strings: {
                 noLabel: "there is no label"
@@ -140,14 +140,16 @@ tests("UNIT: treemapChart -", function(t) {
 
     // Masks header module
     t.test("strings: ", function(assert) {
-        assert.plan(3);
+        assert.plan(7);
         let def = {
             legend: {close: "Hide legend", open: "Show legend"},
-            controls: {close: "Hide controls", open: "Show controls"},
             noData: "No Data Available.",
             noLabel: "undefined"
         };
-        assert.deepEqual(_chart.strings(), def, "returns default 'hashmap' value");
+        let defaultStrings = _chart.strings();
+        assert.deepEqual(defaultStrings.legend, def.legend, "returns default 'hashmap' value legend");
+        assert.equal(defaultStrings.noData, def.noData, "returns default 'hashmap' value noData");
+        assert.equal(defaultStrings.noLabel, "undefined", "returns default 'hashmap' value noLabel");
         let val = {
             legend: {close: "fdsa", open: "asdf"},
             controls: {close: "fdsa", open: "asdf"},
@@ -155,7 +157,10 @@ tests("UNIT: treemapChart -", function(t) {
             noLabel: "asdf"
         };
         _chart.strings(val);
-        assert.deepEqual(_chart.strings(), val, "returns set value");
+        let modifiedStrings = _chart.strings();
+        assert.deepEqual(modifiedStrings.legend, val.legend, "returns set value");
+        assert.equal(modifiedStrings.noData, val.noData, "returns set value");
+        assert.equal(modifiedStrings.noLabel, val.noLabel, "returns set value");
         assert.deepEqual(_chart.legend.strings(), val.legend, "legend returns set value");
         t.register(assert, type);
     });

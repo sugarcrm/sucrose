@@ -222,7 +222,7 @@ tests("UNIT: paretoChart -", function(t) {
 
     // Masks header module
     t.test("strings: ", function(assert) {
-        assert.plan(4);
+        assert.plan(9);
         let def = {
             barlegend: {close: "Hide bar legend", open: "Show bar legend"},
             linelegend: {close: "Hide line legend", open: "Show line legend"},
@@ -230,7 +230,11 @@ tests("UNIT: paretoChart -", function(t) {
             noData: "No Data Available.",
             noLabel: "undefined"
         };
-        assert.deepEqual(_chart.strings(), def, "returns default 'hashmap' value");
+        let defaultStrings = _chart.strings();
+        assert.deepEqual(defaultStrings.barlegend, def.barlegend, "returns default 'hashmap' value legend");
+        assert.deepEqual(defaultStrings.linelegend, def.linelegend, "returns default 'hashmap' value legend");
+        assert.equal(defaultStrings.noData, def.noData, "returns default 'hashmap' value noData");
+        assert.equal(defaultStrings.noLabel, "undefined", "returns default 'hashmap' value noLabel");
         let val = {
             barlegend: {close: "fdsa", open: "asdf"},
             linelegend: {close: "fdsa", open: "asdf"},
@@ -239,9 +243,12 @@ tests("UNIT: paretoChart -", function(t) {
             noLabel: "asdf"
         };
         _chart.strings(val);
-        assert.deepEqual(_chart.strings(), val, "returns set value");
+        let modifiedStrings = _chart.strings();
+        assert.deepEqual(modifiedStrings.barlegend, val.barlegend, "returns set value");
+        assert.deepEqual(modifiedStrings.linelegend, val.linelegend, "returns set value");
+        assert.equal(modifiedStrings.noData, val.noData, "returns set value");
+        assert.equal(modifiedStrings.noLabel, val.noLabel, "returns set value");
         assert.deepEqual(_chart.barLegend.strings(), val.barlegend, "legend returns set value");
-        assert.deepEqual(_chart.lineLegend.strings(), val.linelegend, "legend returns set value");
         t.register(assert, type);
     });
 

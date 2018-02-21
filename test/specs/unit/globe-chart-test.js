@@ -148,22 +148,22 @@ tests("UNIT: globeChart -", function(t) {
 
     // Masks header module
     t.test("strings: ", function(assert) {
-        assert.plan(2);
+        assert.plan(4);
         let def = {
-            legend: {close: "Hide legend", open: "Show legend"},
-            controls: {close: "Hide controls", open: "Show controls"},
             noData: "No Data Available.",
             noLabel: "undefined"
         };
-        assert.deepEqual(_chart.strings(), def, "returns default value");
+        let defaultStrings = _chart.strings();
+        assert.equal(defaultStrings.noData, def.noData, "returns default 'hashmap' value noData");
+        assert.equal(defaultStrings.noLabel, "undefined", "returns default 'hashmap' value noLabel");
         let val = {
-            legend: {close: "fdsa", open: "asdf"},
-            controls: {close: "fdsa", open: "asdf"},
             noData: "asdf",
             noLabel: "asdf"
         };
         _chart.strings(val);
-        assert.deepEqual(_chart.strings(), val, "returns set value");
+        let modifiedStrings = _chart.strings();
+        assert.equal(modifiedStrings.noData, val.noData, "returns set value");
+        assert.equal(modifiedStrings.noLabel, val.noLabel, "returns set value");
         t.register(assert, type);
     });
 
