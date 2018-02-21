@@ -276,6 +276,7 @@ export default function multibar() {
         var c = color(d, i);
         return gradient(d, gradientId, params, c, defs);
       };
+      var noGradient = fill === color;
 
       //------------------------------------------------------------
 
@@ -357,7 +358,13 @@ export default function multibar() {
       var barText = bars.select('.sc-label-value');
 
       //------------------------------------------------------------
-
+      function getContrastColor(d, i) {
+        var fillColor = fill(d);
+        var backColor = fillColor === 'inherit'
+          ? d3.select('.' + classes(d, i).split(' ').join('.')).style('color')
+          : fillColor;
+        return utility.getTextContrast(backColor, i);
+      }
       function barLength(d, i) {
         return Math.max(Math.round(Math.abs(y(getY(d, i)) - y(0))), 0);
       }
@@ -383,11 +390,6 @@ export default function multibar() {
         }
         return 'translate(' + trans[valX] + ',' + trans[valY] + ')';
       }
-      function barTextureFill(d, i) {
-        var backColor = fill(d),
-            foreColor = utility.getTextContrast(backColor, i);
-        return foreColor;
-      }
 
       bars
         .attr('class', function(d, i) {
@@ -409,7 +411,7 @@ export default function multibar() {
           .attr(valX, 0)
           .attr(dimY, barLength)
           .attr(dimX, barThickness)
-          .style('fill', barTextureFill);
+          .style('fill', getContrastColor);
       }
 
       //------------------------------------------------------------
@@ -520,12 +522,7 @@ export default function multibar() {
         return offset;
       }
       function getLabelFill(d, i, j) {
-        if (labelsOutside) {
-          return '#000';
-        }
-        var backColor = fill(d),
-            textColor = utility.getTextContrast(backColor, i);
-        return textColor;
+        return labelsOutside ? '#000' : getContrastColor(d, i);
       }
       function getLabelOpacity(d, i) {
         if (labelsOutside) {
@@ -599,7 +596,7 @@ export default function multibar() {
         return verticalLabels ? d.labelWidth : d.labelHeight;
       }
       function getLabelBoxFill(d, i) {
-        return labelsOutside ? '#fff' : fill(d, i);
+        return labelsOutside ? '#fff' : color(d, i);
       }
 
       if (showValues) {

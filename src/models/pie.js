@@ -345,8 +345,13 @@ export default function pie() {
             return startAngle(d) === endAngle(d) ? 0 : 1;
           })
           .style('fill', function(d, i) {
-            var backColor = d3.select(this.parentNode).style('fill');
-            return utility.getTextContrast(backColor, i);
+            var series = d.series || d;
+            var index = series.seriesIndex || i;
+            var fillColor = fill(series);
+            var backColor = fillColor === 'inherit'
+              ? d3.select('.' + classes(series, index).split(' ').join('.')).style('color')
+              : fillColor;
+            return utility.getTextContrast(backColor, index);
           });
       }
 

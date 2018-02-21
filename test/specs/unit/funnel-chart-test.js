@@ -314,10 +314,11 @@ tests("UNIT: funnelChart -", function(t) {
     });
     t.test("color: ", function(assert) {
         assert.plan(5);
+        _chart.colorData("default");
         let def = _chart.color();
         assert.equal(typeof def, "function", "returns default function");
-        assert.equal(_chart.color()({series: {seriesIndex: 0}, seriesIndex: 0}, 0), "#1f77b4", "returns indexed color");
-        assert.equal(_chart.color()({series: {seriesIndex: 0, color: "#369"}, seriesIndex: 0}, 0), "#369", "returns data defined color");
+        assert.equal(_chart.color()({seriesIndex: 0}, 0), "#1f77b4", "returns indexed color");
+        assert.equal(_chart.color()({seriesIndex: 0, color: "#369"}, 0), "#369", "returns data defined color");
         let val = function(){return "#000";};
         _chart.color(val);
         assert.equal(_chart.color(), val, "returns set function");

@@ -21,7 +21,7 @@ export default function funnel() {
       direction = 'ltr',
       delay = 0,
       duration = 0,
-      color = function(d, i) { return utility.defaultColor()(d.series, d.seriesIndex); },
+      color = function(d, i) { return utility.defaultColor()(d, d.seriesIndex); },
       gradient = utility.colorLinearGradient,
       fill = color,
       textureFill = false,
@@ -762,8 +762,13 @@ export default function funnel() {
       }
 
       function fmtFill(d, i, j) {
-        var backColor = d3.select(this.parentNode).style('fill');
-        return utility.getTextContrast(backColor, i);
+        var series = d.series || d;
+        var index = series.seriesIndex || i;
+        var fillColor = fill(series);
+        var backColor = fillColor === 'inherit'
+          ? d3.select('.' + classes(series, index).split(' ').join('.')).style('color')
+          : fillColor;
+        return utility.getTextContrast(backColor, index);
       }
 
       function fmtDirection(d) {
@@ -807,6 +812,10 @@ export default function funnel() {
             .attr('height', d.labelHeight + 4)
             .attr('rx', 2)
             .attr('ry', 2)
+            //NOTE: not sure is we want to do this?
+            // .style('fill', function(d, i) {
+            //   return color(d.series, i);
+            // })
             .style('fill-opacity', 1);
         });
       }

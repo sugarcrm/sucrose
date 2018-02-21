@@ -48,7 +48,7 @@ export default function treemap() {
   // Excludes leaves
   function reduceGroups(d) {
     var data = d.data ? d.data : d;
-    var name = groupBy(data);
+    var name = groupBy(data).toLowerCase();
     var i, l;
     if (name && NODES.indexOf(name) === -1) {
       NODES.push(name);
@@ -77,6 +77,10 @@ export default function treemap() {
           availableHeight = height - margin.top - margin.bottom,
           container = d3.select(this),
           transitioning;
+
+      function getColorIndex(d, i) {
+        return d.colorIndex || NODES.indexOf(groupBy(d).toLowerCase()) || i;
+      }
 
       // We only need to define TREE and NODES once on initial load
       // TREE is always available in its initial state and NODES is immutable
@@ -132,8 +136,7 @@ export default function treemap() {
       // Set up the gradient constructor function
       model.gradientFill = function(d, i, params) {
         var gradientId = id + '-' + i;
-        var iColor = (d.parent.data.colorIndex || NODES.indexOf(groupBy(d.parent.data)) || i);
-        var c = color(d, iColor, NODES.length);
+        var c = color(d, getColorIndex(d.parent.data, i), NODES.length);
         return gradient(d, gradientId, params, c, defs);
       };
 
@@ -204,22 +207,19 @@ export default function treemap() {
         }
 
         children
-          .attr('class', classes)
+          .attr('class', function(d, i) {
+            // console.log(d.parent);
+            return classes(d, getColorIndex(d.parent.data, i));
+          })
           .attr('fill', function(d, i) {
-            // while (d.depth > 1) {
-            //   d = d.parent;
-            // }
-            // return color(groupBy(d));
-            var iColor = (d.parent.data.colorIndex || NODES.indexOf(getKey(d.parent.data)) || i);
-            return this.getAttribute('fill') || fill(d, iColor, NODES.length);
+            return this.getAttribute('fill') || fill(d, getColorIndex(d.parent.data, i), NODES.length);
           })
             .call(rect);
 
         if (textureFill) {
           parents.select('rect.sc-texture')
             .style('fill', function(d, i) {
-              var iColor = (d.parent.data.colorIndex || NODES.indexOf(getKey(d.parent.data)) || i);
-              var backColor = this.getAttribute('fill') || fill(d, iColor, NODES.length),
+              var backColor = this.getAttribute('fill') || fill(d, getColorIndex(d.parent.data, i), NODES.length),
                   foreColor = utility.getTextContrast(backColor, i);
               return foreColor;
             })
@@ -235,8 +235,13 @@ export default function treemap() {
 
         label
           .text(function(d) {
-              return getKey(d.data);  //groupBy(d);
-           })
+            return getKey(d.data);  //groupBy(d);
+          })
+          .style('fill', function(d, i) {
+            var backColor = this.getAttribute('fill') || fill(d, getColorIndex(d.data, i), NODES.length),
+                foreColor = utility.getTextContrast(backColor, i);
+            return foreColor;
+          })
             .call(text);
 
         // Parent event target
