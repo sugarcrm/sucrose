@@ -152,11 +152,11 @@ export default function bubbleChart() {
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
-      function displayNoData(data) {
+      function displayNoData(data, msg) {
         var hasData = data && data.length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, strings.noData, x, y);
+        return utility.displayNoData(hasData, container, (msg || strings.noData), x, y);
       }
 
       // Check to see if there's nothing to show.
@@ -420,6 +420,11 @@ export default function bubbleChart() {
         innerMargin.top += headerHeight;
         innerMargin.top += maxBubbleSize;
         innerHeight = availableHeight - innerMargin.top - innerMargin.bottom;
+
+        if (innerHeight < 100) {
+          displayNoData(null, strings.displayError);
+          return chart;
+        }
 
 
         //------------------------------------------------------------

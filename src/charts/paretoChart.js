@@ -156,11 +156,13 @@ export default function paretoChart() {
       //------------------------------------------------------------
       // Private method for displaying no data message.
 
-      function displayNoData(d) {
-        var hasData = d && d.length && d.filter(function(d) { return d.values && d.values.length; }).length;
+      function displayNoData(data, msg) {
+        var hasData = data && data.length && data.filter(function(series) {
+          return !series.disabled && Array.isArray(series.values) && series.values.length;
+        }).length;
         var x = (containerWidth - margin.left - margin.right) / 2 + margin.left;
         var y = (containerHeight - margin.top - margin.bottom) / 2 + margin.top;
-        return utility.displayNoData(hasData, container, strings.noData, x, y);
+        return utility.displayNoData(hasData, container, (msg || strings.noData), x, y);
       }
 
       // Check to see if there's nothing to show.
