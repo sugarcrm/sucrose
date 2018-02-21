@@ -251,7 +251,6 @@ tests("UNIT: utility -", function(t) {
         t.register(assert, type);
     });
 
-
     t.test("siDecimal: returns the thousands magnitude of number", function(assert) {
         assert.equal(sucrose.utility.siDecimal(10), 1e1);
         assert.equal(sucrose.utility.siDecimal(1000), 1e3);
@@ -465,6 +464,23 @@ tests("UNIT: utility -", function(t) {
               "thousands": " "
             });
         assert.equal(fmtr(Math.PI * 1000, 1, true, locale), "$3 141,6");
+        assert.end();
+        t.register(assert, type);
+    });
+
+    t.test("numberFormatPercent: formats number as a percentage with given precision", function(assert) {
+        const fmtr = sucrose.utility.numberFormatPercent;
+        assert.equal(fmtr(1, 1), "100%");
+        assert.equal(fmtr(1, 0), "100%");
+        assert.equal(fmtr(0, 1), "0%");
+        assert.equal(fmtr(1, 2), "50%");
+        // yeah, i know it technically breaks unitized tests
+        let locale = sucrose.utility.buildLocality({
+              "decimal": ",",
+              "thousands": " ",
+              "precision": 3
+            });
+        assert.equal(fmtr(Math.PI, 100, locale), "3,142%");
         assert.end();
         t.register(assert, type);
     });

@@ -725,10 +725,11 @@ utility.numberFormatSIFixed = function(d, p, c, l, si) {
 };
 
 utility.numberFormatPercent = function(number, total, locale) {
-  var t, n, d;
+  var t, n, d, p;
   t = parseFloat(total);
   n = utility.isNumeric(t) && t > 0 ? (number * 100 / t) : 100;
-  d = utility.numberFormat(n, locale.precision, false, locale);
+  p = locale && typeof locale.precision !== 'undefined' ? locale.precision : 1;
+  d = utility.numberFormat(n, p, false, locale);
   //TODO: d3.format does not support locale percent formatting (boo)
   //Some countries have space between number and symbol and some countries put symbol at the beginning
   return d + '%';

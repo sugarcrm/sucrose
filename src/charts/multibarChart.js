@@ -390,14 +390,6 @@ export default function multibarChart() {
 
       setGroupLabels(groupData);
 
-      // isDiscrete = groupData.length === modelData.length &&
-      //   modelData
-      //     .reduce(function(a, c, i) {
-      //       return a &&
-      //         Array.isArray(c.values) &&
-      //         c.values.length === 1 &&
-      //         c.key === groupLabels[i];
-      //     }, true);
       isDiscrete = transform.areValuesDiscrete(modelData, groupData, model.x(), model.y());
 
       // Calculate group totals and height

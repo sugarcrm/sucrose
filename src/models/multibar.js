@@ -372,10 +372,13 @@ export default function multibar() {
             y: Math.round(y(d.y0))
           };
         } else {
+          // i is the group index, seri is the virtual series index, seriesIndex is the actual index
           trans = {
             x: Math.round(d.seri * barThickness() + x(getX(d, i))),
             //TODO: clean this up
-            y: Math.round(getY(d, i) < 0 ? (vertical ? y(0) : y(getY(d, i))) : (vertical ? y(getY(d, i)) : y(0)))
+            y: Math.round(getY(d, i) < 0
+              ? (vertical ? y(0) : y(getY(d, i)))
+              : (vertical ? y(getY(d, i)) : y(0)))
           };
         }
         return 'translate(' + trans[valX] + ',' + trans[valY] + ')';

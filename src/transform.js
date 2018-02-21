@@ -24,7 +24,7 @@ var transform = (function() {
   }
 
   function hasValue(d) {
-    //true => [{}, {}] || [[], []]
+    //true => {y: 11} || {value: 11}
     return d.hasOwnProperty('value') || d.hasOwnProperty('y');
   }
 
@@ -34,6 +34,7 @@ var transform = (function() {
   }
 
   function hasSingleValue(series) {
+    //true => [{}]
     return hasValues(series) && series.values.length === 1;
   }
 
@@ -303,40 +304,42 @@ var transform = (function() {
       getY = valuesAreArrays ? getArrayY : valuesAreObjects ? getObjectY : getValueY;
       valuesAreDiscrete = areValuesDiscrete(seriesData, groupData, getX, getY);
 
-      parseX = xIsOrdinal ?
-        // expand x for each series
-        // [['a'],['b'],['c']] =>
-        // [[0,'a'],[1,'b'],[2,'c']]
-        function(d, i) {
+      parseX = xIsOrdinal
+        ? function(d, i) {
+          // expand x for each series
+          // [['a'],['b'],['c']] =>
+          // [[0,'a'],[1,'b'],[2,'c']]
           return i + 1;
-        } : xIsDatetime ?
-        function(d, i) {
-          var x, dateString, date;
-          x = getX(d, i);
-          // x => 1970, x => '1/1/1980', x => '1980-1-1', x => 1138683600000
-          // if the date value provided is a year
-          // append day and month parts to get correct UTC offset
-          // x = x + '-1-1';
-          // else if x is an integer date then treating as integer
-          // is ok because xDataType will force formatting on render
-          dateString = x.toString().length === 4 ? '1/1/' + x.toString() : x;
-          if (typeof dateString === 'string' && dateString.indexOf('GMT') === -1) {
-            dateString += ' GMT';
+        }
+        : xIsDatetime
+          ? function(d, i) {
+            var x, dateString, date;
+            x = getX(d, i);
+            // x => 1970, x => '1/1/1980', x => '1980-1-1', x => 1138683600000
+            // if the date value provided is a year
+            // append day and month parts to get correct UTC offset
+            // x = x + '-1-1';
+            // else if x is an integer date then treating as integer
+            // is ok because xDataType will force formatting on render
+            dateString = x.toString().length === 4 ? '1/1/' + x.toString() : x;
+            if (typeof dateString === 'string' && dateString.indexOf('GMT') === -1) {
+              dateString += ' GMT';
+            }
+            date = new Date(dateString);
+            return date.valueOf();
           }
-          date = new Date(dateString);
-          return date.valueOf();
-        } : xIsNumeric ?
-        // convert flat array to indexed arrays
-        // [['a','b'],['c','d']] => [[[0,'a'],[1,'b']],[[0,'c'],[1,'d']]]
-        // function(d, i, j) {
-        //   return j + 1;
-        // } :
-        function(d, i) {
-          return parseFloat(getX(d, i));
-        } :
-        function(d, i) {
-          return getX(d, i);
-        };
+          : xIsNumeric
+          // convert flat array to indexed arrays
+          // [['a','b'],['c','d']] => [[[0,'a'],[1,'b']],[[0,'c'],[1,'d']]]
+          // function(d, i, j) {
+          //   return j + 1;
+          // } :
+            ? function(d, i) {
+              return parseFloat(getX(d, i));
+            }
+            : function(d, i) {
+              return getX(d, i);
+            };
       parseY = function(d, i) {
         return parseFloat(getY(d, i));
       };

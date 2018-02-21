@@ -53,13 +53,16 @@ const test = addAssertions(tape, {
                 instance = sucrose.charts.treemapChart();
                 break;
             case "tooltip":
-                instance = sucrose.tooltip();
+                instance = sucrose.tooltip;
                 break;
             case "utility":
                 instance = sucrose.utility;
                 break;
             case "transform":
                 instance = sucrose.transform;
+                break;
+            case "language":
+                instance = sucrose.language;
                 break;
             default:
                 instance = new Function();
@@ -72,7 +75,7 @@ const test = addAssertions(tape, {
     },
 
     register(assert, type) {
-        let name = assert.name.match(/ - ([\w]*)\:/)[1];
+        let name = assert.name.match(/ - ([\w]*):/)[1];
         tape._methods[type] = tape._methods[type].filter(function(d) {
             return d !== name;
         });
