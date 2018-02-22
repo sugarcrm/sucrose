@@ -161,14 +161,14 @@ export default function scatter() {
 
         if (x.domain()[0] === x.domain()[1]) {
           x.domain()[0] ?
-              x.domain([x.domain()[0] - x.domain()[0] * 0.1, x.domain()[1] + x.domain()[1] * 0.1]) :
-              x.domain([-1, 1]);
+            x.domain([x.domain()[0] - x.domain()[0] * 0.1, x.domain()[1] + x.domain()[1] * 0.1]) :
+            x.domain([-1, 1]);
         }
 
         if (y.domain()[0] === y.domain()[1]) {
           y.domain()[0] ?
-              y.domain([y.domain()[0] - y.domain()[0] * 0.1, y.domain()[1] + y.domain()[1] * 0.1]) :
-              y.domain([-1, 1]);
+            y.domain([y.domain()[0] - y.domain()[0] * 0.1, y.domain()[1] + y.domain()[1] * 0.1]) :
+            y.domain([-1, 1]);
         }
 
         z.domain(zDomain || d3.extent(seriesData.map(function(d) { return d.size; }).concat(forceZ)))

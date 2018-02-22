@@ -477,7 +477,21 @@ export default function multibarChart() {
           xDateFormat = null,
           xAxisFormat = null,
           yAxisFormat = null,
-          barFormat = null;
+          barFormat = null,
+          maxGroup = 0;
+
+      var valuesAreIntegers = d3.max(d3.merge(modelData.map(function(series) {
+          return series.values.map(function(value) {
+            var y = model.y()(value);
+            return utility.countSigFigsAfter(y);
+          });
+        }))) === 0;
+
+      if (valuesAreIntegers) {
+        maxGroup = d3.max(groupData, function(group) {
+          return group.total;
+        });
+      }
 
       var yAxisFormatProperties = {
         axis: null,
@@ -735,7 +749,7 @@ export default function multibarChart() {
 
         function yAxisRender() {
           yAxis
-            .ticks(innerHeight / 48)
+            .ticks(valuesAreIntegers && maxGroup < 10 ? maxGroup : innerHeight / 48)
             .tickSize(vertical ? -innerWidth : -innerHeight, 0)
             .margin(innerMargin);
           yAxis_wrap
