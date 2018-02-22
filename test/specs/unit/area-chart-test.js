@@ -433,7 +433,6 @@ tests("UNIT: areaChart -", function(t) {
         t.register(assert, type);
     });
 
-
     t.test("pointRadius: ", function(assert) {
         assert.plan(2);
         let def = 3;
@@ -489,6 +488,7 @@ tests("UNIT: areaChart -", function(t) {
             "thousands": ",",
             "grouping": [3],
             "currency": ["$", ""],
+            "precision": 2,
             "periods": ["AM", "PM"],
             "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
             "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
@@ -526,6 +526,7 @@ tests("UNIT: areaChart -", function(t) {
             "thousands": " ",
             "grouping": [3],
             "currency": ["$", ""],
+            "precision": 2,
             "periods": ["AM", "PM"],
             "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
             "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],

@@ -974,6 +974,7 @@ utility.buildLocality = function(l, d) {
         'thousands': ',',
         'grouping': [3],
         'currency': ['$', ''],
+        'precision': 2,
         'periods': ['AM', 'PM'],
         'days': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
         'shortDays': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
