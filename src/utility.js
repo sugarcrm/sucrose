@@ -623,22 +623,25 @@ utility.siValue = function(si) {
 };
 
 utility.numberFormat = function(number, precision, currency, locale) {
-  var d, p, c, f, s, m;
+  var d, c, m, p, f, s;
   d = parseFloat(number);
-  p = Math.floor(precision);
   c = typeof currency === 'boolean' ? currency : false;
   if (!utility.isNumeric(d) || (d === 0 && !c)) {
     return number.toString();
   }
-  p = utility.isNumeric(p)
-    ? p
+  m = utility.countSigFigsAfter(d);
+  p = utility.isNumeric(precision)
+    ? Math.floor(precision)
     : typeof locale !== 'undefined'
       ? locale.precision
       : c
         ? 2
-        : 0;
-  m = utility.countSigFigsAfter(d);
-  p = m && c ? p : Math.min(p, m);
+        : null;
+  p = !utility.isNumeric(p)
+    ? m
+    : m && c
+      ? p
+      : Math.min(p, m);
   f = typeof locale === 'undefined' ? d3.format : d3.formatLocale(locale).format;
   s = c ? '$,' : ',';
   s += m ? ('.' + p + 'f') : '';
