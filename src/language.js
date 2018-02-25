@@ -25,7 +25,8 @@ var language = (function() {
     var strings = {
       legend: {
         close: 'Hide legend',
-        open: 'Show legend'
+        open: 'Show legend',
+        noLabel: 'undefined'
       },
       controls: {
         close: 'Hide controls',

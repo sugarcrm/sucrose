@@ -428,8 +428,8 @@ dreams.tests("INT: multibarChart -", function(t) {
         var d, result;
         d = JSON.parse(json);
         chart.width(200).height(200).strings({
-            legend: {close: "fdsa", open: "asdf"},
-            controls: {close: "fdsa", open: "asdf"},
+            legend: {close: "fdsa", open: "asdf", noLabel: "asdf"},
+            controls: {close: "fdsa", open: "asdf", noLabel: "asdf"},
             noData: "asdf",
             noLabel: "asdf"
         });

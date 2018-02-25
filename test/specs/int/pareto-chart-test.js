@@ -416,9 +416,9 @@ dreams.tests("INT: paretoChart -", function(t) {
         var d, result;
         d = JSON.parse(json);
         chart.width(200).height(200).strings({
-            barlegend: {close: "fdsa", open: "asdf"},
-            linelegend: {close: "fdsa", open: "asdf"},
-            controls: {close: "fdsa", open: "asdf"},
+            barLegend: {close: "fdsa", open: "asdf", noLabel: "asdf"},
+            lineLegend: {close: "fdsa", open: "asdf", noLabel: "asdf"},
+            controls: {close: "fdsa", open: "asdf", noLabel: "asdf"},
             noData: "asdf",
             noLabel: "asdf"
         });

@@ -201,7 +201,7 @@ tests("UNIT: areaChart -", function(t) {
     t.test("strings: ", function(assert) {
         assert.plan(7);
         let def = {
-            legend: {close: "Hide legend", open: "Show legend"},
+            legend: {close: "Hide legend", open: "Show legend", noLabel: "undefined"},
             noData: "No Data Available.",
             noLabel: "undefined"
         };
@@ -210,8 +210,8 @@ tests("UNIT: areaChart -", function(t) {
         assert.equal(defaultStrings.noData, def.noData, "returns default 'hashmap' value noData");
         assert.equal(defaultStrings.noLabel, "undefined", "returns default 'hashmap' value noLabel");
         let val = {
-            legend: {close: "fdsa", open: "asdf"},
-            controls: {close: "fdsa", open: "asdf"},
+            legend: {close: "fdsa", open: "asdf", noLabel: "asdf"},
+            controls: {close: "fdsa", open: "asdf", noLabel: "asdf"},
             noData: "asdf",
             noLabel: "asdf"
         };

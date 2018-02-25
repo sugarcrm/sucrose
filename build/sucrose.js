@@ -1291,7 +1291,8 @@ var language = (function() {
     var strings = {
       legend: {
         close: 'Hide legend',
-        open: 'Show legend'
+        open: 'Show legend',
+        noLabel: 'undefined'
       },
       controls: {
         close: 'Hide controls',
@@ -4172,7 +4173,7 @@ function menu() {
       strings = language(),
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getKey = function(d) {
-        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && utility.isNumeric(d.key)) ? d.key : legend.strings().noLabel;
+        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && utility.isNumeric(d.key)) ? d.key : strings.noLabel;
       },
       color = function(d) {
         return utility.defaultColor()(d, d.seriesIndex);
@@ -4329,7 +4330,7 @@ function menu() {
         });
 
       link
-        .text(legendOpen === 1 ? legend.strings().close : legend.strings().open)
+        .text(legendOpen === 1 ? strings.close : strings.open)
         .attr('text-anchor', align === 'left' ? rtl ? 'end' : 'start' : rtl ? 'start' : 'end')
         .attr('dy', '.36em')
         .attr('dx', 0)
@@ -4761,7 +4762,7 @@ function menu() {
           .style('opacity', legendOpen)
           .style('display', legendOpen ? 'inline' : 'none');
         link
-          .text(legendOpen === 1 ? legend.strings().close : legend.strings().open);
+          .text(legendOpen === 1 ? strings.close : strings.open);
       }
 
       dispatch.on('toggleMenu', function() {
@@ -4914,7 +4915,6 @@ function menu() {
     if (!arguments.length) {
       return strings;
     }
-    // strings = language(_);
     strings = _;
     return legend;
   };
@@ -15761,7 +15761,10 @@ function paretoChart() {
   //============================================================
   // Public Variables with Default Settings
   //------------------------------------------------------------
-
+  var defaultStrings = {
+        barLegend: {close: 'Hide bar legend', open: 'Show bar legend', noLabel: 'undefined'},
+        lineLegend: {close: 'Hide line legend', open: 'Show line legend', noLabel: 'undefined'}
+      };
   var margin = {top: 10, right: 10, bottom: 10, left: 10},
       width = null,
       height = null,
@@ -15773,10 +15776,7 @@ function paretoChart() {
       delay = 0, // transition
       duration = 0, // transition
       state = {},
-      strings = language({
-        barlegend: {close: 'Hide bar legend', open: 'Show bar legend'},
-        linelegend: {close: 'Hide line legend', open: 'Show line legend'}
-      }),
+      strings = language(defaultStrings),
       getX = function(d) { return d.x; },
       getY = function(d) { return d.y; },
       locality = utility.buildLocality();
@@ -16252,7 +16252,7 @@ function paretoChart() {
           // bar series legend
           barLegend
             .id('barlegend_' + chart.id())
-            .strings(strings.barlegend)
+            .strings(strings.barLegend)
             .align('left')
             .height(availableHeight - innerMargin.top);
           barLegend_wrap
@@ -16264,7 +16264,7 @@ function paretoChart() {
           // line series legend
           lineLegend
             .id('linelegend_' + chart.id())
-            .strings(strings.linelegend)
+            .strings(strings.lineLegend)
             .align('right')
             .height(availableHeight - innerMargin.top);
           lineLegend_wrap
@@ -16896,9 +16896,15 @@ function paretoChart() {
 
   chart.strings = function(_) {
     if (!arguments.length) { return strings; }
+    if (!_.barLegend) {
+      _.barLegend = defaultStrings.barLegend;
+    }
+    if (!_.lineLegend) {
+      _.lineLegend = defaultStrings.lineLegend;
+    }
     strings = language(_);
-    barLegend.strings(strings.barlegend);
-    lineLegend.strings(strings.linelegend);
+    barLegend.strings(strings.barLegend);
+    lineLegend.strings(strings.lineLegend);
     return chart;
   };
 

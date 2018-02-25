@@ -28,7 +28,7 @@ export default function menu() {
       strings = language(),
       id = Math.floor(Math.random() * 10000), //Create semi-unique ID in case user doesn't select one
       getKey = function(d) {
-        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && utility.isNumeric(d.key)) ? d.key : legend.strings().noLabel;
+        return d.key.length > 0 || (!isNaN(parseFloat(d.key)) && utility.isNumeric(d.key)) ? d.key : strings.noLabel;
       },
       color = function(d) {
         return utility.defaultColor()(d, d.seriesIndex);
@@ -185,7 +185,7 @@ export default function menu() {
         });
 
       link
-        .text(legendOpen === 1 ? legend.strings().close : legend.strings().open)
+        .text(legendOpen === 1 ? strings.close : strings.open)
         .attr('text-anchor', align === 'left' ? rtl ? 'end' : 'start' : rtl ? 'start' : 'end')
         .attr('dy', '.36em')
         .attr('dx', 0)
@@ -617,7 +617,7 @@ export default function menu() {
           .style('opacity', legendOpen)
           .style('display', legendOpen ? 'inline' : 'none');
         link
-          .text(legendOpen === 1 ? legend.strings().close : legend.strings().open);
+          .text(legendOpen === 1 ? strings.close : strings.open);
       }
 
       dispatch.on('toggleMenu', function() {
@@ -770,7 +770,6 @@ export default function menu() {
     if (!arguments.length) {
       return strings;
     }
-    // strings = language(_);
     strings = _;
     return legend;
   };

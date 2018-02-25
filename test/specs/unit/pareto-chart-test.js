@@ -224,31 +224,31 @@ tests("UNIT: paretoChart -", function(t) {
     t.test("strings: ", function(assert) {
         assert.plan(9);
         let def = {
-            barlegend: {close: "Hide bar legend", open: "Show bar legend"},
-            linelegend: {close: "Hide line legend", open: "Show line legend"},
+            barLegend: {close: "Hide bar legend", open: "Show bar legend", noLabel: "undefined"},
+            lineLegend: {close: "Hide line legend", open: "Show line legend", noLabel: "undefined"},
             controls: {close: "Hide controls", open: "Show controls"},
             noData: "No Data Available.",
             noLabel: "undefined"
         };
         let defaultStrings = _chart.strings();
-        assert.deepEqual(defaultStrings.barlegend, def.barlegend, "returns default 'hashmap' value legend");
-        assert.deepEqual(defaultStrings.linelegend, def.linelegend, "returns default 'hashmap' value legend");
+        assert.deepEqual(defaultStrings.barLegend, def.barLegend, "returns default 'hashmap' value legend");
+        assert.deepEqual(defaultStrings.lineLegend, def.lineLegend, "returns default 'hashmap' value legend");
         assert.equal(defaultStrings.noData, def.noData, "returns default 'hashmap' value noData");
         assert.equal(defaultStrings.noLabel, "undefined", "returns default 'hashmap' value noLabel");
         let val = {
-            barlegend: {close: "fdsa", open: "asdf"},
-            linelegend: {close: "fdsa", open: "asdf"},
-            controls: {close: "fdsa", open: "asdf"},
+            barLegend: {close: "fdsa", open: "asdf", noLabel: "asdf"},
+            lineLegend: {close: "fdsa", open: "asdf", noLabel: "asdf"},
+            controls: {close: "fdsa", open: "asdf", noLabel: "asdf"},
             noData: "asdf",
             noLabel: "asdf"
         };
         _chart.strings(val);
         let modifiedStrings = _chart.strings();
-        assert.deepEqual(modifiedStrings.barlegend, val.barlegend, "returns set value");
-        assert.deepEqual(modifiedStrings.linelegend, val.linelegend, "returns set value");
+        assert.deepEqual(modifiedStrings.barLegend, val.barLegend, "returns set value");
+        assert.deepEqual(modifiedStrings.lineLegend, val.lineLegend, "returns set value");
         assert.equal(modifiedStrings.noData, val.noData, "returns set value");
         assert.equal(modifiedStrings.noLabel, val.noLabel, "returns set value");
-        assert.deepEqual(_chart.barLegend.strings(), val.barlegend, "legend returns set value");
+        assert.deepEqual(_chart.barLegend.strings(), val.barLegend, "legend returns set value");
         t.register(assert, type);
     });
 
