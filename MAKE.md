@@ -21,6 +21,7 @@
     examples-dev   - install development package dependencies for Sucrose library and generate examples application
     examples-prod  - install production package dependencies for Sucrose library and generate examples application
     help           - show some help [default]
+    instrument     - build and instrument sucrose.js for testing
     list           - just list the make targets
     md             - generate a MAKE.md from help
     npm-sugar      - publish the custom sugar build of Sucrose

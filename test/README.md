@@ -9,7 +9,7 @@ The component, model and chart modules are built using the revealing module Js p
 Unit tests are written to cover all public accessor methods, but since the Sucrose chart objects also have many private rendering methods, the entire component can't be tested with just unit tests. Take for instance the example code below.
 
 ```javascript
-sucrose.charts.pieChart = function() {
+var pieChart = function() {
   // protected property
   var showTitle = false;
   // private property
@@ -50,7 +50,7 @@ sucrose.charts.pieChart = function() {
   return chart;
 };
 
-var myChart = sucrose.charts.pieChart();
+var myChart = pieChart();
 
 myChart.showTitle(true);
 
@@ -82,7 +82,8 @@ Harnesses libraries: ./test/lib/
 Test specifications: ./test/specs/  
 Unit tests: ./specs/unit/  
 DOM tests: ./specs/dom/  
-Integration tests: ./specs/int/
+Integration tests: ./specs/int/  
+Data transform tests: ./specs/data
 
 ## Running Tests
 ### NPM Scripts
@@ -114,33 +115,33 @@ Travis-ci: continuous integration hosting
 Codecov.io: coverage reporting hosting
 
 ## Using Tape and Nightmare
-They rock. Some articles that helped very much:
-https://github.com/substack/tape
-https://medium.com/javascript-scene/why-i-use-tape-instead-of-mocha-so-should-you-6aa105d8eaf4
-https://ponyfoo.com/articles/testing-javascript-modules-with-tape
-https://www.npmjs.com/package/tape-suite
-https://remysharp.com/2015/12/14/my-node-test-strategy
-http://www.nodejsconnect.com/blog/articles/using-promises-and-tape-easy-testing
-https://ci.testling.com/guide/tape
-https://github.com/dwyl/learn-tape
-https://paul.kinlan.me/the-headless-web/
-https://developers.google.com/web/updates/2017/04/headless-chrome
-http://www.nightmarejs.org/
-https://segment.com/blog/ui-testing-with-nightmare/
-https://www.toptal.com/nodejs/nodejs-guide-integration-tests
-https://github.com/visionmedia/supertest
-http://codecept.io/nightmare/
-https://nodejs.org/en/docs/guides/anatomy-of-an-http-transaction/
-https://gist.github.com/ryanflorence/701407
-http://benjamincollins.com/blog/an-integration-testing-nightmare/
-https://electron.atom.io/docs/api/browser-window/#new-browserwindowoptions
-https://github.com/rosshinkley/nightmare-examples/blob/master/docs/beginner/action.md
-http://christopherdecoster.com/posts/nightmare/
-https://github.com/Raynos/test-server-request
-https://github.com/binocarlos/nightmare-tape
-https://www.toptal.com/nodejs/nodejs-guide-integration-tests
+They rock. Some articles that helped very much:  
+https://github.com/substack/tape  
+https://medium.com/javascript-scene/why-i-use-tape-instead-of-mocha-so-should-you-6aa105d8eaf4  
+https://ponyfoo.com/articles/testing-javascript-modules-with-tape  
+https://www.npmjs.com/package/tape-suite  
+https://remysharp.com/2015/12/14/my-node-test-strategy  
+http://www.nodejsconnect.com/blog/articles/using-promises-and-tape-easy-testing  
+https://ci.testling.com/guide/tape  
+https://github.com/dwyl/learn-tape  
+https://paul.kinlan.me/the-headless-web/  
+https://developers.google.com/web/updates/2017/04/headless-chrome  
+http://www.nightmarejs.org/  
+https://segment.com/blog/ui-testing-with-nightmare/  
+https://www.toptal.com/nodejs/nodejs-guide-integration-tests  
+https://github.com/visionmedia/supertest  
+http://codecept.io/nightmare/  
+https://nodejs.org/en/docs/guides/anatomy-of-an-http-transaction/  
+https://gist.github.com/ryanflorence/701407  
+http://benjamincollins.com/blog/an-integration-testing-nightmare/  
+https://electron.atom.io/docs/api/browser-window/#new-browserwindowoptions  
+https://github.com/rosshinkley/nightmare-examples/blob/master/docs/beginner/action.md  
+http://christopherdecoster.com/posts/nightmare/  
+https://github.com/Raynos/test-server-request  
+https://github.com/binocarlos/nightmare-tape  
+https://www.toptal.com/nodejs/nodejs-guide-integration-tests  
 https://blog.engineyard.com/2015/measuring-clientside-javascript-test-coverage-with-istanbul
 https://medium.com/@arnaudrinquin/frictionless-unit-testing-in-javascript-with-browser-tap-6ac2cea89a59
 
 ## License
-Copyright 2017 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.
+Copyright 2018 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.

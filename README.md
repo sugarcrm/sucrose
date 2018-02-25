@@ -10,10 +10,10 @@ SugarCRM's Business Chart Library based on [D3](http://d3js.org) and using the [
 - internationalization and localization support
 - clean styling for legibility and clarity
 - uses ES6 modules for custom builds for selected chart types
-- over 1,500 unit and integration tests
+- over 1,800 unit, integration and data transform tests
 
 ## Using
-This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose.
+This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose. D3 version 4.9.1 is the currently supported version and the prebuilt version included in the Sucrose repo is a custom bundle with a subset of D3 modules. Assuming you have downloaded the following files from the [Sucrose GitHub Reporsity](https://github.com/sugarcrm/sucrose/tree/master/build) local to your webpage:
 
 1. Include a link tag to the sucrose.min.css in you document head
 ```html
@@ -26,7 +26,7 @@ This library is dependent on the [D3](http://d3js.org) library so you will need 
 <script src="sucrose.min.js"></script>
 ```
 
-To render a chart, instantiate a new chart model, configure chart with options, bind data to a svg container and call the chart model.
+To render a chart, instantiate a new chart model, configure chart with options, bind data to a SVG container and call the chart model.
 ```html
 <div id="chart_" class="chart">
   <svg class="sucrose sc-chart"></svg>
@@ -48,10 +48,10 @@ d3.select('#chart_ svg')
     .call(myChart)
 ```
 
-Chart config options can be found in the API docs.
+Chart config options can be found in the API docs. Example data can be found in `/examples/data` or `/test/files/transform`.
 
 ## Examples
-The Sucrose Charts example application is available at [sucrose.io](http://sucrose.io) with configurator, data editor and package download. The following chart types are currently available:
+The Sucrose Charts example application is available at [sucrose.io](http://sucrose.io) with configurator, data editor and development package download. The following chart types are currently available:
   - [Multibar Chart](http://sucrose.io/index.html?type=multibar)
   - [Line Chart](http://sucrose.io/index.html?type=line)
   - [Pie Chart](http://sucrose.io/index.html?type=pie)
@@ -78,28 +78,28 @@ To develop the example application,
 1. Run `make help` from the `/examples` directory to see a full list of make commands for rebuilding specific code components.
 
 ## Building
-If you are developing new charts in Sucrose you can set a dev environment with:
+If you are developing new charts in Sucrose you can set up a dev environment with:
 
 1. Clone this repo: `git clone git@github.com:sugarcrm/sucrose.git`
 1. Go to the cloned repo directory: `cd ./sucrose`
-1. To install node modules needed for building source code and rebuild the entire library (including d3, js, css and data), run: `make dev`
-1. To rebuild the entire library during development run the make commands: `make clean` and then `make all`
+1. To install the NPM packages needed for building the Sucrose source code (including Js, Css, D3 dependenncies, and localization resources), run: `make dev`
+1. To rebuild the entire Sucrose library during development run the make commands: `make clean` and then `make all`
 1. Verify that the following core Sucrose files are still in the /build directory:
-  - `sucrose.js`
-  - `sucrose.min.js`
-  - `sucrose.css`
-  - `sucrose.min.css`
-  - `sucrose.node.js`
+    * `sucrose.js`
+    * `sucrose.min.js`
+    * `sucrose.css`
+    * `sucrose.min.css`
+    * `sucrose.node.js`
 1. You should also see the l10n support (see l10n [README](./src/scripts/lang/README.md) for more details):
-  - `translation.json`
-  - `locales.json`
+    * `translation.json`
+    * `locales.json`
 1. You should also see the following third-party library files:
-  - `d3.js`
-  - `d3.min.js`
-  - `topojson.js`
-  - `topojson.min.js`
-1. To just compile the sucrose library, run: `make sucrose`.\
-1. Run `make help` to see a full list of make commands for building specific code components.
+    * `d3.js`
+    * `d3.min.js`
+    * `topojson.js`
+    * `topojson.min.js`
+1. To just compile the Sucrose Js file, run: `make sucrose`
+1. To see a full list of make commands for building specific code components, run: `make help`
 
 ## Testing
 
@@ -115,7 +115,7 @@ For code coverage analysis first run `npm run instrument` in order to generate t
 1. for integration test code coverage run: `npm run cover-int`
 1. for complete code coverage run: `npm run cover-all`
 
-After running unit or DOm code coverage tests then run `npm run cover-rpt` to generate a coverage report at `/coverage/lcov-report/index.html`. The cover-all or cover-int scripts run the report automatically. The results of all coverage runs are merged automatically by `nyc`. See the testing [README](./test/README.md) for more details.
+After running unit or DOM code coverage tests, then run `npm run cover-rpt` to generate a coverage report at `/coverage/lcov-report/index.html`. The `cover-all` or `cover-int` NPM scripts run the coverage report automatically. The results of all coverage runs are merged automatically by `nyc`. See the testing [README](./test/README.md) for more details.
 
 ### Contributing:
 See [CONTRIBUTING](CONTRIBUTING.md) for how you can contribute changes back into this project.

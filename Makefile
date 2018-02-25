@@ -243,14 +243,20 @@ npm-sugar:
 cover: sucrose.js
 	npm run instrument
 
+# - build and instrument sucrose.js for testing
 instrument:
 	make sucrose.js DEV=true
 	npm run instrument
-
+# - full test run
 test: instrument
 	npm test
+# - data only test run
 test-data: instrument
 	npm run test-data
+# - chart specific test run
+test-chart:
+	node ./node_modules/.bin/tape test/specs/**/$(CHART)-chart-test.js
+
 
 #-----
 # HELP
