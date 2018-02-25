@@ -63,7 +63,7 @@
     "temp-directory": ".coverage"
   },
   "dependencies": {
-    "d3": "4.9.1",
+    "d3": "4.13.0",
     "topojson": "^1.6.26"
   },
   "devDependencies": {
