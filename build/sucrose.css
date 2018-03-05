@@ -482,17 +482,25 @@ svg.sc-chart .calc-text-strings,
 }
 .sc-axis path,
 .sc-axis line.zero {
-  stroke-opacity: 0.75;
+  stroke-opacity: 0.5;
+  stroke-width: 2px;
 }
 .sc-axis path.domain {
   stroke-width: 2px;
   stroke: #bbb;
+}
+.sc-axis line.extent {
+  display: none;
 }
 .sc-axis .sc-axisMaxMin text {
   font-weight: bold;
 }
 .sc-axis-x .sc-axis text {
   font-size: 11px;
+}
+.sc-axis-x .sc-axis path.domain {
+  stroke-width: 2px;
+  stroke: #bbb;
 }
 .sc-axislabel {
   font-weight: 900;

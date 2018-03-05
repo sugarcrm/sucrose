@@ -128,6 +128,7 @@ export default function lineChart() {
           availableHeight = height;
 
       var xIsDatetime = properties.xDataType === 'datetime' || false,
+          xIsNumeric = properties.xDataType === 'numeric' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var groupData = properties.groups,
@@ -283,7 +284,7 @@ export default function lineChart() {
           return !series.disabled;
         })
         .map(function(series, s) {
-          // this is the iterative index, not the data index
+          // this is the iterative index, not the data index called seriesIndex
           series.seri = s;
           return series;
         });
@@ -313,13 +314,13 @@ export default function lineChart() {
         // based on enabled data series
         groupData
           .forEach(function(group, g) {
-            var label = typeof group.label === 'undefined' || group.label === '' ?
-              strings.noLabel :
-                xIsDatetime ?
-                  utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
-                    new Date(group.label) :
-                    new Date(group.label + ' GMT') :
-                  group.label;
+            var label = typeof group.label === 'undefined' || group.label === ''
+              ? strings.noLabel
+              : !xIsDatetime
+                ? group.label
+                : utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1
+                  ? new Date(group.label)
+                  : new Date(group.label + ' GMT');
             group.group = g,
             group.label = label;
             group.total = 0;
@@ -413,9 +414,8 @@ export default function lineChart() {
       }
 
       xAxisFormat = function(value, v, selection, type) {
-        //TODO: isn't there always groupLabels?
-        // var groupLabel = hasGroupLabels ? groupLabels[i] : d;
-        var groupLabel = groupLabels[v];
+        //NOTE: there isn't  always groupLabels
+        var groupLabel = hasGroupLabels ? groupLabels[v] : value;
         var label = xValueFormat(value, v, groupLabel, xIsDatetime, xDateFormat);
         return type === 'no-ellipsis' ?
           label :
@@ -528,7 +528,7 @@ export default function lineChart() {
           .ticks(hasGroupLabels ? groupCount : null)
           // .ticks(groupCount)
           .highlightZero(false)
-          .showMaxMin(false);
+          .showMaxMin(true);
 
         yAxis
           .orient('left')

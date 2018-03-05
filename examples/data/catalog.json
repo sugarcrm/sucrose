@@ -39,6 +39,7 @@
         {"value": "line_data_bar", "label": "Test Bar Data"},
         {"value": "line_data_single", "label": "Test Single Data Point (time)"},
         {"value": "line_single_bar", "label": "Test Single Data Point (bar data)"},
+        {"value": "multibar_data_negative", "label": "Forecasting for Q1 (negative)"},
         {"value": "line_two_single", "label": "Test Two Single Data Points"},
         {"value": "sugar_data_grouped", "label": "Sugar Grouped Data"},
         {"value": "common_data_single_value", "label": "Common Data Single Value"},

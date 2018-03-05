@@ -35,25 +35,25 @@ while for locales['fr_FR'] the display string will be `1 234,57 €`.
 ## Resources
 The following sites were extremely helpful in developing this script:
 
-http://cldr.unicode.org/index
-https://github.com/rxaviers/cldrjs
-https://github.com/jquery/globalize
-https://github.com/twitter/twitter-cldr-js
-https://github.com/mbostock/d3/wiki/Time-Formatting
-http://cldr.unicode.org/translation/number-patterns
-https://rxaviers.github.io/javascript-globalization/
-http://www.unicode.org/cldr/charts/28/by_type/numbers.number_formatting_patterns.html
-https://lh.2xlibre.net/
-http://www.localeplanet.com/icu/index.html
-http://momentjs.com/
-http://johnnyreilly.github.io/globalize-so-what-cha-want/#/?currency=true&date=true&message=false&number=true&plural=false&relativeTime=false&unit=false
-http://www.globalbydesign.com/2011/12/08/how-to-localize-date-formats-using-globalize-js/
-https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString
-http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table
-http://npm.taobao.org/browse/keyword/locale
-https://www.branah.com/unicode-converter
-https://github.com/globalizejs/globalize/issues/758
-https://github.com/d3/d3-format/issues/34
+http://cldr.unicode.org/index  
+https://github.com/rxaviers/cldrjs  
+https://github.com/jquery/globalize  
+https://github.com/twitter/twitter-cldr-js  
+https://github.com/mbostock/d3/wiki/Time-Formatting  
+http://cldr.unicode.org/translation/number-patterns  
+https://rxaviers.github.io/javascript-globalization/  
+http://www.unicode.org/cldr/charts/28/by_type/numbers.number_formatting_patterns.html  
+https://lh.2xlibre.net/  
+http://www.localeplanet.com/icu/index.html  
+http://momentjs.com/  
+http://johnnyreilly.github.io/globalize-so-what-cha-want/#/?currency=true&date=true&message=false&number=true&plural=false&relativeTime=false&unit=false  
+http://www.globalbydesign.com/2011/12/08/how-to-localize-date-formats-using-globalize-js/  
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/toLocaleString  
+http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table  
+http://npm.taobao.org/browse/keyword/locale  
+https://www.branah.com/unicode-converter  
+https://github.com/globalizejs/globalize/issues/758  
+https://github.com/d3/d3-format/issues/34  
 
 ## License
 Copyright 2018 SugarCRM, Licensed by SugarCRM under the Apache 2.0 license.
