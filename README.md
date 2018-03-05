@@ -13,7 +13,7 @@ SugarCRM's Business Chart Library based on [D3](http://d3js.org) and using the [
 - over 1,800 unit, integration and data transform tests
 
 ## Using
-This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose. D3 version 4.9.1 is the currently supported version and the prebuilt version included in the Sucrose repo is a custom bundle with a subset of D3 modules. Assuming you have downloaded the following files from the [Sucrose GitHub Repository](https://github.com/sugarcrm/sucrose/tree/master/build) local to your webpage:
+This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose. D3 version 4.9.13 is the currently supported version and the prebuilt version included in the Sucrose repo is a custom bundle with a subset of D3 modules. Assuming you have downloaded the following files from the [Sucrose GitHub Repository](https://github.com/sugarcrm/sucrose/tree/master/build) local to your webpage:
 
 1. Include a link tag to the sucrose.min.css in you document head
 ```html

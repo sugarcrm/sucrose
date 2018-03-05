@@ -528,7 +528,7 @@ export default function lineChart() {
           .ticks(hasGroupLabels ? groupCount : null)
           // .ticks(groupCount)
           .highlightZero(false)
-          .showMaxMin(true);
+          .showMaxMin(hasGroupLabels ? false : true);
 
         yAxis
           .orient('left')

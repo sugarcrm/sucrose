@@ -13388,7 +13388,7 @@ function lineChart() {
           .ticks(hasGroupLabels ? groupCount : null)
           // .ticks(groupCount)
           .highlightZero(false)
-          .showMaxMin(true);
+          .showMaxMin(hasGroupLabels ? false : true);
 
         yAxis
           .orient('left')
@@ -18701,7 +18701,7 @@ var charts = {
 };
 
 // false & scr are substitution variables for rollup
-var version = '0.7.5'; // set by rollup script from package.json
+var version = '0.7.6'; // set by rollup script from package.json
 var build = 'scr'; // set scr for sucrose and sgr for Sugar
 var development = false; // set false when in production
 
