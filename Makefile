@@ -161,8 +161,8 @@ d3-all: d3-topo
 d3-topo:
 	$(call printgo,"Copy TopoJson library files from node_modules:")
 	@rm -f ./build/topojson*.js
-	@cp ./node_modules/topojson/build/topojson.js build/topojson.js
-	@cp ./node_modules/topojson/build/topojson.min.js build/topojson.min.js
+	@cp ./node_modules/topojson/dist/topojson.js build/topojson.js
+	@cp ./node_modules/topojson/dist/topojson.min.js build/topojson.min.js
 	$(call printok,"TopoJson files copied to build")
 
 clean-d3:

@@ -64,7 +64,7 @@
   },
   "dependencies": {
     "d3": "4.13.0",
-    "topojson": "^1.6.26"
+    "topojson": "^3.0.2"
   },
   "devDependencies": {
     "cldr": "^4.7.0",

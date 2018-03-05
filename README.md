@@ -13,11 +13,11 @@ SugarCRM's Business Chart Library based on [D3](http://d3js.org) and using the [
 - over 1,800 unit, integration and data transform tests
 
 ## Using
-This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose. D3 version 4.9.13 is the currently supported version and the prebuilt version included in the Sucrose repo is a custom bundle with a subset of D3 modules. Assuming you have downloaded the following files from the [Sucrose GitHub Repository](https://github.com/sugarcrm/sucrose/tree/master/build) local to your webpage:
+This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose. D3 version 4.13.0 is the currently supported version and the prebuilt version included in the Sucrose repo is a custom bundle with a subset of D3 modules. Assuming you have downloaded the following files from the [Sucrose GitHub Repository](https://github.com/sugarcrm/sucrose/tree/master/build) local to your webpage:
 
 1. Include a link tag to the sucrose.min.css in you document head
 ```html
-<link rel="stylesheet" href="css/sucrose.min.css">
+<link rel="stylesheet" href="sucrose.min.css">
 ```
 1. Include the following script tags at the bottom of your document:
 ```html
@@ -84,7 +84,7 @@ If you are developing new charts in Sucrose you can set up a dev environment wit
 1. Go to the cloned repo directory: `cd ./sucrose`
 1. To install the NPM packages needed for building the Sucrose source code (including Js, Css, D3 dependencies, and localization resources), run: `make dev`
 1. To rebuild the entire Sucrose library during development run the make commands: `make clean` and then `make all`
-1. Verify that the following core Sucrose files are still in the /build directory:
+1. Verify that the following core Sucrose files are still in the `/build` directory:
     * `sucrose.js`
     * `sucrose.min.js`
     * `sucrose.css`

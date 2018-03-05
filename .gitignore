@@ -3,7 +3,6 @@
 node_modules
 npm-debug.log
 d3-sugar.*
-topojson.*
 package.backup.json
 .coverage
 coverage/
