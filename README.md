@@ -13,7 +13,7 @@ SugarCRM's Business Chart Library based on [D3](http://d3js.org) and using the [
 - over 1,800 unit, integration and data transform tests
 
 ## Using
-This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose. D3 version 4.9.1 is the currently supported version and the prebuilt version included in the Sucrose repo is a custom bundle with a subset of D3 modules. Assuming you have downloaded the following files from the [Sucrose GitHub Reporsity](https://github.com/sugarcrm/sucrose/tree/master/build) local to your webpage:
+This library is dependent on the [D3](http://d3js.org) library so you will need to include that library before Sucrose. D3 version 4.9.1 is the currently supported version and the prebuilt version included in the Sucrose repo is a custom bundle with a subset of D3 modules. Assuming you have downloaded the following files from the [Sucrose GitHub Repository](https://github.com/sugarcrm/sucrose/tree/master/build) local to your webpage:
 
 1. Include a link tag to the sucrose.min.css in you document head
 ```html
@@ -82,7 +82,7 @@ If you are developing new charts in Sucrose you can set up a dev environment wit
 
 1. Clone this repo: `git clone git@github.com:sugarcrm/sucrose.git`
 1. Go to the cloned repo directory: `cd ./sucrose`
-1. To install the NPM packages needed for building the Sucrose source code (including Js, Css, D3 dependenncies, and localization resources), run: `make dev`
+1. To install the NPM packages needed for building the Sucrose source code (including Js, Css, D3 dependencies, and localization resources), run: `make dev`
 1. To rebuild the entire Sucrose library during development run the make commands: `make clean` and then `make all`
 1. Verify that the following core Sucrose files are still in the /build directory:
     * `sucrose.js`
@@ -90,7 +90,7 @@ If you are developing new charts in Sucrose you can set up a dev environment wit
     * `sucrose.css`
     * `sucrose.min.css`
     * `sucrose.node.js`
-1. You should also see the l10n support (see l10n [README](./src/scripts/lang/README.md) for more details):
+1. You should also see the l10n support (see l10n [README](./scripts/lang/README.md) for more details):
     * `translation.json`
     * `locales.json`
 1. You should also see the following third-party library files:
@@ -99,6 +99,7 @@ If you are developing new charts in Sucrose you can set up a dev environment wit
     * `topojson.js`
     * `topojson.min.js`
 1. To just compile the Sucrose Js file, run: `make sucrose`
+1. To compile a custom bundle of Sucrose and D3 for SugarCRM, run: `make sgr`
 1. To see a full list of make commands for building specific code components, run: `make help`
 
 ## Testing

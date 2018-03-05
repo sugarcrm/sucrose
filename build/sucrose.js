@@ -1871,12 +1871,13 @@ function axis() {
           maxLabelWidth = 0,
           maxLabelHeight = 0,
           tickGap = 6,
-          labelThickness = 0;
+          labelThickness = 0,
+          minSpacing = 0;
 
       var tickDimensions = [],
-          tickDimensionsHash = {},
-          minTickDimensions = {},
-          maxTickDimensions = {};
+          tickDimsHash = {},
+          minTickDims = {},
+          maxTickDims = {};
 
       //------------------------------------------------------------
       // reset public readonly variables
@@ -1926,18 +1927,15 @@ function axis() {
       axisMaxMin_bind.exit().remove();
       var axisMaxMin = wrap.selectAll('g.sc-axisMaxMin').merge(axisMaxMin_entr);
 
-      axisMaxMin_entr.append('text').style('opacity', 0);
-      axisMaxMin_entr.append('line').style('opacity', 0);
+      axisMaxMin_entr.append('text').style('opacity', 1);
 
       var maxminText = axisMaxMin.select('text');
-
 
       // Get all axes and maxmin tick text for text handling functions
       var tickText = wrap.selectAll('g.tick, g.sc-axisMaxMin').select('text')
             .filter(function(d) {
               return this.getBoundingClientRect().width;
             });
-
 
       // Axis label
       var axisLabel_data = !!axisLabelText ? [axisLabelText] : [];
@@ -1964,13 +1962,7 @@ function axis() {
           .style('text-anchor', rtlTextAnchor(textAnchor || (isMirrored() ? 'start' : 'end')));
 
       } else {
-        //Not needed but keep for now
-        // if (reduceXTicks) {
-        //   axisTicks.each(function(d, i) {
-        //       d3.select(this).selectAll('text,line')
-        //         .style('opacity', i % Math.ceil(data[0].values.length / (scaleWidth / 100)) !== 0 ? 0 : 1);
-        //     });
-        // }
+
         resetTicks(false);
         recalcMargin();
 
@@ -2007,6 +1999,9 @@ function axis() {
               rotateTicks = 30;
             }
             resetTicks(true);
+            if (!vertical) {
+              minSpacing = maxLabelHeight / Math.sin(rotateTicks * Math.PI / 180);
+            }
             handleRotation(rotateTicks);
             recalcMargin(rotateTicks);
             handleRotation(rotateTicks);
@@ -2020,63 +2015,56 @@ function axis() {
 
       if (showMaxMin) {
 
-        // only show max line
-        axisMaxMin.select('line')
-          .attr('x1', 0)
-          .attr('y1', 0)
-          .attr('y2', vertical ? 0 : (axis.tickSize() - marginCalc.bottom) * reflect)
-          .attr('x2', vertical ? axis.tickSize() * reflect : 0)
-          .style('opacity', function(d, i) {
-            return isMirrored() ? (i ? 0 : 1) : (i ? 1 : 0);
-          });
-
         //check if max and min overlap other values, if so, hide the values that overlap
         axisTicks.each(function(d, i) {
             var tick = d3.select(this),
-                dim = tickDimensionsHash['key-' + d.toString()],
-                collision = false;
+                dim = tickDimsHash['key-' + d.toString()],
+                collision = false,
+                isExtent = scaleCalc(d) === extent[0] || scaleCalc(d) === extent[1];
 
-            if (vertical) {
-              collision = dim.bottom > minTickDimensions.top || dim.top < maxTickDimensions.bottom;
-              tick.select('line')
-                .style('opacity', 1 - collision);
+            if (isExtent) {
+              collision = true;
+            } else if (vertical) {
+              collision = minTickDims.top - dim.bottom + 1 < 0 || dim.top - maxTickDims.bottom < 0;
             } else if (rotateSucceeded) {
-              collision = false;
+              collision = dim.left - minSpacing / 2 < minTickDims.left || dim.left + minSpacing / 2 > maxTickDims.left;
             } else if (staggerSucceeded) {
-              collision = (dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap) &&
-                          (dim.bottom < minTickDimensions.top || dim.top > maxTickDimensions.bottom);
+              collision = (dim.left - tickGap < minTickDims.right || dim.right + tickGap > maxTickDims.left) &&
+                          (dim.bottom === minTickDims.bottom || dim.bottom < minTickDims.top || dim.top > maxTickDims.bottom);
             } else {
-              //TODO: fix this in date x axis
-              collision = dim.left < minTickDimensions.right + tickGap || dim.right > maxTickDimensions.left + tickGap;
+              collision = dim.left - tickGap < minTickDims.right || dim.right + tickGap > maxTickDims.left;
             }
 
+            tick.select('line')
+              .classed('extent', isExtent);
             tick.select('text')
               .style('opacity', 1 - collision);
-            // accounts for minor floating point errors... though could be problematic if the scale is EXTREMELY SMALL
-            // if (d < 1e-10 && d > -1e-10) { // Don't remove the ZERO line!!
-            //   tick.select('line')
-            //     .style('opacity', 0);
-            // }
           });
 
       } else {
 
-        //highlight zero line ... Maybe should not be an option and should just be in CSS?
-        axisTicks
-          .filter(function(d) {
-            // this is because sometimes the 0 tick is a very small fraction, TODO: think of cleaner technique
-            // return !parseFloat(Math.round(d * 100000) / 1000000);
-            return scaleCalc(d) === extent[0 + isMirrored()];
-          })
-          .classed('zero', highlightZero);
-
-        // hide zero line if same as domain line
+        // hide tick line if same as domain line
         axisTicks.select('line')
-          .style('opacity', function(d, i) {
-            return scaleCalc(d) === extent[0 + isMirrored()] ? 0 : 1;
+          .style('stroke-opacity', function(d) {
+            return scaleCalc(d) === extent[0 + isMirrored()] ? 0 : null;
           });
 
       }
+
+      //highlight zero line ... Maybe should not be an option and should just be in CSS?
+      axisTicks
+        .filter(function(d) {
+          // accounts for minor floating point errors...
+          // this is because sometimes the 0 tick is a very small fraction,
+          // though could be problematic if the scale is EXTREMELY SMALL
+          //TODO: think of cleaner technique
+          // return d === 0;
+          // return !parseFloat(Math.round(d * 100000) / 1000000);
+          // return scaleCalc(d) === extent[0 + isMirrored()];
+          return d < 1e-10 && d > -1e-10 && scaleCalc(d) !== extent[0] && scaleCalc(d) !== extent[1];
+        })
+        .select('line')
+        .classed('zero', highlightZero);
 
       //------------------------------------------------------------
       // Axis label
@@ -2181,12 +2169,11 @@ function axis() {
 
       function calcTickLabelSizes() {
         tickDimensions = [];
-        tickDimensionsHash = {};
+        tickDimsHash = {};
 
         // reposition max/min ticks before calculating bbox
         if (showMaxMin) {
           axisMaxMin
-            .style('opacity', 1)
             .attr('transform', function(d, i) {
               var trans = vertical ? '0,' + scaleCalc(d) : scaleCalc(d) + ',0';
               return 'translate(' + trans + ')';
@@ -2213,10 +2200,10 @@ function axis() {
           })
           .forEach(function(d, i) {
             d.index = i;
-            tickDimensionsHash['key-' + d.key.toString()] = d;
+            tickDimsHash['key-' + d.key.toString()] = d;
           });
-        minTickDimensions = tickDimensions[0];
-        maxTickDimensions = tickDimensions[tickDimensions.length - 1];
+        minTickDims = tickDimensions[0];
+        maxTickDims = tickDimensions[tickDimensions.length - 1];
       }
 
       function labelCollision(s) {
@@ -2299,12 +2286,6 @@ function axis() {
           .style('text-anchor', 'middle')
           .style('opacity', 1);
 
-        // don't need this because wrap.call(axis) does formatting
-        // axisTicks.select('text')
-        //   .text(function(d, i, selection) {
-        //     // shouldn't we just use
-        //     return valueFormat(d, i, selection, 'axis reset');
-        //   });
         maxminText
           .text(function(d, i, selection) {
             // get the current tickFormatter which is a wrapper around valueFormat
@@ -2378,7 +2359,7 @@ function axis() {
       function handleStagger() {
         tickText
           .attr('transform', function(d, i) {
-            var yOffset = tickDimensionsHash['key-' + d.toString()].index % 2 * (maxLabelHeight);
+            var yOffset = tickDimsHash['key-' + d.toString()].index % 2 * (maxLabelHeight);
             return 'translate(0,' + yOffset + ')';
           });
 
@@ -2394,7 +2375,7 @@ function axis() {
             isLeft = normRotation > 90,
             angle = (normRotation - (isLeft ? 180 : 0)) * reflect,
             tickAnchor = rtlTextAnchor(isLeft ? 'end' : 'start'),
-            //Convert to radians before calculating sin.
+            //Convert to radians before calculating cos.
             cos = Math.abs(Math.cos(a * Math.PI / 180));
 
         //Rotate all tickText
@@ -2407,7 +2388,6 @@ function axis() {
 
         calcMaxLabelSizes();
         setThickness();
-        thickness += cos * 11;
       }
 
       //------------------------------------------------------------
@@ -13008,6 +12988,7 @@ function lineChart() {
           availableHeight = height;
 
       var xIsDatetime = properties.xDataType === 'datetime' || false,
+          xIsNumeric = properties.xDataType === 'numeric' || false,
           yIsCurrency = properties.yDataType === 'currency' || false;
 
       var groupData = properties.groups,
@@ -13163,7 +13144,7 @@ function lineChart() {
           return !series.disabled;
         })
         .map(function(series, s) {
-          // this is the iterative index, not the data index
+          // this is the iterative index, not the data index called seriesIndex
           series.seri = s;
           return series;
         });
@@ -13193,13 +13174,13 @@ function lineChart() {
         // based on enabled data series
         groupData
           .forEach(function(group, g) {
-            var label = typeof group.label === 'undefined' || group.label === '' ?
-              strings.noLabel :
-                xIsDatetime ?
-                  utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1 ?
-                    new Date(group.label) :
-                    new Date(group.label + ' GMT') :
-                  group.label;
+            var label = typeof group.label === 'undefined' || group.label === ''
+              ? strings.noLabel
+              : !xIsDatetime
+                ? group.label
+                : utility.isNumeric(group.label) || group.label.indexOf('GMT') !== -1
+                  ? new Date(group.label)
+                  : new Date(group.label + ' GMT');
             group.group = g,
             group.label = label;
             group.total = 0;
@@ -13293,9 +13274,8 @@ function lineChart() {
       }
 
       xAxisFormat = function(value, v, selection, type) {
-        //TODO: isn't there always groupLabels?
-        // var groupLabel = hasGroupLabels ? groupLabels[i] : d;
-        var groupLabel = groupLabels[v];
+        //NOTE: there isn't  always groupLabels
+        var groupLabel = hasGroupLabels ? groupLabels[v] : value;
         var label = xValueFormat(value, v, groupLabel, xIsDatetime, xDateFormat);
         return type === 'no-ellipsis' ?
           label :
@@ -13408,7 +13388,7 @@ function lineChart() {
           .ticks(hasGroupLabels ? groupCount : null)
           // .ticks(groupCount)
           .highlightZero(false)
-          .showMaxMin(false);
+          .showMaxMin(true);
 
         yAxis
           .orient('left')
@@ -14610,8 +14590,8 @@ function multibarChart() {
         // this is the ordinal index [0+1..n+1] or value index [0..n]
         var x = eo.point.x;
         var y = eo.point.y;
-        var yIsCurrency = properties.yDataType === 'currency';
         var xIsDatetime = properties.xDataType === 'datetime';
+        var yIsCurrency = properties.yDataType === 'currency';
         // var valueLabel = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units for axis
         // for tooltip, we want the full value
@@ -15029,11 +15009,11 @@ function multibarChart() {
           maxGroup = 0;
 
       var valuesAreIntegers = d3.max(d3.merge(modelData.map(function(series) {
-          return series.values.map(function(value) {
-            var y = model.y()(value);
-            return utility.countSigFigsAfter(y);
-          });
-        }))) === 0;
+            return series.values.map(function(value) {
+              var y = model.y()(value);
+              return utility.countSigFigsAfter(y);
+            });
+          }))) === 0;
 
       if (valuesAreIntegers) {
         maxGroup = d3.max(groupData, function(group) {
@@ -15075,9 +15055,8 @@ function multibarChart() {
       }
 
       xAxisFormat = function(value, v, selection, type) {
-        //TODO: isn't there always groupLabels?
-        // var groupLabel = hasGroupLabels ? groupLabels[i] : d;
-        var groupLabel = groupLabels[v];
+        //NOTE: there isn't  always groupLabels
+        var groupLabel = hasGroupLabels ? groupLabels[v] : value;
         var label = xValueFormat(value, v, groupLabel, xIsDatetime, xDateFormat);
         return type === 'no-ellipsis' ?
           label :

@@ -62,8 +62,8 @@ export default function multibarChart() {
         // this is the ordinal index [0+1..n+1] or value index [0..n]
         var x = eo.point.x;
         var y = eo.point.y;
-        var yIsCurrency = properties.yDataType === 'currency';
         var xIsDatetime = properties.xDataType === 'datetime';
+        var yIsCurrency = properties.yDataType === 'currency';
         // var valueLabel = yValueFormat(y, eo.seriesIndex, null, yIsCurrency, 2);
         // we can't use yValueFormat because it needs SI units for axis
         // for tooltip, we want the full value
@@ -481,11 +481,11 @@ export default function multibarChart() {
           maxGroup = 0;
 
       var valuesAreIntegers = d3.max(d3.merge(modelData.map(function(series) {
-          return series.values.map(function(value) {
-            var y = model.y()(value);
-            return utility.countSigFigsAfter(y);
-          });
-        }))) === 0;
+            return series.values.map(function(value) {
+              var y = model.y()(value);
+              return utility.countSigFigsAfter(y);
+            });
+          }))) === 0;
 
       if (valuesAreIntegers) {
         maxGroup = d3.max(groupData, function(group) {
@@ -527,9 +527,8 @@ export default function multibarChart() {
       }
 
       xAxisFormat = function(value, v, selection, type) {
-        //TODO: isn't there always groupLabels?
-        // var groupLabel = hasGroupLabels ? groupLabels[i] : d;
-        var groupLabel = groupLabels[v];
+        //NOTE: there isn't  always groupLabels
+        var groupLabel = hasGroupLabels ? groupLabels[v] : value;
         var label = xValueFormat(value, v, groupLabel, xIsDatetime, xDateFormat);
         return type === 'no-ellipsis' ?
           label :

@@ -9,24 +9,27 @@
     stroke: #444;
     stroke-width: 4px;
     fill: none;
+
+    &.sc-quota-target {
+      stroke: #777;
+    }
+    &.sc-quota-background {
+      opacity: 0;
+      stroke-width: 12px;
+    }
   }
 
-  .sc-quota-wrap line.sc-quota-target {
-    stroke: #777;
-  }
+  .sc-axis-y {
+    .domain {
+      display: none;
+    }
 
-  .sc-quota-wrap line.sc-quota-background {
-    opacity: 0;
-    stroke-width: 12px;
-  }
-
-  .sc-axis-y .domain {
-    display: none;
-  }
-
-  .sc-axis-y text.sc-quota-value,
-  .sc-axis-y text.sc-target-quota-value {
-    font-weight: bold;
+    text {
+      &.sc-quota-value,
+      &.sc-target-quota-value {
+        font-weight: bold;
+      }
+    }
   }
 
   .sc-line .sc-group path {
