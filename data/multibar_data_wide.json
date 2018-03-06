@@ -1,6 +1,7 @@
 {
   "properties": {
     "title": "Total is 50",
+    "yDataType": "numeric",
     "groups": [
       {"label": ""},
       {"label": "Banking"},

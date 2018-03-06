@@ -1,28 +1,33 @@
 {
   "properties": {
-    "title": "Total is 1890.00",
+    "title": "Total is {{total}}",
+    "total": "$3780.00",
     "yDataType": "currency",
+    "xDataType": "ordinal",
     "groups": [
       {"label": "Red"},
       {"label": "Yellow"},
       {"label": "Green"}
-    ]
+    ],
+    "label": "Fruit",
+    "seriesLabel": "Type",
+    "groupLabel": "Color"
   },
   "data": [
     {
       "key": "Apples",
       "values": [
-        {"x": 1, "y": 1234},
-        {"x": 2, "y": 567},
-        {"x": 3, "y": 89}
+        {"label": "$234", "x": 1, "y": 234},
+        {"label": "$567", "x": 2, "y": 567},
+        {"label": "($89)", "x": 3, "y": -89}
       ]
     },
     {
       "key": "Oranges",
       "values": [
-        {"x": 1, "y": 89},
-        {"x": 2, "y": 567},
-        {"x": 3, "y": 1234}
+        {"label": "$89", "x": 1, "y": 89},
+        {"label": "($567)", "x": 2, "y": -567},
+        {"label": "($234)", "x": 3, "y": -234}
       ]
     }
   ]

@@ -2,11 +2,11 @@
   "properties": {
     "title": "All Opportunities by Lead Source",
     "yDataType": "currency",
-    "seriesLabel": "Source"
+    "seriesName": "Source"
   },
   "data": [
     {
-      "key": "Undefined",
+      "key": "",
       "value": 100
     },
     {

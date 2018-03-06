@@ -3,7 +3,7 @@
     "title": "All Opportunities by Close Date",
     "yDataType": "currency",
     "xDataType": "datetime",
-    "seriesLabel": "Source"
+    "seriesName": "Source"
   },
   "data": [
     {

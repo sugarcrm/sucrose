@@ -4,7 +4,7 @@
     "groups": [
       {"label": "Unassigned"},
       {"label": "Cold Call"},
-      {"label": "Existing CustomerExisting CustomerExisting Customer"},
+      {"label": "Existing Customer"},
       {"label": "Self Generated"},
       {"label": "Employee"},
       {"label": "Partner"},

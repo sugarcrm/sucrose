@@ -8,8 +8,8 @@
       "labels": "value",
       "print": "on",
       "thousands": "",
-      "yDataType": "numerical",
-      "xDataType": "string"
+      "yDataType": "numeric",
+      "xDataType": "ordinal"
     }
   ],
   "label": [
@@ -27,7 +27,6 @@
     "Word of mouth",
     "Email",
     "Campaign",
-    "Support Portal User Registration",
     "Other"
   ],
   "color": [
@@ -77,7 +76,7 @@
     },
     {
       "label": [
-        "ColdCallasdfasdfasdfasdfasdfsdfafsd"
+        "Cold Call"
       ],
       "values": [
         9
@@ -252,20 +251,6 @@
       ],
       "valuelabels": [
         "10"
-      ],
-      "links": [
-        ""
-      ]
-    },
-    {
-      "label": [
-        "Support Portal User Registration"
-      ],
-      "values": [
-        8
-      ],
-      "valuelabels": [
-        "8"
       ],
       "links": [
         ""

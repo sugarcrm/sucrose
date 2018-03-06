@@ -1,15 +1,12 @@
 {
   "properties": {
-    "title": "Total is 1890.123",
+    "title": "Common data, multi series and value",
     "yDataType": "currency",
-    "xDataType": "datetime",
     "groups": [
-      {"label": "Jan 2016"},
-      {"label": "Feb 2016"},
-      {"label": "Mar 2016"}
-    ],
-    "seriesName": "Fruit",
-    "groupName": "Harvested"
+      {"label": "Red"},
+      {"label": "Yellow"},
+      {"label": "Green"}
+    ]
   },
   "data": [
     {
@@ -23,7 +20,7 @@
     {
       "key": "Oranges",
       "values": [
-        {"x": 1, "y": 89.123},
+        {"x": 1, "y": 89},
         {"x": 2, "y": 567},
         {"x": 3, "y": 1234}
       ]

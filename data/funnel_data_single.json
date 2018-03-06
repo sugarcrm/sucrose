@@ -2,7 +2,7 @@
   "properties": {
     "title": "Pipeline total is $675k",
     "yDataType": "currency",
-    "seriesLabel": "Stage"
+    "seriesName": "Stage"
   },
   "data": [
     {

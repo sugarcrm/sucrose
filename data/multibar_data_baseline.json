@@ -11,7 +11,9 @@
       {"label": "Energy"},
       {"label": "Materials"},
       {"label": "Telecomm"}
-    ]
+    ],
+    "xDataType": "ordinal",
+    "yDataType": "numeric"
   },
   "data": [
     {
