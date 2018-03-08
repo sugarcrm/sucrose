@@ -186,7 +186,7 @@ sucrose.css: $(CSS_FILES)
 sucrose.min.css: sucrose.css
 	$(call printgo,"Compile and compress sucrose library LESS source files into CSS:")
 	@rm -f ./build/$@
-	@node $(CSS_MINIFIER) ./build/$^ | cat ./src/header - > ./build/$@
+	@node $(CSS_MINIFIER) --skip-rebase ./build/$^ | cat ./src/header - > ./build/$@
 	$(call printok,"CSS file minified in build")
 
 # - remove Sucrose Css files
@@ -213,8 +213,12 @@ clean-locales:
 #---------
 # EXAMPLES
 
-# - [*] build and copy the Sucrose Js and Css files to the example application
-examples: all
+# - [*] build and copy the Sucrose Js and Css to the example application
+examples:
+	cd examples && make sucrose
+
+# - [*] build and copy the Sucrose Js and Css and dependency files to the example application
+examples-all: all
 	cd examples && make sucrose && make dependencies && make examples
 
 # - install production package dependencies for Sucrose library and generate examples application
