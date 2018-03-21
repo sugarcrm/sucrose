@@ -97,6 +97,8 @@ sucrose: clean-sucrose
 	cp ../build/sucrose.min.css css/sucrose.min.css
 	cp ../build/locales.json data/locales/locales.json
 	cp ../build/translation.json data/locales/translation.json
+	cp ../src/fonts/*.woff fonts
+	cp ../src/fonts/*.woff2 fonts
 
 # - remove sucrose js and css files
 clean-sucrose:

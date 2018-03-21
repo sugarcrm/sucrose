@@ -13,5 +13,8 @@ examples/js/jquery.*
 examples/js/jquerymy.*
 examples/js/less.*
 examples/js/sucrose.*
+examples/fonts/opensans-*.woff2
+examples/fonts/opensans*.woff
+examples/fonts/opensans.woff2
 test/fixtures/build
 presentations

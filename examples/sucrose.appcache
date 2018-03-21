@@ -85,6 +85,22 @@ fonts/NotoSans-Regular-webfont.eot
 fonts/NotoSans-Regular-webfont.svg
 fonts/NotoSans-Regular-webfont.ttf
 fonts/NotoSans-Regular-webfont.woff
+fonts/opensans-italic.woff2
+fonts/opensans-italic.woff
+fonts/opensans-bold-italic.woff2
+fonts/opensans-bold-italic.woff
+fonts/opensans.woff2
+fonts/opensans.woff
+fonts/opensans-bold.woff2
+fonts/opensans-bold.woff
+fonts/opensans-cyrillic.woff2
+fonts/opensans-bold-cyrillic.woff2
+fonts/opensans-bold-italic-cyrillic.woff2
+fonts/opensans-italic-cyrillic.woff2
+fonts/opensans-greek.woff2
+fonts/opensans-bold-greek.woff2
+fonts/opensans-bold-italic-greek.woff2
+fonts/opensans-italic-greek.woff2
 
 #img
 img/avatar_james.jpg
