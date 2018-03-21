@@ -222,7 +222,7 @@ examples-all: all
 	cd examples && make sucrose && make dependencies && make examples
 
 # - install production package dependencies for Sucrose library and generate examples application
-examples-prod: prod
+examples-prod: prod d3-topo
 	cd examples && make prod
 
 # - install development package dependencies for Sucrose library and generate examples application

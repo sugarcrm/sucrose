@@ -80,7 +80,7 @@ npm-prod:
 	npm install --production
 
 # - copy sucrose and dependency files and generate index
-install-post: all index-prod
+install-post: sucrose dependencies index-prod
 
 # - copy sucrose and dependency files
 all: sucrose dependencies examples
