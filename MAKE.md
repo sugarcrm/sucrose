@@ -17,7 +17,8 @@
     d3-scr         - build custom D3 bundle with just required components for Sucrose
     d3-sgr         - build custom D3 bundle with just required components for Sugar
     dev            - install development npm packages and build all [main dev]
-    examples       - [*] build and copy the Sucrose Js and Css files to the example application
+    examples       - [*] build and copy the Sucrose Js and Css to the example application
+    examples-all   - [*] build and copy the Sucrose Js and Css and dependency files to the example application
     examples-dev   - install development package dependencies for Sucrose library and generate examples application
     examples-prod  - install production package dependencies for Sucrose library and generate examples application
     help           - show some help [default]

@@ -1,5 +1,5 @@
 # Sucrose
-[![npm version](https://badge.fury.io/js/sucrose.svg)](https://badge.fury.io/js/sucrose)
+[![npm version](https://badge.fury.io/js/sucrose.svg)](https://www.npmjs.com/package/sucrose)
 [![Build Status](https://travis-ci.org/sugarcrm/sucrose.svg?branch=master)](https://travis-ci.org/sugarcrm/sucrose)
 [![codecov](https://codecov.io/gh/sugarcrm/sucrose/branch/master/graph/badge.svg)](https://codecov.io/gh/sugarcrm/sucrose)
 
@@ -35,17 +35,17 @@ To render a chart, instantiate a new chart model, configure chart with options, 
 ```javascript
 var myChart = sucrose.charts.pieChart()
 
-myChart.options{
-  "tooltips": true,
-  "donut": true,
-  "maxRadius": 250,
-  "showLabels": true
-})
+myChart.options({
+    "tooltips": true,
+    "donut": true,
+    "maxRadius": 250,
+    "showLabels": true
+  });
 
 d3.select('#chart_ svg')
   .attr('class', 'sucrose sc-chart sc-chart-pie')
   .datum(data)
-    .call(myChart)
+    .call(myChart);
 ```
 
 Chart config options can be found in the API docs. Example data can be found in `/examples/data` or `/test/files/transform`.

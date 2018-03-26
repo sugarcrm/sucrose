@@ -206,33 +206,37 @@ nav {
 }
 
 nav ul {
+  display: inline-block;
   list-style: none;
   height: 40px;
   padding: 0;
   background:  #f4f4f4;
   border-radius: 5px;
   border: 1px solid #e0e0e0;
-  width: 270px;
   background-color: #FcFcFc;
 }
 
 nav li {
-  width: 89px;
+  width: 70px;
   float: left;
   border-right: 1px solid #e0e0e0;
   height: 40px;
 }
 
-nav li: first-child a {
+nav li:last-child {
+  border-right: none;
+}
+
+nav li:first-child a {
   border-radius: 5px 0 0 5px;
 }
 
-nav li: last-child a {
+nav li:last-child a {
   border-radius: 0 5px 5px 0;
 }
 
 nav ul a {
-  line-height: 1;
+  line-height: 1.1;
   font-size: 11px;
   color: #999;
   display: block;
@@ -247,11 +251,6 @@ nav ul a:hover {
 
 nav ul a:active {
   background-color: #f0f0f0;
-}
-
-nav ul li + li + li {
-  border-right: none;
-  width: 89px;
 }
 
 nav ul a strong {
@@ -306,7 +305,7 @@ footer p {
   box-sizing: border-box;
 }
 .index nav {
-  width: 270px;
+  width: 288px;
   float: left;
 }
 .index section {
