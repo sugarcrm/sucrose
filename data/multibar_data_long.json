@@ -38,7 +38,6 @@
     },
     {
       "key": "Communications",
-      "type": "bar",
       "values": [
         {"x": 1, "y": 3}
       ]

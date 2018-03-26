@@ -1,136 +1,87 @@
 {
   "properties": {
     "title": "Total is 200",
-    "labels": [
+    "groups": [
       {
         "group": 1,
-        "l": "Undefined"
+        "label": "Undefined",
+        "total": 5
       },
       {
         "group": 2,
-        "l": "Cold Call"
+        "label": "Cold Call",
+        "total": 17
       },
       {
         "group": 3,
-        "l": "Existing Customer"
+        "label": "Existing Customer",
+        "total": 16
       },
       {
         "group": 4,
-        "l": "Self Generated"
+        "label": "Self Generated",
+        "total": 15
       },
       {
         "group": 5,
-        "l": "Employee"
+        "label": "Employee",
+        "total": 13
       },
       {
         "group": 6,
-        "l": "Partner"
+        "label": "Partner",
+        "total": 8
       },
       {
         "group": 7,
-        "l": "Public Relations"
+        "label": "Public Relations",
+        "total": 12
       },
       {
         "group": 8,
-        "l": "Direct Mail"
+        "label": "Direct Mail",
+        "total": 18
       },
       {
         "group": 9,
-        "l": "Conference"
+        "label": "Conference",
+        "total": 12
       },
+
       {
         "group": 10,
-        "l": "Trade Show"
+        "label": "Trade Show",
+        "total": 18
       },
       {
         "group": 11,
-        "l": "Web Site"
+        "label": "Web Site",
+        "total": 10
       },
       {
         "group": 12,
-        "l": "Word of mouth"
+        "label": "Word of mouth",
+        "total": 8
       },
       {
         "group": 13,
-        "l": "Email"
+        "label": "Email",
+        "total": 12
       },
       {
         "group": 14,
-        "l": "Campaign"
+        "label": "Campaign",
+        "total": 11
       },
       {
         "group": 15,
-        "l": "Support Portal User Registration"
+        "label": "Support Portal User Registration",
+        "total": 6
       },
       {
         "group": 16,
-        "l": "Other"
-      }
-    ],
-    "values": [
-      {
-        "group": 1,
-        "t": 5
-      },
-      {
-        "group": 2,
-        "t": 17
-      },
-      {
-        "group": 3,
-        "t": 16
-      },
-      {
-        "group": 4,
-        "t": 15
-      },
-      {
-        "group": 5,
-        "t": 13
-      },
-      {
-        "group": 6,
-        "t": 8
-      },
-      {
-        "group": 7,
-        "t": 12
-      },
-      {
-        "group": 8,
-        "t": 18
-      },
-      {
-        "group": 9,
-        "t": 12
-      },
-      {
-        "group": 10,
-        "t": 18
-      },
-      {
-        "group": 11,
-        "t": 10
-      },
-      {
-        "group": 12,
-        "t": 8
-      },
-      {
-        "group": 13,
-        "t": 12
-      },
-      {
-        "group": 14,
-        "t": 11
-      },
-      {
-        "group": 15,
-        "t": 6
-      },
-      {
-        "group": 16,
-        "t": 19
+        "label": "Other",
+        "total": 19
       }
     ]
   },

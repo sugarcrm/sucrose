@@ -10,7 +10,7 @@
       "",
       " ر.س.‏"
     ],
-    "dateTime": "%-d %B، %Y %-I:%M:%S %p GMT%Z",
+    "dateTime": "%-d %B %Y %-I:%M:%S %p GMT%Z",
     "date": "%-d‏/%-m‏/%Y",
     "time": "%-I:%M %p",
     "periods": [
@@ -63,11 +63,11 @@
       "نوفمبر",
       "ديسمبر"
     ],
-    "full": "%A، %-d %B، %Y %-I:%M:%S %p GMT%Z",
-    "long": "%-d %B، %Y %-I:%M:%S %p GMT%Z",
+    "full": "%A، %-d %B %Y %-I:%M:%S %p GMT%Z",
+    "long": "%-d %B %Y %-I:%M:%S %p GMT%Z",
     "medium": "%d‏/%m‏/%Y %-I:%M:%S %p",
     "short": "%-d‏/%-m‏/%Y %-I:%M %p",
-    "yMMMEd": "E، %-d %b، %Y",
+    "yMMMEd": "E، %-d %b %Y",
     "yMEd": "E، %-d/‏%-m/‏%Y",
     "yMMMMd": "%b %-d, %Y",
     "yMMMd": "%b %-d, %Y",
@@ -94,9 +94,9 @@
       "",
       " лв."
     ],
-    "dateTime": "%-d %B %Y г., %-H:%M:%S GMT%Z",
+    "dateTime": "%-d %B %Y г., %-H:%M:%S ч. GMT%Z",
     "date": "%-d.%m.%Y г.",
-    "time": "%-H:%M",
+    "time": "%-H:%M ч.",
     "periods": [
       "am",
       "pm"
@@ -147,10 +147,10 @@
       "ное",
       "дек"
     ],
-    "full": "%A, %-d %B %Y г., %-H:%M:%S GMT%Z",
-    "long": "%-d %B %Y г., %-H:%M:%S GMT%Z",
-    "medium": "%-d.%m.%Y г., %-H:%M:%S",
-    "short": "%-d.%m.%y г., %-H:%M",
+    "full": "%A, %-d %B %Y г., %-H:%M:%S ч. GMT%Z",
+    "long": "%-d %B %Y г., %-H:%M:%S ч. GMT%Z",
+    "medium": "%-d.%m.%Y г., %-H:%M:%S ч.",
+    "short": "%-d.%m.%y г., %-H:%M ч.",
     "yMMMEd": "E, %-d.%m.%Y г.",
     "yMEd": "E, %-d.%m.%Y г.",
     "yMMMMd": "%-d %B %Y г.",
@@ -434,8 +434,8 @@
     "date": "%-d.%-m.%Y",
     "time": "%H:%M",
     "periods": [
-      "vorm.",
-      "nachm."
+      "AM",
+      "PM"
     ],
     "days": [
       "Sonntag",
@@ -1493,7 +1493,7 @@
     ],
     "full": "%A %-d %B %Y %H:%M:%S GMT%Z",
     "long": "%-d %B %Y %H:%M:%S GMT%Z",
-    "medium": "%d %b %Y, %H:%M:%S",
+    "medium": "%-d %b %Y, %H:%M:%S",
     "short": "%d/%m/%y, %H:%M",
     "yMMMEd": "E %-d %b %Y",
     "yMEd": "E %-d/%-m/%Y",
@@ -2366,8 +2366,8 @@
     "date": "%d.%m.%Y",
     "time": "%-H:%M",
     "periods": [
-      "ДП",
-      "ПП"
+      "AM",
+      "PM"
     ],
     "days": [
       "воскресенье",
@@ -2420,7 +2420,7 @@
     "medium": "%-d %b %Y г., %-H:%M:%S",
     "short": "%d.%m.%Y, %-H:%M",
     "yMMMEd": "E, %-d %b %Y г.",
-    "yMEd": "ccc, %-d.%m.%Y г.",
+    "yMEd": "ccc, %d.%m.%Y г.",
     "yMMMMd": "%b %-d, %Y",
     "yMMMd": "%b %-d, %Y",
     "yMd": "%d.%m.%Y",
@@ -2499,7 +2499,7 @@
       "nov",
       "dec"
     ],
-    "full": "%A, %-d. %B %Y, %-H:%M:%S GMT%Z",
+    "full": "%A %-d. %B %Y, %-H:%M:%S GMT%Z",
     "long": "%-d. %B %Y, %-H:%M:%S GMT%Z",
     "medium": "%-d. %-m. %Y, %-H:%M:%S",
     "short": "%-d. %-m. %Y %-H:%M",
@@ -2576,8 +2576,8 @@
       "pri",
       "maj",
       "qer",
-      "kor",
-      "gsh",
+      "korr",
+      "gush",
       "sht",
       "tet",
       "nën",
@@ -3228,7 +3228,7 @@
       "Mgq"
     ],
     "months": [
-      "UMasingana",
+      "Januwari",
       "Februwari",
       "Mashi",
       "Ephreli",
