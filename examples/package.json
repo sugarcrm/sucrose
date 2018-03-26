@@ -35,7 +35,6 @@
     "jszip": "^3.0.0"
   },
   "devDependencies": {
-    "canvg": "git://github.com/gabelerner/canvg.git",
     "codemirror": "^5.11.0",
     "jsonlint": "^1.6.2",
     "make-help": "^1.0.1",
