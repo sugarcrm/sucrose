@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "codemirror": "^5.11.0",
+    "downloadjs": "^1.4.7",
     "jsonlint": "^1.6.2",
     "make-help": "^1.0.1",
     "store2": "^2.3.2",

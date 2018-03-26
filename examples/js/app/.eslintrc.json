@@ -14,6 +14,7 @@
     "UglifyJS": false,
     "CodeMirror": false,
     "JSZip": false,
+    "download": false,
     "saveAs": false,
     "$demo": true,
     "$form": true,
