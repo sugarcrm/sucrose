@@ -21,9 +21,9 @@ LIB_FILES = \
 	node_modules/codemirror/addon/fold/foldcode.js \
 	node_modules/codemirror/addon/fold/brace-fold.js \
 	node_modules/codemirror/addon/fold/foldgutter.js \
+	node_modules/downloadjs/download.min.js \
 	node_modules/jszip/dist/jszip.js \
 	node_modules/jszip/vendor/FileSaver.js \
-	node_modules/canvg/rgbcolor.js \
 	node_modules/store2/dist/store2.min.js
 
 DEP_FILES = \

@@ -2024,15 +2024,17 @@ function axis() {
 
             if (isExtent) {
               collision = true;
-            } else if (vertical) {
-              collision = minTickDims.top - dim.bottom + 1 < 0 || dim.top - maxTickDims.bottom < 0;
-            } else if (rotateSucceeded) {
-              collision = dim.left - minSpacing / 2 < minTickDims.left || dim.left + minSpacing / 2 > maxTickDims.left;
-            } else if (staggerSucceeded) {
-              collision = (dim.left - tickGap < minTickDims.right || dim.right + tickGap > maxTickDims.left) &&
-                          (dim.bottom === minTickDims.bottom || dim.bottom < minTickDims.top || dim.top > maxTickDims.bottom);
-            } else {
-              collision = dim.left - tickGap < minTickDims.right || dim.right + tickGap > maxTickDims.left;
+            } else if (typeof dim !== 'undefined') {
+              if (vertical) {
+                collision = minTickDims.top - dim.bottom + 1 < 0 || dim.top - maxTickDims.bottom < 0;
+              } else if (rotateSucceeded) {
+                collision = dim.left - minSpacing / 2 < minTickDims.left || dim.left + minSpacing / 2 > maxTickDims.left;
+              } else if (staggerSucceeded) {
+                collision = (dim.left - tickGap < minTickDims.right || dim.right + tickGap > maxTickDims.left) &&
+                            (dim.bottom === minTickDims.bottom || dim.bottom < minTickDims.top || dim.top > maxTickDims.bottom);
+              } else {
+                collision = dim.left - tickGap < minTickDims.right || dim.right + tickGap > maxTickDims.left;
+              }
             }
 
             tick.select('line')
