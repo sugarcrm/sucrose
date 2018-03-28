@@ -11,24 +11,6 @@ function generateImage(e) {
     });
     return decodeURIComponent(data);
   }
-  function openTab(url) {
-    var a = window.document.createElement('a');
-    var evt = new MouseEvent('click', {
-          bubbles: false,
-          cancelable: true,
-          view: window,
-        });
-    a.target = '_blank';
-    a.href = url;
-    // Not supported consistently across browsers
-    // fall back to open image in new tab
-    a.download = 'download.png';
-    document.body.appendChild(a);
-    a.addEventListener('click', function (e) {
-      a.parentNode.removeChild(a);
-    });
-    a.dispatchEvent(evt);
-  }
 
   $.ajax({
       url: 'css/sucrose.css',
@@ -62,7 +44,8 @@ function generateImage(e) {
           var uri;
           ctx.drawImage(img, 0, 0, width, height);
           uri = canvas.toDataURL('image/png');
-          download(uri, 'download.png', 'image/png');
+          //use saveAs?
+          download(uri, 'download' + chartType + '.png', 'image/png');
           ctx.clearRect(0, 0, width, height);
           canvas.remove();
       };
