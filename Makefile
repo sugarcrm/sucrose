@@ -285,7 +285,7 @@ help:
 
 # - generate a MAKE.md from help
 md:
-	make help > MAKE.md
+	make help | sed -e 's/[\*]/\\*/g' | sed -e 's/$$/  /' > MAKE.md
 
 # - just list the make targets
 list:
