@@ -108,6 +108,36 @@ export default function multibar() {
         labelsOutside = labelPosition === 'total' || labelPosition === 'top';
       }
 
+      // restore code removed by SCR-19 but still needed to display totals for stacked bar
+      if (stacked) {
+        groupTotals = [];
+        data[0].values.map(function(d, i) {
+          var pos = 0;
+          var neg = 0;
+          data.map(function(d) {
+            var f = d.values[i];
+            f.size = Math.abs(f.y);
+            if (f.y < 0) {
+              f.y0 = neg - (vertical ? 0 : f.size);
+              neg -= f.size;
+            } else {
+              f.y0 = pos + (vertical ? f.size : 0);
+              pos += f.size;
+            }
+          });
+          groupTotals[i] = {
+            neg: {
+              label: valueFormat(neg, i),
+              y: neg
+            },
+            pos: {
+              label: valueFormat(pos, i),
+              y: pos
+            }
+          };
+        });
+      }
+
       //------------------------------------------------------------
       // Setup Scales
 
@@ -526,13 +556,14 @@ export default function multibar() {
       }
       function getLabelOpacity(d, i) {
         if (labelsOutside) {
-          if (labelPosition === 'total' & d.seriesIndex !== minSeries && d.seriesIndex !== maxSeries) {
-            return 0;
+          if (labelPosition === 'total' && stacked) {
+            // hide non-total labels for stacked bar
+            var y = getY(d, i);
+            return (y <  0 && groupTotals[i].neg.y === d.y0 + (vertical ? y : 0)) ||
+              (y >= 0 && groupTotals[i].pos.y === d.y0 + (vertical ? 0 : y)) ? 1 : 0;
+          } else {
+            return 1;
           }
-          return 1;
-          // var y = getY(d, i);
-          // return (y <  0 && groupTotals[i].neg.y === d.y0 + (vertical ? y : 0)) ||
-          //        (y >= 0 && groupTotals[i].pos.y === d.y0 + (vertical ? 0 : y)) ? 1 : 0;
         } else {
           var lengthOverlaps = d.barLength < (useWidth ? d.labelWidth : d.labelHeight) + 8;
           var thicknessOverlaps = d.barThickness < (useWidth ? d.labelHeight : d.labelWidth) + 4;
