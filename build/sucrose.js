@@ -5623,7 +5623,9 @@ function scatter() {
               .attr('cx', function(d) { return d[0]; })
               .attr('cy', function(d) { return d[1]; })
               .attr('r', function(d, i) {
-                return circleRadius(d[2], i);
+                // Fallback to 25 which is the nvd3 default
+                // This should only happen when we have less than 4 records and have to use dummy points
+                return d[2] ? circleRadius(d[2], i) : 25;
               });
 
             paths_wrap
