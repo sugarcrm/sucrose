@@ -18736,7 +18736,7 @@ var charts = {
 };
 
 // false & scr are substitution variables for rollup
-var version = '0.8.1'; // set by rollup script from package.json
+var version = '0.8.2'; // set by rollup script from package.json
 var build = 'scr'; // set scr for sucrose and sgr for Sugar
 var development = false; // set false when in production
 
