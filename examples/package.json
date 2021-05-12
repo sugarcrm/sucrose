@@ -35,7 +35,7 @@
     "jszip": "^3.0.0"
   },
   "devDependencies": {
-    "codemirror": "^5.36.0",
+    "codemirror": "^5.58.2",
     "downloadjs": "^1.4.7",
     "jsonlint": "^1.6.3",
     "make-help": "^1.0.2",
