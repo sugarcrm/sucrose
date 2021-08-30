@@ -348,10 +348,17 @@ export default function funnel() {
         sideLabels.selectAll('rect').remove();
         sideLabels.selectAll('polyline').remove();
 
+        var isDarkMode = false;        
+        if (window.SUGAR && window.SUGAR.hasOwnProperty('App', 'utils')) {
+          isDarkMode = window.SUGAR.App.utils.isDarkMode();
+        }
+
+        var labelTextColor = isDarkMode ? '#9ba1a6' : '#6f777b';
+
         // Position side labels
         sideLabels.append('text')
           .text(fmtKey)
-            .call(fmtLabel, 'sc-label', 0.85, 'start', '#555');
+            .call(fmtLabel, 'sc-label', 0.85, 'start', labelTextColor);
 
         sideLabels.select('.sc-label')
           .call(
@@ -359,7 +366,7 @@ export default function funnel() {
             (wrapLabels ? wrapLabel : ellipsifyLabel),
             (wrapLabels ? calcSideWidth : maxSideLabelWidth),
             function(txt, dy) {
-              fmtLabel(txt, 'sc-label', dy, 'start', '#555');
+              fmtLabel(txt, 'sc-label', dy, 'start', labelTextColor);
             }
           );
 
@@ -368,7 +375,7 @@ export default function funnel() {
 
         sideLabels.select('.sc-value')
           .style('text-anchor', 'start')
-          .style('fill', '#555');
+          .style('fill', labelTextColor);
 
         sideLabels
           .call(calcSideLabelDimensions);
