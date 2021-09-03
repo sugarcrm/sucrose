@@ -2972,10 +2972,17 @@ function funnel() {
         sideLabels.selectAll('rect').remove();
         sideLabels.selectAll('polyline').remove();
 
+        var isDarkMode = false;        
+        if (window.SUGAR && window.SUGAR.hasOwnProperty('App', 'utils')) {
+          isDarkMode = window.SUGAR.App.utils.isDarkMode();
+        }
+
+        var labelTextColor = isDarkMode ? '#9ba1a6' : '#6f777b';
+
         // Position side labels
         sideLabels.append('text')
           .text(fmtKey)
-            .call(fmtLabel, 'sc-label', 0.85, 'start', '#555');
+            .call(fmtLabel, 'sc-label', 0.85, 'start', labelTextColor);
 
         sideLabels.select('.sc-label')
           .call(
@@ -2983,7 +2990,7 @@ function funnel() {
             (wrapLabels ? wrapLabel : ellipsifyLabel),
             (wrapLabels ? calcSideWidth : maxSideLabelWidth),
             function(txt, dy) {
-              fmtLabel(txt, 'sc-label', dy, 'start', '#555');
+              fmtLabel(txt, 'sc-label', dy, 'start', labelTextColor);
             }
           );
 
@@ -2992,7 +2999,7 @@ function funnel() {
 
         sideLabels.select('.sc-value')
           .style('text-anchor', 'start')
-          .style('fill', '#555');
+          .style('fill', labelTextColor);
 
         sideLabels
           .call(calcSideLabelDimensions);
@@ -16232,6 +16239,13 @@ function paretoChart() {
         var barLegend_wrap = wrap.select('.sc-legend-wrap.sc-bar-legend');
         wrap_entr.append('g').attr('class', 'sc-legend-wrap sc-line-legend');
         var lineLegend_wrap = wrap.select('.sc-legend-wrap.sc-line-legend');
+        
+        var isDarkMode = false;        
+        if (window.SUGAR && window.SUGAR.hasOwnProperty('App', 'utils')) {
+          isDarkMode = window.SUGAR.App.utils.isDarkMode();
+        }
+
+        var backgroundFill = isDarkMode ? '#000000' : '#ffffff';
 
         wrap.attr('transform', utility.translation(margin.left, margin.top));
         wrap_entr.select('.sc-background-wrap').append('rect')
@@ -16239,7 +16253,7 @@ function paretoChart() {
           .attr('y', -margin.top)
           .attr('width', renderWidth)
           .attr('height', renderHeight)
-          .attr('fill', '#FFF');
+          .attr('fill', backgroundFill);
 
         //------------------------------------------------------------
         // Title & Legends
@@ -18736,7 +18750,7 @@ var charts = {
 };
 
 // false & scr are substitution variables for rollup
-var version = '0.8.2'; // set by rollup script from package.json
+var version = '0.8.3'; // set by rollup script from package.json
 var build = 'scr'; // set scr for sucrose and sgr for Sugar
 var development = false; // set false when in production
 

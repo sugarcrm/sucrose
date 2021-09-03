@@ -468,6 +468,13 @@ export default function paretoChart() {
         var barLegend_wrap = wrap.select('.sc-legend-wrap.sc-bar-legend');
         wrap_entr.append('g').attr('class', 'sc-legend-wrap sc-line-legend');
         var lineLegend_wrap = wrap.select('.sc-legend-wrap.sc-line-legend');
+        
+        var isDarkMode = false;        
+        if (window.SUGAR && window.SUGAR.hasOwnProperty('App', 'utils')) {
+          isDarkMode = window.SUGAR.App.utils.isDarkMode();
+        }
+
+        var backgroundFill = isDarkMode ? '#000000' : '#ffffff';
 
         wrap.attr('transform', utility.translation(margin.left, margin.top));
         wrap_entr.select('.sc-background-wrap').append('rect')
@@ -475,7 +482,7 @@ export default function paretoChart() {
           .attr('y', -margin.top)
           .attr('width', renderWidth)
           .attr('height', renderHeight)
-          .attr('fill', '#FFF');
+          .attr('fill', backgroundFill);
 
         //------------------------------------------------------------
         // Title & Legends
