@@ -67,7 +67,7 @@
     "topojson": "^3.0.2"
   },
   "devDependencies": {
-    "cldr": "^4.8.0",
+    "cldr": "^7.2.0",
     "cldr-data": "^32.0.1",
     "cldrjs": "^0.5.0",
     "clean-css-cli": "^4.1.11",
