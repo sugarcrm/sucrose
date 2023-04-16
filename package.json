@@ -87,7 +87,7 @@
     "nightmare": "^3.0.0",
     "nyc": "^11.6.0",
     "package-preamble": "^0.1.0",
-    "postcss": "^6.0.21",
+    "postcss": "^7.0.36",
     "rimraf": "^2.6.2",
     "rollup": "^0.55.0",
     "rollup-plugin-ascii": "0.0.3",
