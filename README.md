@@ -1,7 +1,12 @@
-# Sucrose
+# :no_entry: DEPRECATED Sucrose
 [![npm version](https://badge.fury.io/js/sucrose.svg)](https://www.npmjs.com/package/sucrose)
 [![Build Status](https://travis-ci.org/sugarcrm/sucrose.svg?branch=master)](https://travis-ci.org/sugarcrm/sucrose)
 [![codecov](https://codecov.io/gh/sugarcrm/sucrose/branch/master/graph/badge.svg)](https://codecov.io/gh/sugarcrm/sucrose)
+
+We are no longer maintaining this library, and it is deprecated in favor of
+[ChartJS](https://www.chartjs.org/).
+
+---
 
 SugarCRM's Business Chart Library based on [D3](http://d3js.org) and using the [NVD3](http://nvd3.org/) reusable component pattern. This SVG chart library was created to provide a:
 - flexible integration within the Sugar development environment
