@@ -53,7 +53,7 @@ d3.select('#chart_ svg')
     .call(myChart);
 ```
 
-Chart config options can be found in the API docs. Example data can be found in `/examples/data` or `/test/files/transform`.
+Chart config options can be found in the API docs. Example data can be found in `/test/files/transform`.
 
 ## Examples
 The Sucrose Charts example application is available at [sucrose.io](http://sucrose.io) with configurator, data editor and development package download. The following chart types are currently available:
@@ -68,19 +68,6 @@ The Sucrose Charts example application is available at [sucrose.io](http://sucro
   - [Stacked Area Chart](http://sucrose.io/index.html?type=area)
   - [Tree Chart](http://sucrose.io/index.html?type=tree)
   - [Globe Chart](http://sucrose.io/index.html?type=globe)
-
-To view the example application locally,
-1. From the root of the repo directory, run `make examples-prod`.
-1. Open a browser to `sucrose/examples/index.html`.
-1. The examples application is a stand-alone single page application which will run offline.
-1. Instruction for using the example application coming soon.
-
-To develop the example application,
-1. Follow the instructions below to verify the build environment is up and running.
-1. From the root of the repo directory, run: `make examples-dev`.
-1. Open a browser to `sucrose/examples/index.html`.
-1. The production application is cached in the browser with a manifest and appcache so you may need to clear the application storage cache when changing from production to development.
-1. Run `make help` from the `/examples` directory to see a full list of make commands for rebuilding specific code components.
 
 ## Building
 If you are developing new charts in Sucrose you can set up a dev environment with:
