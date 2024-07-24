@@ -87,20 +87,7 @@ var yIsCurrency = data.properties && data.properties.yDataType === 'currency';
 var xIsDatetime = data.properties && data.properties.xDataType === 'datetime';
 
 function format(chart, callback) {
-  d3.queue()
-    .defer(d3.json, '../examples/data/geo/world-countries-topo-110.json')
-    .defer(d3.json, '../examples/data/geo/usa-states-topo-110.json')
-    .defer(d3.json, '../examples/data/geo/cldr_en.json')
-    .await(function(error, world, country, labels) {
-      if (error) {
-        return;
-      }
-      chart
-        .worldMap(topojson.feature(world, world.objects.countries).features)
-        .countryMap({'USA': topojson.feature(country, country.objects.states).features})
-        .countryLabels(labels);
-      callback(chart);
-    });
+  return;
 }
 
 window.onload = function () {

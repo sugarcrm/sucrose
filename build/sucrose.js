@@ -15278,8 +15278,7 @@ var charts = {
     treeChart: treeChart,
 };
 
-// false & sgr are substitution variables for rollup
-var version = '0.8.1'; // set by rollup script from package.json
+var version = '0.8.4'; // set by rollup script from package.json
 var build = 'sgr'; // set scr for sucrose and sgr for Sugar
 var development = false; // set false when in production
 

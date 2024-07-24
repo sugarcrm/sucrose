@@ -37,7 +37,6 @@ endef
 .PHONY: prod dev all scr sgr sucrose css locales \
 	clean clean-js clean-css clean-locales \
 	d3-scr d3-sgr d3-bundle d3-minify d3-all clean-d3 \
-	examples examples-prod examples-dev \
 	pack npm-sugar cover help list md
 
 #-----------
@@ -208,27 +207,6 @@ clean-locales:
 	@rm -f build/locales.json
 	@rm -f build/translation.json
 	$(call printok,"Locale resource files removed from build")
-
-
-#---------
-# EXAMPLES
-
-# - [*] build and copy the Sucrose Js and Css to the example application
-examples:
-	cd examples && make sucrose
-
-# - [*] build and copy the Sucrose Js and Css and dependency files to the example application
-examples-all: all
-	cd examples && make sucrose && make dependencies && make examples
-
-# - install production package dependencies for Sucrose library and generate examples application
-examples-prod: prod d3-topo
-	cd examples && make prod
-
-# - install development package dependencies for Sucrose library and generate examples application
-examples-dev: dev
-	cd examples && make dev
-
 
 #-----
 # MISC
