@@ -1,5 +1,5 @@
 # :no_entry: DEPRECATED Sucrose
-[![npm version](https://badge.fury.io/js/sucrose.svg)](https://www.npmjs.com/package/sucrose)
+[![npm version](https://badge.fury.io/js/@sugarcrm%2Fsucrose-sugar.svg)](https://www.npmjs.com/package/@sugarcrm/sucrose-sugar)
 [![Build Status](https://travis-ci.org/sugarcrm/sucrose.svg?branch=master)](https://travis-ci.org/sugarcrm/sucrose)
 [![codecov](https://codecov.io/gh/sugarcrm/sucrose/branch/master/graph/badge.svg)](https://codecov.io/gh/sugarcrm/sucrose)
 
